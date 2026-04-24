@@ -1,0 +1,17 @@
+{
+  "name": "@kontext-brain/example-basic",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --import tsx src/index.ts"
+  },
+  "dependencies": {
+    "@kontext-brain/core": "workspace:*",
+    "@kontext-brain/llm": "workspace:*",
+    "@kontext-brain/loader": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2"
+  }
+}

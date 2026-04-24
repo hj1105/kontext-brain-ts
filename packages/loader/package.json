@@ -1,0 +1,25 @@
+{
+  "name": "@kontext-brain/loader",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@kontext-brain/core": "workspace:*",
+    "@kontext-brain/llm": "workspace:*",
+    "@kontext-brain/mcp": "workspace:*",
+    "yaml": "^2.7.0",
+    "zod": "^3.24.1"
+  }
+}

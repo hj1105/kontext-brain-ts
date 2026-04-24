@@ -1,0 +1,25 @@
+{
+  "name": "@kontext-brain/llm",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@kontext-brain/core": "workspace:*",
+    "@langchain/anthropic": "^0.3.9",
+    "@langchain/core": "^0.3.27",
+    "@langchain/ollama": "^0.1.4",
+    "@langchain/openai": "^0.3.16"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "@kontext-brain/example-auto-setup",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --import tsx src/index.ts"
+  },
+  "dependencies": {
+    "@kontext-brain/core": "workspace:*",
+    "@kontext-brain/llm": "workspace:*",
+    "@kontext-brain/loader": "workspace:*",
+    "@kontext-brain/mcp": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.0.4"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2"
+  }
+}

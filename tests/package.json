@@ -1,0 +1,16 @@
+{
+  "name": "@kontext-brain/tests",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@kontext-brain/core": "workspace:*",
+    "@kontext-brain/llm": "workspace:*",
+    "@kontext-brain/loader": "workspace:*",
+    "@kontext-brain/mcp": "workspace:*",
+    "@kontext-brain/tool-server": "workspace:*"
+  }
+}

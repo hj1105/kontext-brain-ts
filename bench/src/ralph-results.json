@@ -1,0 +1,114 @@
+[
+  {
+    "system": "baseline",
+    "recall": 0.75,
+    "keywordHit": 0.548611111111111,
+    "contextChars": 1335.9166666666667,
+    "latencyMs": 8062.434425
+  },
+  {
+    "system": "v10-rerank+c",
+    "recall": 0.6666666666666666,
+    "keywordHit": 0.5458333333333333,
+    "contextChars": 606.8333333333334,
+    "latencyMs": 6608.477491666662
+  },
+  {
+    "system": "v12-extract",
+    "recall": 0.6666666666666666,
+    "keywordHit": 0.5833333333333334,
+    "contextChars": 169.5,
+    "latencyMs": 0.2370583333322429
+  },
+  {
+    "system": "v13-sentence",
+    "recall": 0.6666666666666666,
+    "keywordHit": 0.5416666666666666,
+    "contextChars": 207.41666666666666,
+    "latencyMs": 1826.0740499999931
+  },
+  {
+    "system": "v14-parallel",
+    "recall": 0.6666666666666666,
+    "keywordHit": 0.4611111111111112,
+    "contextChars": 527.6666666666666,
+    "latencyMs": 2920.6762333333413
+  },
+  {
+    "system": "v15-adaptive",
+    "recall": 0.6666666666666666,
+    "keywordHit": 0.4611111111111112,
+    "contextChars": 512,
+    "latencyMs": 2772.895633333336
+  },
+  {
+    "system": "v16-proximity",
+    "recall": 0.6666666666666666,
+    "keywordHit": 0.5833333333333334,
+    "contextChars": 194.16666666666666,
+    "latencyMs": 0.21269166667480022
+  },
+  {
+    "system": "v17-hybrid-ex",
+    "recall": 0.6666666666666666,
+    "keywordHit": 0.5416666666666666,
+    "contextChars": 207.41666666666666,
+    "latencyMs": 1827.6874
+  },
+  {
+    "system": "v18-bm25-map",
+    "recall": 0.6666666666666666,
+    "keywordHit": 0.6486111111111111,
+    "contextChars": 1263.5833333333333,
+    "latencyMs": 7036.105608333353
+  },
+  {
+    "system": "v19-mmr",
+    "recall": 0.75,
+    "keywordHit": 0.6458333333333334,
+    "contextChars": 1160.5833333333333,
+    "latencyMs": 5900.229950000004
+  },
+  {
+    "system": "v20-edge",
+    "recall": 0.5833333333333334,
+    "keywordHit": 0.5708333333333334,
+    "contextChars": 2087.6666666666665,
+    "latencyMs": 9697.107333333342
+  },
+  {
+    "system": "v21-centroid",
+    "recall": 0.5,
+    "keywordHit": 0.4583333333333333,
+    "contextChars": 2463.4166666666665,
+    "latencyMs": 9089.193833333333
+  },
+  {
+    "system": "v22-compose",
+    "recall": 0.75,
+    "keywordHit": 0.4791666666666667,
+    "contextChars": 710,
+    "latencyMs": 3083.7177333333334
+  },
+  {
+    "system": "v23-bm25-ex",
+    "recall": 0.6666666666666666,
+    "keywordHit": 0.5833333333333334,
+    "contextChars": 194.16666666666666,
+    "latencyMs": 0.20969999998730296
+  },
+  {
+    "system": "v24-entity",
+    "recall": 0.8333333333333334,
+    "keywordHit": 0.75,
+    "contextChars": 156.66666666666666,
+    "latencyMs": 0.1910833333483121
+  },
+  {
+    "system": "v25-entity-llm",
+    "recall": 0.8333333333333334,
+    "keywordHit": 0.6361111111111111,
+    "contextChars": 361.5,
+    "latencyMs": 7119.557708333334
+  }
+]

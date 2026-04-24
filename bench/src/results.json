@@ -1,0 +1,1960 @@
+[
+  {
+    "queryId": "q1",
+    "system": "baseline",
+    "retrievedDocIds": [
+      "backend-rest",
+      "ops-kubernetes",
+      "sec-tls"
+    ],
+    "expectedDocIds": [
+      "backend-rest"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1370,
+    "latencyMs": 4565,
+    "answer": "Version your API in the URL path like /v1/users."
+  },
+  {
+    "queryId": "q1",
+    "system": "flat-kw",
+    "retrievedDocIds": [
+      "backend-rest",
+      "backend-postgres",
+      "backend-auth",
+      "frontend-react"
+    ],
+    "expectedDocIds": [
+      "backend-rest"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1737,
+    "latencyMs": 4069,
+    "answer": "Version your REST API in the URL path like /v1/users."
+  },
+  {
+    "queryId": "q1",
+    "system": "v1-default",
+    "retrievedDocIds": [],
+    "expectedDocIds": [
+      "backend-rest"
+    ],
+    "recall": 0,
+    "keywordHit": 1,
+    "contextChars": 96,
+    "latencyMs": 16074,
+    "answer": "When designing a RESTful API, it's important to consider the need for versioning to ensure that changes in functionality or data structures do not break existing clients. Here are some best practices and considerations for versioning your REST API:\n\n1. **Define Versioning Scheme**: Choose a scheme that clearly indicates which version of the API is being used. Common schemes include:\n   - **Versioned URLs**: Use different URL paths to represent different versions.\n     ```http\n     GET /api/v1/users -> v1 users endpoint\n     GET /api/v2/users -> v2 users endpoint\n     ```\n   - **Query Parameters**: Include version information in query parameters.\n     ```http\n     GET /users?version=1.0 -> v1 users endpoint\n     GET /users?version=2.0 -> v2 users endpoint\n     ```\n\n2. **Use Semantic Versioning (SemVer)**: Follow the SemVer convention for version numbers, which includes major, minor, and patch versions.\n   - Major version changes indicate a breaking change that requires new clients to be developed or updated.\n   - Minor version changes represent backwards-compatible improvements without changing existing client behavior.\n   - Patch version changes are for bug fixes.\n\n3. **Implement Semantic Versioning in"
+  },
+  {
+    "queryId": "q1",
+    "system": "v1-fixed",
+    "retrievedDocIds": [
+      "backend-rest",
+      "backend-postgres",
+      "backend-auth"
+    ],
+    "expectedDocIds": [
+      "backend-rest"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1028,
+    "latencyMs": 11436,
+    "answer": "To version your REST API, you can include the version number in the URL path like /v1/users. This allows clients to know which version of the API they are using and helps ensure compatibility with different versions.\n\nFor example:\n- GET /v1/users - Retrieves users from v1\n- GET /v2/users - Retrieves users from v2\n\nThis approach is particularly useful in distributed systems where multiple instances or environments might be running different versions of your API. It also makes it easier to manage and update the API without breaking clients that are using older versions.\n\nRemember, versioning should not change the functionality of the API but rather provide a way for clients to know which specific version they are interacting with."
+  },
+  {
+    "queryId": "q1",
+    "system": "v2-keyword",
+    "retrievedDocIds": [
+      "backend-rest",
+      "backend-postgres",
+      "backend-auth"
+    ],
+    "expectedDocIds": [
+      "backend-rest"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1281,
+    "latencyMs": 6283,
+    "answer": "Version your REST API by appending the version number to the URL path, such as `/v1/users`. This approach allows you to track changes and updates without altering the existing endpoints or client libraries."
+  },
+  {
+    "queryId": "q1",
+    "system": "v3-vector",
+    "retrievedDocIds": [
+      "frontend-react",
+      "frontend-typescript",
+      "frontend-perf",
+      "sec-owasp",
+      "sec-secrets",
+      "sec-tls"
+    ],
+    "expectedDocIds": [
+      "backend-rest"
+    ],
+    "recall": 0,
+    "keywordHit": 0,
+    "contextChars": 2579,
+    "latencyMs": 9830,
+    "answer": "Version your REST API by using semantic versioning (e.g., 1.0.0, 1.1.0). This involves incrementing the minor version number for new features or changes that do not affect backward compatibility, and the major version number for breaking changes."
+  },
+  {
+    "queryId": "q1",
+    "system": "v4-llm",
+    "retrievedDocIds": [
+      "backend-rest",
+      "backend-postgres",
+      "backend-auth",
+      "frontend-react",
+      "frontend-typescript",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "backend-rest"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 2562,
+    "latencyMs": 8942,
+    "answer": "Version your REST API in the URL path like /v1/users."
+  },
+  {
+    "queryId": "q1",
+    "system": "v5-compress",
+    "retrievedDocIds": [
+      "backend-rest",
+      "backend-postgres",
+      "backend-auth"
+    ],
+    "expectedDocIds": [
+      "backend-rest"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 883,
+    "latencyMs": 4030,
+    "answer": "Version your REST API by appending the version number to the URL path, such as `/v1/users`. This approach allows you to track changes over time without modifying the public interface."
+  },
+  {
+    "queryId": "q1",
+    "system": "v6-hybrid",
+    "retrievedDocIds": [
+      "backend-rest",
+      "backend-postgres",
+      "backend-auth",
+      "frontend-react",
+      "frontend-typescript",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "backend-rest"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 2562,
+    "latencyMs": 6788,
+    "answer": "Version your REST API in the URL path like /v1/users."
+  },
+  {
+    "queryId": "q1",
+    "system": "v7-hyde",
+    "retrievedDocIds": [
+      "ops-docker",
+      "ops-kubernetes",
+      "ops-cicd",
+      "frontend-react",
+      "frontend-typescript",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "backend-rest"
+    ],
+    "recall": 0,
+    "keywordHit": 0.3333333333333333,
+    "contextChars": 2569,
+    "latencyMs": 18206,
+    "answer": "Version your REST API using specific tags or semantic versions (e.g., v1, v2). This ensures that each new release is clearly identifiable and can be easily tracked for updates or bug fixes without breaking existing clients."
+  },
+  {
+    "queryId": "q1",
+    "system": "v8-expand",
+    "retrievedDocIds": [
+      "backend-rest",
+      "backend-auth",
+      "backend-postgres",
+      "ops-docker",
+      "ops-kubernetes",
+      "ops-cicd"
+    ],
+    "expectedDocIds": [
+      "backend-rest"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 2571,
+    "latencyMs": 11998,
+    "answer": "Version your REST API in the URL path like /v1/users. Use standard HTTP status codes for responses (200 OK, 201 Created, 400 Bad Request, 401 Unauthorized, 404 Not Found, 500 Internal Server Error)."
+  },
+  {
+    "queryId": "q1",
+    "system": "v9-rerank",
+    "retrievedDocIds": [
+      "backend-rest",
+      "backend-auth",
+      "backend-postgres"
+    ],
+    "expectedDocIds": [
+      "backend-rest"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1281,
+    "latencyMs": 7229,
+    "answer": "Version your REST API by appending a version number to the URL path, such as `/v1/users`. This approach allows you to track changes and updates over time without altering the existing endpoints or client libraries."
+  },
+  {
+    "queryId": "q1",
+    "system": "v10-rerank+c",
+    "retrievedDocIds": [
+      "backend-rest",
+      "backend-auth",
+      "backend-postgres"
+    ],
+    "expectedDocIds": [
+      "backend-rest"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 883,
+    "latencyMs": 6084,
+    "answer": "Version your REST API by including the version number in the URL path like `/v1/users`. This allows clients to know which specific version of the API they are using, facilitating updates without breaking existing clients."
+  },
+  {
+    "queryId": "q1",
+    "system": "v11-hybrid+c",
+    "retrievedDocIds": [
+      "backend-rest",
+      "backend-postgres",
+      "backend-auth",
+      "frontend-react",
+      "frontend-typescript",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "backend-rest"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1603,
+    "latencyMs": 4034,
+    "answer": "Version your REST API in the URL path like /v1/users."
+  },
+  {
+    "queryId": "q2",
+    "system": "baseline",
+    "retrievedDocIds": [
+      "backend-auth",
+      "sec-tls",
+      "backend-rest",
+      "sec-secrets"
+    ],
+    "expectedDocIds": [
+      "backend-auth"
+    ],
+    "recall": 1,
+    "keywordHit": 0.5,
+    "contextChars": 1693,
+    "latencyMs": 4603,
+    "answer": "15 minutes"
+  },
+  {
+    "queryId": "q2",
+    "system": "flat-kw",
+    "retrievedDocIds": [
+      "backend-auth",
+      "backend-rest",
+      "backend-postgres",
+      "frontend-react"
+    ],
+    "expectedDocIds": [
+      "backend-auth"
+    ],
+    "recall": 1,
+    "keywordHit": 0.5,
+    "contextChars": 1737,
+    "latencyMs": 3533,
+    "answer": "15 minutes"
+  },
+  {
+    "queryId": "q2",
+    "system": "v1-default",
+    "retrievedDocIds": [],
+    "expectedDocIds": [
+      "backend-auth"
+    ],
+    "recall": 0,
+    "keywordHit": 0,
+    "contextChars": 96,
+    "latencyMs": 6377,
+    "answer": "The default expiration time for JWT access tokens is 1 hour.\n\nThis can be found in the documentation of the backend system, which states that \"JWTs are valid for one hour by default.\" This information is also referenced in the Jira issue #234567. The source code for this setting can be found on GitHub at [this link](https://github.com/your-organization/backend/blob/main/src/config/jwt.js)."
+  },
+  {
+    "queryId": "q2",
+    "system": "v1-fixed",
+    "retrievedDocIds": [
+      "backend-auth",
+      "backend-rest",
+      "backend-postgres"
+    ],
+    "expectedDocIds": [
+      "backend-auth"
+    ],
+    "recall": 1,
+    "keywordHit": 0.5,
+    "contextChars": 1016,
+    "latencyMs": 3590,
+    "answer": "The context states that the expiration time for access tokens should be set to \"15 minutes\"."
+  },
+  {
+    "queryId": "q2",
+    "system": "v2-keyword",
+    "retrievedDocIds": [
+      "backend-auth",
+      "backend-rest",
+      "backend-postgres"
+    ],
+    "expectedDocIds": [
+      "backend-auth"
+    ],
+    "recall": 1,
+    "keywordHit": 0.5,
+    "contextChars": 1281,
+    "latencyMs": 3991,
+    "answer": "15 minutes"
+  },
+  {
+    "queryId": "q2",
+    "system": "v3-vector",
+    "retrievedDocIds": [
+      "backend-auth",
+      "backend-rest",
+      "backend-postgres",
+      "sec-owasp",
+      "sec-secrets",
+      "sec-tls"
+    ],
+    "expectedDocIds": [
+      "backend-auth"
+    ],
+    "recall": 1,
+    "keywordHit": 0.5,
+    "contextChars": 2581,
+    "latencyMs": 4661,
+    "answer": "The context suggests that the recommended expiration time for access tokens should be 15 minutes."
+  },
+  {
+    "queryId": "q2",
+    "system": "v4-llm",
+    "retrievedDocIds": [
+      "backend-auth",
+      "backend-rest",
+      "backend-postgres"
+    ],
+    "expectedDocIds": [
+      "backend-auth"
+    ],
+    "recall": 1,
+    "keywordHit": 0.5,
+    "contextChars": 1281,
+    "latencyMs": 5164,
+    "answer": "15 minutes"
+  },
+  {
+    "queryId": "q2",
+    "system": "v5-compress",
+    "retrievedDocIds": [
+      "backend-auth",
+      "backend-rest",
+      "backend-postgres"
+    ],
+    "expectedDocIds": [
+      "backend-auth"
+    ],
+    "recall": 1,
+    "keywordHit": 0.5,
+    "contextChars": 871,
+    "latencyMs": 2061,
+    "answer": "15 minutes"
+  },
+  {
+    "queryId": "q2",
+    "system": "v6-hybrid",
+    "retrievedDocIds": [
+      "backend-auth",
+      "backend-rest",
+      "backend-postgres",
+      "sec-owasp",
+      "sec-secrets",
+      "sec-tls"
+    ],
+    "expectedDocIds": [
+      "backend-auth"
+    ],
+    "recall": 1,
+    "keywordHit": 0.5,
+    "contextChars": 2581,
+    "latencyMs": 7432,
+    "answer": "The context suggests that the recommended expiration time for access tokens should be 15 minutes."
+  },
+  {
+    "queryId": "q2",
+    "system": "v7-hyde",
+    "retrievedDocIds": [
+      "backend-auth",
+      "backend-rest",
+      "backend-postgres"
+    ],
+    "expectedDocIds": [
+      "backend-auth"
+    ],
+    "recall": 1,
+    "keywordHit": 0.5,
+    "contextChars": 1281,
+    "latencyMs": 16263,
+    "answer": "15 minutes"
+  },
+  {
+    "queryId": "q2",
+    "system": "v8-expand",
+    "retrievedDocIds": [
+      "backend-auth",
+      "backend-rest",
+      "backend-postgres",
+      "frontend-react",
+      "frontend-typescript",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "backend-auth"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 2562,
+    "latencyMs": 11898,
+    "answer": "For JWT access tokens, the recommended expiration time is 15 minutes. This short expiration ensures that tokens are valid but not overly long-lived, reducing the risk of brute force attacks and maintaining security by limiting the window for unauthorized use."
+  },
+  {
+    "queryId": "q2",
+    "system": "v9-rerank",
+    "retrievedDocIds": [
+      "backend-auth",
+      "backend-postgres"
+    ],
+    "expectedDocIds": [
+      "backend-auth"
+    ],
+    "recall": 1,
+    "keywordHit": 0.5,
+    "contextChars": 849,
+    "latencyMs": 3672,
+    "answer": "15 minutes"
+  },
+  {
+    "queryId": "q2",
+    "system": "v10-rerank+c",
+    "retrievedDocIds": [
+      "backend-auth",
+      "backend-postgres"
+    ],
+    "expectedDocIds": [
+      "backend-auth"
+    ],
+    "recall": 1,
+    "keywordHit": 0.5,
+    "contextChars": 622,
+    "latencyMs": 3027,
+    "answer": "15 minutes"
+  },
+  {
+    "queryId": "q2",
+    "system": "v11-hybrid+c",
+    "retrievedDocIds": [
+      "backend-auth",
+      "backend-rest",
+      "backend-postgres",
+      "sec-owasp",
+      "sec-secrets",
+      "sec-tls"
+    ],
+    "expectedDocIds": [
+      "backend-auth"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1438,
+    "latencyMs": 4204,
+    "answer": "The context suggests that the recommended expiration time for JWT access tokens should be short, specifically 15 minutes."
+  },
+  {
+    "queryId": "q3",
+    "system": "baseline",
+    "retrievedDocIds": [
+      "frontend-typescript",
+      "backend-rest",
+      "frontend-react",
+      "ops-kubernetes"
+    ],
+    "expectedDocIds": [
+      "frontend-typescript"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1050,
+    "latencyMs": 3848,
+    "answer": "No, avoid 'any'; prefer 'unknown' when the type is truly unknown."
+  },
+  {
+    "queryId": "q3",
+    "system": "flat-kw",
+    "retrievedDocIds": [
+      "frontend-typescript",
+      "backend-rest",
+      "backend-postgres",
+      "backend-auth"
+    ],
+    "expectedDocIds": [
+      "frontend-typescript"
+    ],
+    "recall": 1,
+    "keywordHit": 0.5,
+    "contextChars": 1707,
+    "latencyMs": 3072,
+    "answer": "No, you should avoid using the 'any' type in TypeScript."
+  },
+  {
+    "queryId": "q3",
+    "system": "v1-default",
+    "retrievedDocIds": [],
+    "expectedDocIds": [
+      "frontend-typescript"
+    ],
+    "recall": 0,
+    "keywordHit": 0,
+    "contextChars": 88,
+    "latencyMs": 8746,
+    "answer": "In the context provided, there is no specific information about whether to use types in TypeScript or not. The question \"Should I use any type in TypeScript?\" does not have a clear answer based on the given ontology.\n\nThe ontology discusses React TypeScript components and UI rendering performance web vitals, but it does not provide guidance on using types in TypeScript. Therefore, without additional context or information about your project's requirements or goals, it is impossible to determine whether you should use any type in TypeScript or not.\n\nIf you need specific advice on TypeScript usage for a particular project, please provide more details about the project and its requirements, and I can offer more targeted guidance based on that information."
+  },
+  {
+    "queryId": "q3",
+    "system": "v1-fixed",
+    "retrievedDocIds": [
+      "frontend-typescript",
+      "frontend-react",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "frontend-typescript"
+    ],
+    "recall": 1,
+    "keywordHit": 0.5,
+    "contextChars": 808,
+    "latencyMs": 14949,
+    "answer": "In TypeScript, it is generally recommended to avoid using the 'any' type whenever possible. The 'any' type allows you to specify that a variable or function accepts an argument of any type without providing more specific information about its expected type.\n\nInstead, prefer using interfaces and types for extensibility. For example, when defining props in React components, it is better to use interfaces rather than just specifying the prop as 'any'. This makes your code more readable and maintainable by clearly indicating what kind of data each component expects.\n\nFor state management, consider using discriminated unions instead of 'any' for complex types that represent different states. Discriminated unions allow you to define a type based on one or more fields, which can be useful when dealing with objects that have multiple possible states.\n\nIn summary, while TypeScript is powerful and allows flexibility in defining types, it's generally better practice to avoid the 'any' type whenever possible and opt for interfaces and types instead. This approach helps ensure your code remains clear, maintainable, and extensible over time."
+  },
+  {
+    "queryId": "q3",
+    "system": "v2-keyword",
+    "retrievedDocIds": [
+      "frontend-typescript",
+      "frontend-react",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "frontend-typescript"
+    ],
+    "recall": 1,
+    "keywordHit": 0.5,
+    "contextChars": 1279,
+    "latencyMs": 6243,
+    "answer": "No, you should avoid using `any` type in TypeScript. Use interfaces or other types to define the expected properties and behavior of your components, props, and state. This promotes better code organization and maintainability."
+  },
+  {
+    "queryId": "q3",
+    "system": "v3-vector",
+    "retrievedDocIds": [
+      "backend-rest",
+      "backend-postgres",
+      "backend-auth",
+      "sec-owasp",
+      "sec-secrets",
+      "sec-tls"
+    ],
+    "expectedDocIds": [
+      "frontend-typescript"
+    ],
+    "recall": 0,
+    "keywordHit": 0,
+    "contextChars": 2581,
+    "latencyMs": 10695,
+    "answer": "No, TypeScript does not require the use of any specific types; it is a statically typed language that automatically infers types based on context and usage. You can write code without explicitly declaring all variables or functions with types, but this approach can lead to runtime errors if you try to perform operations on undefined or incorrectly typed values."
+  },
+  {
+    "queryId": "q3",
+    "system": "v4-llm",
+    "retrievedDocIds": [
+      "frontend-typescript",
+      "frontend-react",
+      "frontend-perf",
+      "ops-docker",
+      "ops-kubernetes",
+      "ops-cicd"
+    ],
+    "expectedDocIds": [
+      "frontend-typescript"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 2569,
+    "latencyMs": 9386,
+    "answer": "No, you should avoid using 'any' type; prefer 'unknown' when the type is truly unknown."
+  },
+  {
+    "queryId": "q3",
+    "system": "v5-compress",
+    "retrievedDocIds": [
+      "frontend-typescript",
+      "frontend-react",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "frontend-typescript"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 656,
+    "latencyMs": 3321,
+    "answer": "Avoid using 'any' type; prefer 'unknown' when the type is truly unknown, as it indicates a lack of specific knowledge about the type and should be used cautiously."
+  },
+  {
+    "queryId": "q3",
+    "system": "v6-hybrid",
+    "retrievedDocIds": [
+      "backend-rest",
+      "backend-postgres",
+      "backend-auth",
+      "sec-owasp",
+      "sec-secrets",
+      "sec-tls"
+    ],
+    "expectedDocIds": [
+      "frontend-typescript"
+    ],
+    "recall": 0,
+    "keywordHit": 0,
+    "contextChars": 2581,
+    "latencyMs": 10657,
+    "answer": "No, TypeScript does not require the use of any specific types; it is a statically typed language that automatically infers types based on context and usage. You can write code without explicitly declaring all variables or functions with types, but this approach can lead to runtime errors if you try to perform operations on undefined or incorrectly typed values."
+  },
+  {
+    "queryId": "q3",
+    "system": "v7-hyde",
+    "retrievedDocIds": [],
+    "expectedDocIds": [
+      "frontend-typescript"
+    ],
+    "recall": 0,
+    "keywordHit": 0,
+    "contextChars": 0,
+    "latencyMs": 8626,
+    "answer": "Yes, you can use any type in TypeScript. This includes primitive types like numbers and strings, as well as more complex types such as objects, arrays, and interfaces. You should choose the appropriate type based on the data you are working with to ensure better code readability and maintainability."
+  },
+  {
+    "queryId": "q3",
+    "system": "v8-expand",
+    "retrievedDocIds": [
+      "frontend-typescript",
+      "frontend-react",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "frontend-typescript"
+    ],
+    "recall": 1,
+    "keywordHit": 0.5,
+    "contextChars": 1279,
+    "latencyMs": 8294,
+    "answer": "No, you should avoid using `any` type in TypeScript. Use interfaces or other more specific types instead to define the expected properties and behavior of your components or functions. This improves code readability, maintainability, and reduces potential bugs."
+  },
+  {
+    "queryId": "q3",
+    "system": "v9-rerank",
+    "retrievedDocIds": [
+      "frontend-typescript",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "frontend-typescript"
+    ],
+    "recall": 1,
+    "keywordHit": 0.5,
+    "contextChars": 823,
+    "latencyMs": 5350,
+    "answer": "No, you should avoid using the `any` type in TypeScript. Use interfaces or other types to define your types more precisely and for extensibility."
+  },
+  {
+    "queryId": "q3",
+    "system": "v10-rerank+c",
+    "retrievedDocIds": [
+      "frontend-typescript",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "frontend-typescript"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 402,
+    "latencyMs": 5653,
+    "answer": "No, you should avoid using the `any` type in TypeScript. Instead, prefer the `unknown` type when the actual type is unknown or not relevant for your current context. This helps maintain clarity and reduces potential errors by explicitly defining types where necessary."
+  },
+  {
+    "queryId": "q3",
+    "system": "v11-hybrid+c",
+    "retrievedDocIds": [
+      "backend-rest",
+      "backend-postgres",
+      "backend-auth",
+      "sec-owasp",
+      "sec-secrets",
+      "sec-tls"
+    ],
+    "expectedDocIds": [
+      "frontend-typescript"
+    ],
+    "recall": 0,
+    "keywordHit": 0,
+    "contextChars": 1328,
+    "latencyMs": 6926,
+    "answer": "No, the question \"Should I use any type in TypeScript?\" is not directly related to the provided context, which covers various aspects of software development and security best practices. The answer should be based on general TypeScript usage guidelines rather than specific API design principles or PostgreSQL schema rules."
+  },
+  {
+    "queryId": "q4",
+    "system": "baseline",
+    "retrievedDocIds": [
+      "ops-docker",
+      "frontend-perf",
+      "sec-tls",
+      "sec-secrets"
+    ],
+    "expectedDocIds": [
+      "ops-docker"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1660,
+    "latencyMs": 8753,
+    "answer": "Use multi-stage builds to minimize image size, base on Alpine or distroless images for security, and never run containers as root; use the USER directive. Copy only what you need; use .dockerignore. Pin image versions with specific tags, not latest. Cache dependencies in separate layers. Set HEALTHCHECK directives. Use BuildKit for faster builds."
+  },
+  {
+    "queryId": "q4",
+    "system": "flat-kw",
+    "retrievedDocIds": [
+      "ops-docker",
+      "backend-rest",
+      "backend-postgres",
+      "backend-auth"
+    ],
+    "expectedDocIds": [
+      "ops-docker"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1705,
+    "latencyMs": 13112,
+    "answer": "To minimize the size of Docker images, consider using multi-stage builds to eliminate unnecessary steps and dependencies. Opt for Alpine or Distroless images for enhanced security by removing non-essential components. Ensure containers run as non-root users with the `USER` directive to avoid potential vulnerabilities. Only copy files that are necessary into your container; use `.dockerignore` to exclude unwanted files. Pin specific image versions instead of using the latest tag to maintain consistency and reduce complexity. Cache dependencies in separate layers for faster build times. Implement HEALTHCHECK directives to monitor containers' readiness before starting them. Utilize BuildKit for improved build performance, which can significantly speed up Dockerfile compilation. Lastly, scan images regularly for security vulnerabilities to ensure your environment remains secure."
+  },
+  {
+    "queryId": "q4",
+    "system": "v1-default",
+    "retrievedDocIds": [],
+    "expectedDocIds": [
+      "ops-docker"
+    ],
+    "recall": 0,
+    "keywordHit": 0,
+    "contextChars": 96,
+    "latencyMs": 16603,
+    "answer": "To keep Docker images small, you can follow these steps:\n\n1. **Use a Container Image Registry**: Utilize a registry like Docker Hub or Amazon Elastic Container Registry (ECR) to store your images. These registries are optimized for performance and storage efficiency.\n\n2. **Optimize Your Images**: Ensure that your images are as minimal as possible by removing unnecessary files, libraries, and dependencies. Use the `docker rmi` command to remove unused layers from your image.\n\n3. **Use a Container Image Builder**: Implement a container image builder like Jenkins or CircleCI to automate the process of building and tagging your images. This can help reduce the size of your final image by removing unnecessary artifacts during the build process.\n\n4. **Container Image Optimization Tools**: Use tools such as `docker rcm` (Docker Registry Cache Manager) to optimize your Docker images. These tools can remove unused layers, prune dangling images, and more.\n\n5. **Use a Container Image Builder with Pruning**: When using a container image builder like Jenkins or CircleCI, ensure that the build process includes pruning of unused layers and removing dangling images at the end of each build cycle to keep your final image size small.\n\n6. **Container Image Optimization Best Practices**: Follow best practices for container"
+  },
+  {
+    "queryId": "q4",
+    "system": "v1-fixed",
+    "retrievedDocIds": [
+      "ops-docker",
+      "ops-kubernetes",
+      "ops-cicd"
+    ],
+    "expectedDocIds": [
+      "ops-docker"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 756,
+    "latencyMs": 4846,
+    "answer": "To keep Docker images small, you should use multi-stage builds to minimize image size. Additionally, base your images on Alpine or distroless images for enhanced security. Ensure that all containers in your images are scanned for vulnerabilities regularly."
+  },
+  {
+    "queryId": "q4",
+    "system": "v2-keyword",
+    "retrievedDocIds": [
+      "ops-docker",
+      "ops-kubernetes",
+      "ops-cicd"
+    ],
+    "expectedDocIds": [
+      "ops-docker"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1288,
+    "latencyMs": 5009,
+    "answer": "Use multi-stage builds to minimize image size by removing unnecessary layers and resources. Base on Alpine or distroless images for enhanced security."
+  },
+  {
+    "queryId": "q4",
+    "system": "v3-vector",
+    "retrievedDocIds": [
+      "ops-docker",
+      "ops-kubernetes",
+      "ops-cicd",
+      "frontend-react",
+      "frontend-typescript",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "ops-docker"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 2569,
+    "latencyMs": 6005,
+    "answer": "Use multi-stage builds to minimize image size.\nBase on Alpine or distroless images for security.\nNever run containers as root; use USER directive.\nCopy only what you need; use .dockerignore."
+  },
+  {
+    "queryId": "q4",
+    "system": "v4-llm",
+    "retrievedDocIds": [
+      "ops-docker",
+      "ops-kubernetes",
+      "ops-cicd"
+    ],
+    "expectedDocIds": [
+      "ops-docker"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1288,
+    "latencyMs": 14516,
+    "answer": "Use multi-stage builds to minimize image size by removing unnecessary layers and resources. Base on Alpine or distroless images for enhanced security."
+  },
+  {
+    "queryId": "q4",
+    "system": "v5-compress",
+    "retrievedDocIds": [
+      "ops-docker",
+      "ops-kubernetes",
+      "ops-cicd"
+    ],
+    "expectedDocIds": [
+      "ops-docker"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 620,
+    "latencyMs": 4839,
+    "answer": "To minimize the size of Docker images, use multi-stage builds to eliminate unnecessary steps during image creation. Opt for Alpine or Distroless images for enhanced security by removing non-essential components and dependencies. Regularly scan images for vulnerabilities using tools like Clair or Trivy to ensure they remain secure."
+  },
+  {
+    "queryId": "q4",
+    "system": "v6-hybrid",
+    "retrievedDocIds": [
+      "ops-docker",
+      "ops-kubernetes",
+      "ops-cicd",
+      "frontend-react",
+      "frontend-typescript",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "ops-docker"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 2569,
+    "latencyMs": 8184,
+    "answer": "Use multi-stage builds to minimize image size.\nBase on Alpine or distroless images for security.\nNever run containers as root; use USER directive.\nCopy only what you need; use .dockerignore."
+  },
+  {
+    "queryId": "q4",
+    "system": "v7-hyde",
+    "retrievedDocIds": [
+      "ops-docker",
+      "ops-kubernetes",
+      "ops-cicd"
+    ],
+    "expectedDocIds": [
+      "ops-docker"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1288,
+    "latencyMs": 10179,
+    "answer": "Use multi-stage builds to minimize image size by removing unnecessary layers and resources. Base on Alpine or distroless images for enhanced security."
+  },
+  {
+    "queryId": "q4",
+    "system": "v8-expand",
+    "retrievedDocIds": [
+      "ops-docker",
+      "ops-kubernetes",
+      "ops-cicd"
+    ],
+    "expectedDocIds": [
+      "ops-docker"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1288,
+    "latencyMs": 13484,
+    "answer": "To minimize the size of Docker images, consider using multi-stage builds to eliminate unnecessary layers. Optimize your base image by choosing lightweight alternatives like Alpine or Distroless. Avoid running containers as root; use the `USER` directive for better security. Only copy what is necessary and utilize `.dockerignore` to ignore unnecessary files. Pin specific tags instead of latest versions to reduce dependencies. Cache dependencies in separate layers to save space. Set up HEALTHCHECK directives to ensure your application runs correctly. Use BuildKit for faster builds, which can significantly speed up the process. Regularly scan images for vulnerabilities using tools like `docker inspect` or third-party services."
+  },
+  {
+    "queryId": "q4",
+    "system": "v9-rerank",
+    "retrievedDocIds": [
+      "ops-docker",
+      "ops-cicd"
+    ],
+    "expectedDocIds": [
+      "ops-docker"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 850,
+    "latencyMs": 5548,
+    "answer": "To minimize the size of Docker images, use multi-stage builds and base your images on lightweight containers like Alpine or Distroless. This reduces the overall image size by eliminating unnecessary layers and dependencies."
+  },
+  {
+    "queryId": "q4",
+    "system": "v10-rerank+c",
+    "retrievedDocIds": [
+      "ops-docker",
+      "ops-cicd"
+    ],
+    "expectedDocIds": [
+      "ops-docker"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 370,
+    "latencyMs": 5348,
+    "answer": "To minimize the size of Docker images, use multi-stage builds to reduce unnecessary layers and dependencies. Opt for Alpine or Distroless images for enhanced security by removing non-essential components. Regularly scan images for vulnerabilities to ensure they remain secure."
+  },
+  {
+    "queryId": "q4",
+    "system": "v11-hybrid+c",
+    "retrievedDocIds": [
+      "ops-docker",
+      "ops-kubernetes",
+      "ops-cicd",
+      "frontend-react",
+      "frontend-typescript",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "ops-docker"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1301,
+    "latencyMs": 4216,
+    "answer": "Use multi-stage builds to minimize image size, and base on Alpine or distroless images for enhanced security."
+  },
+  {
+    "queryId": "q5",
+    "system": "baseline",
+    "retrievedDocIds": [
+      "sec-secrets",
+      "backend-auth",
+      "sec-tls"
+    ],
+    "expectedDocIds": [
+      "sec-secrets"
+    ],
+    "recall": 1,
+    "keywordHit": 0.75,
+    "contextChars": 1340,
+    "latencyMs": 9231,
+    "answer": "For storing application secrets, use a secure vault service such as AWS Secrets Manager, HashiCorp Vault, or Azure Key Vault to manage them securely outside of source control. Rotate these secrets regularly, ideally every 90 days, using short-lived credentials when possible. For local development, use environment variables for sensitive information like database passwords and API keys instead of committing them to version control. Always audit access to secrets to ensure they are only used in production environments."
+  },
+  {
+    "queryId": "q5",
+    "system": "flat-kw",
+    "retrievedDocIds": [
+      "sec-tls",
+      "backend-rest",
+      "backend-postgres",
+      "backend-auth"
+    ],
+    "expectedDocIds": [
+      "sec-secrets"
+    ],
+    "recall": 0,
+    "keywordHit": 0.25,
+    "contextChars": 1696,
+    "latencyMs": 5937,
+    "answer": "Store the signing secret securely outside of source control using an environment variable. Rotate the signing key periodically to maintain security."
+  },
+  {
+    "queryId": "q5",
+    "system": "v1-default",
+    "retrievedDocIds": [],
+    "expectedDocIds": [
+      "sec-secrets"
+    ],
+    "recall": 0,
+    "keywordHit": 0.5,
+    "contextChars": 96,
+    "latencyMs": 16573,
+    "answer": "To securely store and manage application secrets, consider the following best practices:\n\n1. **Use Environment Variables**: Store sensitive information such as API keys, database credentials, and other secret data in environment variables. This way, these values are not stored in your source code or configuration files.\n\n2. **Securely Handle Secrets**: Ensure that you handle secrets securely by using secure methods to store them. For example, use a vault service like HashiCorp Vault or AWS Secrets Manager which provide encryption at rest and in transit.\n\n3. **Rotate Keys Regularly**: Implement key rotation policies for your application's secret keys. This involves changing the cryptographic keys used to encrypt sensitive data periodically to prevent unauthorized access if they are compromised.\n\n4. **Use Certificates for TLS/HTTPS**: Ensure that all communication between your application and clients is encrypted using Transport Layer Security (TLS) or Hypertext Transfer Protocol Secure (HTTPS). Use self-signed certificates for development environments but transition to trusted root certificates in production.\n\n5. **Implement Least Privilege Principle**: Apply the principle of least privilege, ensuring that only necessary permissions are granted to applications running on your system. This helps prevent unauthorized access and reduces the attack surface.\n\n6. **Monitor and Audit**: Continuously monitor and audit your application's security practices,"
+  },
+  {
+    "queryId": "q5",
+    "system": "v1-fixed",
+    "retrievedDocIds": [
+      "sec-tls",
+      "sec-owasp",
+      "sec-secrets"
+    ],
+    "expectedDocIds": [
+      "sec-secrets"
+    ],
+    "recall": 1,
+    "keywordHit": 0.5,
+    "contextChars": 768,
+    "latencyMs": 18269,
+    "answer": "To securely manage and rotate application secrets, follow these steps:\n\n1. **Never Commit Secrets to Source Control**: Store your secrets in a secure environment outside of version control systems such as Git. This prevents unauthorized access and ensures that sensitive information is not exposed.\n\n2. **Use Parameterized Queries for SQL Injection Protection**: When interacting with databases, use parameterized queries instead of directly embedding user input into SQL statements. This helps prevent SQL injection attacks by separating the query logic from the data being processed.\n\n3. **Enforce Strong Password Policies and Use Multi-Factor Authentication (MFA)**: Implement strong password policies to ensure that passwords are complex enough to resist brute force attacks. Additionally, require MFA for all user accounts to add an extra layer of security beyond just a password.\n\n4. **Encrypt Data at Rest and in Transit**: Ensure that your application data is encrypted both when it's stored on disk (at rest) and when it's transmitted over the network (in transit). Use strong encryption algorithms like AES-GCM or ChaCha20-Poly1305 to protect sensitive information.\n\n5. **Rotate Secrets Regularly**: Implement a schedule for rotating secrets, such as every 90 days. This helps mitigate the risk of unauthorized access and ensures that your"
+  },
+  {
+    "queryId": "q5",
+    "system": "v2-keyword",
+    "retrievedDocIds": [
+      "sec-tls",
+      "sec-owasp",
+      "sec-secrets"
+    ],
+    "expectedDocIds": [
+      "sec-secrets"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1298,
+    "latencyMs": 15805,
+    "answer": "To securely manage and rotate application secrets, follow these steps:\n\n1. **Never Commit Secrets to Source Control**: Store secrets in a secure location outside of version control systems like Git.\n2. **Use a Secret Manager**: Utilize services such as AWS Secrets Manager, HashiCorp Vault, or Azure Key Vault for managing secrets.\n3. **Rotate Regularly**: Rotate secrets at least every 90 days using tools like gitleaks or trufflehog to detect and remove accidentally committed secrets from source control systems.\n4. **Use Short-Lived Credentials**: When possible, use short-lived credentials instead of default accounts to minimize exposure risk.\n5. **Environment Variables for Local Development**: Use environment variables in local development environments only; do not commit them to version control or store them in source code repositories.\n\nBy implementing these practices, you can ensure that your application secrets are securely managed and rotated regularly, reducing the risk of unauthorized access or data breaches."
+  },
+  {
+    "queryId": "q5",
+    "system": "v3-vector",
+    "retrievedDocIds": [
+      "sec-tls",
+      "sec-owasp",
+      "sec-secrets",
+      "backend-rest",
+      "backend-postgres",
+      "backend-auth"
+    ],
+    "expectedDocIds": [
+      "sec-secrets"
+    ],
+    "recall": 1,
+    "keywordHit": 0.75,
+    "contextChars": 2581,
+    "latencyMs": 13039,
+    "answer": "To securely manage and rotate application secrets:\n\n1. **Never Commit Secrets to Source Control**: Use a secret management tool like AWS Secrets Manager, HashiCorp Vault, or Azure Key Vault.\n2. **Rotate Regularly**: Rotate secrets at least every 90 days using the tools provided by your chosen service.\n3. **Use Environment Variables for Local Development Only**: Store sensitive information in environment variables that are not committed to source control and only used during local development.\n4. **Audit Secret Access**: Regularly audit access logs and permissions to ensure no unauthorized users have access to secrets.\n\nBy following these practices, you can maintain the security of your application's secrets while adhering to best practices for managing sensitive information."
+  },
+  {
+    "queryId": "q5",
+    "system": "v4-llm",
+    "retrievedDocIds": [
+      "sec-tls",
+      "sec-owasp",
+      "sec-secrets"
+    ],
+    "expectedDocIds": [
+      "sec-secrets"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1298,
+    "latencyMs": 17228,
+    "answer": "To securely manage and rotate application secrets, follow these steps:\n\n1. **Never Commit Secrets to Source Control**: Store secrets in a secure location outside of version control systems like Git.\n2. **Use a Secret Manager**: Utilize services such as AWS Secrets Manager, HashiCorp Vault, or Azure Key Vault for managing secrets.\n3. **Rotate Regularly**: Rotate secrets at least every 90 days using tools like gitleaks or trufflehog to detect and remove accidentally committed secrets from source control systems.\n4. **Use Short-Lived Credentials**: When possible, use short-lived credentials instead of default accounts to minimize exposure risk.\n5. **Environment Variables for Local Development**: Use environment variables in local development environments only; do not commit them to version control or store them in source code repositories.\n\nBy implementing these practices, you can ensure that your application secrets are securely managed and rotated regularly, reducing the risk of unauthorized access or data breaches."
+  },
+  {
+    "queryId": "q5",
+    "system": "v5-compress",
+    "retrievedDocIds": [
+      "sec-tls",
+      "sec-owasp",
+      "sec-secrets"
+    ],
+    "expectedDocIds": [
+      "sec-secrets"
+    ],
+    "recall": 1,
+    "keywordHit": 0.5,
+    "contextChars": 631,
+    "latencyMs": 12363,
+    "answer": "To securely manage and rotate application secrets:\n\n1. **Never Commit Secrets to Source Control**: Store secrets in a secure environment outside of version control systems (e.g., encrypted files, environment variables).\n2. **Rotate Secrets Regularly**: Implement a schedule for rotating secrets at least every 90 days.\n3. **Use Tools for Secret Management**: Employ tools like `gitleaks` or `trufflehog` to detect and remove accidentally committed secrets from source control repositories.\n4. **Encrypt Data at Rest and In Transit**: Use TLS (Transport Layer Security) with strong ciphers, such as AES-GCM and ChaCha20-Poly1305, for secure data handling both in transit and at rest.\n\nBy following these practices, you can ensure the security of your application's secrets while maintaining a robust system against common vulnerabilities."
+  },
+  {
+    "queryId": "q5",
+    "system": "v6-hybrid",
+    "retrievedDocIds": [
+      "sec-tls",
+      "sec-owasp",
+      "sec-secrets",
+      "backend-rest",
+      "backend-postgres",
+      "backend-auth"
+    ],
+    "expectedDocIds": [
+      "sec-secrets"
+    ],
+    "recall": 1,
+    "keywordHit": 0.75,
+    "contextChars": 2581,
+    "latencyMs": 15845,
+    "answer": "To securely manage and rotate application secrets:\n\n1. **Never Commit Secrets to Source Control**: Use a secret management tool like AWS Secrets Manager, HashiCorp Vault, or Azure Key Vault.\n2. **Rotate Regularly**: Rotate secrets at least every 90 days using the tools provided by your chosen service.\n3. **Use Environment Variables for Local Development Only**: Store sensitive information in environment variables that are not committed to source control and only used during local development.\n4. **Audit Secret Access**: Regularly audit access logs and permissions to ensure no unauthorized users have access to secrets.\n\nBy following these practices, you can maintain the security of your application's secrets while adhering to best practices for managing sensitive information."
+  },
+  {
+    "queryId": "q5",
+    "system": "v7-hyde",
+    "retrievedDocIds": [
+      "sec-tls",
+      "sec-owasp",
+      "sec-secrets"
+    ],
+    "expectedDocIds": [
+      "sec-secrets"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1298,
+    "latencyMs": 20742,
+    "answer": "To securely manage and rotate application secrets, follow these steps:\n\n1. **Never Commit Secrets to Source Control**: Store secrets in a secure location outside of version control systems like Git.\n2. **Use a Secret Manager**: Utilize services such as AWS Secrets Manager, HashiCorp Vault, or Azure Key Vault for managing secrets.\n3. **Rotate Regularly**: Rotate secrets at least every 90 days using tools like gitleaks or trufflehog to detect and remove accidentally committed secrets from source control systems.\n4. **Use Short-Lived Credentials**: When possible, use short-lived credentials instead of default accounts to minimize exposure risk.\n5. **Environment Variables for Local Development**: Use environment variables in local development environments only; do not commit them to version control or store them in source code repositories.\n\nBy implementing these practices, you can ensure that your application secrets are securely managed and rotated regularly, reducing the risk of unauthorized access or data breaches."
+  },
+  {
+    "queryId": "q5",
+    "system": "v8-expand",
+    "retrievedDocIds": [
+      "backend-rest",
+      "backend-postgres",
+      "backend-auth",
+      "sec-tls",
+      "sec-owasp",
+      "sec-secrets"
+    ],
+    "expectedDocIds": [
+      "sec-secrets"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 2581,
+    "latencyMs": 15681,
+    "answer": "Store application secrets securely in a dedicated secret manager like AWS Secrets Manager, HashiCorp Vault, or Azure Key Vault. Rotate secrets regularly (at least every 90 days) and use short-lived credentials when possible. Encrypt sensitive data at rest and in transit with TLS 1.3. Use environment variables for local development only to avoid committing secrets to source control. Implement access restrictions based on roles and permissions. Ensure compliance with relevant security standards like OWASP Top 10. Audit secret usage and access regularly for auditing purposes."
+  },
+  {
+    "queryId": "q5",
+    "system": "v9-rerank",
+    "retrievedDocIds": [
+      "sec-secrets"
+    ],
+    "expectedDocIds": [
+      "sec-secrets"
+    ],
+    "recall": 1,
+    "keywordHit": 0.75,
+    "contextChars": 427,
+    "latencyMs": 8544,
+    "answer": "To manage and securely rotate application secrets, use a dedicated service such as AWS Secrets Manager, HashiCorp Vault, or Azure Key Vault. Rotate the secrets regularly (at least every 90 days) to ensure security. Use short-lived credentials when possible for increased security. Implement tools like gitleaks or trufflehog to scan repositories and detect accidentally committed secrets. Store environment variables for local development only, avoiding storing secrets in source control. Regularly audit access permissions to maintain secure practices."
+  },
+  {
+    "queryId": "q5",
+    "system": "v10-rerank+c",
+    "retrievedDocIds": [
+      "sec-secrets"
+    ],
+    "expectedDocIds": [
+      "sec-secrets"
+    ],
+    "recall": 1,
+    "keywordHit": 0.5,
+    "contextChars": 224,
+    "latencyMs": 5378,
+    "answer": "Store application secrets securely outside of version-controlled codebases using environment variables or encrypted files. Regularly rotate secrets, ideally at least every 90 days, to ensure security. Use tools like gitleaks or trufflehog for detecting accidentally committed secrets in source control repositories."
+  },
+  {
+    "queryId": "q5",
+    "system": "v11-hybrid+c",
+    "retrievedDocIds": [
+      "sec-tls",
+      "sec-owasp",
+      "sec-secrets",
+      "backend-rest",
+      "backend-postgres",
+      "backend-auth"
+    ],
+    "expectedDocIds": [
+      "sec-secrets"
+    ],
+    "recall": 1,
+    "keywordHit": 0.5,
+    "contextChars": 1489,
+    "latencyMs": 14230,
+    "answer": "To securely manage and rotate application secrets:\n\n1. **Never Commit Secrets to Source Control**: Use a version control system (e.g., Git) but keep secrets out of the repository.\n2. **Rotate Secrets Regularly**: Implement a schedule for rotating secrets, such as every 90 days or more frequently if necessary.\n3. **Use Tools for Secret Management**: Employ tools like `gitleaks` or `trufflehog` to detect and remove accidentally committed secrets from source control repositories.\n4. **Secure Storage**: Store secrets in a secure environment that is isolated from the production environment, such as an encrypted file system or a dedicated key management service.\n\nBy following these practices, you can ensure that your application's secrets are managed securely and rotated effectively, reducing the risk of unauthorized access to sensitive information."
+  },
+  {
+    "queryId": "q6",
+    "system": "baseline",
+    "retrievedDocIds": [
+      "backend-rest",
+      "ops-kubernetes",
+      "sec-tls",
+      "ops-cicd"
+    ],
+    "expectedDocIds": [
+      "sec-tls"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1361,
+    "latencyMs": 4198,
+    "answer": "Use TLS 1.3 in production."
+  },
+  {
+    "queryId": "q6",
+    "system": "flat-kw",
+    "retrievedDocIds": [
+      "frontend-typescript",
+      "sec-tls",
+      "backend-rest",
+      "backend-postgres"
+    ],
+    "expectedDocIds": [
+      "sec-tls"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1698,
+    "latencyMs": 6057,
+    "answer": "Use TLS 1.3 in production to ensure compatibility with modern clients and servers, security improvements over older versions, and better performance."
+  },
+  {
+    "queryId": "q6",
+    "system": "v1-default",
+    "retrievedDocIds": [],
+    "expectedDocIds": [
+      "sec-tls"
+    ],
+    "recall": 0,
+    "keywordHit": 1,
+    "contextChars": 96,
+    "latencyMs": 16037,
+    "answer": "TLS 1.3 is the latest and most secure version of TLS currently available. It was officially released on June 15, 2018, and has been widely adopted by major browsers and operating systems since then.\n\nTo ensure maximum security, it's recommended to use TLS 1.3 in production environments. This version includes several improvements over previous versions:\n\n- Improved performance\n- Enhanced compatibility with modern devices and operating systems\n- Better support for elliptic curve cryptography (ECC)\n- Increased resistance against certain types of attacks\n\nWhile older versions like TLS 1.2 are still widely supported, it's advisable to use the latest version available on your target platforms.\n\nFor example, if you're using a web server such as Apache or Nginx, you can configure them to enforce TLS 1.3 by adding the following lines to their configuration files:\n\n```bash\n# For Apache\nSSLProtocol all -TLSv1 -TLSv1.1\n\n# For Nginx\nssl_protocols TLSv1.2 TLSv1.3;\n```\n\nRemember that upgrading your TLS version can have implications for compatibility with older clients or servers, so it's important to test thoroughly before making the switch.\n\nSources:\n- [OWASP]("
+  },
+  {
+    "queryId": "q6",
+    "system": "v1-fixed",
+    "retrievedDocIds": [
+      "sec-tls",
+      "sec-owasp",
+      "sec-secrets"
+    ],
+    "expectedDocIds": [
+      "sec-tls"
+    ],
+    "recall": 1,
+    "keywordHit": 0.5,
+    "contextChars": 712,
+    "latencyMs": 10536,
+    "answer": "In production, you should use TLS 1. 3 to ensure the highest level of security and compatibility with modern web browsers and devices.\n\n### Additional Information:\n- **Certificate Pinning**: For mobile apps, it is recommended to disable TLS versions that are not widely supported on mobile platforms.\n- **OWASP Top 10 Security Risks**:\n  - Injection attacks (SQL, NoSQL, command) should be mitigated by using parameterized queries.\n  - Broken authentication can be addressed by enforcing strong password policies and implementing multi-factor authentication (MFA).\n  - Sensitive data exposure requires encrypting data at rest and in transit with TLS 1."
+  },
+  {
+    "queryId": "q6",
+    "system": "v2-keyword",
+    "retrievedDocIds": [
+      "sec-tls",
+      "sec-owasp",
+      "sec-secrets"
+    ],
+    "expectedDocIds": [
+      "sec-tls"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1298,
+    "latencyMs": 4306,
+    "answer": "Use TLS 1.3 in production."
+  },
+  {
+    "queryId": "q6",
+    "system": "v3-vector",
+    "retrievedDocIds": [
+      "frontend-typescript",
+      "frontend-react",
+      "frontend-perf",
+      "ops-docker",
+      "ops-kubernetes",
+      "ops-cicd"
+    ],
+    "expectedDocIds": [
+      "sec-tls"
+    ],
+    "recall": 0,
+    "keywordHit": 1,
+    "contextChars": 2569,
+    "latencyMs": 9317,
+    "answer": "For production environments, it is recommended to use the latest and most secure TLS versions available. The current best practices suggest using TLS 1.3 or higher for improved security and compatibility. Ensure your server supports these protocols and that clients are also configured to support them."
+  },
+  {
+    "queryId": "q6",
+    "system": "v4-llm",
+    "retrievedDocIds": [
+      "sec-tls",
+      "sec-owasp",
+      "sec-secrets"
+    ],
+    "expectedDocIds": [
+      "sec-tls"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1298,
+    "latencyMs": 5795,
+    "answer": "Use TLS 1.3 in production."
+  },
+  {
+    "queryId": "q6",
+    "system": "v5-compress",
+    "retrievedDocIds": [
+      "sec-tls",
+      "sec-owasp",
+      "sec-secrets"
+    ],
+    "expectedDocIds": [
+      "sec-tls"
+    ],
+    "recall": 1,
+    "keywordHit": 0.5,
+    "contextChars": 574,
+    "latencyMs": 2312,
+    "answer": "In production, you should use TLS 1. 3."
+  },
+  {
+    "queryId": "q6",
+    "system": "v6-hybrid",
+    "retrievedDocIds": [
+      "sec-tls",
+      "sec-owasp",
+      "sec-secrets",
+      "frontend-typescript",
+      "frontend-react",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "sec-tls"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 2579,
+    "latencyMs": 6675,
+    "answer": "Use TLS 1.3 in production."
+  },
+  {
+    "queryId": "q6",
+    "system": "v7-hyde",
+    "retrievedDocIds": [],
+    "expectedDocIds": [
+      "sec-tls"
+    ],
+    "recall": 0,
+    "keywordHit": 1,
+    "contextChars": 0,
+    "latencyMs": 12476,
+    "answer": "For production environments, it is recommended to use TLS 1.3 as it provides better security and performance compared to older versions like TLS 1.2 or earlier. However, if you are constrained by specific requirements or infrastructure limitations, you may need to consider using TLS 1.2 or even lower versions. Always ensure that your chosen version is supported by all components involved in the communication (e.g., clients, servers, and any intermediaries)."
+  },
+  {
+    "queryId": "q6",
+    "system": "v8-expand",
+    "retrievedDocIds": [
+      "frontend-typescript",
+      "frontend-react",
+      "frontend-perf",
+      "sec-tls",
+      "sec-owasp",
+      "sec-secrets"
+    ],
+    "expectedDocIds": [
+      "sec-tls"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 2579,
+    "latencyMs": 24346,
+    "answer": "For production, use TLS 1.3. This is the latest and most secure version of TLS. It provides better encryption strength and improved performance compared to older versions like TLS 1.0 and 1.1. TLS 1.3 also prevents downgrade attacks by requiring clients to upgrade to a newer version if they are running an insecure one.\n\nTo ensure compatibility, make sure your server supports TLS 1.3. This can be checked in the SSL/TLS configuration of your web server or application. For performance, upgrading to TLS 1.3 should not significantly impact performance as it is backward-compatible with older clients and does not introduce any new security risks that were not present in earlier versions.\n\nTo avoid downgrade attacks, disable TLS 1.0 and 1.1 on both the client and server sides. This ensures that only secure protocols are used, enhancing overall security without introducing vulnerabilities from outdated protocols.\n\nFor performance optimization, consider using Web Parsers (WebP) or AVIF for image compression to reduce file sizes while maintaining quality. These formats can significantly decrease page load times by reducing HTTP requests and improving the perceived speed of your website.\n\nTo automate certificate renewal, configure a script that checks for expired certificates and automatically updates them with new ones from trusted Certificate"
+  },
+  {
+    "queryId": "q6",
+    "system": "v9-rerank",
+    "retrievedDocIds": [
+      "sec-tls",
+      "sec-owasp",
+      "sec-secrets"
+    ],
+    "expectedDocIds": [
+      "sec-tls"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1298,
+    "latencyMs": 5241,
+    "answer": "Use TLS 1.3 in production."
+  },
+  {
+    "queryId": "q6",
+    "system": "v10-rerank+c",
+    "retrievedDocIds": [
+      "sec-tls",
+      "sec-owasp",
+      "sec-secrets"
+    ],
+    "expectedDocIds": [
+      "sec-tls"
+    ],
+    "recall": 1,
+    "keywordHit": 0.5,
+    "contextChars": 574,
+    "latencyMs": 3898,
+    "answer": "In production, you should use TLS 1. 3."
+  },
+  {
+    "queryId": "q6",
+    "system": "v11-hybrid+c",
+    "retrievedDocIds": [
+      "sec-tls",
+      "sec-owasp",
+      "sec-secrets",
+      "frontend-typescript",
+      "frontend-react",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "sec-tls"
+    ],
+    "recall": 1,
+    "keywordHit": 0.5,
+    "contextChars": 1215,
+    "latencyMs": 2329,
+    "answer": "Use TLS 1. 3 in production."
+  },
+  {
+    "queryId": "q7",
+    "system": "baseline",
+    "retrievedDocIds": [
+      "frontend-perf",
+      "ops-docker",
+      "sec-secrets",
+      "sec-tls"
+    ],
+    "expectedDocIds": [
+      "frontend-react"
+    ],
+    "recall": 0,
+    "keywordHit": 0.3333333333333333,
+    "contextChars": 1660,
+    "latencyMs": 8982,
+    "answer": "To prevent unnecessary React re-renders, you should:\n- Minimize the number of state changes by using memoized components.\n- Avoid updating props that are not necessary for rendering.\n- Use useEffect hooks to perform side effects only when needed and avoid side effects in functional components where possible.\n- Optimize your component's render method by minimizing calculations inside it."
+  },
+  {
+    "queryId": "q7",
+    "system": "flat-kw",
+    "retrievedDocIds": [
+      "frontend-react",
+      "frontend-typescript",
+      "backend-rest",
+      "backend-postgres"
+    ],
+    "expectedDocIds": [
+      "frontend-react"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1739,
+    "latencyMs": 7595,
+    "answer": "To prevent unnecessary React re-renders, use `useMemo` to memoize expensive computations or render results and `useCallback` to memoize function references that are called frequently. This ensures that components only update when their dependencies change, reducing the frequency of renders."
+  },
+  {
+    "queryId": "q7",
+    "system": "v1-default",
+    "retrievedDocIds": [],
+    "expectedDocIds": [
+      "frontend-react"
+    ],
+    "recall": 0,
+    "keywordHit": 0.3333333333333333,
+    "contextChars": 88,
+    "latencyMs": 16548,
+    "answer": "To prevent unnecessary React re-renders and improve the performance of your application, you should follow these best practices:\n\n1. **Use `shouldComponentUpdate`**: Implementing a custom `shouldComponentUpdate` method in your component is an effective way to control when a component will be updated. This method allows you to decide whether or not a component needs to re-render based on the current state and props.\n\n2. **Avoid Using `setState` Directly**: Instead of using `setState`, consider using higher-order components (HOCs) like `useEffect` with `React.memo`. This ensures that your component will only update when necessary, reducing unnecessary re-renders.\n\n3. **Use `PureComponent` or `React.memo` for Higher-Order Components**: When you need to pass down props and state from a parent component to a child component, consider using `PureComponent` or `React.memo`. These components are designed to be pure and will only update when their dependencies change, preventing unnecessary re-renders.\n\n4. **Optimize State Management**: If your application uses Redux, MobX, or any other state management library, ensure that you're not performing unnecessary updates by using the appropriate hooks like `useEffect` with `React.memo`. This"
+  },
+  {
+    "queryId": "q7",
+    "system": "v1-fixed",
+    "retrievedDocIds": [
+      "frontend-react",
+      "frontend-typescript",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "frontend-react"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 816,
+    "latencyMs": 16745,
+    "answer": "To prevent unnecessary React re-renders, you should use `useMemo` and `useCallback`. These hooks allow you to memoize the results of expensive computations or side effects that are called frequently. By caching these values, you avoid recalculating them unnecessarily when they haven't changed.\n\nFor example:\n\n```jsx\nimport { useMemo } from 'react';\n\nconst MyComponent = () => {\n  const result = useMemo(() => {\n    // This is an expensive computation that might be called multiple times.\n    return someComplexCalculation();\n  }, []);\n\n  return (\n    <div>\n      {/* Use the memoized value */}\n      {result}\n    </div>\n  );\n};\n```\n\nIn this example, `someComplexCalculation` is a function that performs an expensive operation. By using `useMemo`, we ensure that it's only computed once and reused whenever the component re-renders.\n\nAdditionally, you should avoid using `'any'` type annotations for props or state variables. Instead, prefer to use more specific types like interfaces or enums where appropriate. This helps catch potential errors early in development and makes your code easier to understand and maintain."
+  },
+  {
+    "queryId": "q7",
+    "system": "v2-keyword",
+    "retrievedDocIds": [
+      "frontend-react",
+      "frontend-typescript",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "frontend-react"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1279,
+    "latencyMs": 6790,
+    "answer": "To prevent unnecessary React re-renders, use `useMemo` and `useCallback` hooks to memoize expensive computations or side effects that don't change frequently. This ensures that components only update when their dependencies have changed, reducing the number of renders needed."
+  },
+  {
+    "queryId": "q7",
+    "system": "v3-vector",
+    "retrievedDocIds": [
+      "frontend-react",
+      "frontend-typescript",
+      "frontend-perf",
+      "ops-docker",
+      "ops-kubernetes",
+      "ops-cicd"
+    ],
+    "expectedDocIds": [
+      "frontend-react"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 2569,
+    "latencyMs": 16981,
+    "answer": "To prevent unnecessary React re-renders, use the following strategies:\n\n1. **Use `useMemo` and `useCallback`:** Memoize expensive computations or side effects to avoid redundant renders.\n2. **Provide dependencies for `useState`, `useEffect`, etc.:** Ensure that these hooks are called with appropriate dependency arrays to trigger updates only when necessary.\n3. **Extract custom hooks:** When logic is reused across components, extract it into a reusable hook and use it instead of duplicating code.\n4. **Use `React.memo` for pure components:** Memoize the component to prevent unnecessary re-renders by comparing props and state with memoized values.\n5. **Keep components small and single-purpose:** Ensure each component has a clear, specific purpose and is not overly complex.\n6. **Co-locate styles with components using CSS modules or styled-components:** This helps in reducing the number of style imports and improving performance.\n\nBy implementing these practices, you can significantly reduce unnecessary re-renders, leading to more efficient and performant React applications."
+  },
+  {
+    "queryId": "q7",
+    "system": "v4-llm",
+    "retrievedDocIds": [
+      "frontend-react",
+      "frontend-typescript",
+      "frontend-perf",
+      "ops-docker",
+      "ops-kubernetes",
+      "ops-cicd"
+    ],
+    "expectedDocIds": [
+      "frontend-react"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 2569,
+    "latencyMs": 21572,
+    "answer": "To prevent unnecessary React re-renders, use the following strategies:\n\n1. **Use `useMemo` and `useCallback`:** Memoize expensive computations or side effects to avoid redundant renders.\n2. **Provide dependencies for `useState`, `useEffect`, etc.:** Ensure that these hooks are called with appropriate dependency arrays to trigger updates only when necessary.\n3. **Extract custom hooks:** When logic is reused across components, extract it into a reusable hook and use it instead of duplicating code.\n4. **Use `React.memo` for pure components:** Memoize the component to prevent unnecessary re-renders by comparing props and state with memoized values.\n5. **Keep components small and single-purpose:** Ensure each component has a clear, specific purpose and is not overly complex.\n6. **Co-locate styles with components using CSS modules or styled-components:** This helps in reducing the number of style imports and improving performance.\n\nBy implementing these practices, you can significantly reduce unnecessary re-renders, leading to more efficient and performant React applications."
+  },
+  {
+    "queryId": "q7",
+    "system": "v5-compress",
+    "retrievedDocIds": [
+      "frontend-react",
+      "frontend-typescript",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "frontend-react"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 666,
+    "latencyMs": 5104,
+    "answer": "To prevent unnecessary React re-renders, use `useMemo` and `useCallback`. `useMemo` memoizes the result of expensive computations to avoid redundant calculations. `useCallback` ensures that functional components do not re-render due to changes in their dependencies, thus preventing side effects from triggering unnecessary renders."
+  },
+  {
+    "queryId": "q7",
+    "system": "v6-hybrid",
+    "retrievedDocIds": [
+      "frontend-react",
+      "frontend-typescript",
+      "frontend-perf",
+      "ops-docker",
+      "ops-kubernetes",
+      "ops-cicd"
+    ],
+    "expectedDocIds": [
+      "frontend-react"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 2569,
+    "latencyMs": 19464,
+    "answer": "To prevent unnecessary React re-renders, use the following strategies:\n\n1. **Use `useMemo` and `useCallback`:** Memoize expensive computations or side effects to avoid redundant renders.\n2. **Provide dependencies for `useState`, `useEffect`, etc.:** Ensure that these hooks are called with appropriate dependency arrays to trigger updates only when necessary.\n3. **Extract custom hooks:** When logic is reused across components, extract it into a reusable hook and use it instead of duplicating code.\n4. **Use `React.memo` for pure components:** Memoize the component to prevent unnecessary re-renders by comparing props and state with memoized values.\n5. **Keep components small and single-purpose:** Ensure each component has a clear, specific purpose and is not overly complex.\n6. **Co-locate styles with components using CSS modules or styled-components:** This helps in reducing the number of style imports and improving performance.\n\nBy implementing these practices, you can significantly reduce unnecessary re-renders, leading to more efficient and performant React applications."
+  },
+  {
+    "queryId": "q7",
+    "system": "v7-hyde",
+    "retrievedDocIds": [],
+    "expectedDocIds": [
+      "frontend-react"
+    ],
+    "recall": 0,
+    "keywordHit": 0.3333333333333333,
+    "contextChars": 0,
+    "latencyMs": 15889,
+    "answer": "To prevent unnecessary React re-renders, you can:\n\n1. Use memoization for components that don't change frequently.\n2. Implement shouldComponentUpdate lifecycle method to only update the component when necessary.\n3. Use virtual DOM and optimize your code to reduce rendering overhead.\n4. Minimize state changes by using shallow equality checks or caching results.\n5. Avoid unnecessary props and state updates in parent components.\n6. Leverage React.memo for functional components that don't change frequently.\n7. Optimize images, fonts, and other assets loading times.\n8. Use lazy loading to load resources only when needed.\n\nBy applying these strategies, you can significantly reduce the number of re-renders in your application, improving performance and user experience."
+  },
+  {
+    "queryId": "q7",
+    "system": "v8-expand",
+    "retrievedDocIds": [
+      "frontend-react",
+      "frontend-typescript",
+      "frontend-perf",
+      "ops-docker",
+      "ops-kubernetes",
+      "ops-cicd"
+    ],
+    "expectedDocIds": [
+      "frontend-react"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 2569,
+    "latencyMs": 12904,
+    "answer": "To prevent unnecessary React re-renders:\n\n- Use `useMemo` and `useCallback` to avoid rendering components that depend on the same values.\n- Extract custom hooks when logic is reused across components.\n- Use `React.memo` for pure components to memoize component renders.\n- Keep components small, single-purpose, and focused on a specific task."
+  },
+  {
+    "queryId": "q7",
+    "system": "v9-rerank",
+    "retrievedDocIds": [
+      "frontend-react",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "frontend-react"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 853,
+    "latencyMs": 7823,
+    "answer": "To prevent unnecessary React re-renders, use `useMemo` and `useCallback`. `useMemo` memoizes expensive results to avoid recomputing them unnecessarily, while `useCallback` ensures that functional components' dependencies remain unchanged. This helps in reducing the number of renders by avoiding unnecessary updates based on changes in props or state."
+  },
+  {
+    "queryId": "q7",
+    "system": "v10-rerank+c",
+    "retrievedDocIds": [
+      "frontend-react",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "frontend-react"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 440,
+    "latencyMs": 6226,
+    "answer": "To prevent unnecessary React re-renders, use `useMemo` and `useCallback`. These hooks help memoize the return value of a function or callback so that it is only recalculated when its dependencies change. This prevents unnecessary renders by ensuring that components are updated with new data but not with stale state."
+  },
+  {
+    "queryId": "q7",
+    "system": "v11-hybrid+c",
+    "retrievedDocIds": [
+      "frontend-react",
+      "frontend-typescript",
+      "frontend-perf",
+      "ops-docker",
+      "ops-kubernetes",
+      "ops-cicd"
+    ],
+    "expectedDocIds": [
+      "frontend-react"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1305,
+    "latencyMs": 6098,
+    "answer": "To prevent unnecessary React re-renders, use `useMemo` to memoize expensive computations or render results, and `useCallback` for memoizing function references that are called frequently. This ensures that the component only renders when necessary, reducing performance overhead."
+  },
+  {
+    "queryId": "q8",
+    "system": "baseline",
+    "retrievedDocIds": [
+      "ops-kubernetes",
+      "frontend-perf",
+      "backend-rest"
+    ],
+    "expectedDocIds": [
+      "frontend-perf"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1354,
+    "latencyMs": 8901,
+    "answer": "For frontend performance, the following Web Vitals thresholds are important:\n\n- LCP (Leading Content Paint) under 2.5 seconds\n- FID (First Input Delay) under 100 milliseconds\n- CLS (Cumulative Layout Shift) under 0.1\n\nThese metrics help measure and optimize the performance of a website or application, ensuring that it loads quickly and is responsive to user interactions."
+  },
+  {
+    "queryId": "q8",
+    "system": "flat-kw",
+    "retrievedDocIds": [
+      "backend-rest",
+      "backend-postgres",
+      "backend-auth",
+      "frontend-react"
+    ],
+    "expectedDocIds": [
+      "frontend-perf"
+    ],
+    "recall": 0,
+    "keywordHit": 0.4,
+    "contextChars": 1737,
+    "latencyMs": 13126,
+    "answer": "Web Vitals are a set of key metrics that measure the performance of websites, focusing on how quickly they can load essential resources like images, fonts, and JavaScript. The three main Web Vitals are:\n\n1. First Contentful Paint (FCP): The time it takes for the first visible content to appear.\n2. First Input Delay (FID): The delay between when a user interacts with the page and when that interaction is processed by the browser.\n3. Largest Contentful Paint (LCP): The time it takes for the largest image or text element on the page to finish loading.\n\nThese metrics are crucial for determining how well a website performs in terms of usability, as they directly impact the user experience."
+  },
+  {
+    "queryId": "q8",
+    "system": "v1-default",
+    "retrievedDocIds": [],
+    "expectedDocIds": [
+      "frontend-perf"
+    ],
+    "recall": 0,
+    "keywordHit": 0,
+    "contextChars": 88,
+    "latencyMs": 16168,
+    "answer": "Web Vitals is a set of metrics that measure the key performance indicators (KPIs) of websites, focusing on how fast they load and render. The three primary Web Vitals are:\n\n1. **First Input Delay** - This measures the time it takes from when a user interacts with the page to when their first input event occurs.\n2. **Cumulative Layout Shift** - This measures the amount of shift in an element's position across multiple layout steps, indicating how much content is shifted due to layout changes.\n3. **First Meaningful Paint (FMP)** - This measures the time it takes for a page to render its first meaningful visual content.\n\nFor React TypeScript components UI rendering performance web vitals, these metrics are crucial because they directly impact user experience and site speed. A lower FMP indicates that the component is rendered quickly, which can lead to faster load times and improved overall performance. Cumulative Layout Shift should be minimized as it suggests poor layout stability, while First Input Delay measures how responsive the page is to user interactions.\n\nTo ensure optimal performance, developers need to focus on optimizing these metrics by minimizing render-blocking resources, improving component reactivity, and ensuring that components are efficiently rendered without unnecessary delays or shifts."
+  },
+  {
+    "queryId": "q8",
+    "system": "v1-fixed",
+    "retrievedDocIds": [
+      "frontend-react",
+      "frontend-typescript",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "frontend-perf"
+    ],
+    "recall": 1,
+    "keywordHit": 0.6,
+    "contextChars": 804,
+    "latencyMs": 13974,
+    "answer": "For frontend performance, the Web Vitals metrics are crucial indicators of how well a website or application performs in terms of user experience. The primary threshold that matters is:\n\n- **Largest Contentful Paint (LCP)**: This metric measures the time it takes to render the largest element visible on the page. A value under 2 seconds indicates good performance.\n\nThe other metrics, including First Input Delay (FID), Largest Initial Input Delay (LID), Cumulative Layout Shift (CLS), and Time to Interactive (TTI), are also important but typically have more stringent thresholds that may be higher than just LCP being under 2 seconds. These additional metrics provide a broader picture of the user's interaction with the page, ensuring it is responsive and interactive.\n\nFor example, if an application has a value for LCP greater than 2 seconds, it might indicate issues such as slow initial load times or poor layout stability that could affect user experience negatively."
+  },
+  {
+    "queryId": "q8",
+    "system": "v2-keyword",
+    "retrievedDocIds": [
+      "frontend-react",
+      "frontend-typescript",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "frontend-perf"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1279,
+    "latencyMs": 7367,
+    "answer": "For frontend performance optimization, the following Web Vitals thresholds are important:\n\n- LCP (Largest Contentful Paint) under 2.5s\n- FID (First Input Delay) under 100ms\n- CLS (Cumulative Layout Shift) under 0.1"
+  },
+  {
+    "queryId": "q8",
+    "system": "v3-vector",
+    "retrievedDocIds": [
+      "frontend-react",
+      "frontend-typescript",
+      "frontend-perf",
+      "ops-docker",
+      "ops-kubernetes",
+      "ops-cicd"
+    ],
+    "expectedDocIds": [
+      "frontend-perf"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 2569,
+    "latencyMs": 7027,
+    "answer": "For frontend performance optimization, the following Web Vitals thresholds are important:\n\n- LCP (Largest Contentful Paint) under 2.5s\n- FID (First Input Delay) under 100ms\n- CLS (Cumulative Layout Shift) under 0.1"
+  },
+  {
+    "queryId": "q8",
+    "system": "v4-llm",
+    "retrievedDocIds": [
+      "frontend-react",
+      "frontend-typescript",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "frontend-perf"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1279,
+    "latencyMs": 8506,
+    "answer": "For frontend performance optimization, the following Web Vitals thresholds are important:\n\n- LCP (Largest Contentful Paint) under 2.5s\n- FID (First Input Delay) under 100ms\n- CLS (Cumulative Layout Shift) under 0.1"
+  },
+  {
+    "queryId": "q8",
+    "system": "v5-compress",
+    "retrievedDocIds": [
+      "frontend-react",
+      "frontend-typescript",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "frontend-perf"
+    ],
+    "recall": 1,
+    "keywordHit": 0.4,
+    "contextChars": 654,
+    "latencyMs": 3893,
+    "answer": "For performance optimization, the following Web Vitals thresholds are important:\n\n- Largest Contentful Paint (LCP) should be under 2 seconds.\n- First Input Delay (FID) should be over 300ms."
+  },
+  {
+    "queryId": "q8",
+    "system": "v6-hybrid",
+    "retrievedDocIds": [
+      "frontend-react",
+      "frontend-typescript",
+      "frontend-perf",
+      "ops-docker",
+      "ops-kubernetes",
+      "ops-cicd"
+    ],
+    "expectedDocIds": [
+      "frontend-perf"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 2569,
+    "latencyMs": 9405,
+    "answer": "For frontend performance optimization, the following Web Vitals thresholds are important:\n\n- LCP (Largest Contentful Paint) under 2.5s\n- FID (First Input Delay) under 100ms\n- CLS (Cumulative Layout Shift) under 0.1"
+  },
+  {
+    "queryId": "q8",
+    "system": "v7-hyde",
+    "retrievedDocIds": [
+      "frontend-react",
+      "frontend-typescript",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "frontend-perf"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 1279,
+    "latencyMs": 16483,
+    "answer": "For frontend performance optimization, the following Web Vitals thresholds are important:\n\n- LCP (Largest Contentful Paint) under 2.5s\n- FID (First Input Delay) under 100ms\n- CLS (Cumulative Layout Shift) under 0.1"
+  },
+  {
+    "queryId": "q8",
+    "system": "v8-expand",
+    "retrievedDocIds": [
+      "frontend-react",
+      "frontend-typescript",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "frontend-perf"
+    ],
+    "recall": 1,
+    "keywordHit": 0.4,
+    "contextChars": 1279,
+    "latencyMs": 12971,
+    "answer": "For frontend performance optimization, the following Web Vitals metrics are commonly considered:\n\n- **First Contentful Paint (FCP)**: Under 2.5 seconds.\n- **Time to Interactive (TTI)**: Under 100 milliseconds.\n- **Critical Rendering Path (CRP)**: No issues detected.\n- **Load Time**: Under 3 seconds.\n- **Page Weight**: Below the recommended threshold.\n\nThese metrics help assess and improve the overall user experience by ensuring that content is rendered quickly, interactions are smooth, and page load times remain efficient."
+  },
+  {
+    "queryId": "q8",
+    "system": "v9-rerank",
+    "retrievedDocIds": [
+      "frontend-react",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "frontend-perf"
+    ],
+    "recall": 1,
+    "keywordHit": 1,
+    "contextChars": 853,
+    "latencyMs": 7154,
+    "answer": "For frontend performance optimization, the following Web Vitals thresholds are important:\n\n- LCP (Largest Contentful Paint) under 2.5s\n- FID (First Input Delay) under 100ms\n- CLS (Cumulative Layout Shift) under 0.1"
+  },
+  {
+    "queryId": "q8",
+    "system": "v10-rerank+c",
+    "retrievedDocIds": [
+      "frontend-react",
+      "frontend-perf"
+    ],
+    "expectedDocIds": [
+      "frontend-perf"
+    ],
+    "recall": 1,
+    "keywordHit": 0.6,
+    "contextChars": 445,
+    "latencyMs": 5273,
+    "answer": "For performance, the Web Vitals metrics that are typically considered important include:\n\n- Largest Contentful Paint (LCP): Under 2 seconds.\n- First Input Delay (FID): Less than 100 milliseconds."
+  },
+  {
+    "queryId": "q8",
+    "system": "v11-hybrid+c",
+    "retrievedDocIds": [
+      "frontend-react",
+      "frontend-typescript",
+      "frontend-perf",
+      "ops-docker",
+      "ops-kubernetes",
+      "ops-cicd"
+    ],
+    "expectedDocIds": [
+      "frontend-perf"
+    ],
+    "recall": 1,
+    "keywordHit": 0.6,
+    "contextChars": 1221,
+    "latencyMs": 5106,
+    "answer": "For performance optimization, the Web Vitals metrics to consider are:\n- Largest Contentful Paint (LCP): under 2 seconds.\n- First Input Delay (FID): less than 100ms."
+  }
+]

@@ -1,0 +1,23 @@
+{
+  "name": "@kontext-brain/bench",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --import tsx src/run.ts",
+    "ralph": "node --import tsx src/ralph.ts",
+    "squad": "node --import tsx src/squad-run.ts",
+    "structured": "node --import tsx src/structured-bench.ts"
+  },
+  "dependencies": {
+    "@kontext-brain/core": "workspace:*",
+    "@kontext-brain/llm": "workspace:*",
+    "@kontext-brain/loader": "workspace:*",
+    "@kontext-brain/mcp": "workspace:*",
+    "@langchain/core": "^0.3.27",
+    "@langchain/ollama": "^0.1.4"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2"
+  }
+}
