@@ -7,7 +7,8 @@
     "start": "node --import tsx src/run.ts",
     "ralph": "node --import tsx src/ralph.ts",
     "squad": "node --import tsx src/squad-run.ts",
-    "structured": "node --import tsx src/structured-bench.ts"
+    "structured": "node --import tsx src/structured-bench.ts",
+    "hotpot": "node --import tsx src/hotpot-run.ts"
   },
   "dependencies": {
     "@kontext-brain/core": "workspace:*",

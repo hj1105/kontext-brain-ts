@@ -524,6 +524,56 @@ already retrieves the correct doc for 29/30 queries (recall 0.967); the
 loss is in the answerer. Full per-query analysis in
 [`bench/data/round10-report.md`](./bench/data/round10-report.md).
 
+### Round 11: second research dataset — HotpotQA multi-hop, honest regression
+
+SQuAD is single-hop (one gold paragraph per question). To stress-test on a
+different shape, added HotpotQA distractor dev set as a second research
+dataset — **every question needs TWO gold paragraphs**, often with
+compositional answers that don't appear verbatim anywhere.
+
+20-query HotpotQA sample, same Ollama stack:
+
+```
+system       recall  both-gold  keyword   ctx     latency
+baseline     0.650   0.450      0.467    1366ch    4474ms
+hybrid       0.600   0.350      0.469    1217ch    3757ms
+hybrid-3b    0.600   0.350      0.570    1217ch    8642ms
+ans-ensemble 0.600   0.350      0.520    1217ch   11279ms
+```
+
+**Claude-Code-judged accuracy: ~30%** (vs. 86.7% on SQuAD). Massive
+regression. The drop is the story.
+
+Three structural reasons:
+1. **Retrieval is single-query top-k** — it biases toward docs that match
+   the *whole* question, not each mentioned entity. `both-gold-hit` is
+   only 35%; in 65% of queries we're missing at least one gold doc.
+2. **1.5b/3b LLMs can't compose** — even when both gold docs land in
+   context, questions like "country of origin common to X and Y" need
+   set-intersection reasoning the model can't do reliably.
+3. **Single-hop architecture is the real problem**, not the LLM — fixing
+   (1) via entity-decomposed or iterative retrieval would likely lift
+   `both-gold-hit` from 35% to 65%+ and accuracy correspondingly.
+
+Takeaway: **SQuAD 86.7% does not generalize to multi-hop.** The framework's
+hybrid retriever is strong on single-hop but not multi-hop aware.
+Documenting this before any "production ready" claims is the whole point
+of running a second dataset. Full analysis: [`bench/data/round11-report.md`](./bench/data/round11-report.md).
+
+### N-layer pipeline (added Round 11)
+
+Moved from "3-layer fixed" to "N-layer configurable" as a first-class
+abstraction. `packages/core/src/query/n-layer.ts` adds `LayerExecutor`,
+discriminated `Candidate` union (`node | doc | chunk | entity | member`),
+`PipelineSpec`, and a runner with per-layer tracing. Validates adjacent
+layer input/output kinds at load time.
+
+3-layer (ontology → meta → content) stays as the default preset. New
+domains can now define their own — law 4-layer (domain → article →
+section → body), code graph 4-layer (repo → class → member → source),
+multi-hop retrieval as a layer, etc. Future work: implement the code-graph
+and multi-hop-retriever layers against this abstraction.
+
 ### Round 9 results — attribute model + re-measurement
 
 After extending the entity model with `nodeId` + `attributes` +

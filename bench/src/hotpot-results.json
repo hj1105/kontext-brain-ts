@@ -1,0 +1,1515 @@
+[
+  {
+    "queryId": "hp-0",
+    "question": "What country of origin does Traveling Wilburys and Tom Petty have in common?",
+    "referenceAnswer": "American",
+    "expectedDocIds": [
+      "traveling-wilburys",
+      "tom-petty"
+    ],
+    "systems": {
+      "baseline": {
+        "answer": "Both Traveling Wilburys and Tom Petty are American artists.",
+        "retrievedDocIds": [
+          "asian-semi-longhair",
+          "wildflowers-tom-petty-album",
+          "viva-la-vida",
+          "the-fragrance-of-guava"
+        ],
+        "contextChars": 534,
+        "latencyMs": 2269.9233999999997,
+        "recall": 0,
+        "bothGoldHit": 0,
+        "keywordHit": 1
+      },
+      "bm25-map": {
+        "answer": "Both Traveling Wilburys and Tom Petty are American.",
+        "retrievedDocIds": [
+          "traveling-wilburys-vol-3",
+          "traveling-wilburys"
+        ],
+        "contextChars": 565,
+        "latencyMs": 2451.135300000009,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 1
+      },
+      "hybrid": {
+        "answer": "Both Traveling Wilburys and Tom Petty are American musicians.",
+        "retrievedDocIds": [
+          "milan",
+          "messina",
+          "france-netherlands-relations"
+        ],
+        "contextChars": 1833,
+        "latencyMs": 5377.05780000001,
+        "recall": 0,
+        "bothGoldHit": 0,
+        "keywordHit": 1
+      },
+      "hybrid-3b": {
+        "answer": "Traveling Wilburys and Tom Petty do not have a specific country of origin in common; they are all American musicians.",
+        "retrievedDocIds": [
+          "milan",
+          "messina",
+          "france-netherlands-relations"
+        ],
+        "contextChars": 1833,
+        "latencyMs": 12418.081399999981,
+        "recall": 0,
+        "bothGoldHit": 0,
+        "keywordHit": 1
+      },
+      "ans-ensemble": {
+        "answer": "Traveling Wilburys and Tom Petty do not have a specific country of origin in common; they are all American musicians.",
+        "retrievedDocIds": [
+          "milan",
+          "messina",
+          "france-netherlands-relations"
+        ],
+        "contextChars": 1833,
+        "latencyMs": 13085.556500000006,
+        "recall": 0,
+        "bothGoldHit": 0,
+        "keywordHit": 1
+      }
+    }
+  },
+  {
+    "queryId": "hp-1",
+    "question": "The British longhair is defined by what registries?",
+    "referenceAnswer": "domestic cat",
+    "expectedDocIds": [
+      "domestic-long-haired-cat",
+      "british-longhair"
+    ],
+    "systems": {
+      "baseline": {
+        "answer": "The British Longhair is not defined by any specific registry; it has a standardized breed definition recognized by various registries.",
+        "retrievedDocIds": [
+          "domestic-long-haired-cat",
+          "american-indian-horse",
+          "governing-council-of-the-cat-fancy"
+        ],
+        "contextChars": 1624,
+        "latencyMs": 5063.752399999998,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "bm25-map": {
+        "answer": "The British Longhair is defined by the Red Ensign Group, which includes United Kingdom shipping registries.",
+        "retrievedDocIds": [
+          "british-longhair",
+          "red-ensign-group"
+        ],
+        "contextChars": 526,
+        "latencyMs": 2443.1148000000103,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "hybrid": {
+        "answer": "The British Longhair is defined by various registries.",
+        "retrievedDocIds": [
+          "domestic-long-haired-cat",
+          "asian-semi-longhair",
+          "british-longhair"
+        ],
+        "contextChars": 846,
+        "latencyMs": 2672.6226000000024,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 0
+      },
+      "hybrid-3b": {
+        "answer": "The British Longhair is defined by various registries.",
+        "retrievedDocIds": [
+          "domestic-long-haired-cat",
+          "asian-semi-longhair",
+          "british-longhair"
+        ],
+        "contextChars": 846,
+        "latencyMs": 5387.932699999976,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 0
+      },
+      "ans-ensemble": {
+        "answer": "The British Longhair is defined by various registries.",
+        "retrievedDocIds": [
+          "domestic-long-haired-cat",
+          "asian-semi-longhair",
+          "british-longhair"
+        ],
+        "contextChars": 846,
+        "latencyMs": 1591.0995999999868,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 0
+      }
+    }
+  },
+  {
+    "queryId": "hp-2",
+    "question": "What Metropolitan City was Massimo Giordano born in?",
+    "referenceAnswer": "Naples",
+    "expectedDocIds": [
+      "massimo-giordano",
+      "pompei"
+    ],
+    "systems": {
+      "baseline": {
+        "answer": "Massimo Giordano was born in the Italian Metropolitan City of Messina.",
+        "retrievedDocIds": [
+          "massimo-giordano",
+          "ivan-vaughan",
+          "messina",
+          "milan"
+        ],
+        "contextChars": 1457,
+        "latencyMs": 5120.189199999993,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "bm25-map": {
+        "answer": "Massimo Giordano was born in Pompei, Italy.",
+        "retrievedDocIds": [
+          "massimo-giordano",
+          "metropolitan-city-of-messina",
+          "metropolitan-city-of-cagliari"
+        ],
+        "contextChars": 792,
+        "latencyMs": 2445.688899999979,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "hybrid": {
+        "answer": "Massimo Giordano was born in Pompei, Italy.",
+        "retrievedDocIds": [
+          "massimo-giordano",
+          "ivan-vaughan",
+          "theodor-w-adorno"
+        ],
+        "contextChars": 915,
+        "latencyMs": 2934.4037000000244,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "hybrid-3b": {
+        "answer": "Massimo Giordano was born in Pompei, which is a town in Metropolitan City of Naples.",
+        "retrievedDocIds": [
+          "massimo-giordano",
+          "ivan-vaughan",
+          "theodor-w-adorno"
+        ],
+        "contextChars": 915,
+        "latencyMs": 7409.589099999983,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 1
+      },
+      "ans-ensemble": {
+        "answer": "Massimo Giordano was born in Pompei, Italy.",
+        "retrievedDocIds": [
+          "massimo-giordano",
+          "ivan-vaughan",
+          "theodor-w-adorno"
+        ],
+        "contextChars": 915,
+        "latencyMs": 9190.457400000014,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      }
+    }
+  },
+  {
+    "queryId": "hp-3",
+    "question": "What Guiness World Record is held by the actor who stars as \"Jack\" in a series created by Jim O'Doherty?.",
+    "referenceAnswer": "youngest TV director ever",
+    "expectedDocIds": [
+      "kickin-it",
+      "leo-howard"
+    ],
+    "systems": {
+      "baseline": {
+        "answer": "The Guinness World Record for being the youngest TV director ever is held by Leo Richard Howard.",
+        "retrievedDocIds": [
+          "leo-howard",
+          "essie-davis",
+          "the-wolverine-film"
+        ],
+        "contextChars": 1526,
+        "latencyMs": 4887.152200000011,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 1
+      },
+      "bm25-map": {
+        "answer": "The answer to the question about the actor who stars as \"Jack\" in a series created by Jim O'Doherty and what Guinness World Record they hold is Herbert Nitsch, an Austrian freediver.",
+        "retrievedDocIds": [
+          "herbert-nitsch",
+          "drew-brads"
+        ],
+        "contextChars": 842,
+        "latencyMs": 4272.8897,
+        "recall": 0,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "hybrid": {
+        "answer": "The Guinness World Record for being the youngest TV director ever is held by Leo Howard.",
+        "retrievedDocIds": [
+          "kickin-it",
+          "leo-howard",
+          "snapper-carr"
+        ],
+        "contextChars": 1522,
+        "latencyMs": 4702.656399999978,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 1
+      },
+      "hybrid-3b": {
+        "answer": "Leo Howard holds the Guinness World Record for being the youngest TV director ever at age 16 for his work on the episode of \"Kickin' It\".",
+        "retrievedDocIds": [
+          "kickin-it",
+          "leo-howard",
+          "snapper-carr"
+        ],
+        "contextChars": 1522,
+        "latencyMs": 10962.685999999987,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 1
+      },
+      "ans-ensemble": {
+        "answer": "Leo Howard holds the Guinness World Record for being the youngest TV director ever at age 16 for his work on the episode of \"Kickin' It\".",
+        "retrievedDocIds": [
+          "kickin-it",
+          "leo-howard",
+          "snapper-carr"
+        ],
+        "contextChars": 1522,
+        "latencyMs": 13036.835099999997,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 1
+      }
+    }
+  },
+  {
+    "queryId": "hp-4",
+    "question": "What is the ratio of flow velocity past a boundary to the local speed of sound for a Saab JAS 39 Gripen?",
+    "referenceAnswer": "2",
+    "expectedDocIds": [
+      "saab-jas-39-gripen",
+      "mach-number"
+    ],
+    "systems": {
+      "baseline": {
+        "answer": "The Mach number (M or Ma) represents this ratio, where M = velocity / local speed of sound.",
+        "retrievedDocIds": [
+          "mach-number",
+          "pitot-tube",
+          "linville-falls"
+        ],
+        "contextChars": 1311,
+        "latencyMs": 4310.046100000007,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "bm25-map": {
+        "answer": "The ratio of flow velocity past a boundary to the local speed of sound for a Saab JAS 39 Gripen is Mach 2.",
+        "retrievedDocIds": [
+          "saab-jas-39-gripen",
+          "volvo-rm12"
+        ],
+        "contextChars": 574,
+        "latencyMs": 3180.5246000000043,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 1
+      },
+      "hybrid": {
+        "answer": "The Saab JAS 39 Gripen uses a low-bypass afterburning turbofan engine with a specific design that optimizes performance and efficiency, including factors such as flow velocity past the boundary relative to the local speed of sound.",
+        "retrievedDocIds": [
+          "volvo-rm12",
+          "ps-05-a",
+          "linville-falls"
+        ],
+        "contextChars": 876,
+        "latencyMs": 4550.268099999987,
+        "recall": 0,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "hybrid-3b": {
+        "answer": "The context provided does not contain information about the ratio of flow velocity past a boundary to the local speed of sound for a Saab JAS 39 Gripen.",
+        "retrievedDocIds": [
+          "volvo-rm12",
+          "ps-05-a",
+          "linville-falls"
+        ],
+        "contextChars": 876,
+        "latencyMs": 7997.483700000012,
+        "recall": 0,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "ans-ensemble": {
+        "answer": "The context provided does not contain information about the ratio of flow velocity past a boundary to the local speed of sound for a Saab JAS 39 Gripen.",
+        "retrievedDocIds": [
+          "volvo-rm12",
+          "ps-05-a",
+          "linville-falls"
+        ],
+        "contextChars": 876,
+        "latencyMs": 12719.659899999999,
+        "recall": 0,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      }
+    }
+  },
+  {
+    "queryId": "hp-5",
+    "question": "Tao Okamoto made her debut as the lead in the 2013 film featuring the character from what Comic company's line?",
+    "referenceAnswer": "Marvel Comics",
+    "expectedDocIds": [
+      "tao-okamoto",
+      "the-wolverine-film"
+    ],
+    "systems": {
+      "baseline": {
+        "answer": "Tao Okamoto made her debut as the lead in the 2013 film \"The Wolverine\" featuring the character from Marvel Comics' line.",
+        "retrievedDocIds": [
+          "avanthika-mohan",
+          "the-wolverine-film",
+          "tao-okamoto",
+          "wonder-woman-2017-film"
+        ],
+        "contextChars": 1624,
+        "latencyMs": 6025.701600000029,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 1
+      },
+      "bm25-map": {
+        "answer": "Tao Okamoto made her debut as the lead in the 2013 film \"The Wolverine,\" which features characters from Marvel Comics.",
+        "retrievedDocIds": [
+          "tao-okamoto",
+          "the-wolverine-film"
+        ],
+        "contextChars": 738,
+        "latencyMs": 3355.9818000000087,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 1
+      },
+      "hybrid": {
+        "answer": "Tao Okamoto made her debut as the lead in the 2013 film \"The Wolverine\" featuring the character from Marvel Comics' line.",
+        "retrievedDocIds": [
+          "tao-okamoto",
+          "avanthika-mohan",
+          "wonder-woman-2017-film"
+        ],
+        "contextChars": 976,
+        "latencyMs": 3344.807700000005,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 1
+      },
+      "hybrid-3b": {
+        "answer": "Tao Okamoto made her debut as the lead in the 2013 film \"The Wolverine,\" which is part of Marvel Comics' line.",
+        "retrievedDocIds": [
+          "tao-okamoto",
+          "avanthika-mohan",
+          "wonder-woman-2017-film"
+        ],
+        "contextChars": 976,
+        "latencyMs": 8541.35560000001,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 1
+      },
+      "ans-ensemble": {
+        "answer": "Tao Okamoto made her debut as the lead in the 2013 film \"The Wolverine\" featuring the character from Marvel Comics' line.",
+        "retrievedDocIds": [
+          "tao-okamoto",
+          "avanthika-mohan",
+          "wonder-woman-2017-film"
+        ],
+        "contextChars": 976,
+        "latencyMs": 14012.028300000005,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 1
+      }
+    }
+  },
+  {
+    "queryId": "hp-6",
+    "question": "What NFL Team, undefeated in 1972, had on their staff the coach of the 2004 Florida Atlantic Owls football team?",
+    "referenceAnswer": "Miami Dolphins",
+    "expectedDocIds": [
+      "2004-florida-atlantic-owls-football-team",
+      "howard-schnellenberger"
+    ],
+    "systems": {
+      "baseline": {
+        "answer": "The Miami Dolphins.",
+        "retrievedDocIds": [
+          "howard-schnellenberger",
+          "2004-florida-atlantic-owls-football-team",
+          "mickey-arthur"
+        ],
+        "contextChars": 1588,
+        "latencyMs": 4190.244899999991,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 1
+      },
+      "bm25-map": {
+        "answer": "The New England Patriots.",
+        "retrievedDocIds": [
+          "2004-florida-atlantic-owls-football-team",
+          "2016-florida-atlantic-owls-football-team"
+        ],
+        "contextChars": 841,
+        "latencyMs": 2544.077800000028,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "hybrid": {
+        "answer": "The New England Patriots.",
+        "retrievedDocIds": [
+          "2004-florida-atlantic-owls-football-team",
+          "florida-atlantic-owls-football",
+          "2016-florida-atlantic-owls-football-team"
+        ],
+        "contextChars": 1250,
+        "latencyMs": 2649.432300000044,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "hybrid-3b": {
+        "answer": "The Dallas Cowboys, which were undefeated in 1972, had Howard Schnellenberger as one of their coaches.",
+        "retrievedDocIds": [
+          "2004-florida-atlantic-owls-football-team",
+          "florida-atlantic-owls-football",
+          "2016-florida-atlantic-owls-football-team"
+        ],
+        "contextChars": 1250,
+        "latencyMs": 8856.5919,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "ans-ensemble": {
+        "answer": "The Dallas Cowboys, which were undefeated in 1972, had Howard Schnellenberger as one of their coaches.",
+        "retrievedDocIds": [
+          "2004-florida-atlantic-owls-football-team",
+          "florida-atlantic-owls-football",
+          "2016-florida-atlantic-owls-football-team"
+        ],
+        "contextChars": 1250,
+        "latencyMs": 11760.245700000029,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      }
+    }
+  },
+  {
+    "queryId": "hp-7",
+    "question": "What is the real name of the clock one can see on a clear day from Denmark Hill?",
+    "referenceAnswer": "Great Bell of the clock",
+    "expectedDocIds": [
+      "denmark-hill",
+      "big-ben"
+    ],
+    "systems": {
+      "baseline": {
+        "answer": "The real name of the clock one can see on a clear day from Denmark Hill is Big Ben.",
+        "retrievedDocIds": [
+          "big-ben",
+          "self-winding-clock-company",
+          "denmark-hill"
+        ],
+        "contextChars": 1302,
+        "latencyMs": 4229.149100000039,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 0.5
+      },
+      "bm25-map": {
+        "answer": "The real name of the clock that one can see on a clear day from Denmark Hill is Big Ben.",
+        "retrievedDocIds": [
+          "on-a-clear-day-you-can-see-forever-film",
+          "denmark-hill-railway-station"
+        ],
+        "contextChars": 583,
+        "latencyMs": 2413.581099999952,
+        "recall": 0,
+        "bothGoldHit": 0,
+        "keywordHit": 0.5
+      },
+      "hybrid": {
+        "answer": "The time on the Big Ben clockface.",
+        "retrievedDocIds": [
+          "denmark-hill",
+          "self-winding-clock-company",
+          "brown-mountain-lights"
+        ],
+        "contextChars": 1173,
+        "latencyMs": 3333.188999999955,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0.5
+      },
+      "hybrid-3b": {
+        "answer": "The Big Ben clock.",
+        "retrievedDocIds": [
+          "denmark-hill",
+          "self-winding-clock-company",
+          "brown-mountain-lights"
+        ],
+        "contextChars": 1173,
+        "latencyMs": 6621.722000000009,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0.5
+      },
+      "ans-ensemble": {
+        "answer": "The time on the Big Ben clockface.",
+        "retrievedDocIds": [
+          "denmark-hill",
+          "self-winding-clock-company",
+          "brown-mountain-lights"
+        ],
+        "contextChars": 1173,
+        "latencyMs": 9591.192499999946,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0.5
+      }
+    }
+  },
+  {
+    "queryId": "hp-8",
+    "question": "Who has won more literary awards, Annie Dillard or Gabriel García Márquez?",
+    "referenceAnswer": "Gabriel José de la Concordia García Márquez",
+    "expectedDocIds": [
+      "annie-dillard",
+      "gabriel-garc-a-m-rquez"
+    ],
+    "systems": {
+      "baseline": {
+        "answer": "Gabriel García Márquez has won more literary awards than Annie Dillard.",
+        "retrievedDocIds": [
+          "ngela-becerra",
+          "gabriel-garc-a-m-rquez",
+          "annie-dillard"
+        ],
+        "contextChars": 1477,
+        "latencyMs": 4716.69809999998,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 0.6
+      },
+      "bm25-map": {
+        "answer": "Gabriel García Márquez has won more literary awards than Annie Dillard.",
+        "retrievedDocIds": [
+          "gabriel-garc-a-m-rquez",
+          "annie-dillard"
+        ],
+        "contextChars": 921,
+        "latencyMs": 3096.06799999997,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 0.6
+      },
+      "hybrid": {
+        "answer": "Gabriel García Márquez has won more literary awards than Annie Dillard.",
+        "retrievedDocIds": [
+          "ngela-becerra",
+          "annie-dillard",
+          "gabriel-garc-a-m-rquez"
+        ],
+        "contextChars": 1398,
+        "latencyMs": 4408.081400000025,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 0.6
+      },
+      "hybrid-3b": {
+        "answer": "Gabriel García Márquez has won more significant literary awards compared to Annie Dillard based on the information provided.",
+        "retrievedDocIds": [
+          "ngela-becerra",
+          "annie-dillard",
+          "gabriel-garc-a-m-rquez"
+        ],
+        "contextChars": 1398,
+        "latencyMs": 9656.581499999971,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 0.6
+      },
+      "ans-ensemble": {
+        "answer": "Gabriel García Márquez has won more significant literary awards compared to Annie Dillard based on the information provided.",
+        "retrievedDocIds": [
+          "ngela-becerra",
+          "annie-dillard",
+          "gabriel-garc-a-m-rquez"
+        ],
+        "contextChars": 1398,
+        "latencyMs": 12762.046799999953,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 0.6
+      }
+    }
+  },
+  {
+    "queryId": "hp-9",
+    "question": "When the two Coldplay songs U.F.O and Princess of China were written, what factor did they have in common?",
+    "referenceAnswer": "was written by all four members of the band",
+    "expectedDocIds": [
+      "u-f-o-coldplay-song",
+      "princess-of-china"
+    ],
+    "systems": {
+      "baseline": {
+        "answer": "Both \"UFO\" and \"Princess of China\" were co-written by members of Coldplay.",
+        "retrievedDocIds": [
+          "princess-of-china",
+          "the-fragrance-of-guava",
+          "viva-la-vida",
+          "wildflowers-tom-petty-album"
+        ],
+        "contextChars": 762,
+        "latencyMs": 3001.255300000019,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0.2857142857142857
+      },
+      "bm25-map": {
+        "answer": "Both \"UFO\" and \"Princess of China\" by Coldplay were written by band members.",
+        "retrievedDocIds": [
+          "princess-of-china",
+          "shortest-common-supersequence-problem"
+        ],
+        "contextChars": 820,
+        "latencyMs": 2575.5314000000362,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0.42857142857142855
+      },
+      "hybrid": {
+        "answer": "Both \"UFO\" by Coldplay and \"Princess of China\" by Coldplay were written for their fifth studio album \"Mylo Xyloto\".",
+        "retrievedDocIds": [
+          "princess-of-china",
+          "u-f-o-coldplay-song",
+          "the-fragrance-of-guava"
+        ],
+        "contextChars": 1249,
+        "latencyMs": 3678.5751000000164,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 0.2857142857142857
+      },
+      "hybrid-3b": {
+        "answer": "Both Coldplay songs U.F.O and Princess of China were written by all four members of the band for their fifth studio album \"Mylo Xyloto\".",
+        "retrievedDocIds": [
+          "princess-of-china",
+          "u-f-o-coldplay-song",
+          "the-fragrance-of-guava"
+        ],
+        "contextChars": 1249,
+        "latencyMs": 9452.691099999996,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 0.8571428571428571
+      },
+      "ans-ensemble": {
+        "answer": "Both Coldplay songs U.F.O and Princess of China were written by all four members of the band for their fifth studio album \"Mylo Xyloto\".",
+        "retrievedDocIds": [
+          "princess-of-china",
+          "u-f-o-coldplay-song",
+          "the-fragrance-of-guava"
+        ],
+        "contextChars": 1249,
+        "latencyMs": 14089.955699999991,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 0.8571428571428571
+      }
+    }
+  },
+  {
+    "queryId": "hp-10",
+    "question": "Tommy Faile sang the song \"the legend of Brown Moutain Lights\", about a series of ghost lights that can be seen from which viewpoint outside Linville Falls?",
+    "referenceAnswer": "Wiseman's View",
+    "expectedDocIds": [
+      "tommy-faile",
+      "brown-mountain-lights"
+    ],
+    "systems": {
+      "baseline": {
+        "answer": "Tommy Faile sang the song \"The Legend of Brown Mountain Lights\" about a series of ghost lights that can be seen from Wiseman's View, which is about 4 miles from Linville Falls, NC.",
+        "retrievedDocIds": [
+          "brown-mountain-lights",
+          "tommy-faile",
+          "viva-la-vida"
+        ],
+        "contextChars": 1225,
+        "latencyMs": 5545.409700000018,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 1
+      },
+      "bm25-map": {
+        "answer": "Wiseman's View.",
+        "retrievedDocIds": [
+          "brown-mountain-lights",
+          "ghost-lights-band"
+        ],
+        "contextChars": 839,
+        "latencyMs": 2255.0297000000137,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 1
+      },
+      "hybrid": {
+        "answer": "Tommy Faile sang the song \"The Legend of the Brown Mountain Lights\" about a series of ghost lights that can be seen from Wiseman's View, which is about 4 miles from Linville Falls.",
+        "retrievedDocIds": [
+          "brown-mountain-lights",
+          "tommy-faile",
+          "ghost-lights-band"
+        ],
+        "contextChars": 1098,
+        "latencyMs": 3970.7452999999514,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 1
+      },
+      "hybrid-3b": {
+        "answer": "Tommy Faile sang \"The Legend of the Brown Mountain Lights,\" a series of ghost lights visible from Wiseman's View, about 4 miles from Linville Falls.",
+        "retrievedDocIds": [
+          "brown-mountain-lights",
+          "tommy-faile",
+          "ghost-lights-band"
+        ],
+        "contextChars": 1098,
+        "latencyMs": 9230.078099999984,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 1
+      },
+      "ans-ensemble": {
+        "answer": "Tommy Faile sang the song \"The Legend of the Brown Mountain Lights\" about a series of ghost lights that can be seen from Wiseman's View, which is about 4 miles from Linville Falls.",
+        "retrievedDocIds": [
+          "brown-mountain-lights",
+          "tommy-faile",
+          "ghost-lights-band"
+        ],
+        "contextChars": 1098,
+        "latencyMs": 12984.955399999977,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 1
+      }
+    }
+  },
+  {
+    "queryId": "hp-11",
+    "question": "The coach of the Karachi Kings, Mickey Arthur, is of what decent? ",
+    "referenceAnswer": "South African",
+    "expectedDocIds": [
+      "karachi-kings",
+      "mickey-arthur"
+    ],
+    "systems": {
+      "baseline": {
+        "answer": "Arthur is of South Asian descent.",
+        "retrievedDocIds": [
+          "howard-schnellenberger",
+          "mickey-arthur",
+          "florida-atlantic-owls-football",
+          "karachi-kings"
+        ],
+        "contextChars": 1452,
+        "latencyMs": 3826.1061000000336,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 0.5
+      },
+      "bm25-map": {
+        "answer": "Arthur is a South African.",
+        "retrievedDocIds": [
+          "list-of-karachi-kings-cricketers",
+          "mickey-arthur"
+        ],
+        "contextChars": 711,
+        "latencyMs": 2119.1493000000482,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 1
+      },
+      "hybrid": {
+        "answer": "Arthur is of South African decent.",
+        "retrievedDocIds": [
+          "mickey-arthur",
+          "karachi-kings",
+          "howard-schnellenberger"
+        ],
+        "contextChars": 1273,
+        "latencyMs": 3420.6712999999872,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 1
+      },
+      "hybrid-3b": {
+        "answer": "Mickey Arthur, the coach of the Karachi Kings, has South African decent.",
+        "retrievedDocIds": [
+          "mickey-arthur",
+          "karachi-kings",
+          "howard-schnellenberger"
+        ],
+        "contextChars": 1273,
+        "latencyMs": 8148.5390999999945,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 1
+      },
+      "ans-ensemble": {
+        "answer": "Arthur is of South African decent.",
+        "retrievedDocIds": [
+          "mickey-arthur",
+          "karachi-kings",
+          "howard-schnellenberger"
+        ],
+        "contextChars": 1273,
+        "latencyMs": 10370.399600000004,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 1
+      }
+    }
+  },
+  {
+    "queryId": "hp-12",
+    "question": "Alexander S. Wadsworth served during the war that was faught between which two countries?",
+    "referenceAnswer": "United States, the United Kingdom, and their respective allies",
+    "expectedDocIds": [
+      "alexander-s-wadsworth",
+      "war-of-1812"
+    ],
+    "systems": {
+      "baseline": {
+        "answer": "The War of 1812 was fought between the United States and the United Kingdom.",
+        "retrievedDocIds": [
+          "war-of-1812",
+          "france-united-kingdom-relations",
+          "malawi-mozambique-relations"
+        ],
+        "contextChars": 1600,
+        "latencyMs": 4261.239899999986,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0.4444444444444444
+      },
+      "bm25-map": {
+        "answer": "Alexander S. Wadsworth served during the War of 1812, fought between the United States and the United Kingdom.",
+        "retrievedDocIds": [
+          "alexander-s-wadsworth",
+          "war-of-1812"
+        ],
+        "contextChars": 495,
+        "latencyMs": 2774.092799999984,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 0.4444444444444444
+      },
+      "hybrid": {
+        "answer": "World War II",
+        "retrievedDocIds": [
+          "france-united-kingdom-relations",
+          "malawi-mozambique-relations",
+          "soviet-union-united-states-relations"
+        ],
+        "contextChars": 1691,
+        "latencyMs": 3854.769800000009,
+        "recall": 0,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "hybrid-3b": {
+        "answer": "Alexander S. Wadsworth did not serve during any specific war fought between France and United Kingdom as per given context; the context discusses historical ties but does not mention him or this particular war.",
+        "retrievedDocIds": [
+          "france-united-kingdom-relations",
+          "malawi-mozambique-relations",
+          "soviet-union-united-states-relations"
+        ],
+        "contextChars": 1691,
+        "latencyMs": 10841.097799999989,
+        "recall": 0,
+        "bothGoldHit": 0,
+        "keywordHit": 0.4444444444444444
+      },
+      "ans-ensemble": {
+        "answer": "Alexander S. Wadsworth did not serve during any specific war fought between France and United Kingdom as per given context; the context discusses historical ties but does not mention him or this particular war.",
+        "retrievedDocIds": [
+          "france-united-kingdom-relations",
+          "malawi-mozambique-relations",
+          "soviet-union-united-states-relations"
+        ],
+        "contextChars": 1691,
+        "latencyMs": 12033.460499999986,
+        "recall": 0,
+        "bothGoldHit": 0,
+        "keywordHit": 0.4444444444444444
+      }
+    }
+  },
+  {
+    "queryId": "hp-13",
+    "question": "Who directed the 1971 film in which Pat Ashton starred in?",
+    "referenceAnswer": "Harry Booth",
+    "expectedDocIds": [
+      "pat-ashton",
+      "on-the-buses-film"
+    ],
+    "systems": {
+      "baseline": {
+        "answer": "Sean S. Cunningham directed the 1971 film featuring Pat Ashton, who played Marilyn Briggs.",
+        "retrievedDocIds": [
+          "together-1971-film",
+          "christian-de-chalonge",
+          "rainbow-bridge-film",
+          "jenny-agutter"
+        ],
+        "contextChars": 1445,
+        "latencyMs": 4824.2343999999575,
+        "recall": 0,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "bm25-map": {
+        "answer": "Sean S. Cunningham directed the 1971 film in which Pat Ashton starred.",
+        "retrievedDocIds": [
+          "pat-ashton",
+          "together-1971-film"
+        ],
+        "contextChars": 536,
+        "latencyMs": 2396.9122000000207,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "hybrid": {
+        "answer": "Sean S. Cunningham directed the 1971 film in which Pat Ashton starred.",
+        "retrievedDocIds": [
+          "pat-ashton",
+          "rainbow-bridge-film",
+          "together-1971-film"
+        ],
+        "contextChars": 956,
+        "latencyMs": 2603.402599999972,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "hybrid-3b": {
+        "answer": "Chuck Wein directed the 1971 film \"Rainbow Bridge\" in which Pat Ashton appeared.",
+        "retrievedDocIds": [
+          "pat-ashton",
+          "rainbow-bridge-film",
+          "together-1971-film"
+        ],
+        "contextChars": 956,
+        "latencyMs": 7122.243700000108,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "ans-ensemble": {
+        "answer": "Chuck Wein directed the 1971 film \"Rainbow Bridge\" in which Pat Ashton appeared.",
+        "retrievedDocIds": [
+          "pat-ashton",
+          "rainbow-bridge-film",
+          "together-1971-film"
+        ],
+        "contextChars": 956,
+        "latencyMs": 10317.243299999973,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      }
+    }
+  },
+  {
+    "queryId": "hp-14",
+    "question": "Which magazine is based out of more countries, Adventist World or Baseball Digest?",
+    "referenceAnswer": "Adventist World",
+    "expectedDocIds": [
+      "adventist-world",
+      "baseball-digest"
+    ],
+    "systems": {
+      "baseline": {
+        "answer": "Adventist World is based out of more countries (1) compared to Baseball Digest which is based out of only one country (USA).",
+        "retrievedDocIds": [
+          "adventist-world",
+          "adventist-review",
+          "baseball-digest"
+        ],
+        "contextChars": 1033,
+        "latencyMs": 3709.870499999961,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 1
+      },
+      "bm25-map": {
+        "answer": "Baseball Digest is based out of more countries.",
+        "retrievedDocIds": [
+          "baseball-digest",
+          "adventist-world",
+          "adventist-review"
+        ],
+        "contextChars": 684,
+        "latencyMs": 2028.8787000000011,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 0
+      },
+      "hybrid": {
+        "answer": "Adventist World is based out of more countries.",
+        "retrievedDocIds": [
+          "adventist-world",
+          "adventist-review",
+          "adventist-mission"
+        ],
+        "contextChars": 858,
+        "latencyMs": 2480.564800000051,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 1
+      },
+      "hybrid-3b": {
+        "answer": "Adventist World is not a magazine, so it cannot be compared to Baseball Digest in terms of the number of countries it covers.",
+        "retrievedDocIds": [
+          "adventist-world",
+          "adventist-review",
+          "adventist-mission"
+        ],
+        "contextChars": 858,
+        "latencyMs": 6284.27760000003,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 1
+      },
+      "ans-ensemble": {
+        "answer": "Adventist World is not a magazine, so it cannot be compared to Baseball Digest in terms of the number of countries it covers.",
+        "retrievedDocIds": [
+          "adventist-world",
+          "adventist-review",
+          "adventist-mission"
+        ],
+        "contextChars": 858,
+        "latencyMs": 10180.334499999997,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 1
+      }
+    }
+  },
+  {
+    "queryId": "hp-15",
+    "question": "Who played Amelia Vanek in the film adaptation of Monster?",
+    "referenceAnswer": "Esther \"Essie\" Davis",
+    "expectedDocIds": [
+      "essie-davis",
+      "the-babadook"
+    ],
+    "systems": {
+      "baseline": {
+        "answer": "Lon Chaney played two different key roles in this production.",
+        "retrievedDocIds": [
+          "hamlet-1948-film",
+          "tao-okamoto",
+          "tobruk-2008-film",
+          "treasure-island-1920-film"
+        ],
+        "contextChars": 1476,
+        "latencyMs": 4610.097799999989,
+        "recall": 0,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "bm25-map": {
+        "answer": "The character of Amelia Vanek in the film adaptation of \"Journey's End\" was portrayed by actress Emily Blunt.",
+        "retrievedDocIds": [
+          "mickey-arthur",
+          "journey-s-end-2017-film"
+        ],
+        "contextChars": 788,
+        "latencyMs": 3373.5254000000423,
+        "recall": 0,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "hybrid": {
+        "answer": "Lon Chaney played Amelia Vanek in the film adaptation of \"The Babadook\".",
+        "retrievedDocIds": [
+          "treasure-island-1920-film",
+          "essie-davis",
+          "tobruk-2008-film"
+        ],
+        "contextChars": 1139,
+        "latencyMs": 3626.791300000041,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "hybrid-3b": {
+        "answer": "There is no mention of Amelia Vanek or any role named \"Monster\" in the given context. The question cannot be answered based on the provided information.",
+        "retrievedDocIds": [
+          "treasure-island-1920-film",
+          "essie-davis",
+          "tobruk-2008-film"
+        ],
+        "contextChars": 1139,
+        "latencyMs": 8534.463199999998,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "ans-ensemble": {
+        "answer": "There is no mention of Amelia Vanek or any role named \"Monster\" in the given context. The question cannot be answered based on the provided information.",
+        "retrievedDocIds": [
+          "treasure-island-1920-film",
+          "essie-davis",
+          "tobruk-2008-film"
+        ],
+        "contextChars": 1139,
+        "latencyMs": 10896.328100000042,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      }
+    }
+  },
+  {
+    "queryId": "hp-16",
+    "question": "In what year was the most famous statute at Po Lin Monastery built?",
+    "referenceAnswer": "Tian Tan Buddha",
+    "expectedDocIds": [
+      "buddhism-in-hong-kong",
+      "tian-tan-buddha"
+    ],
+    "systems": {
+      "baseline": {
+        "answer": "1993",
+        "retrievedDocIds": [
+          "bagaya-monastery",
+          "tian-tan-buddha",
+          "linville-falls-tavern",
+          "great-lavra"
+        ],
+        "contextChars": 1605,
+        "latencyMs": 4745.289800000028,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "bm25-map": {
+        "answer": "The Great Lavra's founding is dated to 963 AD.",
+        "retrievedDocIds": [
+          "po-lin-monastery",
+          "great-lavra"
+        ],
+        "contextChars": 573,
+        "latencyMs": 2338.58189999999,
+        "recall": 0,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "hybrid": {
+        "answer": "The Tian Tan Buddha statue, located at Po Lin Monastery on Lantau Island in Hong Kong, was completed in 1993.",
+        "retrievedDocIds": [
+          "great-lavra",
+          "buddhism-in-hong-kong",
+          "tian-tan-buddha"
+        ],
+        "contextChars": 1324,
+        "latencyMs": 4560.589400000055,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 1
+      },
+      "hybrid-3b": {
+        "answer": "The Tian Tan Buddha (most famous statue at Po Lin Monastery) was built in 1993.",
+        "retrievedDocIds": [
+          "great-lavra",
+          "buddhism-in-hong-kong",
+          "tian-tan-buddha"
+        ],
+        "contextChars": 1324,
+        "latencyMs": 8882.689600000042,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 1
+      },
+      "ans-ensemble": {
+        "answer": "The Tian Tan Buddha (most famous statue at Po Lin Monastery) was built in 1993.",
+        "retrievedDocIds": [
+          "great-lavra",
+          "buddhism-in-hong-kong",
+          "tian-tan-buddha"
+        ],
+        "contextChars": 1324,
+        "latencyMs": 12379.478400000022,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 1
+      }
+    }
+  },
+  {
+    "queryId": "hp-17",
+    "question": "Are both The Day the Universe Changed and Lennon or McCartney American documentary short films?",
+    "referenceAnswer": "no",
+    "expectedDocIds": [
+      "the-day-the-universe-changed",
+      "lennon-or-mccartney"
+    ],
+    "systems": {
+      "baseline": {
+        "answer": "No, Lennon or McCartney is not an American documentary short film; it was directed by Matt Schichter.",
+        "retrievedDocIds": [
+          "lennon-or-mccartney",
+          "dee-hibbert-jones",
+          "dominica-charting-a-future-for-paradise",
+          "peter-richardson-filmmaker"
+        ],
+        "contextChars": 1305,
+        "latencyMs": 4135.13209999993,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 1
+      },
+      "bm25-map": {
+        "answer": "No, \"The Day the Universe Changed\" and \"Lennon or McCartney\" are not American documentary short films.",
+        "retrievedDocIds": [
+          "lennon-or-mccartney",
+          "the-day-the-universe-changed"
+        ],
+        "contextChars": 692,
+        "latencyMs": 2017.4217000000644,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 1
+      },
+      "hybrid": {
+        "answer": "Yes, both The Day the Universe Changed (a 2014 American documentary) and Lennon or McCartney (a 2014 American documentary) are American documentary short films.",
+        "retrievedDocIds": [
+          "lennon-or-mccartney",
+          "last-day-of-freedom",
+          "peter-richardson-filmmaker"
+        ],
+        "contextChars": 1252,
+        "latencyMs": 3794.6522000000114,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 1
+      },
+      "hybrid-3b": {
+        "answer": "No, Lennon or McCartney is an American documentary short film, but The Day the Universe Changed is not mentioned as being a documentary short film in the given context.",
+        "retrievedDocIds": [
+          "lennon-or-mccartney",
+          "last-day-of-freedom",
+          "peter-richardson-filmmaker"
+        ],
+        "contextChars": 1252,
+        "latencyMs": 8295.856199999922,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 1
+      },
+      "ans-ensemble": {
+        "answer": "No, Lennon or McCartney is an American documentary short film, but The Day the Universe Changed is not mentioned as being a documentary short film in the given context.",
+        "retrievedDocIds": [
+          "lennon-or-mccartney",
+          "last-day-of-freedom",
+          "peter-richardson-filmmaker"
+        ],
+        "contextChars": 1252,
+        "latencyMs": 12073.465800000005,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 1
+      }
+    }
+  },
+  {
+    "queryId": "hp-18",
+    "question": "which German philosopher wrote \"The opera \"Lulu\"  ",
+    "referenceAnswer": "Theodor W. Adorno",
+    "expectedDocIds": [
+      "lulu-opera",
+      "theodor-w-adorno"
+    ],
+    "systems": {
+      "baseline": {
+        "answer": "Alban Berg wrote the opera \"Lulu\".",
+        "retrievedDocIds": [
+          "theodor-w-adorno",
+          "karl-aschenbrenner",
+          "christian-wolff-philosopher",
+          "lulu-opera"
+        ],
+        "contextChars": 1491,
+        "latencyMs": 4757.055399999954,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 0
+      },
+      "bm25-map": {
+        "answer": "Walter Kaufmann wrote \"Nietzsche: Philosopher, Psychologist, Antichrist.\"",
+        "retrievedDocIds": [
+          "lulu-opera",
+          "nietzsche-philosopher-psychologist-antichrist"
+        ],
+        "contextChars": 887,
+        "latencyMs": 3175.5929999999935,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "hybrid": {
+        "answer": "Wolfgang Amadeus Mozart wrote \"The opera \"Lulu\".",
+        "retrievedDocIds": [
+          "karl-aschenbrenner",
+          "lulu-opera",
+          "christian-wolff-philosopher"
+        ],
+        "contextChars": 1685,
+        "latencyMs": 4943.84719999996,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "hybrid-3b": {
+        "answer": "Arnold Schoenberg wrote \"The opera 'Lulu'\".",
+        "retrievedDocIds": [
+          "karl-aschenbrenner",
+          "lulu-opera",
+          "christian-wolff-philosopher"
+        ],
+        "contextChars": 1685,
+        "latencyMs": 9868.371700000018,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "ans-ensemble": {
+        "answer": "Arnold Schoenberg wrote \"The opera 'Lulu'\".",
+        "retrievedDocIds": [
+          "karl-aschenbrenner",
+          "lulu-opera",
+          "christian-wolff-philosopher"
+        ],
+        "contextChars": 1685,
+        "latencyMs": 11431.688100000028,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      }
+    }
+  },
+  {
+    "queryId": "hp-19",
+    "question": "In what language was the 2007 Indian romantic drama staring Kareena Kapoor and Shahid Kapoor produced in? ",
+    "referenceAnswer": "Partly Punjabi",
+    "expectedDocIds": [
+      "lists-of-bollywood-films",
+      "jab-we-met"
+    ],
+    "systems": {
+      "baseline": {
+        "answer": "The 2007 Indian romantic drama starring Kareena Kapoor and Shahid Kapoor, \"Jab We Met,\" was produced in Hindi.",
+        "retrievedDocIds": [
+          "jab-we-met",
+          "kanden-kadhalai",
+          "lists-of-bollywood-films",
+          "fida"
+        ],
+        "contextChars": 1487,
+        "latencyMs": 5258.63049999997,
+        "recall": 1,
+        "bothGoldHit": 1,
+        "keywordHit": 0
+      },
+      "bm25-map": {
+        "answer": "The 2007 Indian romantic drama starring Kareena Kapoor and Shahid Kapoor, Jab We Met, was produced in Hindi.",
+        "retrievedDocIds": [
+          "kareena-kapoor",
+          "jab-we-met"
+        ],
+        "contextChars": 864,
+        "latencyMs": 3482.919200000004,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "hybrid": {
+        "answer": "The 2007 Indian romantic drama starring Kareena Kapoor and Shahid Kapoor, \"Jab We Met,\" was produced in Hindi.",
+        "retrievedDocIds": [
+          "jab-we-met",
+          "milenge-milenge",
+          "ki-amp-ka"
+        ],
+        "contextChars": 1029,
+        "latencyMs": 4233.108200000017,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "hybrid-3b": {
+        "answer": "The 2007 Indian romantic drama starring Kareena Kapoor and Shahid Kapoor was produced in Hindi.",
+        "retrievedDocIds": [
+          "jab-we-met",
+          "milenge-milenge",
+          "ki-amp-ka"
+        ],
+        "contextChars": 1029,
+        "latencyMs": 8330.400400000042,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      },
+      "ans-ensemble": {
+        "answer": "The 2007 Indian romantic drama starring Kareena Kapoor and Shahid Kapoor, \"Jab We Met,\" was produced in Hindi.",
+        "retrievedDocIds": [
+          "jab-we-met",
+          "milenge-milenge",
+          "ki-amp-ka"
+        ],
+        "contextChars": 1029,
+        "latencyMs": 11071.73290000006,
+        "recall": 0.5,
+        "bothGoldHit": 0,
+        "keywordHit": 0
+      }
+    }
+  }
+]

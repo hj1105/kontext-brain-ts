@@ -27,6 +27,7 @@ export * from "./query/hybrid-retriever.js";
 export * from "./query/step-executor.js";
 export * from "./query/layered-context-collector.js";
 export * from "./query/layered-query-pipeline.js";
+export * from "./query/n-layer.js";
 
 // Ingest
 export * from "./ingest/ontology-auto-builder.js";
