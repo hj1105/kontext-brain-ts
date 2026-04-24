@@ -1,0 +1,422 @@
+[
+  {
+    "id": "sq-0",
+    "question": "The movements of the lobates combs are controlled by what?",
+    "referenceAnswer": "nerves",
+    "expectedDocIds": [
+      "ctenophora-17"
+    ],
+    "retrievedDocIds": [
+      "ctenophora-17",
+      "ctenophora-16",
+      "ctenophora-0"
+    ],
+    "context": "### Ctenophora (paragraph 17)\nLobates have eight comb-rows, originating at the aboral pole and usually not extending beyond the body to the lobes; in species with (four) auricles, the cilia edging the auricles are extensions of cilia in four of the comb rows. Most lobates are quite passive when moving through the water, using the cilia on their comb rows for propulsion, although Leucothea has long and active auricles whose movements also contribute to propulsion. Members of the lobate genera Bathocyroe and Ocyropsis can escape from danger by clapping their lobes, so that the jet of expelled water drives them backwards very quickly. Unlike cydippids, the movements of lobates' combs are coordinated by nerves rather than by water disturbances created by the cilia, yet combs on the same row beat in the same Mexican wave style as the mechanically coordinated comb rows of cydippids and beroids\n\n### Ctenophora (paragraph 16)\nThe Lobata have a pair of lobes, which are muscular, cuplike extensions of the body that project beyond the mouth. Their inconspicuous tentacles originate from the corners of the mouth, running in convoluted grooves and spreading out over the inner surface of the lobes (rather than trailing far behind, as in the Cydippida). Between the lobes on either side of the mouth, many species of lobates have four auricles, gelatinous projections edged with cilia that produce water currents that help direct microscopic prey toward the mouth. This combination of structures enables lobates to feed continuously on suspended planktonic prey.\n\n### Ctenophora (paragraph 0)\nTheir most distinctive feature is the ‘combs’ – groups of cilia which they use for swimming – they are the largest animals that swim by means of cilia. Like cnidarians, their bodies consist of a mass of jelly, with one layer of cells on the outside and another lining the internal cavity. In ctenophores, these layers are two cells deep, while those in cnidarians are only one cell deep. Increasing awareness of the differences persuaded more recent authors to classify them as separate phyla"
+  },
+  {
+    "id": "sq-1",
+    "question": "What is the seldom used force unit equal to one thousand newtons?",
+    "referenceAnswer": "sthène",
+    "expectedDocIds": [
+      "force-43"
+    ],
+    "retrievedDocIds": [
+      "force-43",
+      "force-0",
+      "force-1"
+    ],
+    "context": "### Force (paragraph 43)\nThe pound-force has a metric counterpart, less commonly used than the newton: the kilogram-force (kgf) (sometimes kilopond), is the force exerted by standard gravity on one kilogram of mass. The kilogram-force leads to an alternate, but rarely used unit of mass: the metric slug (sometimes mug or hyl) is that mass that accelerates at 1 m·s−2 when subjected to a force of 1 kgf. The kilogram-force is not a part of the modern SI system, and is generally deprecated; however it still sees use for some purposes as expressing aircraft weight, jet thrust, bicycle spoke tension, torque wrench settings and engine output torque. Other arcane units of force include the sthène, which is equivalent to 1000 N, and the kip, which is equivalent to 1000 lbf.\n\n### Force (paragraph 0)\nPhilosophers in antiquity used the concept of force in the study of stationary and moving objects and simple machines, but thinkers such as Aristotle and Archimedes retained fundamental errors in understanding force. In part this was due to an incomplete understanding of the sometimes non-obvious force of friction, and a consequently inadequate view of the nature of natural motion. A fundamental error was the belief that a force is required to maintain motion, even at a constant velocity. Most of the previous misunderstandings about motion and force were eventually corrected by Galileo Galilei and Sir Isaac Newton\n\n### Force (paragraph 1)\nWith modern insights into quantum mechanics and technology that can accelerate particles close to the speed of light, particle physics has devised a Standard Model to describe forces between particles smaller than atoms. The Standard Model predicts that exchanged particles called gauge bosons are the fundamental means by which forces are emitted and absorbed. Only four main interactions are known: in order of decreasing strength, they are: strong, electromagnetic, weak, and gravitational.:2–10:79 High-energy particle physics observations made during the 1970s and 1980s confirmed that the weak and electromagnetic forces are expressions of a more fundamental electroweak interaction."
+  },
+  {
+    "id": "sq-2",
+    "question": "In which case did the Court of Justice hold that requiring Italian lawyers to comply with maximum tariffs unless there was an agreement with a client was not a restriction?",
+    "referenceAnswer": "Commission v Italy",
+    "expectedDocIds": [
+      "european-union-law-36"
+    ],
+    "retrievedDocIds": [
+      "european-union-law-36",
+      "european-union-law-2",
+      "european-union-law-1"
+    ],
+    "context": "### European_Union_law (paragraph 36)\nIn Reyners v Belgium the Court of Justice held that a refusal to admit a lawyer to the Belgian bar because he lacked Belgian nationality was unjustified. TFEU article 49 says states are exempt from infringing others' freedom of establishment when they exercise \"official authority\", but this did an advocate's work (as opposed to a court's) was not official. By contrast in Commission v Italy the Court of Justice held that a requirement for lawyers in Italy to comply with maximum tariffs unless there was an agreement with a client was not a restriction. Therefore, there was no prima facie infringement freedom of establishment that needed to be justified\n\n### European_Union_law (paragraph 2)\nAlthough the European Union does not have a codified constitution, like every political body it has laws which \"constitute\" its basic governance structure. The Treaties establish the EU's institutions, list their powers and responsibilities, and explain the areas in which the EU can legislate with Directives or Regulations. The European Court of Justice is the supreme judicial body which interprets EU law, and develops it through precedent. The Court can review the legality of the EU institutions' actions, in compliance with the Treaties\n\n### European_Union_law (paragraph 1)\nEuropean Union law is applied by the courts of member states and the Court of Justice of the European Union. In case of European Union law which should have been transposed into the laws of member states, such as Directives, the European Commission can take proceedings against the member state under the Treaty on the Functioning of the European Union. The European Court of Justice is the highest court able to interpret European Union law. Supplementary sources of European Union law include case law by the Court of Justice, international law and general principles of European Union law"
+  },
+  {
+    "id": "sq-3",
+    "question": "What is the proprietary system that Sky+HD uses?",
+    "referenceAnswer": "OpenTV",
+    "expectedDocIds": [
+      "sky-united-kingdom-10"
+    ],
+    "retrievedDocIds": [
+      "sky-united-kingdom-10",
+      "sky-united-kingdom-2",
+      "sky-united-kingdom-0"
+    ],
+    "context": "### Sky_(United_Kingdom) (paragraph 10)\nBSkyB's standard definition broadcasts are in DVB-compliant MPEG-2, with the Sky Movies and Sky Box Office channels including optional Dolby Digital soundtracks for recent films, although these are only accessible with a Sky+ box. Sky+ HD material is broadcast using MPEG-4 and most of the HD material uses the DVB-S2 standard. Interactive services and 7-day EPG use the proprietary OpenTV system, with set-top boxes including modems for a return path. Sky News, amongst other channels, provides a pseudo-video on demand interactive service by broadcasting looping video streams.\n\n### Sky_(United_Kingdom) (paragraph 2)\nWhile BSkyB had been excluded from being a part of the ONdigital consortium, thereby making them a competitor by default, BSkyB was able to join ITV Digital's free-to-air replacement, Freeview, in which it holds an equal stake with the BBC, ITV, Channel 4 and National Grid Wireless. Prior to October 2005, three BSkyB channels were available on this platform: Sky News, Sky Three, and Sky Sports News. Initially BSkyB provided Sky Travel to the service. However, this was replaced by Sky Three on 31 October 2005, which was itself later re-branded as 'Pick TV' in 2011.\n\n### Sky_(United_Kingdom) (paragraph 0)\nFormed in November 1990 by the equal merger of Sky Television and British Satellite Broadcasting, BSkyB became the UK's largest digital subscription television company. Following BSkyB's 2014 acquisition of Sky Italia and a majority 90.04% interest in Sky Deutschland in November 2014, its holding company British Sky Broadcasting Group plc changed its name to Sky plc. The United Kingdom operations also changed the company name from British Sky Broadcasting Limited to Sky UK Limited, still trading as Sky."
+  },
+  {
+    "id": "sq-4",
+    "question": "How many auricles do most species have?",
+    "referenceAnswer": "four",
+    "expectedDocIds": [
+      "ctenophora-16"
+    ],
+    "retrievedDocIds": [
+      "ctenophora-17",
+      "ctenophora-16",
+      "ctenophora-0"
+    ],
+    "context": "### Ctenophora (paragraph 17)\nLobates have eight comb-rows, originating at the aboral pole and usually not extending beyond the body to the lobes; in species with (four) auricles, the cilia edging the auricles are extensions of cilia in four of the comb rows. Most lobates are quite passive when moving through the water, using the cilia on their comb rows for propulsion, although Leucothea has long and active auricles whose movements also contribute to propulsion. Members of the lobate genera Bathocyroe and Ocyropsis can escape from danger by clapping their lobes, so that the jet of expelled water drives them backwards very quickly. This may have enabled lobates to grow larger than cydippids and to have shapes that are less egg-like\n\n### Ctenophora (paragraph 16)\nThe Lobata have a pair of lobes, which are muscular, cuplike extensions of the body that project beyond the mouth. Their inconspicuous tentacles originate from the corners of the mouth, running in convoluted grooves and spreading out over the inner surface of the lobes (rather than trailing far behind, as in the Cydippida). Between the lobes on either side of the mouth, many species of lobates have four auricles, gelatinous projections edged with cilia that produce water currents that help direct microscopic prey toward the mouth. This combination of structures enables lobates to feed continuously on suspended planktonic prey.\n\n### Ctenophora (paragraph 0)\nCtenophora (/tᵻˈnɒfərə/; singular ctenophore, /ˈtɛnəfɔːr/ or /ˈtiːnəfɔːr/; from the Greek κτείς kteis 'comb' and φέρω pherō 'carry'; commonly known as comb jellies) is a phylum of animals that live in marine waters worldwide. Their most distinctive feature is the ‘combs’ – groups of cilia which they use for swimming – they are the largest animals that swim by means of cilia. Adults of various species range from a few millimeters to 1. 5 m (4 ft 11 in) in size"
+  },
+  {
+    "id": "sq-5",
+    "question": "What percentage of private school students go to Catholic schools?",
+    "referenceAnswer": "61",
+    "expectedDocIds": [
+      "victoria-australia-17"
+    ],
+    "retrievedDocIds": [
+      "victoria-australia-17",
+      "victoria-australia-0",
+      "huguenot-0"
+    ],
+    "context": "### Victoria_(Australia) (paragraph 17)\nAs of August 2010, Victoria had 1,548 public schools, 489 Catholic schools and 214 independent schools. Just under 540,800 students were enrolled in public schools, and just over 311,800 in private schools. Over 61 per cent of private students attend Catholic schools. Retention rates for the final two years of secondary school were 77 per cent for public school students and 90 per cent for private school students\n\n### Victoria_(Australia) (paragraph 0)\nThe economy of Victoria is highly diversified: service sectors including financial and property services, health, education, wholesale, retail, hospitality and manufacturing constitute the majority of employment. Victoria's total gross state product (GSP) is ranked second in Australia, although Victoria is ranked fourth in terms of GSP per capita because of its limited mining activity. Culturally, Melbourne is home to a number of museums, art galleries and theatres and is also described as the \"sporting capital of Australia\". The ground is also considered the \"spiritual home\" of Australian cricket and Australian rules football, and hosts the grand final of the Australian Football League (AFL) each year, usually drawing crowds of over 95,000 people\n\n### Huguenot (paragraph 0)\nHuguenot numbers peaked near an estimated two million by 1562, concentrated mainly in the southern and central parts of France, about one-eighth the number of French Catholics. As Huguenots gained influence and more openly displayed their faith, Catholic hostility grew, in spite of increasingly liberal political concessions and edicts of toleration from the French crown. A series of religious conflicts followed, known as the Wars of Religion, fought intermittently from 1562 to 1598. The wars finally ended with the granting of the Edict of Nantes, which granted the Huguenots substantial religious, political and military autonomy."
+  },
+  {
+    "id": "sq-6",
+    "question": "Jellyfish ans sea anemones belong to what phylum?",
+    "referenceAnswer": "cnidarians",
+    "expectedDocIds": [
+      "ctenophora-5"
+    ],
+    "retrievedDocIds": [
+      "ctenophora-5",
+      "ctenophora-0",
+      "ctenophora-8"
+    ],
+    "context": "### Ctenophora (paragraph 5)\nCtenophores form an animal phylum that is more complex than sponges, about as complex as cnidarians (jellyfish, sea anemones, etc.), and less complex than bilaterians (which include almost all other animals). Unlike sponges, both ctenophores and cnidarians have: cells bound by inter-cell connections and carpet-like basement membranes; muscles; nervous systems; and some have sensory organs. Ctenophores are distinguished from all other animals by having colloblasts, which are sticky and adhere to prey, although a few ctenophore species lack them.\n\n### Ctenophora (paragraph 0)\nCtenophora (/tᵻˈnɒfərə/; singular ctenophore, /ˈtɛnəfɔːr/ or /ˈtiːnəfɔːr/; from the Greek κτείς kteis 'comb' and φέρω pherō 'carry'; commonly known as comb jellies) is a phylum of animals that live in marine waters worldwide. Adults of various species range from a few millimeters to 1. Some authors combined ctenophores and cnidarians in one phylum, Coelenterata, as both groups rely on water flow through the body cavity for both digestion and respiration. Increasing awareness of the differences persuaded more recent authors to classify them as separate phyla\n\n### Ctenophora (paragraph 8)\nFor a phylum with relatively few species, ctenophores have a wide range of body plans. Coastal species need to be tough enough to withstand waves and swirling sediment particles, while some oceanic species are so fragile that it is very difficult to capture them intact for study. In addition oceanic species do not preserve well, and are known mainly from photographs and from observers' notes. Hence most attention has until recently concentrated on three coastal genera – Pleurobrachia, Beroe and Mnemiopsis"
+  },
+  {
+    "id": "sq-7",
+    "question": "What percentage of a high pressure engine's efficiency has the Energiprojekt AB engine achieved?",
+    "referenceAnswer": "27-30",
+    "expectedDocIds": [
+      "steam-engine-28"
+    ],
+    "retrievedDocIds": [
+      "steam-engine-28",
+      "steam-engine-7",
+      "steam-engine-2"
+    ],
+    "context": "### Steam_engine (paragraph 28)\nAlthough the reciprocating steam engine is no longer in widespread commercial use, various companies are exploring or exploiting the potential of the engine as an alternative to internal combustion engines. The company Energiprojekt AB in Sweden has made progress in using modern materials for harnessing the power of steam. The efficiency of Energiprojekt's steam engine reaches some 27-30% on high-pressure engines. It is a single-step, 5-cylinder engine (no compound) with superheated steam and consumes approx\n\n### Steam_engine (paragraph 7)\nIn 1781 James Watt patented a steam engine that produced continuous rotary motion. Watt's ten-horsepower engines enabled a wide range of manufacturing machinery to be powered. The stationary steam engine was a key component of the Industrial Revolution, allowing factories to locate where water power was unavailable. The atmospheric engines of Newcomen and Watt were large compared to the amount of power they produced, but high pressure steam engines were light enough to be applied to vehicles such as traction engines and the railway locomotives\n\n### Steam_engine (paragraph 2)\nThe first full-scale working railway steam locomotive was built by Richard Trevithick in the United Kingdom and, on 21 February 1804, the world's first railway journey took place as Trevithick's unnamed steam locomotive hauled a train along the tramway from the Pen-y-darren ironworks, near Merthyr Tydfil to Abercynon in south Wales. The design incorporated a number of important innovations that included using high-pressure steam which reduced the weight of the engine and increased its efficiency. Trevithick visited the Newcastle area later in 1804 and the colliery railways in north-east England became the leading centre for experimentation and development of steam locomotives."
+  },
+  {
+    "id": "sq-8",
+    "question": "Other than Universal and Warner Brothers, what other company runs a major record company?",
+    "referenceAnswer": "Sony",
+    "expectedDocIds": [
+      "southern-california-6"
+    ],
+    "retrievedDocIds": [
+      "southern-california-6",
+      "sky-united-kingdom-0",
+      "southern-california-0"
+    ],
+    "context": "### Southern_California (paragraph 6)\nThe motion picture, television, and music industry is centered on the Los Angeles in southern California. Hollywood, a district within Los Angeles, is also a name associated with the motion picture industry. Headquartered in southern California are The Walt Disney Company (which also owns ABC), Sony Pictures, Universal, MGM, Paramount Pictures, 20th Century Fox, and Warner Brothers. Universal, Warner Brothers, and Sony also run major record companies as well.\n\n### Sky_(United_Kingdom) (paragraph 0)\nFormed in November 1990 by the equal merger of Sky Television and British Satellite Broadcasting, BSkyB became the UK's largest digital subscription television company. Following BSkyB's 2014 acquisition of Sky Italia and a majority 90.04% interest in Sky Deutschland in November 2014, its holding company British Sky Broadcasting Group plc changed its name to Sky plc. The United Kingdom operations also changed the company name from British Sky Broadcasting Limited to Sky UK Limited, still trading as Sky.\n\n### Southern_California (paragraph 0)\nSouthern California, often abbreviated SoCal, is a geographic and cultural region that generally comprises California's southernmost 10 counties. The region is traditionally described as \"eight counties\", based on demographics and economic ties: Imperial, Los Angeles, Orange, Riverside, San Bernardino, San Diego, Santa Barbara, and Ventura. The more extensive 10-county definition, including Kern and San Luis Obispo counties, is also used based on historical political divisions. Southern California is a major economic center for the state of California and the United States."
+  },
+  {
+    "id": "sq-9",
+    "question": "To what is singlet oxygen more reactive?",
+    "referenceAnswer": "organic molecules",
+    "expectedDocIds": [
+      "oxygen-21"
+    ],
+    "retrievedDocIds": [
+      "oxygen-21",
+      "oxygen-1",
+      "oxygen-0"
+    ],
+    "context": "### Oxygen (paragraph 21)\nSinglet oxygen is a name given to several higher-energy species of molecular O. It is much more reactive towards common organic molecules than is molecular oxygen per se. In nature, singlet oxygen is commonly formed from water during photosynthesis, using the energy of sunlight. Carotenoids in photosynthetic organisms (and possibly also in animals) play a major role in absorbing energy from singlet oxygen and converting it to the unexcited ground state before it can cause harm to tissues\n\n### Oxygen (paragraph 1)\nMost of the mass of living organisms is oxygen as it is a part of water, the major constituent of lifeforms. Oxygen is used in cellular respiration and released by photosynthesis, which uses the energy of sunlight to produce oxygen from water. It is too chemically reactive to remain a free element in air without being continuously replenished by the photosynthetic action of living organisms. At even higher low earth orbit altitudes, sufficient atomic oxygen is present to cause erosion for spacecraft\n\n### Oxygen (paragraph 0)\nOxygen is a chemical element with symbol O and atomic number 8. It is a member of the chalcogen group on the periodic table and is a highly reactive nonmetal and oxidizing agent that readily forms compounds (notably oxides) with most elements. By mass, oxygen is the third-most abundant element in the universe, after hydrogen and helium. At standard temperature and pressure, two atoms of the element bind to form dioxygen, a colorless and odorless diatomic gas with the formula O"
+  },
+  {
+    "id": "sq-10",
+    "question": "What do most platyctenida have on their aboral surface?",
+    "referenceAnswer": "a pair of tentilla-bearing tentacles",
+    "expectedDocIds": [
+      "ctenophora-20"
+    ],
+    "retrievedDocIds": [
+      "ctenophora-20",
+      "ctenophora-19",
+      "ctenophora-8"
+    ],
+    "context": "### Ctenophora (paragraph 20)\nMost Platyctenida have oval bodies that are flattened in the oral-aboral direction, with a pair of tentilla-bearing tentacles on the aboral surface. They cling to and creep on surfaces by everting the pharynx and using it as a muscular \"foot\". All but one of the known platyctenid species lack comb-rows. Platyctenids are usually cryptically colored, live on rocks, algae, or the body surfaces of other invertebrates, and are often revealed by their long tentacles with many sidebranches, seen streaming off the back of the ctenophore into the current.\n\n### Ctenophora (paragraph 19)\nThe Cestida (\"belt animals\") are ribbon-shaped planktonic animals, with the mouth and aboral organ aligned in the middle of opposite edges of the ribbon. There is a pair of comb-rows along each aboral edge, and tentilla emerging from a groove all along the oral edge, which stream back across most of the wing-like body surface. Cestids can swim by undulating their bodies as well as by the beating of their comb-rows. 66 ft) long, can move much faster in what has been described as a \"darting motion\"\n\n### Ctenophora (paragraph 8)\nFor a phylum with relatively few species, ctenophores have a wide range of body plans. In addition oceanic species do not preserve well, and are known mainly from photographs and from observers' notes. Hence most attention has until recently concentrated on three coastal genera – Pleurobrachia, Beroe and Mnemiopsis. At least two textbooks base their descriptions of ctenophores on the cydippid Pleurobrachia"
+  },
+  {
+    "id": "sq-11",
+    "question": "In which article does the Treaty of Lisbon prohibit anti-competitive agreements?",
+    "referenceAnswer": "Article 101(1)",
+    "expectedDocIds": [
+      "european-union-law-28"
+    ],
+    "retrievedDocIds": [
+      "european-union-law-28",
+      "european-union-law-36",
+      "european-union-law-1"
+    ],
+    "context": "### European_Union_law (paragraph 28)\nToday, the Treaty of Lisbon prohibits anti-competitive agreements in Article 101(1), including price fixing. According to Article 101(2) any such agreements are automatically void. Article 101(3) establishes exemptions, if the collusion is for distributional or technological innovation, gives consumers a \"fair share\" of the benefit and does not include unreasonable restraints that risk eliminating competition anywhere (or compliant with the general principle of European Union law of proportionality). Article 107 lays down a general rule that the state may not aid or subsidise private parties in distortion of free competition and provides exemptions for charities, regional development objectives and in the event of a natural disaster\n\n### European_Union_law (paragraph 36)\nAs well as creating rights for \"workers\" who generally lack bargaining power in the market, the Treaty on the Functioning of the European Union also protects the \"freedom of establishment\" in article 49, and \"freedom to provide services\" in article 56. The Court of Justice has held that both a member state government and a private party can hinder freedom of establishment, so article 49 has both \"vertical\" and \"horizontal\" direct effect. In Reyners v Belgium the Court of Justice held that a refusal to admit a lawyer to the Belgian bar because he lacked Belgian nationality was unjustified. TFEU article 49 says states are exempt from infringing others' freedom of establishment when they exercise \"official authority\", but this did an advocate's work (as opposed to a court's) was not official\n\n### European_Union_law (paragraph 1)\nEuropean Union law is applied by the courts of member states and the Court of Justice of the European Union. Where the laws of member states provide for lesser rights European Union law can be enforced by the courts of member states. In case of European Union law which should have been transposed into the laws of member states, such as Directives, the European Commission can take proceedings against the member state under the Treaty on the Functioning of the European Union. The European Court of Justice is the highest court able to interpret European Union law"
+  },
+  {
+    "id": "sq-12",
+    "question": "What ctenophore was accidentally introduced into The Black Sea?",
+    "referenceAnswer": "Mnemiopsis",
+    "expectedDocIds": [
+      "ctenophora-3"
+    ],
+    "retrievedDocIds": [
+      "ctenophora-3",
+      "ctenophora-0",
+      "ctenophora-8"
+    ],
+    "context": "### Ctenophora (paragraph 3)\nIn bays where they occur in very high numbers, predation by ctenophores may control the populations of small zooplanktonic organisms such as copepods, which might otherwise wipe out the phytoplankton (planktonic plants), which are a vital part of marine food chains. One ctenophore, Mnemiopsis, has accidentally been introduced into the Black Sea, where it is blamed for causing fish stocks to collapse by eating both fish larvae and organisms that would otherwise have fed the fish. The situation was aggravated by other factors, such as over-fishing and long-term environmental changes that promoted the growth of the Mnemiopsis population. The later accidental introduction of Beroe helped to mitigate the problem, as Beroe preys on other ctenophores\n\n### Ctenophora (paragraph 0)\nCtenophora (/tᵻˈnɒfərə/; singular ctenophore, /ˈtɛnəfɔːr/ or /ˈtiːnəfɔːr/; from the Greek κτείς kteis 'comb' and φέρω pherō 'carry'; commonly known as comb jellies) is a phylum of animals that live in marine waters worldwide. Their most distinctive feature is the ‘combs’ – groups of cilia which they use for swimming – they are the largest animals that swim by means of cilia. Like cnidarians, their bodies consist of a mass of jelly, with one layer of cells on the outside and another lining the internal cavity. Increasing awareness of the differences persuaded more recent authors to classify them as separate phyla\n\n### Ctenophora (paragraph 8)\nFor a phylum with relatively few species, ctenophores have a wide range of body plans. Coastal species need to be tough enough to withstand waves and swirling sediment particles, while some oceanic species are so fragile that it is very difficult to capture them intact for study. In addition oceanic species do not preserve well, and are known mainly from photographs and from observers' notes. At least two textbooks base their descriptions of ctenophores on the cydippid Pleurobrachia"
+  },
+  {
+    "id": "sq-13",
+    "question": "What is the average plant biosmass?",
+    "referenceAnswer": "356 ± 47 tonnes per hectare",
+    "expectedDocIds": [
+      "amazon-rainforest-9"
+    ],
+    "retrievedDocIds": [
+      "amazon-rainforest-9",
+      "amazon-rainforest-0",
+      "ctenophora-2"
+    ],
+    "context": "### Amazon_rainforest (paragraph 9)\nThe biodiversity of plant species is the highest on Earth with one 2001 study finding a quarter square kilometer (62 acres) of Ecuadorian rainforest supports more than 1,100 tree species. The average plant biomass is estimated at 356 ± 47 tonnes per hectare. To date, an estimated 438,000 species of plants of economic and social interest have been registered in the region with many more remaining to be discovered or catalogued. The total number of tree species in the region is estimated at 16,000\n\n### Amazon_rainforest (paragraph 0)\nThe Amazon rainforest (Portuguese: Floresta Amazônica or Amazônia; Spanish: Selva Amazónica, Amazonía or usually Amazonia; French: Forêt amazonienne; Dutch: Amazoneregenwoud), also known in English as Amazonia or the Amazon Jungle, is a moist broadleaf forest that covers most of the Amazon basin of South America. This basin encompasses 7,000,000 square kilometres (2,700,000 sq mi), of which 5,500,000 square kilometres (2,100,000 sq mi) are covered by the rainforest. The majority of the forest is contained within Brazil, with 60% of the rainforest, followed by Peru with 13%, Colombia with 10%, and with minor amounts in Venezuela, Ecuador, Bolivia, Guyana, Suriname and French Guiana. The Amazon represents over half of the planet's remaining rainforests, and comprises the largest and most biodiverse tract of tropical rainforest in the world, with an estimated 390 billion individual trees divided into 16,000 species\n\n### Ctenophora (paragraph 2)\nSome are simultaneous hermaphrodites, which can produce both eggs and sperm at the same time. Others are sequential hermaphrodites, in which the eggs and sperm mature at different times. Fertilization is generally external, although platyctenids' eggs are fertilized inside their parents' bodies and kept there until they hatch. The exceptions are the beroids, whose young are miniature beroids with large mouths and no tentacles, and the platyctenids, whose young live as cydippid-like plankton until they reach near-adult size, but then sink to the bottom and rapidly metamorphose into the adult form"
+  },
+  {
+    "id": "sq-14",
+    "question": "What type of exercise does research show receives a boost in performance from oxygen?",
+    "referenceAnswer": "aerobic",
+    "expectedDocIds": [
+      "oxygen-32"
+    ],
+    "retrievedDocIds": [
+      "oxygen-32",
+      "oxygen-21",
+      "oxygen-1"
+    ],
+    "context": "### Oxygen (paragraph 32)\nOxygen, as a supposed mild euphoric, has a history of recreational use in oxygen bars and in sports. Professional athletes, especially in American football, also sometimes go off field between plays to wear oxygen masks in order to get a \"boost\" in performance. Available studies support a performance boost from enriched O. 2 mixtures only if they are breathed during aerobic exercise\n\n### Oxygen (paragraph 21)\nSinglet oxygen is a name given to several higher-energy species of molecular O. In nature, singlet oxygen is commonly formed from water during photosynthesis, using the energy of sunlight. It is also produced in the troposphere by the photolysis of ozone by light of short wavelength, and by the immune system as a source of active oxygen. Carotenoids in photosynthetic organisms (and possibly also in animals) play a major role in absorbing energy from singlet oxygen and converting it to the unexcited ground state before it can cause harm to tissues\n\n### Oxygen (paragraph 1)\nMany major classes of organic molecules in living organisms, such as proteins, nucleic acids, carbohydrates, and fats, contain oxygen, as do the major inorganic compounds that are constituents of animal shells, teeth, and bone. Oxygen is used in cellular respiration and released by photosynthesis, which uses the energy of sunlight to produce oxygen from water. It is too chemically reactive to remain a free element in air without being continuously replenished by the photosynthetic action of living organisms. 3), strongly absorbs UVB radiation and consequently the high-altitude ozone layer helps protect the biosphere from ultraviolet radiation, but is a pollutant near the surface where it is a by-product of smog"
+  },
+  {
+    "id": "sq-15",
+    "question": "In what year did Edmond's characterize a \"good\" algorithm?",
+    "referenceAnswer": "1965",
+    "expectedDocIds": [
+      "computational-complexity-theory-44"
+    ],
+    "retrievedDocIds": [
+      "computational-complexity-theory-44",
+      "computational-complexity-theory-2",
+      "computational-complexity-theory-1"
+    ],
+    "context": "### Computational_complexity_theory (paragraph 44)\nAs Fortnow & Homer (2003) point out, the beginning of systematic studies in computational complexity is attributed to the seminal paper \"On the Computational Complexity of Algorithms\" by Juris Hartmanis and Richard Stearns (1965), which laid out the definitions of time and space complexity and proved the hierarchy theorems. Also, in 1965 Edmonds defined a \"good\" algorithm as one with running time bounded by a polynomial of the input size.\n\n### Computational_complexity_theory (paragraph 2)\nClosely related fields in theoretical computer science are analysis of algorithms and computability theory. A key distinction between analysis of algorithms and computational complexity theory is that the former is devoted to analyzing the amount of resources needed by a particular algorithm to solve a problem, whereas the latter asks a more general question about all possible algorithms that could be used to solve the same problem. More precisely, it tries to classify problems that can or cannot be solved with appropriately restricted resources. In turn, imposing restrictions on the available resources is what distinguishes computational complexity from computability theory: the latter theory asks what kind of problems can, in principle, be solved algorithmically.\n\n### Computational_complexity_theory (paragraph 1)\nA problem is regarded as inherently difficult if its solution requires significant resources, whatever the algorithm used. The theory formalizes this intuition, by introducing mathematical models of computation to study these problems and quantifying the amount of resources needed to solve them, such as time and storage. Other complexity measures are also used, such as the amount of communication (used in communication complexity), the number of gates in a circuit (used in circuit complexity) and the number of processors (used in parallel computing). One of the roles of computational complexity theory is to determine the practical limits on what computers can and cannot do."
+  },
+  {
+    "id": "sq-16",
+    "question": "Where can ctenophores be found in large amounts?",
+    "referenceAnswer": "In bays",
+    "expectedDocIds": [
+      "ctenophora-3"
+    ],
+    "retrievedDocIds": [
+      "ctenophora-3",
+      "ctenophora-1",
+      "ctenophora-8"
+    ],
+    "context": "### Ctenophora (paragraph 3)\nCtenophores may be abundant during the summer months in some coastal locations, but in other places they are uncommon and difficult to find. In bays where they occur in very high numbers, predation by ctenophores may control the populations of small zooplanktonic organisms such as copepods, which might otherwise wipe out the phytoplankton (planktonic plants), which are a vital part of marine food chains. One ctenophore, Mnemiopsis, has accidentally been introduced into the Black Sea, where it is blamed for causing fish stocks to collapse by eating both fish larvae and organisms that would otherwise have fed the fish. The later accidental introduction of Beroe helped to mitigate the problem, as Beroe preys on other ctenophores\n\n### Ctenophora (paragraph 1)\nAlmost all ctenophores are predators, taking prey ranging from microscopic larvae and rotifers to the adults of small crustaceans; the exceptions are juveniles of two species, which live as parasites on the salps on which adults of their species feed. In favorable circumstances, ctenophores can eat ten times their own weight in a day. The phylum has a wide range of body forms, including the flattened, deep-sea platyctenids, in which the adults of most species lack combs, and the coastal beroids, which lack tentacles and prey on other ctenophores by using huge mouths armed with groups of large, stiffened cilia that act as teeth. These variations enable different species to build huge populations in the same area, because they specialize in different types of prey, which they capture by as wide a range of methods as spiders use\n\n### Ctenophora (paragraph 8)\nFor a phylum with relatively few species, ctenophores have a wide range of body plans. Coastal species need to be tough enough to withstand waves and swirling sediment particles, while some oceanic species are so fragile that it is very difficult to capture them intact for study. In addition oceanic species do not preserve well, and are known mainly from photographs and from observers' notes. At least two textbooks base their descriptions of ctenophores on the cydippid Pleurobrachia"
+  },
+  {
+    "id": "sq-17",
+    "question": "What has allowed for the Savanna region to expand into the tropics?",
+    "referenceAnswer": "Climate fluctuations during the last 34 million years have allowed savanna regions to expand into the tropics.",
+    "expectedDocIds": [
+      "amazon-rainforest-1"
+    ],
+    "retrievedDocIds": [
+      "amazon-rainforest-1",
+      "amazon-rainforest-0",
+      "southern-california-0"
+    ],
+    "context": "### Amazon_rainforest (paragraph 1)\nFollowing the Cretaceous–Paleogene extinction event, the extinction of the dinosaurs and the wetter climate may have allowed the tropical rainforest to spread out across the continent. Climate fluctuations during the last 34 million years have allowed savanna regions to expand into the tropics. During the Oligocene, for example, the rainforest spanned a relatively narrow band. However, the rainforest still managed to thrive during these glacial periods, allowing for the survival and evolution of a broad diversity of species\n\n### Amazon_rainforest (paragraph 0)\nThe Amazon rainforest (Portuguese: Floresta Amazônica or Amazônia; Spanish: Selva Amazónica, Amazonía or usually Amazonia; French: Forêt amazonienne; Dutch: Amazoneregenwoud), also known in English as Amazonia or the Amazon Jungle, is a moist broadleaf forest that covers most of the Amazon basin of South America. This region includes territory belonging to nine nations. The majority of the forest is contained within Brazil, with 60% of the rainforest, followed by Peru with 13%, Colombia with 10%, and with minor amounts in Venezuela, Ecuador, Bolivia, Guyana, Suriname and French Guiana. The Amazon represents over half of the planet's remaining rainforests, and comprises the largest and most biodiverse tract of tropical rainforest in the world, with an estimated 390 billion individual trees divided into 16,000 species\n\n### Southern_California (paragraph 0)\nSouthern California, often abbreviated SoCal, is a geographic and cultural region that generally comprises California's southernmost 10 counties. The region is traditionally described as \"eight counties\", based on demographics and economic ties: Imperial, Los Angeles, Orange, Riverside, San Bernardino, San Diego, Santa Barbara, and Ventura. The more extensive 10-county definition, including Kern and San Luis Obispo counties, is also used based on historical political divisions. Southern California is a major economic center for the state of California and the United States."
+  },
+  {
+    "id": "sq-18",
+    "question": "From 1947 to 1967, how much did the price of oil increase?",
+    "referenceAnswer": "risen by less than two percent per year",
+    "expectedDocIds": [
+      "1973-oil-crisis-3"
+    ],
+    "retrievedDocIds": [
+      "1973-oil-crisis-3",
+      "1973-oil-crisis-2",
+      "1973-oil-crisis-0"
+    ],
+    "context": "### 1973_oil_crisis (paragraph 3)\nThis contributed to the \"Oil Shock\". From 1947 to 1967, the dollar price of oil had risen by less than two percent per year. Until the oil shock, the price had also remained fairly stable versus other currencies and commodities. The substantial price increases of 1973–1974 largely returned their prices and corresponding incomes to Bretton Woods levels in terms of commodities such as gold\n\n### 1973_oil_crisis (paragraph 2)\nThe US abandoned the Gold Exchange Standard whereby the value of the dollar had been pegged to the price of gold and all other currencies were pegged to the dollar, whose value was left to \"float\" (rise and fall according to market demand). The result was a depreciation of the dollar and other industrialized nations' currencies. Because oil was priced in dollars, oil producers' real income decreased. In September 1971, OPEC issued a joint communiqué stating that, from then on, they would price oil in terms of a fixed amount of gold\n\n### 1973_oil_crisis (paragraph 0)\nThe 1973 oil crisis began in October 1973 when the members of the Organization of Arab Petroleum Exporting Countries (OAPEC, consisting of the Arab members of OPEC plus Egypt and Syria) proclaimed an oil embargo. By the end of the embargo in March 1974, the price of oil had risen from US$3 per barrel to nearly $12 globally; US prices were significantly higher. The embargo caused an oil crisis, or \"shock\", with many short- and long-term effects on global politics and the global economy. It was later called the \"first oil shock\", followed by the 1979 oil crisis, termed the \"second oil shock.\""
+  },
+  {
+    "id": "sq-19",
+    "question": "What branch of theoretical computer science deals with broadly classifying computational problems by difficulty and class of relationship?",
+    "referenceAnswer": "Computational complexity theory",
+    "expectedDocIds": [
+      "computational-complexity-theory-0"
+    ],
+    "retrievedDocIds": [
+      "computational-complexity-theory-2",
+      "computational-complexity-theory-0",
+      "computational-complexity-theory-1"
+    ],
+    "context": "### Computational_complexity_theory (paragraph 2)\nClosely related fields in theoretical computer science are analysis of algorithms and computability theory. A key distinction between analysis of algorithms and computational complexity theory is that the former is devoted to analyzing the amount of resources needed by a particular algorithm to solve a problem, whereas the latter asks a more general question about all possible algorithms that could be used to solve the same problem. More precisely, it tries to classify problems that can or cannot be solved with appropriately restricted resources. In turn, imposing restrictions on the available resources is what distinguishes computational complexity from computability theory: the latter theory asks what kind of problems can, in principle, be solved algorithmically.\n\n### Computational_complexity_theory (paragraph 0)\nComputational complexity theory is a branch of the theory of computation in theoretical computer science that focuses on classifying computational problems according to their inherent difficulty, and relating those classes to each other. A computational problem is understood to be a task that is in principle amenable to being solved by a computer, which is equivalent to stating that the problem may be solved by mechanical application of mathematical steps, such as an algorithm.\n\n### Computational_complexity_theory (paragraph 1)\nA problem is regarded as inherently difficult if its solution requires significant resources, whatever the algorithm used. The theory formalizes this intuition, by introducing mathematical models of computation to study these problems and quantifying the amount of resources needed to solve them, such as time and storage. Other complexity measures are also used, such as the amount of communication (used in communication complexity), the number of gates in a circuit (used in circuit complexity) and the number of processors (used in parallel computing). One of the roles of computational complexity theory is to determine the practical limits on what computers can and cannot do."
+  },
+  {
+    "id": "sq-20",
+    "question": "Which article allows the European Council to govern mergers between firms?",
+    "referenceAnswer": "Article 102",
+    "expectedDocIds": [
+      "european-union-law-28"
+    ],
+    "retrievedDocIds": [
+      "european-union-law-28",
+      "european-union-law-36",
+      "european-union-law-2"
+    ],
+    "context": "### European_Union_law (paragraph 28)\nAccording to Article 101(2) any such agreements are automatically void. Article 101(3) establishes exemptions, if the collusion is for distributional or technological innovation, gives consumers a \"fair share\" of the benefit and does not include unreasonable restraints that risk eliminating competition anywhere (or compliant with the general principle of European Union law of proportionality). Article 102 allows the European Council to regulations to govern mergers between firms (the current regulation is the Regulation 139/2004/EC). Articles 106 and 107 provide that member state's right to deliver public services may not be obstructed, but that otherwise public enterprises must adhere to the same competition principles as companies\n\n### European_Union_law (paragraph 36)\nAs well as creating rights for \"workers\" who generally lack bargaining power in the market, the Treaty on the Functioning of the European Union also protects the \"freedom of establishment\" in article 49, and \"freedom to provide services\" in article 56. This meant that a lawyer from Stuttgart, who had set up chambers in Milan and was censured by the Milan Bar Council for not having registered, was entitled to bring a claim under for establishment freedom, rather than service freedom. All people or entities that engage in economic activity, particularly the self-employed, or \"undertakings\" such as companies or firms, have a right to set up an enterprise without unjustified restrictions. The Court of Justice has held that both a member state government and a private party can hinder freedom of establishment, so article 49 has both \"vertical\" and \"horizontal\" direct effect\n\n### European_Union_law (paragraph 2)\nThe EU's primary constitutional sources are the Treaty on European Union (TEU) and the Treaty on the Functioning of the European Union (TFEU), which have been agreed or adhered to among the governments of all 28 member states. The European Commission has the initiative to propose legislation. During the ordinary legislative procedure, the Council (which are ministers from member state governments) and the European Parliament (elected by citizens) can make amendments and must give their consent for laws to pass. The \"European Council\" (rather than the Council, made up of different government Ministers) is composed of the Prime Ministers or executive Presidents of the member states"
+  },
+  {
+    "id": "sq-21",
+    "question": "Why are coastal species tough?",
+    "referenceAnswer": "to withstand waves and swirling sediment particles",
+    "expectedDocIds": [
+      "ctenophora-8"
+    ],
+    "retrievedDocIds": [
+      "ctenophora-8",
+      "ctenophora-13",
+      "ctenophora-1"
+    ],
+    "context": "### Ctenophora (paragraph 8)\nFor a phylum with relatively few species, ctenophores have a wide range of body plans. Coastal species need to be tough enough to withstand waves and swirling sediment particles, while some oceanic species are so fragile that it is very difficult to capture them intact for study. In addition oceanic species do not preserve well, and are known mainly from photographs and from observers' notes. Hence most attention has until recently concentrated on three coastal genera – Pleurobrachia, Beroe and Mnemiopsis\n\n### Ctenophora (paragraph 13)\nCydippid ctenophores have bodies that are more or less rounded, sometimes nearly spherical and other times more cylindrical or egg-shaped; the common coastal \"sea gooseberry,\" Pleurobrachia, sometimes has an egg-shaped body with the mouth at the narrow end, although some individuals are more uniformly round. From opposite sides of the body extends a pair of long, slender tentacles, each housed in a sheath into which it can be withdrawn. Some species of cydippids have bodies that are flattened to various extents, so that they are wider in the plane of the tentacles.\n\n### Ctenophora (paragraph 1)\nAlmost all ctenophores are predators, taking prey ranging from microscopic larvae and rotifers to the adults of small crustaceans; the exceptions are juveniles of two species, which live as parasites on the salps on which adults of their species feed. Only 100–150 species have been validated, and possibly another 25 have not been fully described and named. The textbook examples are cydippids with egg-shaped bodies and a pair of retractable tentacles fringed with tentilla (\"little tentacles\") that are covered with colloblasts, sticky cells that capture prey. The phylum has a wide range of body forms, including the flattened, deep-sea platyctenids, in which the adults of most species lack combs, and the coastal beroids, which lack tentacles and prey on other ctenophores by using huge mouths armed with groups of large, stiffened cilia that act as teeth"
+  },
+  {
+    "id": "sq-22",
+    "question": "In what country is Normandy located?",
+    "referenceAnswer": "France",
+    "expectedDocIds": [
+      "normans-0"
+    ],
+    "retrievedDocIds": [
+      "normans-0",
+      "southern-california-0",
+      "victoria-australia-0"
+    ],
+    "context": "### Normans (paragraph 0)\nThe Normans (Norman: Nourmands; French: Normands; Latin: Normanni) were the people who in the 10th and 11th centuries gave their name to Normandy, a region in France. They were descended from Norse (\"Norman\" comes from \"Norseman\") raiders and pirates from Denmark, Iceland and Norway who, under their leader Rollo, agreed to swear fealty to King Charles III of West Francia. Through generations of assimilation and mixing with the native Frankish and Roman-Gaulish populations, their descendants would gradually merge with the Carolingian-based cultures of West Francia. The distinct cultural and ethnic identity of the Normans emerged initially in the first half of the 10th century, and it continued to evolve over the succeeding centuries.\n\n### Southern_California (paragraph 0)\nSouthern California, often abbreviated SoCal, is a geographic and cultural region that generally comprises California's southernmost 10 counties. The region is traditionally described as \"eight counties\", based on demographics and economic ties: Imperial, Los Angeles, Orange, Riverside, San Bernardino, San Diego, Santa Barbara, and Ventura. The more extensive 10-county definition, including Kern and San Luis Obispo counties, is also used based on historical political divisions. Southern California is a major economic center for the state of California and the United States.\n\n### Victoria_(Australia) (paragraph 0)\nVictoria's total gross state product (GSP) is ranked second in Australia, although Victoria is ranked fourth in terms of GSP per capita because of its limited mining activity. Culturally, Melbourne is home to a number of museums, art galleries and theatres and is also described as the \"sporting capital of Australia\". The Melbourne Cricket Ground is the largest stadium in Australia, and the host of the 1956 Summer Olympics and the 2006 Commonwealth Games. Victoria includes eight public universities, with the oldest, the University of Melbourne, having been founded in 1853"
+  },
+  {
+    "id": "sq-23",
+    "question": "How many protestants live in France today?",
+    "referenceAnswer": "one million",
+    "expectedDocIds": [
+      "huguenot-11"
+    ],
+    "retrievedDocIds": [
+      "huguenot-11",
+      "huguenot-0",
+      "huguenot-2"
+    ],
+    "context": "### Huguenot (paragraph 11)\nApproximately one million Protestants in modern France represent some 2% of its population. Most are concentrated in Alsace in northeast France and the Cévennes mountain region in the south, who still regard themselves as Huguenots to this day.[citation needed] A diaspora of French Australians still considers itself Huguenot, even after centuries of exile. Long integrated into Australian society, it is encouraged by the Huguenot Society of Australia to embrace and conserve its cultural heritage, aided by the Society's genealogical research services.\n\n### Huguenot (paragraph 0)\nHuguenot numbers peaked near an estimated two million by 1562, concentrated mainly in the southern and central parts of France, about one-eighth the number of French Catholics. As Huguenots gained influence and more openly displayed their faith, Catholic hostility grew, in spite of increasingly liberal political concessions and edicts of toleration from the French crown. A series of religious conflicts followed, known as the Wars of Religion, fought intermittently from 1562 to 1598. The wars finally ended with the granting of the Edict of Nantes, which granted the Huguenots substantial religious, political and military autonomy.\n\n### Huguenot (paragraph 2)\nThe availability of the Bible in vernacular languages was important to the spread of the Protestant movement and development of the Reformed church in France. The country had a long history of struggles with the papacy by the time the Protestant Reformation finally arrived. Around 1294, a French version of the Scriptures was prepared by the Roman Catholic priest, Guyard de Moulin. A two-volume illustrated folio paraphrase version based on his manuscript, by Jean de Rély, was printed in Paris in 1487."
+  },
+  {
+    "id": "sq-24",
+    "question": "What are cestida called?",
+    "referenceAnswer": "belt animals",
+    "expectedDocIds": [
+      "ctenophora-19"
+    ],
+    "retrievedDocIds": [
+      "huguenot-1",
+      "steam-engine-0",
+      "ctenophora-0"
+    ],
+    "context": "### Huguenot (paragraph 1)\nA term used originally in derision, Huguenot has unclear origins. Various hypotheses have been promoted. The nickname may have been a combined reference to the Swiss politician Besançon Hugues (died 1532) and the religiously conflicted nature of Swiss republicanism in his time, using a clever derogatory pun on the name Hugues by way of the Dutch word Huisgenoten (literally housemates), referring to the connotations of a somewhat related word in German Eidgenosse (Confederates as in \"a citizen of one of the states of the Swiss Confederacy\"). In Geneva, Hugues, though Catholic, was a leader of the \"Confederate Party\", so called because it favoured independence from the Duke of Savoy through an alliance between the city-state of Geneva and the Swiss Confederation\n\n### Steam_engine (paragraph 0)\nSteam engines are external combustion engines, where the working fluid is separate from the combustion products. Non-combustion heat sources such as solar power, nuclear power or geothermal energy may be used. The ideal thermodynamic cycle used to analyze this process is called the Rankine cycle. In the cycle, water is heated and transforms into steam within a boiler operating at a high pressure\n\n### Ctenophora (paragraph 0)\nCtenophora (/tᵻˈnɒfərə/; singular ctenophore, /ˈtɛnəfɔːr/ or /ˈtiːnəfɔːr/; from the Greek κτείς kteis 'comb' and φέρω pherō 'carry'; commonly known as comb jellies) is a phylum of animals that live in marine waters worldwide. Their most distinctive feature is the ‘combs’ – groups of cilia which they use for swimming – they are the largest animals that swim by means of cilia. Adults of various species range from a few millimeters to 1. In ctenophores, these layers are two cells deep, while those in cnidarians are only one cell deep"
+  },
+  {
+    "id": "sq-25",
+    "question": "What are the three sectors of construction?",
+    "referenceAnswer": "buildings, infrastructure and industrial",
+    "expectedDocIds": [
+      "construction-2"
+    ],
+    "retrievedDocIds": [
+      "construction-2",
+      "construction-0",
+      "construction-1"
+    ],
+    "context": "### Construction (paragraph 2)\nIn general, there are three sectors of construction: buildings, infrastructure and industrial. Building construction is usually further divided into residential and non-residential (commercial/institutional). Infrastructure is often called heavy/highway, heavy civil or heavy engineering. There are other ways to break the industry into sectors or markets\n\n### Construction (paragraph 0)\nConstruction is the process of constructing a building or infrastructure. Construction differs from manufacturing in that manufacturing typically involves mass production of similar items without a designated purchaser, while construction typically takes place on location for a known client. Construction as an industry comprises six to nine percent of the gross domestic product of developed countries. Construction starts with planning,[citation needed] design, and financing and continues until the project is built and ready for use.\n\n### Construction (paragraph 1)\nAn architect normally manages the job, and a construction manager, design engineer, construction engineer or project manager supervises it. For the successful execution of a project, effective planning is essential. Those involved with the design and execution of the infrastructure in question must consider zoning requirements, the environmental impact of the job, the successful scheduling, budgeting, construction-site safety, availability and transportation of building materials, logistics, inconvenience to the public caused by construction delays and bidding, etc. The largest construction projects are referred to as megaprojects"
+  },
+  {
+    "id": "sq-26",
+    "question": "What was the steam engine an important component of?",
+    "referenceAnswer": "Industrial Revolution",
+    "expectedDocIds": [
+      "steam-engine-7"
+    ],
+    "retrievedDocIds": [
+      "steam-engine-7",
+      "steam-engine-2",
+      "steam-engine-28"
+    ],
+    "context": "### Steam_engine (paragraph 7)\nIn 1781 James Watt patented a steam engine that produced continuous rotary motion. Watt's ten-horsepower engines enabled a wide range of manufacturing machinery to be powered. The stationary steam engine was a key component of the Industrial Revolution, allowing factories to locate where water power was unavailable. The atmospheric engines of Newcomen and Watt were large compared to the amount of power they produced, but high pressure steam engines were light enough to be applied to vehicles such as traction engines and the railway locomotives\n\n### Steam_engine (paragraph 2)\nThe first full-scale working railway steam locomotive was built by Richard Trevithick in the United Kingdom and, on 21 February 1804, the world's first railway journey took place as Trevithick's unnamed steam locomotive hauled a train along the tramway from the Pen-y-darren ironworks, near Merthyr Tydfil to Abercynon in south Wales. The design incorporated a number of important innovations that included using high-pressure steam which reduced the weight of the engine and increased its efficiency. Trevithick visited the Newcastle area later in 1804 and the colliery railways in north-east England became the leading centre for experimentation and development of steam locomotives.\n\n### Steam_engine (paragraph 28)\nAlthough the reciprocating steam engine is no longer in widespread commercial use, various companies are exploring or exploiting the potential of the engine as an alternative to internal combustion engines. The company Energiprojekt AB in Sweden has made progress in using modern materials for harnessing the power of steam. The efficiency of Energiprojekt's steam engine reaches some 27-30% on high-pressure engines. 8 lb) of steam per kWh"
+  },
+  {
+    "id": "sq-27",
+    "question": "What is the scientific designation of oxygen? ",
+    "referenceAnswer": "O2",
+    "expectedDocIds": [
+      "oxygen-15"
+    ],
+    "retrievedDocIds": [
+      "oxygen-21",
+      "oxygen-0",
+      "oxygen-15"
+    ],
+    "context": "### Oxygen (paragraph 21)\nSinglet oxygen is a name given to several higher-energy species of molecular O. It is much more reactive towards common organic molecules than is molecular oxygen per se. In nature, singlet oxygen is commonly formed from water during photosynthesis, using the energy of sunlight. It is also produced in the troposphere by the photolysis of ozone by light of short wavelength, and by the immune system as a source of active oxygen\n\n### Oxygen (paragraph 0)\nIt is a member of the chalcogen group on the periodic table and is a highly reactive nonmetal and oxidizing agent that readily forms compounds (notably oxides) with most elements. By mass, oxygen is the third-most abundant element in the universe, after hydrogen and helium. 8% of the Earth's atmosphere. Oxygen is the most abundant element by mass in the Earth's crust as part of oxide compounds such as silicon dioxide, making up almost half of the crust's mass\n\n### Oxygen (paragraph 15)\nThe common allotrope of elemental oxygen on Earth is called dioxygen, O. It is the form that is a major part of the Earth's atmosphere (see Occurrence). O2 has a bond length of 121 pm and a bond energy of 498 kJ·mol−1, which is smaller than the energy of other double bonds or pairs of single bonds in the biosphere and responsible for the exothermic reaction of O2 with any organic molecule. 2 are covered in the remainder of this article"
+  },
+  {
+    "id": "sq-28",
+    "question": "Besides fats, fatty acids, and amino acids,what other organic compounds contain oxygen?",
+    "referenceAnswer": "proteins",
+    "expectedDocIds": [
+      "oxygen-39"
+    ],
+    "retrievedDocIds": [
+      "oxygen-39",
+      "oxygen-1",
+      "oxygen-15"
+    ],
+    "context": "### Oxygen (paragraph 39)\nOnly a few common complex biomolecules, such as squalene and the carotenes, contain no oxygen. Of the organic compounds with biological relevance, carbohydrates contain the largest proportion by mass of oxygen. All fats, fatty acids, amino acids, and proteins contain oxygen (due to the presence of carbonyl groups in these acids and their ester residues). 4) groups in the biologically important energy-carrying molecules ATP and ADP, in the backbone and the purines (except adenine) and pyrimidines of RNA and DNA, and in bones as calcium phosphate and hydroxylapatite\n\n### Oxygen (paragraph 1)\nMany major classes of organic molecules in living organisms, such as proteins, nucleic acids, carbohydrates, and fats, contain oxygen, as do the major inorganic compounds that are constituents of animal shells, teeth, and bone. Oxygen is used in cellular respiration and released by photosynthesis, which uses the energy of sunlight to produce oxygen from water. Another form (allotrope) of oxygen, ozone (O. 3), strongly absorbs UVB radiation and consequently the high-altitude ozone layer helps protect the biosphere from ultraviolet radiation, but is a pollutant near the surface where it is a by-product of smog\n\n### Oxygen (paragraph 15)\nThe common allotrope of elemental oxygen on Earth is called dioxygen, O. It is the form that is a major part of the Earth's atmosphere (see Occurrence). O2 has a bond length of 121 pm and a bond energy of 498 kJ·mol−1, which is smaller than the energy of other double bonds or pairs of single bonds in the biosphere and responsible for the exothermic reaction of O2 with any organic molecule. Other aspects of O"
+  },
+  {
+    "id": "sq-29",
+    "question": "What is the common coastal pleurobrachia called?",
+    "referenceAnswer": "sea gooseberry",
+    "expectedDocIds": [
+      "ctenophora-13"
+    ],
+    "retrievedDocIds": [
+      "ctenophora-13",
+      "ctenophora-8",
+      "ctenophora-20"
+    ],
+    "context": "### Ctenophora (paragraph 13)\nCydippid ctenophores have bodies that are more or less rounded, sometimes nearly spherical and other times more cylindrical or egg-shaped; the common coastal \"sea gooseberry,\" Pleurobrachia, sometimes has an egg-shaped body with the mouth at the narrow end, although some individuals are more uniformly round. From opposite sides of the body extends a pair of long, slender tentacles, each housed in a sheath into which it can be withdrawn. Some species of cydippids have bodies that are flattened to various extents, so that they are wider in the plane of the tentacles.\n\n### Ctenophora (paragraph 8)\nFor a phylum with relatively few species, ctenophores have a wide range of body plans. Coastal species need to be tough enough to withstand waves and swirling sediment particles, while some oceanic species are so fragile that it is very difficult to capture them intact for study. Hence most attention has until recently concentrated on three coastal genera – Pleurobrachia, Beroe and Mnemiopsis. At least two textbooks base their descriptions of ctenophores on the cydippid Pleurobrachia\n\n### Ctenophora (paragraph 20)\nMost Platyctenida have oval bodies that are flattened in the oral-aboral direction, with a pair of tentilla-bearing tentacles on the aboral surface. They cling to and creep on surfaces by everting the pharynx and using it as a muscular \"foot\". All but one of the known platyctenid species lack comb-rows. Platyctenids are usually cryptically colored, live on rocks, algae, or the body surfaces of other invertebrates, and are often revealed by their long tentacles with many sidebranches, seen streaming off the back of the ctenophore into the current."
+  }
+]

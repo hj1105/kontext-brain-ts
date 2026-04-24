@@ -8,7 +8,9 @@
     "ralph": "node --import tsx src/ralph.ts",
     "squad": "node --import tsx src/squad-run.ts",
     "structured": "node --import tsx src/structured-bench.ts",
-    "hotpot": "node --import tsx src/hotpot-run.ts"
+    "hotpot": "node --import tsx src/hotpot-run.ts",
+    "dump-contexts": "node --import tsx src/dump-contexts.ts",
+    "score-claude": "node --import tsx src/score-claude.ts"
   },
   "dependencies": {
     "@kontext-brain/core": "workspace:*",

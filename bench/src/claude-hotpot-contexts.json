@@ -1,0 +1,302 @@
+[
+  {
+    "id": "hp-0",
+    "question": "What country of origin does Traveling Wilburys and Tom Petty have in common?",
+    "referenceAnswer": "American",
+    "expectedDocIds": [
+      "traveling-wilburys",
+      "tom-petty"
+    ],
+    "retrievedDocIds": [
+      "milan",
+      "messina",
+      "france-netherlands-relations"
+    ],
+    "context": "### Milan\nMilan ( or ; Italian: \"Milano\" ] ; Lombard: Milan ] (Milanese variant)) is the city capital of the Lombardy Region in Northern Italy and is the 2nd richest city in the European Union after Paris in 2016. It is the second most populous city in Italy after Rome, with the city proper having a population of 1,369,000 (the Metropolitan City of Milan has a population of 3,219,000).  Its geographical outskirt (that stretches beyond the boundaries of the Metropolitan City of Milan), has a population estimated to be about 5,270,000 in 1,891 km2 , ranking 2nd in the European Union.  The wider Milan metropolitan area, popular for Greater Milan, is a polycentric metropolitan region that comprehends almost every province of Lombardy, the Piedmont province of Novara, and some parts of the province of Piacenza which counts an estimated total population of 8,123,020.\n\n### Messina\nMessina ( ; ] , Sicilian: \"Missina\"; , Greek: Μεσσήνη ) is the capital of the Italian Metropolitan City of Messina.  It is the third-largest city on the island of Sicily, and the 13th-largest city in Italy, with a population of more than 238,000 inhabitants in the city proper and about 650,000 in the Metropolitan City.  It is located near the northeast corner of Sicily, at the Strait of Messina, opposite Villa San Giovanni on the mainland, and has close ties with Reggio Calabria.  According to Eurostat the FUA of the metropolitan area of Messina has, in 2014, 277,584 inhabitants.\n\n### France–Netherlands relations\nThe French–Dutch relations refer to the interstate and bilateral relations between France and the Netherlands. The two countries notably share a border division in the Caribbean island of Saint Martin, to which the northern part of the island is a French overseas collectivity known as the Collectivity of Saint Martin, while the southern part of the island is a Dutch constituent country known as Sint Maarten. Relations between the two countries date back to the 17th and 18th centuries when a conflict led to the transformation of the Dutch Republic to the Batavian Republic and eventually the Kingdom of Holland. Both nations are members of the OECD, as well as founding members of the European Union, NATO, and the United Nations"
+  },
+  {
+    "id": "hp-1",
+    "question": "The British longhair is defined by what registries?",
+    "referenceAnswer": "domestic cat",
+    "expectedDocIds": [
+      "domestic-long-haired-cat",
+      "british-longhair"
+    ],
+    "retrievedDocIds": [
+      "domestic-long-haired-cat",
+      "asian-semi-longhair",
+      "british-longhair"
+    ],
+    "context": "### Domestic long-haired cat\nA domestic long-haired cat, or fluffy cat, is a cat of mixed ancestry – thus not belonging to any particular recognised cat breed – possessing a coat of semi-long to long fur.  Domestic long-haired cats should not be confused with the British Longhair, American Longhair, or other breeds with \"Longhair\" names, which are standardized breeds defined by various registries.  Domestic long-haireds are the second most popular cat in the United States after the domestic short-haired; one in ten of the ninety million cats in the US is a domestic long-hair.  Other generic terms are long-haired house cat and, in British English, long-haired moggie.\n\n### Asian Semi-longhair\nThe breed is also known by the name Tiffanie or Tiffany. Like the Asian Shorthair, the breed was developed in Britain and is not currently recognized by any U. Registries. It is related to, and in some registries distinct from, the Chantilly-Tiffany or Foreign Longhair, the North American variant\n\n### British Longhair\nThe British Longhair is a medium-sized, semi-long-haired breed of domestic cat, originating in Great Britain."
+  },
+  {
+    "id": "hp-2",
+    "question": "What Metropolitan City was Massimo Giordano born in?",
+    "referenceAnswer": "Naples",
+    "expectedDocIds": [
+      "massimo-giordano",
+      "pompei"
+    ],
+    "retrievedDocIds": [
+      "massimo-giordano",
+      "ivan-vaughan",
+      "theodor-w-adorno"
+    ],
+    "context": "### Massimo Giordano\nMassimo Giordano (born 19 February 1971) is an Italian-born operatic tenor who is known for his bel canto repertoire.  Giordano was born in Pompei, Italy into an Italian working-class family.\n\n### Ivan Vaughan\nIvan Vaughan (18 June 1942 – 16 August 1993) was a boyhood friend of John Lennon, and later schoolmate of Paul McCartney at the Liverpool Institute, both commencing school there in September 1953. He was born on the same day as McCartney in Liverpool. He played bass part-time in Lennon's first band, The Quarrymen, and was responsible for introducing Lennon to McCartney at a community event (the Woolton village fête) on 6 July 1957, where The Quarrymen were performing. McCartney impressed Lennon, who invited McCartney to join the band, which he did a day later\n\n### Theodor W. Adorno\nTheodor W. Adorno ( ; ] ; born Theodor Ludwig Wiesengrund; September 11, 1903 – August 6, 1969) was a German philosopher, sociologist, and composer known for his critical theory of society."
+  },
+  {
+    "id": "hp-3",
+    "question": "What Guiness World Record is held by the actor who stars as \"Jack\" in a series created by Jim O'Doherty?.",
+    "referenceAnswer": "youngest TV director ever",
+    "expectedDocIds": [
+      "kickin-it",
+      "leo-howard"
+    ],
+    "retrievedDocIds": [
+      "kickin-it",
+      "leo-howard",
+      "snapper-carr"
+    ],
+    "context": "### Kickin' It\nKickin' It is an American martial arts-inspired comedy television series that originally aired on Disney XD from June 13, 2011 to March 25, 2015.  Created and executive produced by Jim O'Doherty, the series follows the karate instructor at an under-performing martial arts academy, played by Jason Earles, and his five misfit students, played by Leo Howard, Dylan Riley Snyder, , Olivia Holt, and .\n\n### Leo Howard\nLeo Richard Howard (born July 13, 1997) is an American actor and martial artist.  He began his acting career at the age of seven, Howard is known for incorporating his karate skills into his feature film and television roles; as \"Young Snake-Eyes\" in the 2009 action film, \"\", as \"Young Conan\" in the 2011 fantasy film, \"Conan the Barbarian\", and as \"Jack\" on the Disney XD comedy series, \"Kickin' It\".  Howard was certified as the youngest TV director ever by the Guinness World Records for his work on the episode \"Fight at the Museum\" in the fourth season of the \"Kickin' It\" TV series at age 16.\n\n### Snapper Carr\nLucas \"Snapper\" Carr is a fictional character appearing in American comic books published by DC Comics. The character, whose fictional nickname is almost always used by other characters in favor of his given name, was created by Gardner Fox (writer) and Mike Sekowsky (penciller), and made his first appearance in \"The Brave and the Bold\" in February 1960. From 1960 to 1969, Snapper Carr appeared as a supporting character to the Justice League of America, a superhero team. \" limited-series comic book gave him superpowers"
+  },
+  {
+    "id": "hp-4",
+    "question": "What is the ratio of flow velocity past a boundary to the local speed of sound for a Saab JAS 39 Gripen?",
+    "referenceAnswer": "2",
+    "expectedDocIds": [
+      "saab-jas-39-gripen",
+      "mach-number"
+    ],
+    "retrievedDocIds": [
+      "volvo-rm12",
+      "ps-05-a",
+      "linville-falls"
+    ],
+    "context": "### Volvo RM12\nThe Volvo RM12 is a low-bypass afterburning turbofan jet engine developed for the Saab JAS 39 Gripen fighter.  A version of the General Electric F404, the RM12 was produced by Volvo Aero (now GKN Aerospace Engine Systems).\n\n### PS-05/A\nThe PS-05/A is a pulse-doppler radar currently used by the JAS 39 Gripen fighter aircraft (JAS 39A, B, C and D variants).  It weighs 156 kg and was developed by Ericsson in collaboration with GEC-Marconi, sharing some technology with the latter's Blue Vixen radar for the Sea Harrier (which inspired the Eurofighter's CAPTOR radar).\n\n### Linville Falls\nLinville Falls is a waterfall located in the Blue Ridge Mountains of North Carolina in the United States.  The falls move in several distinct steps, beginning in a twin set of upper falls, moving down a small gorge, and culminating in a high-volume 45 ft drop.  It is named for the Linville River, which goes over the falls.  Linville Falls has the highest volume of any waterfall on the Northern Edge of the Blue Ridge Mountains."
+  },
+  {
+    "id": "hp-5",
+    "question": "Tao Okamoto made her debut as the lead in the 2013 film featuring the character from what Comic company's line?",
+    "referenceAnswer": "Marvel Comics",
+    "expectedDocIds": [
+      "tao-okamoto",
+      "the-wolverine-film"
+    ],
+    "retrievedDocIds": [
+      "tao-okamoto",
+      "avanthika-mohan",
+      "wonder-woman-2017-film"
+    ],
+    "context": "### Tao Okamoto\nTao Okamoto (岡本 多緒 , Okamoto Tao , born May 22, 1985) , known professionally as Tao, is a Japanese actress and model.  In 2009, she was one of the faces of Ralph Lauren.  In 2013, she made her film debut as the female lead, Mariko Yashida, in \"The Wolverine\", opposite Hugh Jackman.  Tao played Mercy Graves in the 2016 film \"\".\n\n### Avanthika Mohan\nShe made her debut in \"Yakshi – Faithfully Yours\" and was later seen in films including \"Crocodile Love Story\" (2012) and \"Mr. 2014 she made her Tamil debut with \"Aalamaram\". Her 2013 film \"Neelakasham Pachakadal Chuvanna Bhoomi\" was a commercially successful. she received two best actress award for the character called Nanditha in Athmasakhi by 24 frames film society\n\n### Wonder Woman (2017 film)\nWonder Woman is a 2017 American superhero film based on the DC Comics character of the same name, distributed by Warner Bros. \"Wonder Woman\" is the second live action theatrical film featuring the titular character, following her debut in 2016's \"\". Jenkins's role as director makes her the first female director of a studio superhero comic book live-action theatrical release film. Diana then leaves her home in order to end the conflict, becoming Wonder Woman in the process"
+  },
+  {
+    "id": "hp-6",
+    "question": "What NFL Team, undefeated in 1972, had on their staff the coach of the 2004 Florida Atlantic Owls football team?",
+    "referenceAnswer": "Miami Dolphins",
+    "expectedDocIds": [
+      "2004-florida-atlantic-owls-football-team",
+      "howard-schnellenberger"
+    ],
+    "retrievedDocIds": [
+      "2004-florida-atlantic-owls-football-team",
+      "florida-atlantic-owls-football",
+      "2016-florida-atlantic-owls-football-team"
+    ],
+    "context": "### 2004 Florida Atlantic Owls football team\nThe 2004 Florida Atlantic University Owls football team represented Florida Atlantic University in the 2004 NCAA Division I-A football season.  The team was coached by Howard Schnellenberger and played their home games at Lockhart Stadium in Fort Lauderdale, Florida.  The Owls entered the season as a program in transition from Division I-AA to Division I-A for the first year.  As per NCAA rule, programs moving up from I-AA to I-A must spend two seasons in transition, thus not being eligible for a postseason bowl berth nor a conference championship.\n\n### Florida Atlantic Owls football\nFlorida Atlantic Owls football program represents Florida Atlantic University (FAU) in the sport of American football. The Owls compete in the Football Bowl Subdivision (FBS) of the National Collegiate Athletic Association (NCAA) and the East Division of Conference USA (CUSA). Florida Atlantic has produced a Sun Belt Conference co-championship team in 2007, along with 2 postseason bowl appearances and one appearance in the 2003 I-AA Playoffs. The Owls play their home games at FAU Stadium which has a seating capacity of 29,419\n\n### 2016 Florida Atlantic Owls football team\nThe 2016 Florida Atlantic Owls football team represented Florida Atlantic University in the 2016 NCAA Division I FBS football season.  The Owls played their home games at the FAU Stadium in Boca Raton, Florida, and competed in the East Division of Conference USA (C–USA).  They were led by third-year head coach Charlie Partridge.  They finished the season 3–9, 2–6 in C-USA play to finish in a tie for sixth place in the East Division."
+  },
+  {
+    "id": "hp-7",
+    "question": "What is the real name of the clock one can see on a clear day from Denmark Hill?",
+    "referenceAnswer": "Great Bell of the clock",
+    "expectedDocIds": [
+      "denmark-hill",
+      "big-ben"
+    ],
+    "retrievedDocIds": [
+      "denmark-hill",
+      "self-winding-clock-company",
+      "brown-mountain-lights"
+    ],
+    "context": "### Denmark Hill\nDenmark Hill is an area and road in Camberwell, in the London Borough of Southwark. It marks the edge of the Thames valley plain in this area — from here to the river the land is flat. top storey windows) on the top of the hill to the north and neighbouring Dulwich to the south. On a clear day one can read the time on the Big Ben clockface\n\n### Self Winding Clock Company\nThe Self Winding Clock Company (SWCC) was a major manufacturer of electromechanical clocks from 1886 until about 1970. The SWCC of New York was one of the first companies in the United States to successfully employ electric energy to power a clock. A contact switch mounted on the clock's center shaft is activated after the clock has run for one hour and the main spring is rewound one revolution. Hence the company name, The Self Winding Clock Company\n\n### Brown Mountain Lights\nThe lights can be seen from the Blue Ridge Parkway at mile posts 310 (Brown Mountain Light overlook) and 301 (Green Mountain overlook) and from the Brown Mountain Overlook on NC Highway 181 between Morganton, NC and Linville, NC. One of the best vantage points, Wiseman's View, is about 4 miles from Linville Falls, NC. There is also a Brown Mountain Overlook on North Carolina Highway 181 that was recently improved with help from the city of Morganton for the purpose of attracting those who visit the area to see the lights. The best time of year to see them is reportedly September through early November"
+  },
+  {
+    "id": "hp-8",
+    "question": "Who has won more literary awards, Annie Dillard or Gabriel García Márquez?",
+    "referenceAnswer": "Gabriel José de la Concordia García Márquez",
+    "expectedDocIds": [
+      "annie-dillard",
+      "gabriel-garc-a-m-rquez"
+    ],
+    "retrievedDocIds": [
+      "ngela-becerra",
+      "annie-dillard",
+      "gabriel-garc-a-m-rquez"
+    ],
+    "context": "### Ángela Becerra\nÁngela Becerra Acevedo (Cali, Colombia, July 17, 1957) is a Colombian writer.  She has won several awards such as the Planeta-Casa de América Award (Premio Planeta - Casa de América) in 2009, the Azorín Prize (Premio Azorín) in 2005 and four Chicago Latin Literary Awards.  Her works have been translated into 23 languages and published in more than 50 countries.  She is one of the most widely read Spanish-speaking authors, the most read Colombian writer after Gabriel García Márquez, and considered the creator of the Magical Idealism.\n\n### Annie Dillard\nAnnie Dillard (born April 30, 1945) is an American author, best known for her narrative prose in both fiction and non-fiction.  She has published works of poetry, essays, prose, and literary criticism, as well as two novels and one memoir.  Her 1974 work \"Pilgrim at Tinker Creek\" won the 1975 Pulitzer Prize for General Nonfiction.  From 1980, Dillard taught for 21 years in the English department of Wesleyan University, in Middletown, Connecticut.\n\n### Gabriel García Márquez\nGabriel José de la Concordia García Márquez ( ; ] ; 6 March 1927 – 17 April 2014) was a Colombian novelist, short-story writer, screenwriter and journalist, known affectionately as Gabo or Gabito throughout Latin America. Considered one of the most significant authors of the 20th century and one of the best in the Spanish language, he was awarded the 1972 Neustadt International Prize for Literature and the 1982 Nobel Prize in Literature. He pursued a self-directed education that resulted in his leaving law school for a career in journalism. From early on, he showed no inhibitions in his criticism of Colombian and foreign politics"
+  },
+  {
+    "id": "hp-9",
+    "question": "When the two Coldplay songs U.F.O and Princess of China were written, what factor did they have in common?",
+    "referenceAnswer": "was written by all four members of the band",
+    "expectedDocIds": [
+      "u-f-o-coldplay-song",
+      "princess-of-china"
+    ],
+    "retrievedDocIds": [
+      "princess-of-china",
+      "u-f-o-coldplay-song",
+      "the-fragrance-of-guava"
+    ],
+    "context": "### Princess of China\n\"Princess of China\" is a duet recorded by British rock band Coldplay and Barbadian singer Rihanna for Coldplay's fifth studio album \"Mylo Xyloto\". The song was written by band members Guy Berryman, Jonny Buckland, Will Champion, and Chris Martin, along with Brian Eno, and is influenced by the music genres of electronic rock, electropop and R&B. The song was released as the fourth single from \"Mylo Xyloto\" and was sent to US Mainstream radio on 14 February 2012. A companion EP to the single, featuring an acoustic version of the song, was released on 1 June 2012\n\n### U.F.O. (Coldplay song)\n\" is a song by British rock band Coldplay. It was written by all four members of the band for their fifth studio album, \"Mylo Xyloto\". The album's opening track, \"Mylo Xyloto\" and \"A Hopeful Transmission\" are based on the chords from the second half of this song. After the song ends, the track includes a short instrumental section (reminiscent of \"Prospekt's March/Poppyfields\") that segues into the following track, \"Princess of China\"\n\n### The Fragrance of Guava\nThe Fragrance of Guava is a book based on the long conversations between Gabriel García Márquez and his close friend Plinio Apuleyo Mendoza.  Published in 1982, the book describes the life of García Márquez, from his early childhood to his encounters with celebrities.  The title of the book in Spanish is \"El Olor de la Guayaba\".  It was translated as \"The Fragrance of Guava\"; however, the literal translation should be \"The Smell of Guava\"."
+  },
+  {
+    "id": "hp-10",
+    "question": "Tommy Faile sang the song \"the legend of Brown Moutain Lights\", about a series of ghost lights that can be seen from which viewpoint outside Linville Falls?",
+    "referenceAnswer": "Wiseman's View",
+    "expectedDocIds": [
+      "tommy-faile",
+      "brown-mountain-lights"
+    ],
+    "retrievedDocIds": [
+      "brown-mountain-lights",
+      "tommy-faile",
+      "ghost-lights-band"
+    ],
+    "context": "### Brown Mountain Lights\nThe Brown Mountain Lights are a series of ghost lights reported near Brown Mountain in North Carolina. The lights can be seen from the Blue Ridge Parkway at mile posts 310 (Brown Mountain Light overlook) and 301 (Green Mountain overlook) and from the Brown Mountain Overlook on NC Highway 181 between Morganton, NC and Linville, NC. Additionally, good sightings of the Lights have been reported from the top of Table Rock, outside of Morganton, NC. One of the best vantage points, Wiseman's View, is about 4 miles from Linville Falls, NC\n\n### Tommy Faile\nTommy Faile (September 15, 1928 – August 2, 1998) was an American songwriter and singer best known for composing \"Phantom 309\" and singing \"The Legend of the Brown Mountain Lights\".  He was known for his deep voice and comic on-stage banter.\n\n### Ghost Lights (band)\nGhost Lights is the stage name of current Canadian folk artist Noah Cebuliak.  Drawing from the themes of nature and the spiritual, Ghost Lights has a sound that has been described by reviewers as \"sensitive,\" \"luxurious,\" and \"better than a deep-muscle massage,\" with most critics commenting on the beauty displayed in the minimalist folk style and strong lyricism."
+  },
+  {
+    "id": "hp-11",
+    "question": "The coach of the Karachi Kings, Mickey Arthur, is of what decent? ",
+    "referenceAnswer": "South African",
+    "expectedDocIds": [
+      "karachi-kings",
+      "mickey-arthur"
+    ],
+    "retrievedDocIds": [
+      "mickey-arthur",
+      "karachi-kings",
+      "howard-schnellenberger"
+    ],
+    "context": "### Mickey Arthur\nJohn Michael \"Mickey\" Arthur (born 17 May 1968) is a South African cricketer who played South African domestic cricket from 1986 to 2001.  He is the current coach of the Pakistan national cricket team.  He coached the South African national team from 2005 to 2010, and was the coach of the Australia national cricket team until his sacking on 23 June 2013.\n\n### Karachi Kings\nKarachi Kings (Urdu: ‎ ; Sindhi: ڪراچي ڪنگز‎ ) is a Pakistani professional Twenty20 cricket team that competes in the Pakistan Super League. The team is based in Karachi, the provincial capital of Sindh, Pakistan. The team was formed in 2015, as a result of the formation of the Pakistan Super League by Pakistan Cricket Board (PCB). The team is currently captained by Kumar Sangakkara and coached by Mickey Arthur a former South African cricketer\n\n### Howard Schnellenberger\nHoward Leslie Schnellenberger (born March 16, 1934) is a retired American football coach with long service at both the professional and college levels. He held head coaching positions with the National Football League's Baltimore Colts and in college for the University of Miami, University of Oklahoma, University of Louisville and Florida Atlantic University. Schnellenberger also worked extensively as an assistant coach at the college and pro levels, including as part of the staff of the undefeated 1972 Miami Dolphins. He is also famous for recruiting Joe Namath to Alabama for Bear Bryant in 1961"
+  },
+  {
+    "id": "hp-12",
+    "question": "Alexander S. Wadsworth served during the war that was faught between which two countries?",
+    "referenceAnswer": "United States, the United Kingdom, and their respective allies",
+    "expectedDocIds": [
+      "alexander-s-wadsworth",
+      "war-of-1812"
+    ],
+    "retrievedDocIds": [
+      "france-united-kingdom-relations",
+      "malawi-mozambique-relations",
+      "soviet-union-united-states-relations"
+    ],
+    "context": "### France–United Kingdom relations\nThe historical ties between the two countries are long and complex, including conquest, wars, and alliances at various points in history. Closer ties between the two began with the 1904 Entente cordiale, particularly via the alliances in World War I and World War II, wherein both countries fought against Germany, and in the latter conflict British armies helped to liberate occupied France from the Nazis. Both nations opposed the Soviet Union during the Cold War and were founding members of NATO. The British press relishes the chance to refer to France and Britain as \"historic rivals\" or emphasize the perceived ever-lasting competition that still opposes the two countries\n\n### Malawi–Mozambique relations\nMalawi–Mozambique relations refers to the current and historical relationship between the countries of Malawi and Mozambique. As Malawi shares a large border with Mozambique, much of the substance of their foreign relations pertain to the border separating the two nations. Both of the sovereign states have amicably agreed that lacustrine borders on Lake Malawi remain the largest priority between the two countries, as the exploitation of natural resources within the waters of Lake Malawi remain an issue the two countries continue to resolve. The moment considered an act of generosity and sympathy within the two countries relations is when, during the Mozambique Civil War, Malawi housed over one million Mozambican refugees between 1985 and 1995\n\n### Soviet Union–United States relations\nThe relations between the United States of America and the Union of Soviet Socialist Republics (1922–1991) succeeded the previous relations from 1776 to 1917 and predate today's relations that began in 1992.  Full diplomatic relations between the two countries were established late due to mutual hostility.  During World War II, the two countries were briefly allies.  At the end of the war, the first signs of post-war mistrust and hostility began to appear between the two countries, escalating into the Cold War; a period of tense hostile relations, with periods of détente."
+  },
+  {
+    "id": "hp-13",
+    "question": "Who directed the 1971 film in which Pat Ashton starred in?",
+    "referenceAnswer": "Harry Booth",
+    "expectedDocIds": [
+      "pat-ashton",
+      "on-the-buses-film"
+    ],
+    "retrievedDocIds": [
+      "pat-ashton",
+      "rainbow-bridge-film",
+      "together-1971-film"
+    ],
+    "context": "### Pat Ashton\nPat Ashton (28 February 1931 – 23 June 2013) was an English actress.  Her engaging cockney, blonde persona is best remembered for appearances in English TV-sitcom film spin-offs \"On the Buses\" (1971) and \"Mutiny on the Buses\" (1972).\n\n### Rainbow Bridge (film)\nRainbow Bridge is a 1971 film directed by Chuck Wein about different countercultural figures interacting on the Hawaiian island of Maui. We're going to place Pat [New York model Pat Hartley, the protagonist] in all kinds of real-life situtations, and film what happens. We're going to shoot a lot of film and just see what comes out of it. \"  Harry Shapiro adds, \"the idea was to shoot an antidote to \"Easy Rider\", showing the positive side of the youth movement\n\n### Together (1971 film)\nTogether is a 1971 film directed by Sean S. Cunningham's first film attracted Wes Craven who wanted to be in the film business. Cunningham and Craven would later work on \"The Last House on the Left\". The film features a young Marilyn Chambers, billed under her real name, Marilyn Briggs, before she starred in \"Behind the Green Door\""
+  },
+  {
+    "id": "hp-14",
+    "question": "Which magazine is based out of more countries, Adventist World or Baseball Digest?",
+    "referenceAnswer": "Adventist World",
+    "expectedDocIds": [
+      "adventist-world",
+      "baseball-digest"
+    ],
+    "retrievedDocIds": [
+      "adventist-world",
+      "adventist-review",
+      "adventist-mission"
+    ],
+    "context": "### Adventist World\nAdventist World is a monthly international magazine of the Seventh-day Adventist Church published by the Review and Herald Publishing Association.  Editors are based in Silver Spring, Maryland and Seoul, Korea.\n\n### Adventist Review\nThe Adventist Review is the official newsmagazine of the Seventh-day Adventist Church. The Review and Herald also publishes a sister magazine, \"Adventist World\". The magazine is headquartered in Silver Spring, Maryland. The current editor of the \"Adventist Review\" is Bill Knott\n\n### Adventist Mission\nAdventist Mission is the official mission office of the Seventh-day Adventist Church's world headquarters. Its main purpose is to provide coordination and funding for the Seventh-day Adventist Church's worldwide mission work. Adventist Mission has coordinators in all 13 regional headquarters of the Adventist Church and sponsors work in more than 207 countries. To meet the Adventist Church's growing need to consolidate its overseas mission activities, Adventist Mission was formed in 2005 at the General Conference World Session held in St"
+  },
+  {
+    "id": "hp-15",
+    "question": "Who played Amelia Vanek in the film adaptation of Monster?",
+    "referenceAnswer": "Esther \"Essie\" Davis",
+    "expectedDocIds": [
+      "essie-davis",
+      "the-babadook"
+    ],
+    "retrievedDocIds": [
+      "treasure-island-1920-film",
+      "essie-davis",
+      "tobruk-2008-film"
+    ],
+    "context": "### Treasure Island (1920 film)\nTreasure Island is a 1920 silent film adaptation of the novel by Robert Louis Stevenson, directed by Maurice Tourneur, and released by Paramount Pictures.  Lon Chaney played two different key roles in this production.  Charles Ogle, who had played Frankenstein's Monster in the first filmed version of \"Frankenstein\" a decade earlier at Edison Studios, portrayed Long John Silver.\n\n### Essie Davis\nEsther \"Essie\" Davis (born January 7, 1970) is an Australian actress.  She is best known for her roles as Phryne Fisher in \"Miss Fisher's Murder Mysteries\" and Amelia Vanek in \"The Babadook\".  Other major work has included a recurring role in season six of the TV series \"Game of Thrones\", and a role as Elizabeth Woodville in the TV series \"The White Princess\", an adaptation of Philippa Gregory's historical novel.\n\n### Tobruk (2008 film)\nTobruk is a 2008 film written and directed by Václav Marhoul and starring Jan Meduna and Petr Vanek.  It is an adaptation of the classic American Civil War novel \"The Red Badge of Courage\" by Stephen Crane, but transfers the action to North Africa during World War II."
+  },
+  {
+    "id": "hp-16",
+    "question": "In what year was the most famous statute at Po Lin Monastery built?",
+    "referenceAnswer": "Tian Tan Buddha",
+    "expectedDocIds": [
+      "buddhism-in-hong-kong",
+      "tian-tan-buddha"
+    ],
+    "retrievedDocIds": [
+      "great-lavra",
+      "buddhism-in-hong-kong",
+      "tian-tan-buddha"
+    ],
+    "context": "### Great Lavra\nThe Monastery of Great Lavra (Greek: Μονή Μεγίστης Λαύρας ) is the first monastery built on Mount Athos. The founding of the monastery in AD 963 by Athanasius the Athonite marks the beginning of the organized monastic life at Mount Athos. At the location of the monastery, there was one of the ancient cities of the Athos peninsula, perhaps Akrothooi, from which the sarcophagi of the monastery that are in the oil storage house come. The history of the monastery is the most complete compared to the history of the other monasteries, because its historical archives were preserved almost intact\n\n### Buddhism in Hong Kong\nBuddhism is a major religion in Hong Kong and has been greatly influential in the traditional culture of its populace.  Among the most prominent Buddhist temples in the city there are the Chi Lin Nunnery in Diamond Hill, built in the Tang Dynasty's architectural style; the Po Lin Monastery on Lantau Island, famous for the outdoor bronze statue, Tian Tan Buddha, which attracts a large number of visitors during the weekends and holidays.\n\n### Tian Tan Buddha\nTian Tan Buddha, also known as the Big Buddha, is a large bronze statue of Buddha Shakyamuni, completed in 1993, and located at Ngong Ping, Lantau Island, in Hong Kong.  The statue is sited near Po Lin Monastery and symbolises the harmonious relationship between man and nature, people and faith.  It is a major centre of Buddhism in Hong Kong, and is also a popular tourist attraction."
+  },
+  {
+    "id": "hp-17",
+    "question": "Are both The Day the Universe Changed and Lennon or McCartney American documentary short films?",
+    "referenceAnswer": "no",
+    "expectedDocIds": [
+      "the-day-the-universe-changed",
+      "lennon-or-mccartney"
+    ],
+    "retrievedDocIds": [
+      "lennon-or-mccartney",
+      "last-day-of-freedom",
+      "peter-richardson-filmmaker"
+    ],
+    "context": "### Lennon or McCartney\nLennon or McCartney is a 2014 American documentary short film directed by Matt Schichter.  The film is a compilation of 550 celebrities' responses, taken from interviews throughout the decade, to the question of which musician is superior: John Lennon or Paul McCartney.\n\n### Last Day of Freedom\nLast Day of Freedom is a 2015 American black and white and color animated short documentary film about racism, the US Criminal Justice System,and mental health issues. The documentary was well received by critics and earned numerous awards at various film festivals, and The International Documentary Association Best Short Documentary Award, at the 31st Annual IDA Documentary Awards. \"Last Day of Freedom\" was shortlisted with ten other documentaries from 74 entries submitted to 88th Academy Awards in Documentary Short Subject category, and eventually received a nomination in this category. The film was a finalist for a Documentary Short, 59th Cine Eagle Award\n\n### Peter Richardson (filmmaker)\nPeter Richardson is an American documentary film director. In addition to directing the film, Richardson also acted as cinematographer, editor, and producer on \"How to Die in Oregon\". The critically acclaimed film went on to win the Grand Jury Prize in the US Documentary competition. Richardson was the cinematographer on Irene Taylor Brodsky's documentary short film, \"Saving Pelican 895\", which aired on HBO on April 20, 2011"
+  },
+  {
+    "id": "hp-18",
+    "question": "which German philosopher wrote \"The opera \"Lulu\"  ",
+    "referenceAnswer": "Theodor W. Adorno",
+    "expectedDocIds": [
+      "lulu-opera",
+      "theodor-w-adorno"
+    ],
+    "retrievedDocIds": [
+      "karl-aschenbrenner",
+      "lulu-opera",
+      "christian-wolff-philosopher"
+    ],
+    "context": "### Karl Aschenbrenner\nAschenbrenner (November 20, 1911 in Bison, Kansas – July 4, 1988 in Budapest, Hungary) was an American philosopher, translator (into English of works in Latin and German) and prominent American specialist in analytic philosophy and aesthetics, author and editor of more than 48 publications including five monographs, 27 articles and 16 book reviews. His principal academic post was at the University of California, Berkeley in the Department of Philosophy. Holther, Aschenbrenner published the principal work of Alexander Gottlieb Baumgarten and, with Donald Nicholl, assisted in completing the second edition of an important work of the German philosopher Joseph M. The Aschenbrenner papers are held by the Doe Library of the University of California at Berkeley\n\n### Lulu (opera)\nLulu (composed from 1929–1935, premièred incomplete in 1937 and complete in 1979) is an opera in three acts by Alban Berg. The German-language libretto was adapted by Berg himself from Frank Wedekind's two \"Lulu\" plays, \"Erdgeist\" (\"Earth Spirit\", 1895) and \"Die Büchse der Pandora\" (\"Pandora's Box\", 1904). Berg died before completing the third and final act, and in the following decades, the opera was typically performed incomplete. Adorno wrote \"The opera \"Lulu\" is one of those works that reveals the extent of its quality the longer and more deeply one immerses oneself in it\n\n### Christian Wolff (philosopher)\nChristian Wolff (less correctly Wolf, ] ; also known as Wolfius; ennobled as Christian Freiherr von Wolff; 24 January 1679 – 9 April 1754) was a German philosopher.  Wolff was the most eminent German philosopher between Leibniz and Kant.  His main achievement was a complete \"oeuvre\" on almost every scholarly subject of his time, displayed and unfolded according to his demonstrative-deductive, mathematical method, which perhaps represents the peak of Enlightenment rationality in Germany."
+  },
+  {
+    "id": "hp-19",
+    "question": "In what language was the 2007 Indian romantic drama staring Kareena Kapoor and Shahid Kapoor produced in? ",
+    "referenceAnswer": "Partly Punjabi",
+    "expectedDocIds": [
+      "lists-of-bollywood-films",
+      "jab-we-met"
+    ],
+    "retrievedDocIds": [
+      "jab-we-met",
+      "milenge-milenge",
+      "ki-amp-ka"
+    ],
+    "context": "### Jab We Met\nJab We Met (English: \"When We Met\") is a 2007 Indian romantic drama film directed and written by Imtiaz Ali.  The film, produced by Dhillin Mehta under Shree Ashtavinayak Cinevision Ltd, stars Kareena Kapoor and Shahid Kapoor in their fourth film together with Dara Singh, Pavan Malhotra and Saumya Tandon in supporting roles.\n\n### Milenge Milenge\nMilenge Milenge (\"We Will Meet, We Will Meet\") is a 2010 Indian Hindi romantic drama film.  Largely based on the 2001 film \"Serendipity\", the movie is directed by Satish Kaushik and stars Shahid Kapoor and Kareena Kapoor in their fifth film together after Imtiaz Ali's \"Jab We Met\" (2007).  Other members from the cast include Satish Shah, Aarti Chhabria, and Delnaaz Paul.\n\n### Ki &amp; Ka\nKi & Ka (English: \"She and He\" ) is a 2016 Indian romantic drama film written, directed, and produced by R. Balki.  The film follows a young, married couple contradicting the gender roles placed upon women and men in Indian society.  It stars Kareena Kapoor and Arjun Kapoor."
+  }
+]
