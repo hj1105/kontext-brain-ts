@@ -11,6 +11,7 @@
     "hotpot": "node --import tsx src/hotpot-run.ts",
     "dump-contexts": "node --import tsx src/dump-contexts.ts",
     "dump-contexts-baseline": "node --import tsx src/dump-contexts-baseline.ts",
+    "dump-contexts-multihop": "node --import tsx src/dump-contexts-multihop.ts",
     "score-claude": "node --import tsx src/score-claude.ts"
   },
   "dependencies": {

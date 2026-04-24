@@ -1,0 +1,446 @@
+[
+  {
+    "id": "hp-0",
+    "question": "What country of origin does Traveling Wilburys and Tom Petty have in common?",
+    "referenceAnswer": "American",
+    "expectedDocIds": [
+      "traveling-wilburys",
+      "tom-petty"
+    ],
+    "retrievedDocIds": [
+      "tom-petty",
+      "traveling-wilburys-vol-3",
+      "traveling-wilburys",
+      "wildflowers-tom-petty-album",
+      "end-of-the-line-traveling-wilburys-song",
+      "runnin-down-a-dream-film"
+    ],
+    "extractedEntities": [
+      "Traveling Wilburys",
+      "Tom Petty"
+    ],
+    "context": "### Tom Petty\nThomas Earl Petty (born October 20, 1950) is an American musician, singer, songwriter, multi instrumentalist and record producer.  He is best known as the lead singer of Tom Petty and the Heartbreakers, but is also known as a member and co-founder of the late 1980s supergroup the Traveling Wilburys (under the pseudonyms of Charlie T. Wilbury Jr. and Muddy Wilbury), and his early band Mudcrutch.\n\n### Traveling Wilburys Vol. 3\nTraveling Wilburys Vol.  3 is the 1990 follow-up album by the Traveling Wilburys, a group consisting of Jeff Lynne, George Harrison, Bob Dylan, and Tom Petty, to their 1988 debut \"Traveling Wilburys Vol.  1\".\n\n### Traveling Wilburys\nThe Traveling Wilburys (sometimes shortened to the Wilburys) were a British-American supergroup consisting of Bob Dylan, George Harrison, Jeff Lynne, Roy Orbison, and Tom Petty.  The band recorded two albums, the first in 1988 and the second in 1990, though Orbison died before the second was recorded.\n\n### Wildflowers (Tom Petty album)\nWildflowers is the second solo studio album by American musician Tom Petty, released on November 1, 1994.  The album was the first released by Petty after signing a contract with Warner Bros.  Records (where he had recorded as part of the Traveling Wilburys) and the first of three albums produced by Rick Rubin.  The album was certified 3x platinum in the United States by the Recording Industry Association of America.\n\n### End of the Line (Traveling Wilburys song)\n\"End of the Line\" is the last track from the Traveling Wilburys' first album, \"Volume 1\", released in 1989.  Its riding-on-the-rails rhythm suggests its theme and the on-the-move nature of the group.  It features all the Wilburys (except Bob Dylan who was on tour at the time) as lead singers; George Harrison, Jeff Lynne, and Roy Orbison sing the choruses in turn, while Tom Petty sings the verses.  The song then expands into a \"freight train\" rhythm to underscore its theme.\n\n### Runnin' Down a Dream (film)\nRunnin' Down a Dream is a 2007 documentary film about Tom Petty and the Heartbreakers, directed by Peter Bogdanovich. The 4-hour documentary chronicles the history of the band, from its inception as Mudcrutch, right up to the 30th-anniversary concert in Petty's home town of Gainesville, Florida, on September 21, 2006, at the Stephen C. O'Connell Center, University of Florida. Petty's solo career is also touched on, as is his time with The Traveling Wilburys"
+  },
+  {
+    "id": "hp-1",
+    "question": "The British longhair is defined by what registries?",
+    "referenceAnswer": "domestic cat",
+    "expectedDocIds": [
+      "domestic-long-haired-cat",
+      "british-longhair"
+    ],
+    "retrievedDocIds": [
+      "asian-semi-longhair",
+      "british-longhair",
+      "domestic-short-haired-cat",
+      "chantilly-tiffany",
+      "saudi-arabia-united-states-relations",
+      "domestic-long-haired-cat"
+    ],
+    "extractedEntities": [
+      "The British"
+    ],
+    "context": "### Asian Semi-longhair\nThe breed is also known by the name Tiffanie or Tiffany. Like the Asian Shorthair, the breed was developed in Britain and is not currently recognized by any U. Registries. It is related to, and in some registries distinct from, the Chantilly-Tiffany or Foreign Longhair, the North American variant\n\n### British Longhair\nThe British Longhair is a medium-sized, semi-long-haired breed of domestic cat, originating in Great Britain.\n\n### Domestic short-haired cat\nA domestic short-haired cat is a cat of mixed ancestry – thus not belonging to any particular recognized cat breed – possessing a coat of short fur. In British English, they are often referred to as moggies. Domestic short-haired cats should not be confused with the British Shorthair, American Shorthair or other standardized breeds with \"Shorthair\" names, which are breeds recognized by various registries. The term tabby cat technically refers to a coat pattern, but is also often used as a general term for cats of this sort\n\n### Chantilly-Tiffany\nThe Chantilly-Tiffany or Chantilly/Tiffany, also known as the Chantilly or the Foreign Longhair, is a breed of cat derived mainly from cross-breeding long-haired Asians and Burmese.  The breed originated in North America.  This breed is considered distinct from the Asian Semi-longhair breed, the British variant.  The Chantilly was thought extinct until the 1960s when two of these cats appeared during an estate sale.\n\n### Saudi Arabia–United States relations\nBilateral relations between the Kingdom of Saudi Arabia and the United States began in 1933 when full diplomatic relations were established. Despite the differences between the two countries—an ultraconservative Islamic absolute monarchy, and a secular, democratic republic—the two countries have been allies. In recent years, the two countries have occasionally been described as having a \"Special Relationship\" with one another. Bush and Barack Obama have close and strong relations with senior members of the Saudi Royal Family\n\n### Domestic long-haired cat\nA domestic long-haired cat, or fluffy cat, is a cat of mixed ancestry – thus not belonging to any particular recognised cat breed – possessing a coat of semi-long to long fur.  Domestic long-haired cats should not be confused with the British Longhair, American Longhair, or other breeds with \"Longhair\" names, which are standardized breeds defined by various registries.  Domestic long-haireds are the second most popular cat in the United States after the domestic short-haired; one in ten of the ninety million cats in the US is a domestic long-hair.  Other generic terms are long-haired house cat and, in British English, long-haired moggie."
+  },
+  {
+    "id": "hp-2",
+    "question": "What Metropolitan City was Massimo Giordano born in?",
+    "referenceAnswer": "Naples",
+    "expectedDocIds": [
+      "massimo-giordano",
+      "pompei"
+    ],
+    "retrievedDocIds": [
+      "metropolitan-city-of-messina",
+      "massimo-giordano",
+      "metropolitan-city-of-cagliari",
+      "messina",
+      "stresa-festival-orchestra",
+      "pompei"
+    ],
+    "extractedEntities": [
+      "What Metropolitan City",
+      "Massimo Giordano"
+    ],
+    "context": "### Metropolitan City of Messina\nThe Metropolitan City of Messina (Italian: \"Città metropolitana di Messina\" ) is a metropolitan city in Sicily, Italy.  Its capital is the city of Messina.  It replaced the Province of Messina and comprises the city of Messina and other 107 municipalities (\"comuni\").  According to Eurostat the FUA of the metropolitan area of Messina has in 2014 277,584 inhabitants.\n\n### Massimo Giordano\nMassimo Giordano (born 19 February 1971) is an Italian-born operatic tenor who is known for his bel canto repertoire.  Giordano was born in Pompei, Italy into an Italian working-class family.\n\n### Metropolitan City of Cagliari\nThe Metropolitan City of Cagliari (Italian: \"Città metropolitana di Cagliari\" ) is a metropolitan city in Sardinia, Italy. Its capital is the city of Cagliari and includes 17 comuni. It was established by law in 2016 and replaced the Province of Cagliari. The current president is the mayor of Cagliari, Massimo Zedda\n\n### Messina\nMessina ( ; ] , Sicilian: \"Missina\"; , Greek: Μεσσήνη ) is the capital of the Italian Metropolitan City of Messina.  It is the third-largest city on the island of Sicily, and the 13th-largest city in Italy, with a population of more than 238,000 inhabitants in the city proper and about 650,000 in the Metropolitan City.  It is located near the northeast corner of Sicily, at the Strait of Messina, opposite Villa San Giovanni on the mainland, and has close ties with Reggio Calabria.  According to Eurostat the FUA of the metropolitan area of Messina has, in 2014, 277,584 inhabitants.\n\n### Stresa Festival Orchestra\nThe Stresa Festival Orchestra is a formation composed by young and talented musicians, coming from renewed european orchestras, calling by Gianandrea Noseda to perform every year some original production for the Stresa Festival.  The debut of the Orchestra, on 26 August 2003 with Mozart’ \"Don Giovanni\", began the project of the concert performances of different operas: \"Così fan tutte\" (2004), \"Le nozze di Figaro\" (2005), \"The magic flute\" (2006), \"La clemenza di Tito\" (2007), \"The Rake’s progress\" (2008), \"La Cenerentola\" (2009), \"Idomeneo\" (2010).  During the years many singers was invited such as Evgenij Akimov, Simone Alberghini, Sergej Alexashkin, Tatiana Borodina, Nicola Beller Carbone, Natale De Carolis, Mariella Devia, Barbara Frittoli, Vivica Genaux, Massimo Giordano, Andrew Kennedy, Alessandra Marianelli, Peter Mattei, Sally Matthews, Francesco Meli, Maxim Mironov, Tomislav Muzek, Laura Polverelli, Nicola Ulivieri, Franco Vassallo.\n\n### Pompei\nPompei (] ) is a city and \"comune\" in the Metropolitan City of Naples in Italy, home of the ancient Roman ruins part of the UNESCO World Heritage Sites."
+  },
+  {
+    "id": "hp-3",
+    "question": "What Guiness World Record is held by the actor who stars as \"Jack\" in a series created by Jim O'Doherty?.",
+    "referenceAnswer": "youngest TV director ever",
+    "expectedDocIds": [
+      "kickin-it",
+      "leo-howard"
+    ],
+    "retrievedDocIds": [
+      "kickin-it",
+      "leo-howard",
+      "ahmad-fardid",
+      "howard-schnellenberger",
+      "on-the-buses-film",
+      "adventist-world"
+    ],
+    "extractedEntities": [
+      "Jack",
+      "What Guiness World Record",
+      "Jim O",
+      "Doherty"
+    ],
+    "context": "### Kickin' It\nKickin' It is an American martial arts-inspired comedy television series that originally aired on Disney XD from June 13, 2011 to March 25, 2015.  Created and executive produced by Jim O'Doherty, the series follows the karate instructor at an under-performing martial arts academy, played by Jason Earles, and his five misfit students, played by Leo Howard, Dylan Riley Snyder, , Olivia Holt, and .\n\n### Leo Howard\nLeo Richard Howard (born July 13, 1997) is an American actor and martial artist.  He began his acting career at the age of seven, Howard is known for incorporating his karate skills into his feature film and television roles; as \"Young Snake-Eyes\" in the 2009 action film, \"\", as \"Young Conan\" in the 2011 fantasy film, \"Conan the Barbarian\", and as \"Jack\" on the Disney XD comedy series, \"Kickin' It\".  Howard was certified as the youngest TV director ever by the Guinness World Records for his work on the episode \"Fight at the Museum\" in the fourth season of the \"Kickin' It\" TV series at age 16.\n\n### Ahmad Fardid\nSeyyed Ahmad Fardid (Persian: سید احمد فردید‎ ‎ ) (Born in 1912, Yazd – 16 August 1994, Tehran), born Ahmad Mahini Yazdi, was a prominent Iranian philosopher and an inspiring and dedicated professor of Tehran University. He is considered to be among the philosophical ideologues of the Islamic government of Iran which came to power in 1979. Fardid was under the influence of Martin Heidegger, the influential German philosopher, whom he considered \"the only Western philosopher who understood the world and the only philosopher whose insights were congruent with the principles of the Islamic Republic. \"  What he decried was the anthropocentrism and rationalism brought by classical Greece, replacing the authority of God and faith with human reason, and in that regard he also criticized Islamic philosophers like al Farabi and Mulla Sadra for having absorbed Greek philosophy\n\n### Howard Schnellenberger\nHoward Leslie Schnellenberger (born March 16, 1934) is a retired American football coach with long service at both the professional and college levels. He held head coaching positions with the National Football League's Baltimore Colts and in college for the University of Miami, University of Oklahoma, University of Louisville and Florida Atlantic University. Schnellenberger also worked extensively as an assistant coach at the college and pro levels, including as part of the staff of the undefeated 1972 Miami Dolphins. He is also famous for recruiting Joe Namath to Alabama for Bear Bryant in 1961\n\n### On the Buses (film)\nOn the Buses is a 1971 British comedy film directed by Harry Booth and starring Reg Varney and Doris Hare.  The film is the first spin-off film from the TV sitcom \"On the Buses\" and was followed by two further films \"Mutiny on the Buses\" (1972) and \"Holiday on the Buses\" (1973).  The films are set within a slightly different canon from the TV series; Stan and Jack work for a different bus company (Town & District instead of Luxton & District), and the three films form a loose story arc where Arthur and Olive become parents (despite their apparently sexless marriage).\n\n### Adventist World\nAdventist World is a monthly international magazine of the Seventh-day Adventist Church published by the Review and Herald Publishing Association.  Editors are based in Silver Spring, Maryland and Seoul, Korea."
+  },
+  {
+    "id": "hp-4",
+    "question": "What is the ratio of flow velocity past a boundary to the local speed of sound for a Saab JAS 39 Gripen?",
+    "referenceAnswer": "2",
+    "expectedDocIds": [
+      "saab-jas-39-gripen",
+      "mach-number"
+    ],
+    "retrievedDocIds": [
+      "saab-jas-39-gripen",
+      "saab-38",
+      "mach-number",
+      "volvo-rm12",
+      "pitot-tube",
+      "vera-olenchenko"
+    ],
+    "extractedEntities": [
+      "Saab JAS 39 Gripen"
+    ],
+    "context": "### Saab JAS 39 Gripen\nThe Saab JAS 39 Gripen (English: \"griffin\" ) is a light single-engine multirole fighter aircraft manufactured by the Swedish aerospace company Saab. It was designed to replace the Saab 35 Draken and 37 Viggen in the Swedish Air Force (\"Flygvapnet\"). It is powered by the Volvo RM12, and has a top speed of Mach 2. Later aircraft are modified for NATO interoperability standards and to undertake in-flight refuelling\n\n### Saab 38\nThe Saab 38 (also known as B3LA or A 38/Sk 38) was a single-engine jet trainer and attack aircraft planned by Saab during the 1970s.  The project was a collaboration between Saab and the Italian aircraft manufacturer Aermacchi.  It was to replace the older Saab 105 jet trainer in the Swedish Air Force, but the aircraft never got past the drawing board and was canceled in 1979 in favour of the more advanced Saab JAS 39 Gripen fighter.\n\n### Mach number\nIn fluid dynamics, the Mach number (M or Ma) ( ; ] ) is a dimensionless quantity representing the ratio of flow velocity past a boundary to the local speed of sound.\n\n### Volvo RM12\nThe Volvo RM12 is a low-bypass afterburning turbofan jet engine developed for the Saab JAS 39 Gripen fighter.  A version of the General Electric F404, the RM12 was produced by Volvo Aero (now GKN Aerospace Engine Systems).\n\n### Pitot tube\nA Pitot ( ) tube, also known as Pitot probe, is a pressure measurement instrument used to measure fluid flow velocity.  The pitot tube was invented by the French engineer Henri Pitot in the early 18th century and was modified to its modern form in the mid-19th century by French scientist Henry Darcy.  It is widely used to determine the airspeed of an aircraft, water speed of a boat, and to measure liquid, air and gas flow velocities in certain industrial applications.  The pitot tube is used to measure the local flow velocity at a given point in the flow stream and not the average flow velocity in the pipe or conduit.\n\n### Vera Olenchenko\nFollowing the breakup of the Soviet Union, and the following creation of new republics, Vera was credited with the indoor long jump record for Uzbekistan, which she still holds at 6. While most of her contemporaries disappeared from the scene, Olenchenko continued jumping and made it to an international championship, not representing Uzbekistan but Russia at the 1997 world indoor championships. 92 from 1985, which ranks tied for the 96th best of all time. It is the only exact age record between 17 and 38 not held by the big three women of long jumping; Drechsler, Chistyakova and Jackie Joyner Kersee Four years later, Olenchenko added the W40 record"
+  },
+  {
+    "id": "hp-5",
+    "question": "Tao Okamoto made her debut as the lead in the 2013 film featuring the character from what Comic company's line?",
+    "referenceAnswer": "Marvel Comics",
+    "expectedDocIds": [
+      "tao-okamoto",
+      "the-wolverine-film"
+    ],
+    "retrievedDocIds": [
+      "the-brain-bell-comics",
+      "tao-okamoto",
+      "wonder-woman-2017-film",
+      "the-wolverine-film",
+      "avanthika-mohan",
+      "the-society-management"
+    ],
+    "extractedEntities": [
+      "Tao Okamoto",
+      "Comic"
+    ],
+    "context": "### The Brain (Bell comics)\nThe Brain is a fictional character created by Leo Bachle for Bell Features, a Canadian comic company in the 1940s, and first appeared in \"Active Comics\" #1.\n\n### Tao Okamoto\nTao Okamoto (岡本 多緒 , Okamoto Tao , born May 22, 1985) , known professionally as Tao, is a Japanese actress and model.  In 2009, she was one of the faces of Ralph Lauren.  In 2013, she made her film debut as the female lead, Mariko Yashida, in \"The Wolverine\", opposite Hugh Jackman.  Tao played Mercy Graves in the 2016 film \"\".\n\n### Wonder Woman (2017 film)\nWonder Woman is a 2017 American superhero film based on the DC Comics character of the same name, distributed by Warner Bros. \"Wonder Woman\" is the second live action theatrical film featuring the titular character, following her debut in 2016's \"\". Jenkins's role as director makes her the first female director of a studio superhero comic book live-action theatrical release film. Diana then leaves her home in order to end the conflict, becoming Wonder Woman in the process\n\n### The Wolverine (film)\nThe Wolverine is a 2013 superhero film featuring the Marvel Comics character Wolverine. The film, distributed by 20th Century Fox, is the sixth installment in the \"X-Men\" film series. Hugh Jackman reprises his role from previous films as the title character, with James Mangold directing a screenplay written by Scott Frank and Mark Bomback, based on the 1982 limited series \"Wolverine\" by Chris Claremont and Frank Miller. In the film, which follows the events of \"\", Logan travels to Japan, where he engages an old acquaintance in a struggle that has lasting consequences\n\n### Avanthika Mohan\nShe made her debut in \"Yakshi – Faithfully Yours\" and was later seen in films including \"Crocodile Love Story\" (2012) and \"Mr. 2014 she made her Tamil debut with \"Aalamaram\". Her 2013 film \"Neelakasham Pachakadal Chuvanna Bhoomi\" was a commercially successful. she received two best actress award for the character called Nanditha in Athmasakhi by 24 frames film society\n\n### The Society Management\nThe Society Management is a model management company based in New York City, New York, and is the official U. division of the Elite World network. It is also the U. The Society Management currently represents Adriana Lima, Liu Wen, Erin Wasson, Tao Okamoto, Lindsey Wixson, Sigrid Agren, Kendall Jenner, Grace Jones, and Willow Smith"
+  },
+  {
+    "id": "hp-6",
+    "question": "What NFL Team, undefeated in 1972, had on their staff the coach of the 2004 Florida Atlantic Owls football team?",
+    "referenceAnswer": "Miami Dolphins",
+    "expectedDocIds": [
+      "2004-florida-atlantic-owls-football-team",
+      "howard-schnellenberger"
+    ],
+    "retrievedDocIds": [
+      "2016-florida-atlantic-owls-football-team",
+      "florida-atlantic-owls-football",
+      "2004-florida-atlantic-owls-football-team",
+      "howard-schnellenberger",
+      "2014-florida-atlantic-owls-football-team",
+      "national-stadium-karachi"
+    ],
+    "extractedEntities": [
+      "What NFL Team",
+      "Florida Atlantic Owls"
+    ],
+    "context": "### 2016 Florida Atlantic Owls football team\nThe 2016 Florida Atlantic Owls football team represented Florida Atlantic University in the 2016 NCAA Division I FBS football season.  The Owls played their home games at the FAU Stadium in Boca Raton, Florida, and competed in the East Division of Conference USA (C–USA).  They were led by third-year head coach Charlie Partridge.  They finished the season 3–9, 2–6 in C-USA play to finish in a tie for sixth place in the East Division.\n\n### Florida Atlantic Owls football\nFlorida Atlantic Owls football program represents Florida Atlantic University (FAU) in the sport of American football. The Owls compete in the Football Bowl Subdivision (FBS) of the National Collegiate Athletic Association (NCAA) and the East Division of Conference USA (CUSA). Florida Atlantic has produced a Sun Belt Conference co-championship team in 2007, along with 2 postseason bowl appearances and one appearance in the 2003 I-AA Playoffs. The Owls play their home games at FAU Stadium which has a seating capacity of 29,419\n\n### 2004 Florida Atlantic Owls football team\nThe 2004 Florida Atlantic University Owls football team represented Florida Atlantic University in the 2004 NCAA Division I-A football season.  The team was coached by Howard Schnellenberger and played their home games at Lockhart Stadium in Fort Lauderdale, Florida.  The Owls entered the season as a program in transition from Division I-AA to Division I-A for the first year.  As per NCAA rule, programs moving up from I-AA to I-A must spend two seasons in transition, thus not being eligible for a postseason bowl berth nor a conference championship.\n\n### Howard Schnellenberger\nHoward Leslie Schnellenberger (born March 16, 1934) is a retired American football coach with long service at both the professional and college levels. He held head coaching positions with the National Football League's Baltimore Colts and in college for the University of Miami, University of Oklahoma, University of Louisville and Florida Atlantic University. He won a national championship with Miami in 1983. Schnellenberger also worked extensively as an assistant coach at the college and pro levels, including as part of the staff of the undefeated 1972 Miami Dolphins\n\n### 2014 Florida Atlantic Owls football team\nThe 2014 Florida Atlantic Owls football team represented Florida Atlantic University in the 2014 NCAA Division I FBS football season.  They were led by first-year head coach Charlie Partridge and played their home games at FAU Stadium.  They entered their second season as a member of Conference USA, competing in the East Division.  They finished the season 3–9, 2–6 in C-USA play to finish in last place in the East Division.\n\n### National Stadium, Karachi\nThe National Stadium (Urdu: نیشنل اسٹڈیم‎ ) is a cricket stadium in Karachi, Pakistan.  It is currently used for cricket matches, it is the home ground of Karachi Kings, Pakistan Super League second expensive team and is home to many other Karachi's domestic cricket teams.  The stadium is able to hold 34,228 spectators, Its widely criticised that the city of this size with a population of over 15 million having such a small capacity stadium.  In the recent past, PCB has announced on different occasions that the capacity of the stadium will be increased to 90,000 but this approval looks a bit stale at the moment."
+  },
+  {
+    "id": "hp-7",
+    "question": "What is the real name of the clock one can see on a clear day from Denmark Hill?",
+    "referenceAnswer": "Great Bell of the clock",
+    "expectedDocIds": [
+      "denmark-hill",
+      "big-ben"
+    ],
+    "retrievedDocIds": [
+      "denmark-hill",
+      "big-ben",
+      "herne-hill",
+      "dulwich",
+      "jsp-records",
+      "denmark-hill-railway-station"
+    ],
+    "extractedEntities": [
+      "Denmark Hill"
+    ],
+    "context": "### Denmark Hill\nDenmark Hill is an area and road in Camberwell, in the London Borough of Southwark. It marks the edge of the Thames valley plain in this area — from here to the river the land is flat. top storey windows) on the top of the hill to the north and neighbouring Dulwich to the south. On a clear day one can read the time on the Big Ben clockface\n\n### Big Ben\nBig Ben is the nickname for the Great Bell of the clock at the north end of the Palace of Westminster in London and is usually extended to refer to both the clock and the clock tower as well.  The tower is officially known as Elizabeth Tower, renamed to celebrate the Diamond Jubilee of Elizabeth II in 2012; previously, it was known simply as the Clock Tower.\n\n### Herne Hill\nHerne Hill is a district in south London, England, approximately four miles from Charing Cross and bordered by Brixton, Denmark Hill, Dulwich Village, Loughborough Junction and Tulse Hill.  It overlaps the boundary between the boroughs of Lambeth and Southwark.  There is a road of the same name in the area (which is part of the A215 and was formerly called Herne Hill Road).\n\n### Dulwich\nDulwich ( ) is an area of south London, England.  The settlement is mostly in the London Borough of Southwark, with parts in the London Borough of Lambeth and consists of Dulwich Village, East Dulwich, West Dulwich and the Southwark half of Herne Hill (which is often referred to as the North Dulwich triangle).  Dulwich lies in a valley between the neighbouring districts of Camberwell, Crystal Palace, Denmark Hill, Forest Hill, Peckham, Sydenham Hill and Tulse Hill and was in Surrey until 1889, when the County of London was created.\n\n### JSP Records\nJSP Records is a British record label, founded in 1978 by John Stedman (John Stedman Promotions), releasing recordings by blues musicians such as Professor Longhair, Buddy Guy, Jimmy Witherspoon, Louisiana Red, Deitra Farr, Eddie \"Cleanhead\" Vinson, Kansas City Red, Eddie Taylor, and Big John Wrencher.  The label is based in London, England.\n\n### Denmark Hill railway station\nDenmark Hill railway station is in the area of Denmark Hill in south London, England, on the Thameslink, South London, Victoria-Dartford and Chatham lines."
+  },
+  {
+    "id": "hp-8",
+    "question": "Who has won more literary awards, Annie Dillard or Gabriel García Márquez?",
+    "referenceAnswer": "Gabriel José de la Concordia García Márquez",
+    "expectedDocIds": [
+      "annie-dillard",
+      "gabriel-garc-a-m-rquez"
+    ],
+    "retrievedDocIds": [
+      "annie-dillard",
+      "gabriel-garc-a-m-rquez",
+      "ngela-becerra",
+      "a-connecticut-yankee-film",
+      "full-moon-fever",
+      "the-general-in-his-labyrinth"
+    ],
+    "extractedEntities": [
+      "Annie Dillard",
+      "Gabriel Garc"
+    ],
+    "context": "### Annie Dillard\nAnnie Dillard (born April 30, 1945) is an American author, best known for her narrative prose in both fiction and non-fiction.  She has published works of poetry, essays, prose, and literary criticism, as well as two novels and one memoir.  Her 1974 work \"Pilgrim at Tinker Creek\" won the 1975 Pulitzer Prize for General Nonfiction.  From 1980, Dillard taught for 21 years in the English department of Wesleyan University, in Middletown, Connecticut.\n\n### Gabriel García Márquez\nGabriel José de la Concordia García Márquez ( ; ] ; 6 March 1927 – 17 April 2014) was a Colombian novelist, short-story writer, screenwriter and journalist, known affectionately as Gabo or Gabito throughout Latin America. Considered one of the most significant authors of the 20th century and one of the best in the Spanish language, he was awarded the 1972 Neustadt International Prize for Literature and the 1982 Nobel Prize in Literature. He pursued a self-directed education that resulted in his leaving law school for a career in journalism. From early on, he showed no inhibitions in his criticism of Colombian and foreign politics\n\n### Ángela Becerra\nÁngela Becerra Acevedo (Cali, Colombia, July 17, 1957) is a Colombian writer.  She has won several awards such as the Planeta-Casa de América Award (Premio Planeta - Casa de América) in 2009, the Azorín Prize (Premio Azorín) in 2005 and four Chicago Latin Literary Awards.  Her works have been translated into 23 languages and published in more than 50 countries.  She is one of the most widely read Spanish-speaking authors, the most read Colombian writer after Gabriel García Márquez, and considered the creator of the Magical Idealism.\n\n### A Connecticut Yankee (film)\nA Connecticut Yankee is a 1931 American Pre-Code film adaptation of Mark Twain's 1889 novel, \"A Connecticut Yankee in King Arthur's Court\". It was directed by David Butler to a script by William M. Conselman, Owen Davis, and Jack Moffitt. It was produced by Fox Film Corporation (later 20th Century Fox), who had earlier produced the 1921 silent adaptation of the novel, \"A Connecticut Yankee in King Arthur's Court\"\n\n### Full Moon Fever\nFull Moon Fever is the debut solo studio album by Tom Petty, released on April 24, 1989 by MCA Records. It features contributions from members of his backing band the Heartbreakers, notably Mike Campbell, along with Jeff Lynne, Roy Orbison (who died prior to its release), and George Harrison of the Traveling Wilburys. The record shows Petty exploring his musical roots with nods to his influences. The songwriting is mainly collaborations between Petty and Lynne, who was also a producer on the album\n\n### The General in His Labyrinth\nThe General in His Labyrinth (original Spanish title: \"El general en su laberinto\" ) is a novel by the Colombian writer and Nobel laureate Gabriel García Márquez. It is a fictionalized account of the last days of Simón Bolívar, liberator and leader of Gran Colombia. First published in 1989, the book traces Bolívar's final journey from Bogotá to the Caribbean coastline of Colombia in his attempt to leave South America for exile in Europe. Breaking with the traditional heroic portrayal of Bolívar \"El Libertador\" , García Márquez depicts a pathetic protagonist, a prematurely aged man who is physically ill and mentally exhausted"
+  },
+  {
+    "id": "hp-9",
+    "question": "When the two Coldplay songs U.F.O and Princess of China were written, what factor did they have in common?",
+    "referenceAnswer": "was written by all four members of the band",
+    "expectedDocIds": [
+      "u-f-o-coldplay-song",
+      "princess-of-china"
+    ],
+    "retrievedDocIds": [
+      "princess-of-china",
+      "u-f-o-coldplay-song",
+      "life-in-technicolor-ii",
+      "kickin-it",
+      "wonder-woman-2017-film",
+      "the-fragrance-of-guava"
+    ],
+    "extractedEntities": [
+      "Coldplay",
+      "Princess",
+      "China"
+    ],
+    "context": "### Princess of China\n\"Princess of China\" is a duet recorded by British rock band Coldplay and Barbadian singer Rihanna for Coldplay's fifth studio album \"Mylo Xyloto\". The song was written by band members Guy Berryman, Jonny Buckland, Will Champion, and Chris Martin, along with Brian Eno, and is influenced by the music genres of electronic rock, electropop and R&B. The song was released as the fourth single from \"Mylo Xyloto\" and was sent to US Mainstream radio on 14 February 2012. A companion EP to the single, featuring an acoustic version of the song, was released on 1 June 2012\n\n### U.F.O. (Coldplay song)\n\" is a song by British rock band Coldplay. It was written by all four members of the band for their fifth studio album, \"Mylo Xyloto\". The album's opening track, \"Mylo Xyloto\" and \"A Hopeful Transmission\" are based on the chords from the second half of this song. After the song ends, the track includes a short instrumental section (reminiscent of \"Prospekt's March/Poppyfields\") that segues into the following track, \"Princess of China\"\n\n### Life in Technicolor II\n\"Life in Technicolor II\" (properly spelled and written as \"Life in Technicolor ii\"), is a song by British rock band Coldplay and the first single from the band's 2008 EP, \"Prospekt's March\". The song is the full, vocal version of the instrumental song \"Life in Technicolor\" from Coldplay's fourth studio album, \"Viva la Vida or Death and All His Friends\". The single includes the previously unreleased and unheard track \"The Goldrush\", one of the few Coldplay songs featuring lead vocals by drummer Will Champion. It was nominated for two Grammy Award for the 52nd Annual Grammy Awards; \"Best Rock Performance by a Duo or Group with Vocal\" and \"Best Music Video\"\n\n### Kickin' It\nKickin' It is an American martial arts-inspired comedy television series that originally aired on Disney XD from June 13, 2011 to March 25, 2015.  Created and executive produced by Jim O'Doherty, the series follows the karate instructor at an under-performing martial arts academy, played by Jason Earles, and his five misfit students, played by Leo Howard, Dylan Riley Snyder, , Olivia Holt, and .\n\n### Wonder Woman (2017 film)\nThe film is directed by Patty Jenkins, with a screenplay by Allan Heinberg, from a story by Heinberg, Zack Snyder, and Jason Fuchs, and stars Gal Gadot, Chris Pine, Robin Wright, Danny Huston, David Thewlis, Connie Nielsen, and Elena Anaya. The film tells the story of Princess Diana, who grows up on the Amazon island of Themyscira. After American pilot Steve Trevor crashes offshore of the island and is rescued by her, he tells the Amazons about the ongoing World War. Diana then leaves her home in order to end the conflict, becoming Wonder Woman in the process\n\n### The Fragrance of Guava\nThe Fragrance of Guava is a book based on the long conversations between Gabriel García Márquez and his close friend Plinio Apuleyo Mendoza.  Published in 1982, the book describes the life of García Márquez, from his early childhood to his encounters with celebrities.  The title of the book in Spanish is \"El Olor de la Guayaba\".  It was translated as \"The Fragrance of Guava\"; however, the literal translation should be \"The Smell of Guava\"."
+  },
+  {
+    "id": "hp-10",
+    "question": "Tommy Faile sang the song \"the legend of Brown Moutain Lights\", about a series of ghost lights that can be seen from which viewpoint outside Linville Falls?",
+    "referenceAnswer": "Wiseman's View",
+    "expectedDocIds": [
+      "tommy-faile",
+      "brown-mountain-lights"
+    ],
+    "retrievedDocIds": [
+      "brown-mountain-lights",
+      "tommy-faile",
+      "ghost-lights-band",
+      "linville-falls",
+      "altamont-north-carolina",
+      "highway-companion"
+    ],
+    "extractedEntities": [
+      "the legend of Brown Moutain Lights",
+      "Tommy Faile",
+      "Brown Moutain Lights",
+      "Linville Falls"
+    ],
+    "context": "### Brown Mountain Lights\nThe Brown Mountain Lights are a series of ghost lights reported near Brown Mountain in North Carolina. The lights can be seen from the Blue Ridge Parkway at mile posts 310 (Brown Mountain Light overlook) and 301 (Green Mountain overlook) and from the Brown Mountain Overlook on NC Highway 181 between Morganton, NC and Linville, NC. Additionally, good sightings of the Lights have been reported from the top of Table Rock, outside of Morganton, NC. One of the best vantage points, Wiseman's View, is about 4 miles from Linville Falls, NC\n\n### Tommy Faile\nTommy Faile (September 15, 1928 – August 2, 1998) was an American songwriter and singer best known for composing \"Phantom 309\" and singing \"The Legend of the Brown Mountain Lights\".  He was known for his deep voice and comic on-stage banter.\n\n### Ghost Lights (band)\nGhost Lights is the stage name of current Canadian folk artist Noah Cebuliak.  Drawing from the themes of nature and the spiritual, Ghost Lights has a sound that has been described by reviewers as \"sensitive,\" \"luxurious,\" and \"better than a deep-muscle massage,\" with most critics commenting on the beauty displayed in the minimalist folk style and strong lyricism.\n\n### Linville Falls\nLinville Falls is a waterfall located in the Blue Ridge Mountains of North Carolina in the United States.  The falls move in several distinct steps, beginning in a twin set of upper falls, moving down a small gorge, and culminating in a high-volume 45 ft drop.  It is named for the Linville River, which goes over the falls.  Linville Falls has the highest volume of any waterfall on the Northern Edge of the Blue Ridge Mountains.\n\n### Altamont, North Carolina\nAltamont is an unincorporated community in Avery County, North Carolina, United States.  The community is located along US 221/NC 194 (Linville Falls Highway), between the town of Crossnore and the community of Linville Falls.  Altamont translates to \"High Mountain.\"\n\n### Highway Companion\nThe album was produced by former Traveling Wilburys bandmate Jeff Lynne, who also produced Petty’s highly acclaimed first solo album, \"Full Moon Fever\", as well as the Heartbreakers' next album \"Into the Great Wide Open\". Records, where Petty has had a record contract since his second solo album, \"Wildflowers\" (which was produced by Rubin). The tracks \"Saving Grace\" and \"Big Weekend\" were released July 4, 2006 on the iTunes Music Store. It ended up being Petty's only album for American Recordings, as that label moved to Columbia Records distribution in 2007; Warner Bros"
+  },
+  {
+    "id": "hp-11",
+    "question": "The coach of the Karachi Kings, Mickey Arthur, is of what decent? ",
+    "referenceAnswer": "South African",
+    "expectedDocIds": [
+      "karachi-kings",
+      "mickey-arthur"
+    ],
+    "retrievedDocIds": [
+      "mickey-arthur",
+      "karachi-kings",
+      "abrar-ahmed-pakistani-cricketer",
+      "karachi-kings-in-2016",
+      "2016-florida-atlantic-owls-football-team",
+      "howard-schnellenberger"
+    ],
+    "extractedEntities": [
+      "Karachi Kings",
+      "Mickey Arthur"
+    ],
+    "context": "### Mickey Arthur\nJohn Michael \"Mickey\" Arthur (born 17 May 1968) is a South African cricketer who played South African domestic cricket from 1986 to 2001.  He is the current coach of the Pakistan national cricket team.  He coached the South African national team from 2005 to 2010, and was the coach of the Australia national cricket team until his sacking on 23 June 2013.\n\n### Karachi Kings\nKarachi Kings (Urdu: ‎ ; Sindhi: ڪراچي ڪنگز‎ ) is a Pakistani professional Twenty20 cricket team that competes in the Pakistan Super League. The team is based in Karachi, the provincial capital of Sindh, Pakistan. The team was formed in 2015, as a result of the formation of the Pakistan Super League by Pakistan Cricket Board (PCB). The team is currently captained by Kumar Sangakkara and coached by Mickey Arthur a former South African cricketer\n\n### Abrar Ahmed (Pakistani cricketer)\nAbrar Ahmed (born 16 October 1998) is a Pakistani cricketer.  He made his Twenty20 debut for Karachi Kings on 10 February 2017 in the 2017 Pakistan Super League.\n\n### Karachi Kings in 2016\nThe Karachi Kings is a franchise cricket team that represents Karachi in the Pakistan Super League.  They are one of the five teams that had a competition in the 2016 Pakistan Super League.  The team was captained by Shoaib Malik and then by Ravi Bopara, and they stand on fourth position after winning just two matches from their eight matches in the PSL 2016.\n\n### 2016 Florida Atlantic Owls football team\nThe 2016 Florida Atlantic Owls football team represented Florida Atlantic University in the 2016 NCAA Division I FBS football season.  The Owls played their home games at the FAU Stadium in Boca Raton, Florida, and competed in the East Division of Conference USA (C–USA).  They were led by third-year head coach Charlie Partridge.  They finished the season 3–9, 2–6 in C-USA play to finish in a tie for sixth place in the East Division.\n\n### Howard Schnellenberger\nHoward Leslie Schnellenberger (born March 16, 1934) is a retired American football coach with long service at both the professional and college levels. He held head coaching positions with the National Football League's Baltimore Colts and in college for the University of Miami, University of Oklahoma, University of Louisville and Florida Atlantic University. Schnellenberger also worked extensively as an assistant coach at the college and pro levels, including as part of the staff of the undefeated 1972 Miami Dolphins. He is also famous for recruiting Joe Namath to Alabama for Bear Bryant in 1961"
+  },
+  {
+    "id": "hp-12",
+    "question": "Alexander S. Wadsworth served during the war that was faught between which two countries?",
+    "referenceAnswer": "United States, the United Kingdom, and their respective allies",
+    "expectedDocIds": [
+      "alexander-s-wadsworth",
+      "war-of-1812"
+    ],
+    "retrievedDocIds": [
+      "philip-wadsworth",
+      "alexander-s-wadsworth",
+      "a-connecticut-yankee-film",
+      "war-of-1812",
+      "france-united-kingdom-relations",
+      "karl-aschenbrenner"
+    ],
+    "extractedEntities": [
+      "Alexander S",
+      "Wadsworth"
+    ],
+    "context": "### Philip Wadsworth\nPhilip Wadsworth (March 7, 1832 – September 12, 1901) was an American dry goods merchant, politician, and military leader. Born to the prominent Wadsworth family in New Hartford, Connecticut, he attended private academies until he was sixteen, when he entered the dry goods trade. Wadsworth was also interested in the military, and although he never officially served, he maintained a military company where soldiers could train in advance of the Civil War. Later in his life he returned to Connecticut where he served a two-year term in the Connecticut House of Representatives\n\n### Alexander S. Wadsworth\nCommodore Alexander Scammel Wadsworth (1790–April 5, 1851) was an officer of the United States Navy.  His more than 40 years of active duty included service in the War of 1812.\n\n### A Connecticut Yankee (film)\nA Connecticut Yankee is a 1931 American Pre-Code film adaptation of Mark Twain's 1889 novel, \"A Connecticut Yankee in King Arthur's Court\". It was directed by David Butler to a script by William M. It was produced by Fox Film Corporation (later 20th Century Fox), who had earlier produced the 1921 silent adaptation of the novel, \"A Connecticut Yankee in King Arthur's Court\". \"A Connecticut Yankee\" is the first sound film adaptation of Twain's novel\n\n### War of 1812\nThe War of 1812 (18121815) was a conflict fought between the United States, the United Kingdom, and their respective allies.  Historians in Britain often see it as a minor theater of the Napoleonic Wars; in the United States and Canada, it is seen as a war in its own right.\n\n### France–United Kingdom relations\nThe historical ties between the two countries are long and complex, including conquest, wars, and alliances at various points in history. Closer ties between the two began with the 1904 Entente cordiale, particularly via the alliances in World War I and World War II, wherein both countries fought against Germany, and in the latter conflict British armies helped to liberate occupied France from the Nazis. Both nations opposed the Soviet Union during the Cold War and were founding members of NATO. The British press relishes the chance to refer to France and Britain as \"historic rivals\" or emphasize the perceived ever-lasting competition that still opposes the two countries\n\n### Karl Aschenbrenner\nHis principal academic post was at the University of California, Berkeley in the Department of Philosophy. Holther, Aschenbrenner published the principal work of Alexander Gottlieb Baumgarten and, with Donald Nicholl, assisted in completing the second edition of an important work of the German philosopher Joseph M. During sabbatical leaves Aschenbrenner taught at the Universität Wien, University College London and the Ludwig-Maximilians-Universität München. Aschenbrenner died in Budapest while doing research and is buried in Farkasréti Cemetery in that city"
+  },
+  {
+    "id": "hp-13",
+    "question": "Who directed the 1971 film in which Pat Ashton starred in?",
+    "referenceAnswer": "Harry Booth",
+    "expectedDocIds": [
+      "pat-ashton",
+      "on-the-buses-film"
+    ],
+    "retrievedDocIds": [
+      "together-1971-film",
+      "pat-ashton",
+      "on-the-buses-film",
+      "thick-as-thieves-tv-series",
+      "rainbow-bridge-film",
+      "christian-de-chalonge"
+    ],
+    "extractedEntities": [
+      "Pat Ashton"
+    ],
+    "context": "### Together (1971 film)\nTogether is a 1971 film directed by Sean S. Cunningham's first film attracted Wes Craven who wanted to be in the film business. Cunningham and Craven would later work on \"The Last House on the Left\". The film features a young Marilyn Chambers, billed under her real name, Marilyn Briggs, before she starred in \"Behind the Green Door\"\n\n### Pat Ashton\nPat Ashton (28 February 1931 – 23 June 2013) was an English actress.  Her engaging cockney, blonde persona is best remembered for appearances in English TV-sitcom film spin-offs \"On the Buses\" (1971) and \"Mutiny on the Buses\" (1972).\n\n### On the Buses (film)\nOn the Buses is a 1971 British comedy film directed by Harry Booth and starring Reg Varney and Doris Hare.  The film is the first spin-off film from the TV sitcom \"On the Buses\" and was followed by two further films \"Mutiny on the Buses\" (1972) and \"Holiday on the Buses\" (1973).  The films are set within a slightly different canon from the TV series; Stan and Jack work for a different bus company (Town & District instead of Luxton & District), and the three films form a loose story arc where Arthur and Olive become parents (despite their apparently sexless marriage).\n\n### Thick as Thieves (TV series)\nThick as Thieves is a British sitcom which was broadcast between 1 June and 20 July 1974 on LWT.  It was created and written by Dick Clement and Ian La Frenais.  There were 8 episodes over one series and starred Bob Hoskins, John Thaw and Pat Ashton.\n\n### Rainbow Bridge (film)\nRainbow Bridge is a 1971 film directed by Chuck Wein about different countercultural figures interacting on the Hawaiian island of Maui. We're going to place Pat [New York model Pat Hartley, the protagonist] in all kinds of real-life situtations, and film what happens. We're going to shoot a lot of film and just see what comes out of it. \"  Harry Shapiro adds, \"the idea was to shoot an antidote to \"Easy Rider\", showing the positive side of the youth movement\n\n### Christian de Chalonge\nChristian de Chalonge (born 21 January 1937) is a French film director and screenwriter.  He directed the 1971 film \"The Wedding Ring\", which starred Anna Karina."
+  },
+  {
+    "id": "hp-14",
+    "question": "Which magazine is based out of more countries, Adventist World or Baseball Digest?",
+    "referenceAnswer": "Adventist World",
+    "expectedDocIds": [
+      "adventist-world",
+      "baseball-digest"
+    ],
+    "retrievedDocIds": [
+      "adventist-world",
+      "baseball-digest",
+      "seventh-day-adventist-tertiary-student-ministry",
+      "adventist-review",
+      "saudi-arabia-united-states-relations",
+      "2008-florida-atlantic-owls-baseball-team"
+    ],
+    "extractedEntities": [
+      "Adventist World",
+      "Baseball Digest"
+    ],
+    "context": "### Adventist World\nAdventist World is a monthly international magazine of the Seventh-day Adventist Church published by the Review and Herald Publishing Association.  Editors are based in Silver Spring, Maryland and Seoul, Korea.\n\n### Baseball Digest\nBaseball Digest is a baseball magazine resource, published in Evanston, Illinois by Grandstand Publishing, LLC.  It is the oldest and longest-running baseball magazine in the United States.\n\n### Seventh-day Adventist tertiary student ministry\nThe Seventh-day Adventist Church has ministries to students on some universities and other tertiary education campuses throughout the world.  Some of these are run independently of the official church.  Two of these organizations are the Adventist Christian Fellowship based primarily in North America, and the Adventist Students Association based primarily in Australia.\n\n### Adventist Review\nThe Adventist Review is the official newsmagazine of the Seventh-day Adventist Church. The Review and Herald also publishes a sister magazine, \"Adventist World\". The magazine is headquartered in Silver Spring, Maryland. The current editor of the \"Adventist Review\" is Bill Knott\n\n### Saudi Arabia–United States relations\nBilateral relations between the Kingdom of Saudi Arabia and the United States began in 1933 when full diplomatic relations were established. Despite the differences between the two countries—an ultraconservative Islamic absolute monarchy, and a secular, democratic republic—the two countries have been allies. In recent years, the two countries have occasionally been described as having a \"Special Relationship\" with one another. Bush and Barack Obama have close and strong relations with senior members of the Saudi Royal Family\n\n### 2008 Florida Atlantic Owls baseball team\nThe 2008 Florida Atlantic Owls baseball team will be the intercollegiate baseball team of Florida Atlantic University. The 2008 team marked the second season of baseball to compete in the Sun Belt, after Florida Atlantic joined the conference after the 2006 season. On Thursday, April 24, 2008 Coach Kevin Cooney announced that the 2008 season would be his last season as head coach of the Owls. Up to this point, in 28 years of existence, Florida Atlantic baseball had had only two coaches, Steve Traylor and Kevin Cooney"
+  },
+  {
+    "id": "hp-15",
+    "question": "Who played Amelia Vanek in the film adaptation of Monster?",
+    "referenceAnswer": "Esther \"Essie\" Davis",
+    "expectedDocIds": [
+      "essie-davis",
+      "the-babadook"
+    ],
+    "retrievedDocIds": [
+      "treasure-island-1920-film",
+      "essie-davis",
+      "tobruk-2008-film",
+      "the-babadook",
+      "tao-okamoto",
+      "marcello-giordani"
+    ],
+    "extractedEntities": [
+      "Amelia Vanek",
+      "Monster"
+    ],
+    "context": "### Treasure Island (1920 film)\nTreasure Island is a 1920 silent film adaptation of the novel by Robert Louis Stevenson, directed by Maurice Tourneur, and released by Paramount Pictures.  Lon Chaney played two different key roles in this production.  Charles Ogle, who had played Frankenstein's Monster in the first filmed version of \"Frankenstein\" a decade earlier at Edison Studios, portrayed Long John Silver.\n\n### Essie Davis\nEsther \"Essie\" Davis (born January 7, 1970) is an Australian actress.  She is best known for her roles as Phryne Fisher in \"Miss Fisher's Murder Mysteries\" and Amelia Vanek in \"The Babadook\".  Other major work has included a recurring role in season six of the TV series \"Game of Thrones\", and a role as Elizabeth Woodville in the TV series \"The White Princess\", an adaptation of Philippa Gregory's historical novel.\n\n### Tobruk (2008 film)\nTobruk is a 2008 film written and directed by Václav Marhoul and starring Jan Meduna and Petr Vanek.  It is an adaptation of the classic American Civil War novel \"The Red Badge of Courage\" by Stephen Crane, but transfers the action to North Africa during World War II.\n\n### The Babadook\nThe Babadook is a 2014 Australian psychological horror film written and directed by Jennifer Kent in her directorial debut, and produced by Kristina Ceyton and Kristian Moliere.  The film stars Essie Davis, Noah Wiseman, Daniel Henshall, Hayley McElhinney, Barbara West, and Ben Winspear.  It is based on the 2005 short film \"Monster\", also written and directed by Kent.\n\n### Tao Okamoto\nTao Okamoto (岡本 多緒 , Okamoto Tao , born May 22, 1985) , known professionally as Tao, is a Japanese actress and model.  In 2009, she was one of the faces of Ralph Lauren.  In 2013, she made her film debut as the female lead, Mariko Yashida, in \"The Wolverine\", opposite Hugh Jackman.  Tao played Mercy Graves in the 2016 film \"\".\n\n### Marcello Giordani\nMarcello Giordani (birth name Marcello Guagliardo; born 25 January 1963) is an Italian operatic tenor who has sung leading roles in opera houses throughout Europe and the United States.  He has had a distinguished association with the New York Metropolitan Opera, where he has sung in over 200 performances since his debut there in 1993.  (He is not to be confused with another Italian tenor, Massimo Giordano, who toured with Anna Netrebko in 2009.)"
+  },
+  {
+    "id": "hp-16",
+    "question": "In what year was the most famous statute at Po Lin Monastery built?",
+    "referenceAnswer": "Tian Tan Buddha",
+    "expectedDocIds": [
+      "buddhism-in-hong-kong",
+      "tian-tan-buddha"
+    ],
+    "retrievedDocIds": [
+      "buddhism-in-hong-kong",
+      "bagaya-monastery",
+      "po-lin-monastery",
+      "tian-tan-buddha",
+      "great-lavra",
+      "ngong-ping-360"
+    ],
+    "extractedEntities": [
+      "Po Lin Monastery"
+    ],
+    "context": "### Buddhism in Hong Kong\nBuddhism is a major religion in Hong Kong and has been greatly influential in the traditional culture of its populace.  Among the most prominent Buddhist temples in the city there are the Chi Lin Nunnery in Diamond Hill, built in the Tang Dynasty's architectural style; the Po Lin Monastery on Lantau Island, famous for the outdoor bronze statue, Tian Tan Buddha, which attracts a large number of visitors during the weekends and holidays.\n\n### Bagaya Monastery\nThe Bagaya Monastery (Burmese: ဘားဂရာ ကျောင်း ), located in Inwa, Mandalay Region, Burma (Myanmar) is a Buddhist monastery built on the southwest of Inwa Palace.  This magnificent monastery is also known as Maha Waiyan Bontha Bagaya Monastery.  During King Hsinbyushin's reign (1763–1776), Maha Thiri Zeya Thinkhaya, town officer of Magwe built the monastery in the Bagaya monastic establishment and dedicated to Shin Dhammabhinanda.  It is one of the famous tourists attractions in Burma.\n\n### Po Lin Monastery\nPo Lin Monastery is a Buddhist monastery, located on Ngong Ping Plateau, on Lantau Island, Hong Kong.\n\n### Tian Tan Buddha\nTian Tan Buddha, also known as the Big Buddha, is a large bronze statue of Buddha Shakyamuni, completed in 1993, and located at Ngong Ping, Lantau Island, in Hong Kong.  The statue is sited near Po Lin Monastery and symbolises the harmonious relationship between man and nature, people and faith.  It is a major centre of Buddhism in Hong Kong, and is also a popular tourist attraction.\n\n### Great Lavra\nThe Monastery of Great Lavra (Greek: Μονή Μεγίστης Λαύρας ) is the first monastery built on Mount Athos. The founding of the monastery in AD 963 by Athanasius the Athonite marks the beginning of the organized monastic life at Mount Athos. At the location of the monastery, there was one of the ancient cities of the Athos peninsula, perhaps Akrothooi, from which the sarcophagi of the monastery that are in the oil storage house come. The history of the monastery is the most complete compared to the history of the other monasteries, because its historical archives were preserved almost intact\n\n### Ngong Ping 360\nThe Ngong Ping 360 is a gondola lift on Lantau Island in Hong Kong. Intended to improve tourism to the area, the aerial lift was previously known as Tung Chung Cable Car Project before acquiring the Ngong Ping 360 brand in April 2005. This is home to the Po Lin Monastery and the Tian Tan Buddha, both already significant tourist attractions in their own right. Before Ngong Ping 360's opening, the only access was via a mountain road and bus service"
+  },
+  {
+    "id": "hp-17",
+    "question": "Are both The Day the Universe Changed and Lennon or McCartney American documentary short films?",
+    "referenceAnswer": "no",
+    "expectedDocIds": [
+      "the-day-the-universe-changed",
+      "lennon-or-mccartney"
+    ],
+    "retrievedDocIds": [
+      "lennon-or-mccartney",
+      "on-a-clear-day-you-can-see-forever-film",
+      "the-day-the-universe-changed",
+      "james-burke-science-historian",
+      "ivan-vaughan",
+      "american-indian-horse"
+    ],
+    "extractedEntities": [
+      "The Day",
+      "Universe Changed",
+      "Lennon",
+      "McCartney American"
+    ],
+    "context": "### Lennon or McCartney\nLennon or McCartney is a 2014 American documentary short film directed by Matt Schichter.  The film is a compilation of 550 celebrities' responses, taken from interviews throughout the decade, to the question of which musician is superior: John Lennon or Paul McCartney.\n\n### On a Clear Day You Can See Forever (film)\nOn a Clear Day You Can See Forever is a 1970 American musical comedy-drama fantasy film directed by Vincente Minnelli.  The screenplay by Alan Jay Lerner is adapted from his book for the 1965 stage production of the same name.  The songs feature lyrics by Lerner and music by Burton Lane.  The American Film Institute has listed \"On a Clear Day You Can See Forever\" as one of the 100 greatest musical films ever.\n\n### The Day the Universe Changed\nThe Day the Universe Changed: A Personal View by James Burke is a British documentary television series written and presented by science historian James Burke, originally broadcast on BBC1 from 19 March until 21 May 1985 by the BBC.  The series' primary focus is on the effect of advances in science and technology on western society in its philosophical aspects.\n\n### James Burke (science historian)\nJames Burke (born 22 December 1936) is a British broadcaster, science historian, author, and television producer, who is known, among other things, for his documentary television series \"Connections\" (1978), and for its more philosophically oriented companion series, \"The Day the Universe Changed\" (1985), which is about the history of science and technology.  \"The Washington Post\" called him \"one of the most intriguing minds in the Western world\".\n\n### Ivan Vaughan\nIvan Vaughan (18 June 1942 – 16 August 1993) was a boyhood friend of John Lennon, and later schoolmate of Paul McCartney at the Liverpool Institute, both commencing school there in September 1953. He was born on the same day as McCartney in Liverpool. McCartney impressed Lennon, who invited McCartney to join the band, which he did a day later. This led to the formation of Lennon and McCartney's songwriting partnership, and later of The Beatles\n\n### American Indian Horse\nThe American Indian Horse is defined by its breed registry as a horse that may carry the ancestry of the Spanish Barb, Arabian, Mustang, or \"Foundation\" Appaloosa. It is the descendant of horses originally brought to the Americas by the Spanish and obtained by Native American people. The organization was started \"for the purpose of collecting, recording and preserving the pedigrees of American Indian Horses. \"  The registry also allows the \"hybrids [\"sic\"] and descendants\" of the original Spanish Colonial Horse to be registered"
+  },
+  {
+    "id": "hp-18",
+    "question": "which German philosopher wrote \"The opera \"Lulu\"  ",
+    "referenceAnswer": "Theodor W. Adorno",
+    "expectedDocIds": [
+      "lulu-opera",
+      "theodor-w-adorno"
+    ],
+    "retrievedDocIds": [
+      "lulu-opera",
+      "johann-gottlieb-fichte",
+      "theodor-w-adorno",
+      "marcello-giordani",
+      "todtnauberg",
+      "little-lulu-and-her-little-friends"
+    ],
+    "extractedEntities": [
+      "The opera",
+      "German",
+      "Lulu"
+    ],
+    "context": "### Lulu (opera)\nLulu (composed from 1929–1935, premièred incomplete in 1937 and complete in 1979) is an opera in three acts by Alban Berg. The German-language libretto was adapted by Berg himself from Frank Wedekind's two \"Lulu\" plays, \"Erdgeist\" (\"Earth Spirit\", 1895) and \"Die Büchse der Pandora\" (\"Pandora's Box\", 1904). Berg died before completing the third and final act, and in the following decades, the opera was typically performed incomplete. Adorno wrote \"The opera \"Lulu\" is one of those works that reveals the extent of its quality the longer and more deeply one immerses oneself in it\n\n### Johann Gottlieb Fichte\nJohann Gottlieb Fichte ( ; ] ; May 19, 1762 – January 27, 1814), was a German philosopher who became a founding figure of the philosophical movement known as German idealism, which developed from the theoretical and ethical writings of Immanuel Kant. Recently, philosophers and scholars have begun to appreciate Fichte as an important philosopher in his own right due to his original insights into the nature of self-consciousness or self-awareness. Like Descartes and Kant before him, Fichte was motivated by the problem of subjectivity and consciousness. Fichte also wrote works of political philosophy; he has a reputation as one of the fathers of German nationalism\n\n### Theodor W. Adorno\nTheodor W. Adorno ( ; ] ; born Theodor Ludwig Wiesengrund; September 11, 1903 – August 6, 1969) was a German philosopher, sociologist, and composer known for his critical theory of society.\n\n### Marcello Giordani\nMarcello Giordani (birth name Marcello Guagliardo; born 25 January 1963) is an Italian operatic tenor who has sung leading roles in opera houses throughout Europe and the United States.  He has had a distinguished association with the New York Metropolitan Opera, where he has sung in over 200 performances since his debut there in 1993.  (He is not to be confused with another Italian tenor, Massimo Giordano, who toured with Anna Netrebko in 2009.)\n\n### Todtnauberg\nTodtnauberg is a German village in Black Forest (\"Schwarzwald\") belonging to the municipality of Todtnau, in Baden-Württemberg.  It is named after the homonym mount (\"berg\" means hill or mountain in German) and is famous because it is the place where the German philosopher Martin Heidegger had a chalet and wrote portions of his major work, \"Being and Time\".\n\n### Little Lulu and Her Little Friends\nLittle Lulu and Her Little Friends (リトル・ルルとちっちゃい仲間 , Ritoru Ruru to Chitchai Nakama ) is a 26-episode Japanese anime television series produced by Nippon Animation which aired on ABC and NET from October 3, 1976 to April 3, 1977. The series was directed by Fumio Kurokawa and featuring voice actresses Eiko Masuyama and Minori Matsushima as the voice of Lulu. An English-dubbed version of the anime was made for the American market by ZIV International in 1978, and the series was also released in Italian, German, Hebrew, Arabic, Spanish, and Brazilian Portuguese. The \"Little Lulu\" anime is extremely rare and has been out of print in the United States for years"
+  },
+  {
+    "id": "hp-19",
+    "question": "In what language was the 2007 Indian romantic drama staring Kareena Kapoor and Shahid Kapoor produced in? ",
+    "referenceAnswer": "Partly Punjabi",
+    "expectedDocIds": [
+      "lists-of-bollywood-films",
+      "jab-we-met"
+    ],
+    "retrievedDocIds": [
+      "kareena-kapoor",
+      "fida",
+      "american-indian-horse",
+      "lists-of-bollywood-films",
+      "jab-we-met",
+      "avanthika-mohan"
+    ],
+    "extractedEntities": [
+      "Indian",
+      "Kareena Kapoor",
+      "Shahid Kapoor"
+    ],
+    "context": "### Kareena Kapoor\nKareena Kapoor (] ; born 21 September 1980), also known by her married name Kareena Kapoor Khan, is an Indian actress who appears in Hindi films.  She is the daughter of actors Randhir Kapoor and Babita, and the younger sister of actress Karisma Kapoor.  Noted for playing a variety of characters in a range of film genres—from romantic comedies to crime dramas—Kapoor is the recipient of several awards, including six Filmfare Awards, and is one of Bollywood's most popular and highest-paid actresses.\n\n### Fida\nFida (translation: Infatuated) is an Indian Hindi romantic thriller film released in 2004.  The film, directed by Ken Ghosh, stars Fardeen Khan, Kareena Kapoor, Shahid Kapoor and Kim Sharma.  This is the first film in which Kareena Kapoor played a negative role.  The film just recovered it's budget.\n\n### American Indian Horse\nIt is the descendant of horses originally brought to the Americas by the Spanish and obtained by Native American people. The registry was created in 1961 when some breeders of Colonial Spanish Horse bloodlines considered the Spanish Mustang breeders to be departing from the original \"Indian horse\" phenotype. The organization was started \"for the purpose of collecting, recording and preserving the pedigrees of American Indian Horses. \"  The registry also allows the \"hybrids [\"sic\"] and descendants\" of the original Spanish Colonial Horse to be registered\n\n### Lists of Bollywood films\nThis is a list of films produced by Bollywood film industry of Mumbai ordered by year and decade of release. Although \"Bollywood\" films are generally listed under the Hindi language, most are in Hindi with partial Urdu and Punjabi and occasionally other languages. Speakers of Hindi, Urdu, and Punjabi understand the mixed language usage of Bollywood thus extending the viewership to people all over the Indian subcontinent (throughout India and its neighboring countries). , Partly Urdu: \"Jodhaa Akbar\", \"Fanaa\", \"Saawariya\" and \"Kurbaan\", Partly Punjabi: \"Singh Is Kinng\", \"Jab We Met\", \"Patiala House\", \"Thande Koyle\" and \"The film \"\" is an equal mix of Hindi, Punjabi and Urdu\n\n### Jab We Met\nJab We Met (English: \"When We Met\") is a 2007 Indian romantic drama film directed and written by Imtiaz Ali.  The film, produced by Dhillin Mehta under Shree Ashtavinayak Cinevision Ltd, stars Kareena Kapoor and Shahid Kapoor in their fourth film together with Dara Singh, Pavan Malhotra and Saumya Tandon in supporting roles.\n\n### Avanthika Mohan\nPriyanka Mohan is an Indian actress and model,better known by stage name Avantika Mohan. She made her debut in \"Yakshi – Faithfully Yours\" and was later seen in films including \"Crocodile Love Story\" (2012) and \"Mr. Her 2013 film \"Neelakasham Pachakadal Chuvanna Bhoomi\" was a commercially successful. she received two best actress award for the character called Nanditha in Athmasakhi by 24 frames film society"
+  }
+]
