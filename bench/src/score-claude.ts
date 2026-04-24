@@ -51,31 +51,62 @@ function keywordHit(answer: string, reference: string): number {
   return hits / refTokens.length;
 }
 
-function scorePair(label: string, contextsPath: string, answersPath: string, resultsPath: string): void {
+function scorePair(
+  label: string,
+  hybridContextsPath: string,
+  hybridAnswersPath: string,
+  baselineContextsPath: string,
+  baselineAnswersPath: string,
+  resultsPath: string,
+): void {
   console.log(`\n=== ${label} ===`);
-  if (!existsSync(contextsPath) || !existsSync(answersPath) || !existsSync(resultsPath)) {
+  if (!existsSync(hybridContextsPath) || !existsSync(hybridAnswersPath) || !existsSync(resultsPath)) {
     console.log(`  missing file(s); skip`);
     return;
   }
-  const contexts = JSON.parse(readFileSync(contextsPath, "utf-8")) as ContextEntry[];
-  const answers = JSON.parse(readFileSync(answersPath, "utf-8")) as AnswerEntry[];
-  const ansById = new Map(answers.map((a) => [a.id, a.answer]));
+  const contexts = JSON.parse(readFileSync(hybridContextsPath, "utf-8")) as ContextEntry[];
+  const hybridAnswers = JSON.parse(readFileSync(hybridAnswersPath, "utf-8")) as AnswerEntry[];
+  const ansHybrid = new Map(hybridAnswers.map((a) => [a.id, a.answer]));
+  const hasBaseline = existsSync(baselineContextsPath) && existsSync(baselineAnswersPath);
+  const ansBaseline = hasBaseline
+    ? new Map(
+        (JSON.parse(readFileSync(baselineAnswersPath, "utf-8")) as AnswerEntry[]).map((a) => [
+          a.id,
+          a.answer,
+        ]),
+      )
+    : new Map<string, string>();
+  const baselineRefMap = hasBaseline
+    ? new Map(
+        (JSON.parse(readFileSync(baselineContextsPath, "utf-8")) as ContextEntry[]).map((c) => [
+          c.id,
+          c.referenceAnswer,
+        ]),
+      )
+    : new Map<string, string>();
   const results = JSON.parse(readFileSync(resultsPath, "utf-8")) as BenchRow[];
 
   const systemNames = Object.keys(results[0]?.systems ?? {});
   const N = contexts.length;
 
+  const extraCols = ["baseline+claude", "hybrid+claude"];
   const kwSum: Record<string, number> = Object.fromEntries(
-    [...systemNames, "claude-code"].map((n) => [n, 0]),
+    [...systemNames, ...extraCols].map((n) => [n, 0]),
   );
 
   console.log(`\nper-query kw-hit (0..1):`);
-  console.log(`id       ref                                 | ${systemNames.join(" | ")} | claude-code`);
+  console.log(`id       ref                                  | ${systemNames.join(" | ")} | baseline+claude | hybrid+claude`);
   for (const ctx of contexts) {
     const row = results.find((r) => r.queryId === ctx.id)!;
-    const claudeAns = ansById.get(ctx.id) ?? "";
-    const claudeKw = keywordHit(claudeAns, ctx.referenceAnswer);
-    kwSum["claude-code"]! += claudeKw;
+    const hybridAns = ansHybrid.get(ctx.id) ?? "";
+    const hybridKw = keywordHit(hybridAns, ctx.referenceAnswer);
+    kwSum["hybrid+claude"]! += hybridKw;
+
+    const baselineAns = ansBaseline.get(ctx.id) ?? "";
+    const baselineRef = baselineRefMap.get(ctx.id) ?? ctx.referenceAnswer;
+    const baselineKw = hasBaseline ? keywordHit(baselineAns, baselineRef) : 0;
+    if (hasBaseline) kwSum["baseline+claude"]! += baselineKw;
+
     const scores: string[] = [];
     for (const name of systemNames) {
       const kw = row.systems[name]?.keywordHit ?? 0;
@@ -83,15 +114,15 @@ function scorePair(label: string, contextsPath: string, answersPath: string, res
       scores.push(kw.toFixed(2));
     }
     console.log(
-      `${ctx.id.padEnd(8)} ${ctx.referenceAnswer.slice(0, 35).padEnd(36)} | ${scores.join("   ")} | ${claudeKw.toFixed(2)}`,
+      `${ctx.id.padEnd(8)} ${ctx.referenceAnswer.slice(0, 36).padEnd(37)} | ${scores.join("   ")} | ${hasBaseline ? baselineKw.toFixed(2) : "  - "}             | ${hybridKw.toFixed(2)}`,
     );
   }
 
   console.log(`\naverage kw-hit across ${N} queries:`);
-  const allCols = [...systemNames, "claude-code"];
+  const allCols = [...systemNames, ...(hasBaseline ? extraCols : ["hybrid+claude"])];
   for (const name of allCols) {
     const avg = kwSum[name]! / N;
-    console.log(`  ${name.padEnd(14)} ${avg.toFixed(3)}`);
+    console.log(`  ${name.padEnd(18)} ${avg.toFixed(3)}`);
   }
 }
 
@@ -100,12 +131,16 @@ function main(): void {
     "SQuAD 2.0 (30 queries)",
     resolve(__dirname, "claude-squad-contexts.json"),
     resolve(__dirname, "claude-squad-answers.json"),
+    resolve(__dirname, "claude-squad-baseline-contexts.json"),
+    resolve(__dirname, "claude-squad-baseline-answers.json"),
     resolve(__dirname, "squad-results.json"),
   );
   scorePair(
     "HotpotQA (20 queries, multi-hop)",
     resolve(__dirname, "claude-hotpot-contexts.json"),
     resolve(__dirname, "claude-hotpot-answers.json"),
+    resolve(__dirname, "claude-hotpot-baseline-contexts.json"),
+    resolve(__dirname, "claude-hotpot-baseline-answers.json"),
     resolve(__dirname, "hotpot-results.json"),
   );
 }

@@ -1,0 +1,22 @@
+[
+  { "id": "hp-0", "answer": "Not in retrieved context — baseline RAG returned Milan/Messina/France-Netherlands; neither Traveling Wilburys nor Tom Petty page retrieved" },
+  { "id": "hp-1", "answer": "domestic cat breeds defined by various registries" },
+  { "id": "hp-2", "answer": "Pompei, Italy → Metropolitan City of Naples (inference — pompei page not retrieved)" },
+  { "id": "hp-3", "answer": "youngest TV director ever" },
+  { "id": "hp-4", "answer": "Mach 2 (world knowledge — saab-jas-39-gripen page not retrieved)" },
+  { "id": "hp-5", "answer": "Marvel Comics" },
+  { "id": "hp-6", "answer": "Miami Dolphins" },
+  { "id": "hp-7", "answer": "Big Ben — the Great Bell of the clock" },
+  { "id": "hp-8", "answer": "Gabriel José de la Concordia García Márquez" },
+  { "id": "hp-9", "answer": "was written by all four members of the band (for their fifth studio album Mylo Xyloto)" },
+  { "id": "hp-10", "answer": "Wiseman's View" },
+  { "id": "hp-11", "answer": "South African" },
+  { "id": "hp-12", "answer": "United States, the United Kingdom, and their respective allies" },
+  { "id": "hp-13", "answer": "Not in retrieved context — Pat Ashton's page and On the Buses film page not retrieved" },
+  { "id": "hp-14", "answer": "Adventist World (US + Korea = 2 countries; Baseball Digest is in US only)" },
+  { "id": "hp-15", "answer": "Not in retrieved context — essie-davis page not retrieved" },
+  { "id": "hp-16", "answer": "Tian Tan Buddha, completed in 1993" },
+  { "id": "hp-17", "answer": "No — Lennon or McCartney is American documentary short; The Day the Universe Changed is British (world knowledge; its page not retrieved)" },
+  { "id": "hp-18", "answer": "Theodor W. Adorno" },
+  { "id": "hp-19", "answer": "Partly Punjabi" }
+]

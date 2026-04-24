@@ -606,6 +606,65 @@ composition the 3B model can't do.
 
 Full per-query analysis: [`bench/data/round12-report.md`](./bench/data/round12-report.md).
 
+### Round 13: kontext-brain hybrid vs vanilla vector RAG, LLM-equalized
+
+Swapping out the LLM proved that single-hop capacity was the bottleneck.
+Round 13 asks the complementary question: **given the same LLM (Claude),
+does kontext-brain's hybrid retriever actually beat a plain vector RAG
+baseline?**
+
+Both pipelines dump retrieved contexts for the same 30 SQuAD + 20
+HotpotQA queries with `nomic-embed-text` embeddings; Claude answers over
+the retrieved contexts for both. Only the retriever differs.
+
+**Judged accuracy**:
+
+| System | SQuAD 30q | HotpotQA 20q |
+|--------|-----------|--------------|
+| **vanilla vector RAG + Claude** | **27/30 = 90.0%** | **18/20 = 90.0%** |
+| **kontext-brain hybrid + Claude** | **29/30 = 96.7%** | 17/20 = 85.0% |
+| Δ (kontext − vanilla) | **+6.7pp** | **-5.0pp** |
+
+**Honest finding: no universal winner.**
+
+On **SQuAD (single-hop, entity-anchored)**, kontext-brain's hybrid
+retriever wins by finding gold docs that vanilla RAG missed — sq-22
+"Normandy" (entity match on proper noun), sq-29 "Pleurobrachia" (entity
+match on species name). The entity signal is a pure gain when the
+question anchors to a named thing.
+
+On **HotpotQA (multi-hop)**, vanilla RAG wins because **bridge/
+comparison questions have two entities**. The hybrid retriever's entity
+signal boosts one entity's page to the top and crowds out the second
+gold doc. Vanilla vector similarity, with no entity bias, sometimes
+surfaces both gold docs simultaneously. Examples where vanilla got both
+and hybrid got only one: hp-4 (Saab/Mach number), hp-6 (Schnellenberger/
+Miami Dolphins), hp-18 (Adorno/Lulu).
+
+**Implication**: the choice of retriever should depend on query shape.
+The N-layer abstraction (Round 11) was designed for exactly this — a
+production deployment classifies question shape and dispatches to the
+appropriate preset.
+
+| Query shape | Best retriever |
+|-------------|----------------|
+| Single-hop, entity-anchored | kontext-brain hybrid |
+| Multi-hop bridge/comparison | vanilla vector RAG (until per-entity decomposed retrieval is added) |
+| Structured predicate | attribute retrieval (100% F1) |
+
+**All four benches head-to-head (LLM-equalized where possible)**:
+
+| Bench | Winner | Score | Runner-up | Score |
+|-------|--------|-------|-----------|-------|
+| SQuAD 2.0 single-hop (Claude) | **kontext-brain hybrid** | **96.7%** | vanilla vector RAG | 90.0% |
+| HotpotQA multi-hop (Claude) | **vanilla vector RAG** | **90.0%** | kontext-brain hybrid | 85.0% |
+| SQuAD 2.0 single-hop (Ollama) | kontext-brain ans-ensemble | 86.7% | vanilla vector RAG | 80.0% |
+| Structured filter queries | **attribute retrieval** | **100% F1** | vanilla vector RAG | 58.8% F1 |
+
+Reproduce: `pnpm --filter @kontext-brain/bench dump-contexts-baseline` +
+`score-claude`. Full per-query analysis:
+[`bench/data/round13-report.md`](./bench/data/round13-report.md).
+
 ### Round 9 results — attribute model + re-measurement
 
 After extending the entity model with `nodeId` + `attributes` +

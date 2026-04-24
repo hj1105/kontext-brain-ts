@@ -1,0 +1,302 @@
+[
+  {
+    "id": "hp-0",
+    "question": "What country of origin does Traveling Wilburys and Tom Petty have in common?",
+    "referenceAnswer": "American",
+    "expectedDocIds": [
+      "traveling-wilburys",
+      "tom-petty"
+    ],
+    "retrievedDocIds": [
+      "milan",
+      "messina",
+      "france-netherlands-relations"
+    ],
+    "context": "### Milan\nMilan ( or ; Italian: \"Milano\" ] ; Lombard: Milan ] (Milanese variant)) is the city capital of the Lombardy Region in Northern Italy and is the 2nd richest city in the European Union after Paris in 2016. It is the second most populous city in Italy after Rome, with the city proper having a population of 1,369,000 (the Metropolitan City of Milan has a population of 3,219,000).  Its geographical outskirt (that stretches beyond the boundaries of the Metropolitan City of Milan), has a population estimated to be about 5,270,000 in 1,891 km2 , ranking 2nd in the European Union.  The wider Milan metropolitan area, popular for Greater Milan, is a polycentric metropolitan region that comprehends almost every province of Lombardy, the Piedmont province of Novara, and some parts of the province of Piacenza which counts an estimated total population of 8,123,020.\n\n### Messina\nMessina ( ; ] , Sicilian: \"Missina\"; , Greek: Μεσσήνη ) is the capital of the Italian Metropolitan City of Messina.  It is the third-largest city on the island of Sicily, and the 13th-largest city in Italy, with a population of more than 238,000 inhabitants in the city proper and about 650,000 in the Metropolitan City.  It is located near the northeast corner of Sicily, at the Strait of Messina, opposite Villa San Giovanni on the mainland, and has close ties with Reggio Calabria.  According to Eurostat the FUA of the metropolitan area of Messina has, in 2014, 277,584 inhabitants.\n\n### France–Netherlands relations\nThe French–Dutch relations refer to the interstate and bilateral relations between France and the Netherlands. The two countries notably share a border division in the Caribbean island of Saint Martin, to which the northern part of the island is a French overseas collectivity known as the Collectivity of Saint Martin, while the southern part of the island is a Dutch constituent country known as Sint Maarten. Relations between the two countries date back to the 17th and 18th centuries when a conflict led to the transformation of the Dutch Republic to the Batavian Republic and eventually the Kingdom of Holland. Both nations are members of the OECD, as well as founding members of the European Union, NATO, and the United Nations"
+  },
+  {
+    "id": "hp-1",
+    "question": "The British longhair is defined by what registries?",
+    "referenceAnswer": "domestic cat",
+    "expectedDocIds": [
+      "domestic-long-haired-cat",
+      "british-longhair"
+    ],
+    "retrievedDocIds": [
+      "asian-semi-longhair",
+      "domestic-long-haired-cat",
+      "governing-council-of-the-cat-fancy"
+    ],
+    "context": "### Asian Semi-longhair\nThe breed is also known by the name Tiffanie or Tiffany. Like the Asian Shorthair, the breed was developed in Britain and is not currently recognized by any U. Registries. It is related to, and in some registries distinct from, the Chantilly-Tiffany or Foreign Longhair, the North American variant\n\n### Domestic long-haired cat\nA domestic long-haired cat, or fluffy cat, is a cat of mixed ancestry – thus not belonging to any particular recognised cat breed – possessing a coat of semi-long to long fur.  Domestic long-haired cats should not be confused with the British Longhair, American Longhair, or other breeds with \"Longhair\" names, which are standardized breeds defined by various registries.  Domestic long-haireds are the second most popular cat in the United States after the domestic short-haired; one in ten of the ninety million cats in the US is a domestic long-hair.  Other generic terms are long-haired house cat and, in British English, long-haired moggie.\n\n### Governing Council of the Cat Fancy\nIt is considered to be the original prototype for cat fancy registries. It licenses cat shows put on by its affiliated clubs with about 135 shows per year. The word Champion is replaced by Premier for neutered cats. The showing of non-pedigree cats (often referred to as Domestic shorthair and Domestic longhair) and Pedigree Pets is also popular at GCCF shows"
+  },
+  {
+    "id": "hp-2",
+    "question": "What Metropolitan City was Massimo Giordano born in?",
+    "referenceAnswer": "Naples",
+    "expectedDocIds": [
+      "massimo-giordano",
+      "pompei"
+    ],
+    "retrievedDocIds": [
+      "massimo-giordano",
+      "ivan-vaughan",
+      "theodor-w-adorno"
+    ],
+    "context": "### Massimo Giordano\nMassimo Giordano (born 19 February 1971) is an Italian-born operatic tenor who is known for his bel canto repertoire.  Giordano was born in Pompei, Italy into an Italian working-class family.\n\n### Ivan Vaughan\nIvan Vaughan (18 June 1942 – 16 August 1993) was a boyhood friend of John Lennon, and later schoolmate of Paul McCartney at the Liverpool Institute, both commencing school there in September 1953. He was born on the same day as McCartney in Liverpool. He played bass part-time in Lennon's first band, The Quarrymen, and was responsible for introducing Lennon to McCartney at a community event (the Woolton village fête) on 6 July 1957, where The Quarrymen were performing. McCartney impressed Lennon, who invited McCartney to join the band, which he did a day later\n\n### Theodor W. Adorno\nTheodor W. Adorno ( ; ] ; born Theodor Ludwig Wiesengrund; September 11, 1903 – August 6, 1969) was a German philosopher, sociologist, and composer known for his critical theory of society."
+  },
+  {
+    "id": "hp-3",
+    "question": "What Guiness World Record is held by the actor who stars as \"Jack\" in a series created by Jim O'Doherty?.",
+    "referenceAnswer": "youngest TV director ever",
+    "expectedDocIds": [
+      "kickin-it",
+      "leo-howard"
+    ],
+    "retrievedDocIds": [
+      "leo-howard",
+      "essie-davis",
+      "snapper-carr"
+    ],
+    "context": "### Leo Howard\nLeo Richard Howard (born July 13, 1997) is an American actor and martial artist.  He began his acting career at the age of seven, Howard is known for incorporating his karate skills into his feature film and television roles; as \"Young Snake-Eyes\" in the 2009 action film, \"\", as \"Young Conan\" in the 2011 fantasy film, \"Conan the Barbarian\", and as \"Jack\" on the Disney XD comedy series, \"Kickin' It\".  Howard was certified as the youngest TV director ever by the Guinness World Records for his work on the episode \"Fight at the Museum\" in the fourth season of the \"Kickin' It\" TV series at age 16.\n\n### Essie Davis\nEsther \"Essie\" Davis (born January 7, 1970) is an Australian actress.  She is best known for her roles as Phryne Fisher in \"Miss Fisher's Murder Mysteries\" and Amelia Vanek in \"The Babadook\".  Other major work has included a recurring role in season six of the TV series \"Game of Thrones\", and a role as Elizabeth Woodville in the TV series \"The White Princess\", an adaptation of Philippa Gregory's historical novel.\n\n### Snapper Carr\nLucas \"Snapper\" Carr is a fictional character appearing in American comic books published by DC Comics. The character, whose fictional nickname is almost always used by other characters in favor of his given name, was created by Gardner Fox (writer) and Mike Sekowsky (penciller), and made his first appearance in \"The Brave and the Bold\" in February 1960. From 1960 to 1969, Snapper Carr appeared as a supporting character to the Justice League of America, a superhero team. \" limited-series comic book gave him superpowers"
+  },
+  {
+    "id": "hp-4",
+    "question": "What is the ratio of flow velocity past a boundary to the local speed of sound for a Saab JAS 39 Gripen?",
+    "referenceAnswer": "2",
+    "expectedDocIds": [
+      "saab-jas-39-gripen",
+      "mach-number"
+    ],
+    "retrievedDocIds": [
+      "mach-number",
+      "pitot-tube",
+      "linville-falls"
+    ],
+    "context": "### Mach number\nIn fluid dynamics, the Mach number (M or Ma) ( ; ] ) is a dimensionless quantity representing the ratio of flow velocity past a boundary to the local speed of sound.\n\n### Pitot tube\nA Pitot ( ) tube, also known as Pitot probe, is a pressure measurement instrument used to measure fluid flow velocity.  The pitot tube was invented by the French engineer Henri Pitot in the early 18th century and was modified to its modern form in the mid-19th century by French scientist Henry Darcy.  It is widely used to determine the airspeed of an aircraft, water speed of a boat, and to measure liquid, air and gas flow velocities in certain industrial applications.  The pitot tube is used to measure the local flow velocity at a given point in the flow stream and not the average flow velocity in the pipe or conduit.\n\n### Linville Falls\nLinville Falls is a waterfall located in the Blue Ridge Mountains of North Carolina in the United States.  The falls move in several distinct steps, beginning in a twin set of upper falls, moving down a small gorge, and culminating in a high-volume 45 ft drop.  It is named for the Linville River, which goes over the falls.  Linville Falls has the highest volume of any waterfall on the Northern Edge of the Blue Ridge Mountains."
+  },
+  {
+    "id": "hp-5",
+    "question": "Tao Okamoto made her debut as the lead in the 2013 film featuring the character from what Comic company's line?",
+    "referenceAnswer": "Marvel Comics",
+    "expectedDocIds": [
+      "tao-okamoto",
+      "the-wolverine-film"
+    ],
+    "retrievedDocIds": [
+      "avanthika-mohan",
+      "the-wolverine-film",
+      "tao-okamoto"
+    ],
+    "context": "### Avanthika Mohan\nShe made her debut in \"Yakshi – Faithfully Yours\" and was later seen in films including \"Crocodile Love Story\" (2012) and \"Mr. 2014 she made her Tamil debut with \"Aalamaram\". Her 2013 film \"Neelakasham Pachakadal Chuvanna Bhoomi\" was a commercially successful. she received two best actress award for the character called Nanditha in Athmasakhi by 24 frames film society\n\n### The Wolverine (film)\nThe Wolverine is a 2013 superhero film featuring the Marvel Comics character Wolverine. The film, distributed by 20th Century Fox, is the sixth installment in the \"X-Men\" film series. Hugh Jackman reprises his role from previous films as the title character, with James Mangold directing a screenplay written by Scott Frank and Mark Bomback, based on the 1982 limited series \"Wolverine\" by Chris Claremont and Frank Miller. In the film, which follows the events of \"\", Logan travels to Japan, where he engages an old acquaintance in a struggle that has lasting consequences\n\n### Tao Okamoto\nTao Okamoto (岡本 多緒 , Okamoto Tao , born May 22, 1985) , known professionally as Tao, is a Japanese actress and model.  In 2009, she was one of the faces of Ralph Lauren.  In 2013, she made her film debut as the female lead, Mariko Yashida, in \"The Wolverine\", opposite Hugh Jackman.  Tao played Mercy Graves in the 2016 film \"\"."
+  },
+  {
+    "id": "hp-6",
+    "question": "What NFL Team, undefeated in 1972, had on their staff the coach of the 2004 Florida Atlantic Owls football team?",
+    "referenceAnswer": "Miami Dolphins",
+    "expectedDocIds": [
+      "2004-florida-atlantic-owls-football-team",
+      "howard-schnellenberger"
+    ],
+    "retrievedDocIds": [
+      "howard-schnellenberger",
+      "2004-florida-atlantic-owls-football-team",
+      "florida-atlantic-owls-football"
+    ],
+    "context": "### Howard Schnellenberger\nHoward Leslie Schnellenberger (born March 16, 1934) is a retired American football coach with long service at both the professional and college levels. He held head coaching positions with the National Football League's Baltimore Colts and in college for the University of Miami, University of Oklahoma, University of Louisville and Florida Atlantic University. He won a national championship with Miami in 1983. Schnellenberger also worked extensively as an assistant coach at the college and pro levels, including as part of the staff of the undefeated 1972 Miami Dolphins\n\n### 2004 Florida Atlantic Owls football team\nThe 2004 Florida Atlantic University Owls football team represented Florida Atlantic University in the 2004 NCAA Division I-A football season.  The team was coached by Howard Schnellenberger and played their home games at Lockhart Stadium in Fort Lauderdale, Florida.  The Owls entered the season as a program in transition from Division I-AA to Division I-A for the first year.  As per NCAA rule, programs moving up from I-AA to I-A must spend two seasons in transition, thus not being eligible for a postseason bowl berth nor a conference championship.\n\n### Florida Atlantic Owls football\nFlorida Atlantic Owls football program represents Florida Atlantic University (FAU) in the sport of American football. The Owls compete in the Football Bowl Subdivision (FBS) of the National Collegiate Athletic Association (NCAA) and the East Division of Conference USA (CUSA). Florida Atlantic has produced a Sun Belt Conference co-championship team in 2007, along with 2 postseason bowl appearances and one appearance in the 2003 I-AA Playoffs. The Owls play their home games at FAU Stadium which has a seating capacity of 29,419"
+  },
+  {
+    "id": "hp-7",
+    "question": "What is the real name of the clock one can see on a clear day from Denmark Hill?",
+    "referenceAnswer": "Great Bell of the clock",
+    "expectedDocIds": [
+      "denmark-hill",
+      "big-ben"
+    ],
+    "retrievedDocIds": [
+      "big-ben",
+      "self-winding-clock-company",
+      "denmark-hill"
+    ],
+    "context": "### Big Ben\nBig Ben is the nickname for the Great Bell of the clock at the north end of the Palace of Westminster in London and is usually extended to refer to both the clock and the clock tower as well.  The tower is officially known as Elizabeth Tower, renamed to celebrate the Diamond Jubilee of Elizabeth II in 2012; previously, it was known simply as the Clock Tower.\n\n### Self Winding Clock Company\nThe Self Winding Clock Company (SWCC) was a major manufacturer of electromechanical clocks from 1886 until about 1970. The SWCC of New York was one of the first companies in the United States to successfully employ electric energy to power a clock. A contact switch mounted on the clock's center shaft is activated after the clock has run for one hour and the main spring is rewound one revolution. Hence the company name, The Self Winding Clock Company\n\n### Denmark Hill\nDenmark Hill is an area and road in Camberwell, in the London Borough of Southwark. It marks the edge of the Thames valley plain in this area — from here to the river the land is flat. top storey windows) on the top of the hill to the north and neighbouring Dulwich to the south. On a clear day one can read the time on the Big Ben clockface"
+  },
+  {
+    "id": "hp-8",
+    "question": "Who has won more literary awards, Annie Dillard or Gabriel García Márquez?",
+    "referenceAnswer": "Gabriel José de la Concordia García Márquez",
+    "expectedDocIds": [
+      "annie-dillard",
+      "gabriel-garc-a-m-rquez"
+    ],
+    "retrievedDocIds": [
+      "ngela-becerra",
+      "annie-dillard",
+      "gabriel-garc-a-m-rquez"
+    ],
+    "context": "### Ángela Becerra\nÁngela Becerra Acevedo (Cali, Colombia, July 17, 1957) is a Colombian writer.  She has won several awards such as the Planeta-Casa de América Award (Premio Planeta - Casa de América) in 2009, the Azorín Prize (Premio Azorín) in 2005 and four Chicago Latin Literary Awards.  Her works have been translated into 23 languages and published in more than 50 countries.  She is one of the most widely read Spanish-speaking authors, the most read Colombian writer after Gabriel García Márquez, and considered the creator of the Magical Idealism.\n\n### Annie Dillard\nAnnie Dillard (born April 30, 1945) is an American author, best known for her narrative prose in both fiction and non-fiction.  She has published works of poetry, essays, prose, and literary criticism, as well as two novels and one memoir.  Her 1974 work \"Pilgrim at Tinker Creek\" won the 1975 Pulitzer Prize for General Nonfiction.  From 1980, Dillard taught for 21 years in the English department of Wesleyan University, in Middletown, Connecticut.\n\n### Gabriel García Márquez\nGabriel José de la Concordia García Márquez ( ; ] ; 6 March 1927 – 17 April 2014) was a Colombian novelist, short-story writer, screenwriter and journalist, known affectionately as Gabo or Gabito throughout Latin America. Considered one of the most significant authors of the 20th century and one of the best in the Spanish language, he was awarded the 1972 Neustadt International Prize for Literature and the 1982 Nobel Prize in Literature. He pursued a self-directed education that resulted in his leaving law school for a career in journalism. From early on, he showed no inhibitions in his criticism of Colombian and foreign politics"
+  },
+  {
+    "id": "hp-9",
+    "question": "When the two Coldplay songs U.F.O and Princess of China were written, what factor did they have in common?",
+    "referenceAnswer": "was written by all four members of the band",
+    "expectedDocIds": [
+      "u-f-o-coldplay-song",
+      "princess-of-china"
+    ],
+    "retrievedDocIds": [
+      "princess-of-china",
+      "the-fragrance-of-guava",
+      "u-f-o-coldplay-song"
+    ],
+    "context": "### Princess of China\n\"Princess of China\" is a duet recorded by British rock band Coldplay and Barbadian singer Rihanna for Coldplay's fifth studio album \"Mylo Xyloto\". The song was written by band members Guy Berryman, Jonny Buckland, Will Champion, and Chris Martin, along with Brian Eno, and is influenced by the music genres of electronic rock, electropop and R&B. The song was released as the fourth single from \"Mylo Xyloto\" and was sent to US Mainstream radio on 14 February 2012. A companion EP to the single, featuring an acoustic version of the song, was released on 1 June 2012\n\n### The Fragrance of Guava\nThe Fragrance of Guava is a book based on the long conversations between Gabriel García Márquez and his close friend Plinio Apuleyo Mendoza.  Published in 1982, the book describes the life of García Márquez, from his early childhood to his encounters with celebrities.  The title of the book in Spanish is \"El Olor de la Guayaba\".  It was translated as \"The Fragrance of Guava\"; however, the literal translation should be \"The Smell of Guava\".\n\n### U.F.O. (Coldplay song)\n\" is a song by British rock band Coldplay. It was written by all four members of the band for their fifth studio album, \"Mylo Xyloto\". The album's opening track, \"Mylo Xyloto\" and \"A Hopeful Transmission\" are based on the chords from the second half of this song. After the song ends, the track includes a short instrumental section (reminiscent of \"Prospekt's March/Poppyfields\") that segues into the following track, \"Princess of China\""
+  },
+  {
+    "id": "hp-10",
+    "question": "Tommy Faile sang the song \"the legend of Brown Moutain Lights\", about a series of ghost lights that can be seen from which viewpoint outside Linville Falls?",
+    "referenceAnswer": "Wiseman's View",
+    "expectedDocIds": [
+      "tommy-faile",
+      "brown-mountain-lights"
+    ],
+    "retrievedDocIds": [
+      "brown-mountain-lights",
+      "despedida-shakira-song",
+      "tommy-faile"
+    ],
+    "context": "### Brown Mountain Lights\nThe Brown Mountain Lights are a series of ghost lights reported near Brown Mountain in North Carolina. The lights can be seen from the Blue Ridge Parkway at mile posts 310 (Brown Mountain Light overlook) and 301 (Green Mountain overlook) and from the Brown Mountain Overlook on NC Highway 181 between Morganton, NC and Linville, NC. Additionally, good sightings of the Lights have been reported from the top of Table Rock, outside of Morganton, NC. One of the best vantage points, Wiseman's View, is about 4 miles from Linville Falls, NC\n\n### Despedida (Shakira song)\n\"Despedida\" (English: \"Farewell\" ) is a song recorded by Colombian singer Shakira for the extended play (EP) \"Love in the Time of Cholera\" (2008). The song was written by her and Pedro Aznar originally for the Mike Newell-directed 2007 movie adaptation of Colombian writer Gabriel García Márquez's 1985 novel \"Love in the Time of Cholera\". Shakira was initially offered a role by the producers of the movie to take part as the main protagonist. Musically, \"Despedida\" is a folk song which discusses nostalgic love sentiments towards a person the protagonist lost\n\n### Tommy Faile\nTommy Faile (September 15, 1928 – August 2, 1998) was an American songwriter and singer best known for composing \"Phantom 309\" and singing \"The Legend of the Brown Mountain Lights\".  He was known for his deep voice and comic on-stage banter."
+  },
+  {
+    "id": "hp-11",
+    "question": "The coach of the Karachi Kings, Mickey Arthur, is of what decent? ",
+    "referenceAnswer": "South African",
+    "expectedDocIds": [
+      "karachi-kings",
+      "mickey-arthur"
+    ],
+    "retrievedDocIds": [
+      "howard-schnellenberger",
+      "mickey-arthur",
+      "florida-atlantic-owls-football"
+    ],
+    "context": "### Howard Schnellenberger\nHoward Leslie Schnellenberger (born March 16, 1934) is a retired American football coach with long service at both the professional and college levels. He held head coaching positions with the National Football League's Baltimore Colts and in college for the University of Miami, University of Oklahoma, University of Louisville and Florida Atlantic University. Schnellenberger also worked extensively as an assistant coach at the college and pro levels, including as part of the staff of the undefeated 1972 Miami Dolphins. He is also famous for recruiting Joe Namath to Alabama for Bear Bryant in 1961\n\n### Mickey Arthur\nJohn Michael \"Mickey\" Arthur (born 17 May 1968) is a South African cricketer who played South African domestic cricket from 1986 to 2001.  He is the current coach of the Pakistan national cricket team.  He coached the South African national team from 2005 to 2010, and was the coach of the Australia national cricket team until his sacking on 23 June 2013.\n\n### Florida Atlantic Owls football\nFlorida Atlantic Owls football program represents Florida Atlantic University (FAU) in the sport of American football. The Owls compete in the Football Bowl Subdivision (FBS) of the National Collegiate Athletic Association (NCAA) and the East Division of Conference USA (CUSA). They will be coached by Lane Kiffin for the start of the 2017 season. The Owls play their home games at FAU Stadium which has a seating capacity of 29,419"
+  },
+  {
+    "id": "hp-12",
+    "question": "Alexander S. Wadsworth served during the war that was faught between which two countries?",
+    "referenceAnswer": "United States, the United Kingdom, and their respective allies",
+    "expectedDocIds": [
+      "alexander-s-wadsworth",
+      "war-of-1812"
+    ],
+    "retrievedDocIds": [
+      "france-united-kingdom-relations",
+      "malawi-mozambique-relations",
+      "war-of-1812"
+    ],
+    "context": "### France–United Kingdom relations\nThe historical ties between the two countries are long and complex, including conquest, wars, and alliances at various points in history. Closer ties between the two began with the 1904 Entente cordiale, particularly via the alliances in World War I and World War II, wherein both countries fought against Germany, and in the latter conflict British armies helped to liberate occupied France from the Nazis. Both nations opposed the Soviet Union during the Cold War and were founding members of NATO. The British press relishes the chance to refer to France and Britain as \"historic rivals\" or emphasize the perceived ever-lasting competition that still opposes the two countries\n\n### Malawi–Mozambique relations\nMalawi–Mozambique relations refers to the current and historical relationship between the countries of Malawi and Mozambique. As Malawi shares a large border with Mozambique, much of the substance of their foreign relations pertain to the border separating the two nations. Both of the sovereign states have amicably agreed that lacustrine borders on Lake Malawi remain the largest priority between the two countries, as the exploitation of natural resources within the waters of Lake Malawi remain an issue the two countries continue to resolve. The moment considered an act of generosity and sympathy within the two countries relations is when, during the Mozambique Civil War, Malawi housed over one million Mozambican refugees between 1985 and 1995\n\n### War of 1812\nThe War of 1812 (18121815) was a conflict fought between the United States, the United Kingdom, and their respective allies.  Historians in Britain often see it as a minor theater of the Napoleonic Wars; in the United States and Canada, it is seen as a war in its own right."
+  },
+  {
+    "id": "hp-13",
+    "question": "Who directed the 1971 film in which Pat Ashton starred in?",
+    "referenceAnswer": "Harry Booth",
+    "expectedDocIds": [
+      "pat-ashton",
+      "on-the-buses-film"
+    ],
+    "retrievedDocIds": [
+      "together-1971-film",
+      "christian-de-chalonge",
+      "rainbow-bridge-film"
+    ],
+    "context": "### Together (1971 film)\nTogether is a 1971 film directed by Sean S. Cunningham's first film attracted Wes Craven who wanted to be in the film business. Cunningham and Craven would later work on \"The Last House on the Left\". The film features a young Marilyn Chambers, billed under her real name, Marilyn Briggs, before she starred in \"Behind the Green Door\"\n\n### Christian de Chalonge\nChristian de Chalonge (born 21 January 1937) is a French film director and screenwriter.  He directed the 1971 film \"The Wedding Ring\", which starred Anna Karina.\n\n### Rainbow Bridge (film)\nRainbow Bridge is a 1971 film directed by Chuck Wein about different countercultural figures interacting on the Hawaiian island of Maui. We're going to place Pat [New York model Pat Hartley, the protagonist] in all kinds of real-life situtations, and film what happens. We're going to shoot a lot of film and just see what comes out of it. \"  Harry Shapiro adds, \"the idea was to shoot an antidote to \"Easy Rider\", showing the positive side of the youth movement"
+  },
+  {
+    "id": "hp-14",
+    "question": "Which magazine is based out of more countries, Adventist World or Baseball Digest?",
+    "referenceAnswer": "Adventist World",
+    "expectedDocIds": [
+      "adventist-world",
+      "baseball-digest"
+    ],
+    "retrievedDocIds": [
+      "adventist-world",
+      "adventist-review",
+      "baseball-digest"
+    ],
+    "context": "### Adventist World\nAdventist World is a monthly international magazine of the Seventh-day Adventist Church published by the Review and Herald Publishing Association.  Editors are based in Silver Spring, Maryland and Seoul, Korea.\n\n### Adventist Review\nThe Adventist Review is the official newsmagazine of the Seventh-day Adventist Church. The Review and Herald also publishes a sister magazine, \"Adventist World\". The magazine is headquartered in Silver Spring, Maryland. The current editor of the \"Adventist Review\" is Bill Knott\n\n### Baseball Digest\nBaseball Digest is a baseball magazine resource, published in Evanston, Illinois by Grandstand Publishing, LLC.  It is the oldest and longest-running baseball magazine in the United States."
+  },
+  {
+    "id": "hp-15",
+    "question": "Who played Amelia Vanek in the film adaptation of Monster?",
+    "referenceAnswer": "Esther \"Essie\" Davis",
+    "expectedDocIds": [
+      "essie-davis",
+      "the-babadook"
+    ],
+    "retrievedDocIds": [
+      "tobruk-2008-film",
+      "tao-okamoto",
+      "hamlet-1948-film"
+    ],
+    "context": "### Tobruk (2008 film)\nTobruk is a 2008 film written and directed by Václav Marhoul and starring Jan Meduna and Petr Vanek.  It is an adaptation of the classic American Civil War novel \"The Red Badge of Courage\" by Stephen Crane, but transfers the action to North Africa during World War II.\n\n### Tao Okamoto\nTao Okamoto (岡本 多緒 , Okamoto Tao , born May 22, 1985) , known professionally as Tao, is a Japanese actress and model.  In 2009, she was one of the faces of Ralph Lauren.  In 2013, she made her film debut as the female lead, Mariko Yashida, in \"The Wolverine\", opposite Hugh Jackman.  Tao played Mercy Graves in the 2016 film \"\".\n\n### Hamlet (1948 film)\nHamlet is a 1948 British film adaptation of William Shakespeare's play \"Hamlet\", adapted and directed by and starring Sir Laurence Olivier. \"Hamlet\" was Olivier's second film as director, and also the second of the three Shakespeare films that he directed (the 1936 \"As You Like It\" had starred Olivier, but had been directed by Paul Czinner). It is also the first sound film of the play in English. A 1935 sound film adaptation, \"Khoon Ka Khoon\", had been made in India and filmed in the Urdu language"
+  },
+  {
+    "id": "hp-16",
+    "question": "In what year was the most famous statute at Po Lin Monastery built?",
+    "referenceAnswer": "Tian Tan Buddha",
+    "expectedDocIds": [
+      "buddhism-in-hong-kong",
+      "tian-tan-buddha"
+    ],
+    "retrievedDocIds": [
+      "bagaya-monastery",
+      "great-lavra",
+      "tian-tan-buddha"
+    ],
+    "context": "### Bagaya Monastery\nThe Bagaya Monastery (Burmese: ဘားဂရာ ကျောင်း ), located in Inwa, Mandalay Region, Burma (Myanmar) is a Buddhist monastery built on the southwest of Inwa Palace.  This magnificent monastery is also known as Maha Waiyan Bontha Bagaya Monastery.  During King Hsinbyushin's reign (1763–1776), Maha Thiri Zeya Thinkhaya, town officer of Magwe built the monastery in the Bagaya monastic establishment and dedicated to Shin Dhammabhinanda.  It is one of the famous tourists attractions in Burma.\n\n### Great Lavra\nThe Monastery of Great Lavra (Greek: Μονή Μεγίστης Λαύρας ) is the first monastery built on Mount Athos. The founding of the monastery in AD 963 by Athanasius the Athonite marks the beginning of the organized monastic life at Mount Athos. At the location of the monastery, there was one of the ancient cities of the Athos peninsula, perhaps Akrothooi, from which the sarcophagi of the monastery that are in the oil storage house come. The history of the monastery is the most complete compared to the history of the other monasteries, because its historical archives were preserved almost intact\n\n### Tian Tan Buddha\nTian Tan Buddha, also known as the Big Buddha, is a large bronze statue of Buddha Shakyamuni, completed in 1993, and located at Ngong Ping, Lantau Island, in Hong Kong.  The statue is sited near Po Lin Monastery and symbolises the harmonious relationship between man and nature, people and faith.  It is a major centre of Buddhism in Hong Kong, and is also a popular tourist attraction."
+  },
+  {
+    "id": "hp-17",
+    "question": "Are both The Day the Universe Changed and Lennon or McCartney American documentary short films?",
+    "referenceAnswer": "no",
+    "expectedDocIds": [
+      "the-day-the-universe-changed",
+      "lennon-or-mccartney"
+    ],
+    "retrievedDocIds": [
+      "lennon-or-mccartney",
+      "kelly-glenn-williams",
+      "peter-richardson-filmmaker"
+    ],
+    "context": "### Lennon or McCartney\nLennon or McCartney is a 2014 American documentary short film directed by Matt Schichter.  The film is a compilation of 550 celebrities' responses, taken from interviews throughout the decade, to the question of which musician is superior: John Lennon or Paul McCartney.\n\n### Kelly Glenn Williams\nHe has served as the Film Program Director at the Austin Film Festival from 2004 to the present. He has produced numerous award-winning short films, including the Student Academy Award nominee \"Perils in Nude Modeling\" and the feature-length documentary \"Cadence\". Additionally, he wrote and directed the narrative short film \"Richard\" and the documentary short \"Sid Smith for Congress\". Williams attended the writing program at The Second City in Chicago and is also a graduate of the film program at the University of Texas at Austin\n\n### Peter Richardson (filmmaker)\nPeter Richardson is an American documentary film director. In addition to directing the film, Richardson also acted as cinematographer, editor, and producer on \"How to Die in Oregon\". The critically acclaimed film went on to win the Grand Jury Prize in the US Documentary competition. Richardson was the cinematographer on Irene Taylor Brodsky's documentary short film, \"Saving Pelican 895\", which aired on HBO on April 20, 2011"
+  },
+  {
+    "id": "hp-18",
+    "question": "which German philosopher wrote \"The opera \"Lulu\"  ",
+    "referenceAnswer": "Theodor W. Adorno",
+    "expectedDocIds": [
+      "lulu-opera",
+      "theodor-w-adorno"
+    ],
+    "retrievedDocIds": [
+      "karl-aschenbrenner",
+      "theodor-w-adorno",
+      "lulu-opera"
+    ],
+    "context": "### Karl Aschenbrenner\nAschenbrenner (November 20, 1911 in Bison, Kansas – July 4, 1988 in Budapest, Hungary) was an American philosopher, translator (into English of works in Latin and German) and prominent American specialist in analytic philosophy and aesthetics, author and editor of more than 48 publications including five monographs, 27 articles and 16 book reviews. His principal academic post was at the University of California, Berkeley in the Department of Philosophy. Holther, Aschenbrenner published the principal work of Alexander Gottlieb Baumgarten and, with Donald Nicholl, assisted in completing the second edition of an important work of the German philosopher Joseph M. The Aschenbrenner papers are held by the Doe Library of the University of California at Berkeley\n\n### Theodor W. Adorno\nTheodor W. Adorno ( ; ] ; born Theodor Ludwig Wiesengrund; September 11, 1903 – August 6, 1969) was a German philosopher, sociologist, and composer known for his critical theory of society.\n\n### Lulu (opera)\nLulu (composed from 1929–1935, premièred incomplete in 1937 and complete in 1979) is an opera in three acts by Alban Berg. The German-language libretto was adapted by Berg himself from Frank Wedekind's two \"Lulu\" plays, \"Erdgeist\" (\"Earth Spirit\", 1895) and \"Die Büchse der Pandora\" (\"Pandora's Box\", 1904). Berg died before completing the third and final act, and in the following decades, the opera was typically performed incomplete. Adorno wrote \"The opera \"Lulu\" is one of those works that reveals the extent of its quality the longer and more deeply one immerses oneself in it"
+  },
+  {
+    "id": "hp-19",
+    "question": "In what language was the 2007 Indian romantic drama staring Kareena Kapoor and Shahid Kapoor produced in? ",
+    "referenceAnswer": "Partly Punjabi",
+    "expectedDocIds": [
+      "lists-of-bollywood-films",
+      "jab-we-met"
+    ],
+    "retrievedDocIds": [
+      "jab-we-met",
+      "lists-of-bollywood-films",
+      "kanden-kadhalai"
+    ],
+    "context": "### Jab We Met\nJab We Met (English: \"When We Met\") is a 2007 Indian romantic drama film directed and written by Imtiaz Ali.  The film, produced by Dhillin Mehta under Shree Ashtavinayak Cinevision Ltd, stars Kareena Kapoor and Shahid Kapoor in their fourth film together with Dara Singh, Pavan Malhotra and Saumya Tandon in supporting roles.\n\n### Lists of Bollywood films\nThis is a list of films produced by Bollywood film industry of Mumbai ordered by year and decade of release. Although \"Bollywood\" films are generally listed under the Hindi language, most are in Hindi with partial Urdu and Punjabi and occasionally other languages. Speakers of Hindi, Urdu, and Punjabi understand the mixed language usage of Bollywood thus extending the viewership to people all over the Indian subcontinent (throughout India and its neighboring countries). , Partly Urdu: \"Jodhaa Akbar\", \"Fanaa\", \"Saawariya\" and \"Kurbaan\", Partly Punjabi: \"Singh Is Kinng\", \"Jab We Met\", \"Patiala House\", \"Thande Koyle\" and \"The film \"\" is an equal mix of Hindi, Punjabi and Urdu\n\n### Kanden Kadhalai\nKanden Kadhalai (English: \"I Saw My Love\") is a 2009 Indian Tamil romantic comedy film directed by R. Kannan of \"Jayamkondaan\" fame.  The film, a remake of the 2007 Hindi blockbuster \"Jab We Met\" by Imtiaz Ali, stars Bharath and Tamannaah in the lead roles, originally played by Shahid Kapoor and Kareena Kapoor.  The film was released on 30 October 2009 to mainly positive reviews."
+  }
+]
