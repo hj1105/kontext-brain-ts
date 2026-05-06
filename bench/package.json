@@ -12,7 +12,9 @@
     "dump-contexts": "node --import tsx src/dump-contexts.ts",
     "dump-contexts-baseline": "node --import tsx src/dump-contexts-baseline.ts",
     "dump-contexts-multihop": "node --import tsx src/dump-contexts-multihop.ts",
-    "score-claude": "node --import tsx src/score-claude.ts"
+    "score-claude": "node --import tsx src/score-claude.ts",
+    "gb-dump": "node --import tsx src/gb-dump-contexts.ts",
+    "gb-score": "node --import tsx src/gb-score.ts"
   },
   "dependencies": {
     "@kontext-brain/core": "workspace:*",

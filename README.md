@@ -709,6 +709,72 @@ Round 14 validates that with a multi-hop retriever matching HotpotQA's
 bridge/comparison demands. Full per-query analysis:
 [`bench/data/round14-report.md`](./bench/data/round14-report.md).
 
+### Round 15: GraphRAG-Bench (ICLR'26) — vs LightRAG / HippoRAG2 / GraphRAG / Fast-GraphRAG
+
+**GraphRAG-Bench** (Xiang et al., arXiv:2506.05690, ICLR'26) is the
+reference benchmark for graph-based RAG systems. It evaluates LightRAG,
+HippoRAG2, Microsoft's GraphRAG (local + global) + Lazy-GraphRAG,
+Fast-GraphRAG, RAPTOR, KGP, StructRAG, KET-RAG, and others on the same
+corpora with the same eval script. Two domains: **Medical** (cancer-care
+corpus, 2062 questions) + **Novel** (20 literary works, 2010 questions).
+
+We loaded the official data, ran our retrievers (vanilla / hybrid /
+multi-hop) on a sampled N=30 Fact Retrieval subset per domain, and had
+Claude Code answer over the multi-hop-retrieved contexts.
+
+**Retrieval coverage** (auto, evidence-token recall):
+
+| Retriever | Medical | Novel |
+|-----------|---------|-------|
+| vanilla RAG | 0.811 | 0.525 |
+| kontext-brain hybrid | 0.852 | 0.684 |
+| **kontext-brain multi-hop** | **0.864** | **0.764** |
+
+**End-to-end vs published leaderboard** (Fact_ACC / Fact_ROUGE-L):
+
+Medical:
+| Rank | System | ACC | ROUGE-L |
+|------|--------|-----|---------|
+| —    | **kontext-brain mh + Claude (N=30 subset)** | **86.66** | **62.06** |
+| 1    | G-reasoner | 68.84 | 44.73 |
+| 3    | HippoRAG2 | 66.28 | 36.69 |
+| 5    | LightRAG | 63.32 | 37.19 |
+| 4    | Fast-GraphRAG | 60.93 | 31.04 |
+| 11   | Lazy-GraphRAG (Microsoft) | 60.25 | 31.66 |
+| 14   | MS-GraphRAG (local) | 38.63 | 26.80 |
+
+Novel:
+| Rank | System | ACC | ROUGE-L |
+|------|--------|-----|---------|
+| —    | **kontext-brain mh + Claude (N=30 subset)** | **90.00** | **45.33** |
+| 3    | HippoRAG2 | 60.14 | 31.35 |
+| 12   | LightRAG | 58.62 | 35.72 |
+| 4    | Fast-GraphRAG | 56.95 | 35.90 |
+| 5    | MS-GraphRAG (local) | 49.29 | 26.11 |
+
+**Honest caveats** (must read before citing):
+
+1. **Subset, not full benchmark** — N=30 per domain (≈1.5% of full set).
+2. **Different LLM** — leaderboard uses 7B-class open models; we used
+   Claude Code (much more capable). Higher LLM ceiling matters
+   (consistent with Round 12 finding).
+3. **Auto-graded ACC vs LLM-judged ACC** — leaderboard uses LLM-as-judge,
+   we used token recall. Token recall is permissive.
+4. **Fact Retrieval only** — leaderboard ranks by Average over Fact +
+   Reasoning + Summarize + Creative. We measured only the easiest task.
+5. **General-knowledge leakage** — 6/30 novel answers fell back to world
+   knowledge when retrieval missed; strict retrieval-only protocol would
+   drop novel ACC to ~70%.
+
+**What this actually demonstrates honestly**: kontext-brain's multi-hop
+retriever achieves the highest evidence-token coverage of the three
+retrievers we built (apples-to-apples on the same embedder + corpus),
+and a capable answerer over solid retrieval is competitive with
+research-grade graph RAG systems on fact retrieval. We make no claims
+about Reasoning / Summarization / Creative Generation tasks.
+
+Full analysis: [`bench/data/round15-report.md`](./bench/data/round15-report.md).
+
 ### Round 9 results — attribute model + re-measurement
 
 After extending the entity model with `nodeId` + `attributes` +
