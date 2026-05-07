@@ -775,6 +775,76 @@ about Reasoning / Summarization / Creative Generation tasks.
 
 Full analysis: [`bench/data/round15-report.md`](./bench/data/round15-report.md).
 
+### Round 16: confounders removed — controlled comparison
+
+Round 15 had 5 confounders (sample size, LLM, ACC metric, task scope,
+world-knowledge fallback). Round 16 controls 4 of the 5 (LLM is the
+only irreducible one without rerunning the leaderboard systems). Two
+new tables:
+
+**Retrieval-only comparison (LLM-free, fully controlled)**:
+
+```
+MEDICAL (N=30)
+retriever  | tokenCov | ≥0.7-cov | top1-hit
+vanilla    | 0.811    |   22/30  |   8/30
+hybrid     | 0.852    |   24/30  |   9/30
+multi-hop  | 0.864    |   24/30  |   6/30   ← best aggregate
+
+NOVEL (N=30)
+retriever  | tokenCov | ≥0.7-cov | top1-hit
+vanilla    | 0.525    |   10/30  |   4/30
+hybrid     | 0.684    |   17/30  |   6/30
+multi-hop  | 0.764    |   19/30  |   9/30   ← best on every metric
+```
+
+**Strict end-to-end** (fallback answers scored 0):
+
+```
+MEDICAL: ACC 86.62, ROUGE-L 62.06, fallback-rejected 0/30
+NOVEL:   ACC 57.63, ROUGE-L 35.44, fallback-rejected 10/30   ← honest
+```
+
+**vs leaderboard with LLM caveat explicit**:
+
+| Medical Fact_ACC | Score |
+|------------------|-------|
+| **kontext-brain mh + Claude (STRICT)** | **86.62** |
+| G-reasoner (Llama-8B, full N) | 68.84 |
+| HippoRAG2 (8B, full N) | 66.28 |
+| LightRAG (8B, full N) | 63.32 |
+| Fast-GraphRAG (8B, full N) | 60.93 |
+| MS-GraphRAG (local, 8B, full N) | 38.63 |
+
+| Novel Fact_ACC | Score |
+|----------------|-------|
+| HippoRAG2 (8B, full N) | 60.14 |
+| G-reasoner (8B, full N) | 60.07 |
+| RAG w/ rerank (8B, full N) | 60.92 |
+| LightRAG (8B, full N) | 58.62 |
+| **kontext-brain mh + Claude (STRICT)** | **57.63** |
+| Fast-GraphRAG (8B, full N) | 56.95 |
+| MS-GraphRAG local (8B, full N) | 49.29 |
+
+**Three honest statements**:
+
+1. **Retrieval (controlled)**: multi-hop has the best evidence coverage
+   of the three retrievers we built (+5pp medical, +24pp novel vs
+   vanilla RAG). This is the apples-to-apples result.
+
+2. **Medical end-to-end**: kontext-brain + Claude beats every leaderboard
+   entry by ≥18pp. This gap is **mostly Claude vs 8B**, not the retriever.
+
+3. **Novel end-to-end**: kontext-brain + Claude lands **in the middle of
+   the pack** (-2.5pp behind HippoRAG2/G-reasoner). Retrieval failures
+   (10/30 fallbacks) bottleneck novel — narrative content is harder than
+   fact-dense medical text. **HippoRAG2 and G-reasoner beat us here.**
+
+What we still cannot claim: 4-task average, full-set N, retriever
+superiority on tasks other than measured, LLM-judge ACC.
+
+Full controlled-comparison analysis: [`bench/data/round16-report.md`](./bench/data/round16-report.md).
+
 ### Round 9 results — attribute model + re-measurement
 
 After extending the entity model with `nodeId` + `attributes` +
