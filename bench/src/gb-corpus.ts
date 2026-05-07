@@ -42,7 +42,11 @@ export interface GBSample {
 
 /** Chunk a long text into ~chunkChars-sized passages with overlap. Splits
  * on paragraph boundaries when available, falls back to sentence splits,
- * then character splits for very long single paragraphs. */
+ * then character splits for very long single paragraphs.
+ *
+ * Note: GraphRAG-Bench leaderboard uses 256-token chunks with 32-token
+ * overlap. Approximate match: 256 tokens ≈ 1024 chars (English). Use
+ * chunkChars=1024 with overlap=128 chars for parity. */
 function chunkText(text: string, chunkChars: number, idPrefix: string): BenchDoc[] {
   // First split into rough segments — paragraphs OR sentences if no para breaks
   const hasParaBreaks = /\n\n|\n\s*\n/.test(text);

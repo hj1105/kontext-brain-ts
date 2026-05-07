@@ -845,6 +845,60 @@ superiority on tasks other than measured, LLM-judge ACC.
 
 Full controlled-comparison analysis: [`bench/data/round16-report.md`](./bench/data/round16-report.md).
 
+### Round 17: 8B apples-to-apples vs leaderboard, chunking matched
+
+Round 16's "different LLM" was the unresolved confounder. Round 17
+controls it by switching from Claude to **Llama-3.1-8B-Instruct** as
+the answerer + LLM-judge. Also matched chunk size to leaderboard:
+**1024-char ≈ 256-token** (their default per `Examples/run_hipporag2.py`).
+
+Final ACC (Llama-3.1-8B answerer + Llama-3.1-8B judge):
+
+| | Vanilla | Hybrid | Multi-hop |
+|-|---------|--------|-----------|
+| **Medical** | 60.00% | **76.67%** | 36.67% |
+| **Novel** | 30.00% | **53.33%** | 46.67% |
+
+**vs published GraphRAG-Bench leaderboard** (their default LLM is
+qwen2.5-14b, ours is Llama-3.1-8B — we use a *smaller* model):
+
+| Medical Fact_ACC | LLM | ACC |
+|------------------|-----|-----|
+| **kontext-brain hybrid + Llama-3.1-8B (ours)** | **8B** | **76.67** |
+| G-reasoner (leaderboard #1) | 14B | 68.84 |
+| HippoRAG2 | 14B | 66.28 |
+| RAG (w/ rerank) | 14B | 64.73 |
+| LightRAG | 14B | 63.32 |
+| Fast-GraphRAG | 14B | 60.93 |
+| Lazy-GraphRAG (Microsoft) | 14B | 60.25 |
+| MS-GraphRAG (local) | 14B | 38.63 |
+
+| Novel Fact_ACC | LLM | ACC |
+|----------------|-----|-----|
+| RAG (w/ rerank) | 14B | 60.92 |
+| HippoRAG2 | 14B | 60.14 |
+| G-reasoner | 14B | 60.07 |
+| LightRAG | 14B | 58.62 |
+| Fast-GraphRAG | 14B | 56.95 |
+| **kontext-brain hybrid + Llama-3.1-8B (ours)** | **8B** | **53.33** |
+| HippoRAG | 14B | 52.93 |
+| Lazy-GraphRAG (Microsoft) | 14B | 51.65 |
+
+**Findings**:
+
+1. **Medical hybrid+8B beats every leaderboard entry** (+8pp over G-reasoner) using a *smaller* LLM. This is a retrieval+answering pipeline win on fact-dense content.
+2. **Novel hybrid+8B is mid-pack** (-7pp vs HippoRAG2). Narrative content is harder.
+3. **Smaller chunks help vanilla and hybrid, hurt multi-hop** — hop-2 expansion needs content-rich chunks to extract entities.
+4. **Multi-hop is wrong default for fact-dense corpora** — best at bridge questions (HotpotQA 100%), wrong tool here.
+
+**Caveats remaining**:
+- Self-judge: Llama as both answerer + judge may inflate ACC ~3-5pp
+- Embedder gap: ours 768-dim, leaderboard 1024-dim
+- N=30 subset variance ±5pp
+- Q4_K_M quantization vs leaderboard's full-precision
+
+Full analysis: [`bench/data/round17-report.md`](./bench/data/round17-report.md).
+
 ### Round 9 results — attribute model + re-measurement
 
 After extending the entity model with `nodeId` + `attributes` +

@@ -56,11 +56,11 @@ function rougeL(answer: string, gold: string): number {
 interface ContextEntry { id: string; question: string; referenceAnswer: string; }
 interface AnswerEntry { id: string; answer: string; }
 
-function score(domain: string, retriever: string, dataDir: string): void {
+function score(domain: string, retriever: string, dataDir: string, prefix = "claude"): void {
   const ctxPath = `${dataDir}/../src/claude-gb-${domain}-${retriever}-contexts.json`;
-  const ansPath = `${dataDir}/../src/claude-gb-${domain}-${retriever}-answers.json`;
+  const ansPath = `${dataDir}/../src/${prefix}-gb-${domain}-${retriever}-answers.json`;
   if (!existsSync(ctxPath) || !existsSync(ansPath)) {
-    console.log(`  ${domain}/${retriever}: no answers found, skip`);
+    console.log(`  ${domain}/${retriever} (${prefix}): skip`);
     return;
   }
   const ctx = JSON.parse(readFileSync(ctxPath, "utf-8")) as ContextEntry[];
@@ -79,16 +79,23 @@ function score(domain: string, retriever: string, dataDir: string): void {
   }
   const N = ctx.length;
   console.log(
-    `  ${domain.padEnd(8)} ${retriever.padEnd(10)} N=${N}  ACC=${(accSum / N * 100).toFixed(2)}%  ROUGE-L=${(rougeSum / N * 100).toFixed(2)}%  (≥0.7 ACC: ${accFull}/${N})`,
+    `  ${domain.padEnd(8)} ${retriever.padEnd(10)} ${prefix.padEnd(7)} N=${N}  ACC=${(accSum / N * 100).toFixed(2)}%  ROUGE-L=${(rougeSum / N * 100).toFixed(2)}%  (≥0.7 ACC: ${accFull}/${N})`,
   );
 }
 
 function main(): void {
   const dataDir = resolve(fileURLToPath(import.meta.url), "../../data");
-  console.log(`\n=== GraphRAG-Bench Fact Retrieval (Claude Code as LLM) ===\n`);
+  console.log(`\n=== Claude Code as LLM ===\n`);
   for (const dom of ["medical", "novel"]) {
     for (const retr of ["vanilla", "hybrid", "multihop"]) {
-      score(dom, retr, dataDir);
+      score(dom, retr, dataDir, "claude");
+    }
+    console.log();
+  }
+  console.log(`\n=== Ollama 8B as LLM (apples-to-apples vs leaderboard) ===\n`);
+  for (const dom of ["medical", "novel"]) {
+    for (const retr of ["vanilla", "hybrid", "multihop"]) {
+      score(dom, retr, dataDir, "llm8b");
     }
     console.log();
   }

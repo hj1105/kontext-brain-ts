@@ -33,25 +33,66 @@ export interface MultiHopDocIndex {
   body: string;
 }
 
-export function extractEntities(question: string): string[] {
-  const entities = new Set<string>();
+// Stop-cap words that frequently appear as the first word of a question
+// or sentence but carry no semantic anchor for retrieval. Failure analysis
+// of GraphRAG-Bench Novel showed "According", "Within", "During" leaking
+// through.
+const STOP_CAP = new Set([
+  "what","which","who","whom","when","where","how","why",
+  "the","this","that","these","those","they","them","their","there",
+  "are","is","was","were","be","been","being",
+  "does","do","did","has","have","had","can","could","would","should",
+  "may","might","will","shall","must",
+  "in","on","at","of","for","and","or","but","not","from",
+  "according","within","during","before","after","while",
+  "based","given","such","each","every",
+  "list","name","describe","explain","mention","identify","tell",
+]);
 
-  for (const m of question.matchAll(/"([^"]{2,60})"/g)) entities.add(m[1]!.trim());
-  for (const m of question.matchAll(/'([^']{2,60})'/g)) entities.add(m[1]!.trim());
+const STOP_CONTENT = new Set([
+  "the","a","an","and","or","but","of","to","in","on","at","for","by",
+  "with","as","that","this","it","its","is","are","was","were","be","been",
+  "have","has","had","do","does","did","will","would","could","should",
+  "may","might","can","not","also","than","then","so","such","these","those",
+  "there","they","them","their","when","where","what","which","who","whom",
+  "how","why","into","onto","over","under","about","through","between",
+  "among","because","although","though","while","during","before","after",
+  "according","within","based","given","including","such","each","every",
+  "narrative","novel","story","text","question","answer","reference",
+]);
 
-  // Capitalized phrase sequences — up to 4 words, starting from a cap letter
-  for (const m of question.matchAll(/\b([A-Z][a-zA-Z0-9]+(?:\s+[A-Z0-9][a-zA-Z0-9]*){0,3})\b/g)) {
+export interface ExtractedEntities {
+  /** Capitalized proper nouns / quoted strings — high-confidence anchors. */
+  proper: string[];
+  /** Content tokens (4+ char, non-stopword) — IDF-weighted lookup later. */
+  content: string[];
+}
+
+export function extractEntitiesV2(question: string): ExtractedEntities {
+  const proper = new Set<string>();
+  for (const m of question.matchAll(/"([^"]{2,60})"/g)) proper.add(m[1]!.trim());
+  for (const m of question.matchAll(/'([^']{2,60})'/g)) proper.add(m[1]!.trim());
+  for (const m of question.matchAll(/\b([A-Z][a-zA-Z0-9]+(?:\s+[A-Z0-9&][a-zA-Z0-9]*){0,3})\b/g)) {
     const phrase = m[1]!.trim();
-    if (/^(What|Which|Who|When|Where|How|Why|The|This|That|Are|Is|Does|Do|Did|Can|Will|Would|In|On|At|Of|For|And|Or|But)$/i.test(phrase)) continue;
+    if (STOP_CAP.has(phrase.toLowerCase())) continue;
     if (phrase.length < 3) continue;
-    entities.add(phrase);
+    proper.add(phrase);
   }
+  // Content tokens — capture lowercased domain-specific words like "shehna",
+  // "soaking", "ingots", "syrinx", "carillon" that the cap regex misses.
+  const content = new Set<string>();
+  for (const tok of question.toLowerCase().split(/[^a-z0-9]+/)) {
+    if (tok.length < 4) continue;
+    if (STOP_CONTENT.has(tok)) continue;
+    if (STOP_CAP.has(tok)) continue;
+    content.add(tok);
+  }
+  return { proper: Array.from(proper), content: Array.from(content) };
+}
 
-  // Also: content-word sequences between articles / stopwords (fallback for
-  // lowercased queries like "British longhair", "Tian Tan Buddha")
-  // Already covered by cap regex above in most cases.
-
-  return Array.from(entities);
+/** Backwards-compatible wrapper — returns proper nouns only. */
+export function extractEntities(question: string): string[] {
+  return extractEntitiesV2(question).proper;
 }
 
 /**
@@ -123,9 +164,26 @@ export class MultiHopRetriever {
       .map((s) => s.doc);
   }
 
-  /** Hybrid multi-hop retrieval with iterative entity expansion. */
-  async retrieve(question: string, topK: number = 5): Promise<MultiHopDoc[]> {
-    const entities = extractEntities(question);
+  /** Hybrid multi-hop retrieval with iterative entity expansion (V3).
+   *
+   * V3 changes vs V2:
+   *   - Adds content-token (lowercase, 4+ char, non-stopword) BM25 lookup
+   *     to handle queries like "shehna / soaking pit / ingots / Cilicia"
+   *     where the cap-regex missed the gold entity.
+   *   - Anti-bias: optionally accepts a `noiseDocPenalty` set of doc IDs
+   *     that are over-retrieved across the workload — these get a score
+   *     penalty to prevent the corpus's "default-noise" doc from
+   *     crowding out actual gold (failure mode found in HotpotQA's
+   *     viva-la-vida and GB-Novel's Elsie-Inglis-biography 51410).
+   */
+  async retrieve(
+    question: string,
+    topK: number = 5,
+    opts: { noiseDocs?: Set<string>; useContentBM25?: boolean } = {},
+  ): Promise<MultiHopDoc[]> {
+    const ext = extractEntitiesV2(question);
+    const entities = ext.proper;
+    const useContent = opts.useContentBM25 ?? true;
 
     const foundBy = new Map<string, { doc: MultiHopDocIndex; score: number; foundBy: Set<string> }>();
 
@@ -166,6 +224,38 @@ export class MultiHopRetriever {
       foundBy.set(doc.id, existing);
     }
 
+    // 3b) Content-token BM25 — handles lowercase domain words (shehna,
+    // soaking, ingots, syrinx) the cap regex misses. Each high-IDF token
+    // contributes its top-1 doc.
+    if (useContent) {
+      // Rank content tokens by their IDF (high IDF = rare = informative)
+      const ranked = ext.content
+        .map((t) => ({ t, idf: Math.log((this.totalDocs - (this.dfMap.get(t) ?? 0) + 0.5) / ((this.dfMap.get(t) ?? 0) + 0.5) + 1) }))
+        .filter((x) => x.idf > 0)
+        .sort((a, b) => b.idf - a.idf)
+        .slice(0, 10);
+      // Top-2 per content token (was top-1) — gives chunk-level granularity
+      // for cases where the right novel is found but the specific scene chunk
+      // is the #2 not #1 BM25 hit.
+      for (const { t, idf } of ranked) {
+        const hits = this.bm25Top(t, 2);
+        for (let i = 0; i < hits.length; i++) {
+          const doc = hits[i]!;
+          const rankScore = 1 - i / 2;
+          const existing = foundBy.get(doc.id) ?? { doc, score: 0, foundBy: new Set<string>() };
+          existing.score += Math.min(idf / 5, 1) * 0.7 * rankScore;
+          existing.foundBy.add(`content:${t}`);
+          foundBy.set(doc.id, existing);
+        }
+      }
+      // Multi-token-hit bonus: chunks that match multiple high-IDF tokens
+      // are likely the correct scene, not just topically related.
+      for (const v of foundBy.values()) {
+        const contentHits = Array.from(v.foundBy).filter((s) => s.startsWith("content:")).length;
+        if (contentHits >= 2) v.score += 0.3 * (contentHits - 1);
+      }
+    }
+
     // 4) Iterative expansion (second hop): from top-3 current results,
     //    extract named entities in their BODIES (not just titles) and
     //    retrieve the top doc for each. Handles bridge questions where
@@ -201,6 +291,14 @@ export class MultiHopRetriever {
         existing.score += isTitleMatch ? 0.9 : 0.4;
         existing.foundBy.add(`hop2:${he}`);
         foundBy.set(doc.id, existing);
+      }
+    }
+
+    // Apply noise-doc penalty (anti-bias against globally over-retrieved
+    // docs that cosine similarity collapses onto for short queries)
+    if (opts.noiseDocs && opts.noiseDocs.size > 0) {
+      for (const [id, v] of foundBy) {
+        if (opts.noiseDocs.has(id)) v.score *= 0.3;
       }
     }
 

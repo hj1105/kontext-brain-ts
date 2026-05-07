@@ -1,0 +1,242 @@
+[
+  {
+    "id": "Novel-87d7f30f",
+    "question": "Which musical instruments, including the pipe and syrinx, were used by the Peruvians according to historical accounts?",
+    "gold": "The Peruvians use the pipe and syrinx as musical instruments.",
+    "ans": "Pipes and flutes.",
+    "correct": 1,
+    "raw": "{\"correct\": 1}"
+  },
+  {
+    "id": "Novel-f619b6ea",
+    "question": "According to the geographical references within the narrative, where was the region of Cilicia located?",
+    "gold": "Cilicia was located in Asia Minor.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Novel-973bc3d0",
+    "question": "Whom did Asaph Hall help protect during a public event in Boston, demonstrating his commitment to the abolitionist cause?",
+    "gold": "Asaph Hall helped protect Wendell Phillips.",
+    "ans": "Frederick Douglass Phillips.",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Novel-0ad1bc85",
+    "question": "In what types of facilities are engines utilized according to the industrial context described in the text?",
+    "gold": "Engines are used in mills, water-works, and factories.",
+    "ans": "Grain elevators and manufactory driving.",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Novel-552983d2",
+    "question": "Which historical figure was associated with Asaph Hall 1st during the capture of Ticonderoga?",
+    "gold": "Asaph Hall 1st was with Ethan Allen at the capture of Ticonderoga.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Novel-c4349293",
+    "question": "What is the familial relationship between Muley Abd Errahman and Muley Suleiman as presented in the genealogical accounts of the narrative?",
+    "gold": "Muley Abd Errahman was the nephew of Muley Suleiman.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Novel-67178f3b",
+    "question": "What is the city location of MUNN & CO., the publishers cited in the report?",
+    "gold": "MUNN & CO. is located in New York.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Novel-665744e5",
+    "question": "During the steel processing operation, what medium is used in the soaking pit for ingots?",
+    "gold": "An ingot soaks in gas.",
+    "ans": "A perfectly non-oxidizing medium composed of hydrogen, nitrogen, and carbonic oxide.",
+    "correct": 1,
+    "raw": "{\"correct\": 1}"
+  },
+  {
+    "id": "Novel-e21aceef",
+    "question": "Who accompanied Charles Blagden in the hot-house during the experiment on human resistance to heat?",
+    "gold": "Dr. Solander remained with Charles Blagden in a hot-house at 211 degrees Fahrenheit.",
+    "ans": "Joseph Banks and Dr. Solander.",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Novel-47995a35",
+    "question": "Within the classification of wind instruments, what type of instrument is the shehna considered to be?",
+    "gold": "The shehna is a type of oboe.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Novel-bb448a1f",
+    "question": "In the scene where an ill-looking man enters Toto's cottage and searches the kitchen, what objects did the man open while looking for valuables?",
+    "gold": "Boxes",
+    "ans": "boxes, drawers, and the drawer containing six silver teaspoons and a porringer.",
+    "correct": 1,
+    "raw": "{\"correct\": 1}"
+  },
+  {
+    "id": "Novel-2114ae1d",
+    "question": "Which professionals examined the Chinese stone 'yu' that was used in constructing ancient musical instruments?",
+    "gold": "Yu was examined by mineralogists.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Novel-965ad8a8",
+    "question": "Within the novel's discussions about the identity of Ovid's beloved, who was suspected to be Corinna?",
+    "gold": "Julia",
+    "ans": "The daughter or grand-daughter of Emperor Augustus had passed middle age when Ovid was still in boyhood.",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Novel-73586ddc",
+    "question": "In the narrative of 'An Unsentimental Journey through Cornwall', which plant known scientifically as Erica vagans is also referred to by another common name, and what is that name?",
+    "gold": "Cornish heath",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Novel-a5c06d63",
+    "question": "Within the travelers' account of their route through Cornwall, in which county is Land's End, the furthest western point described in the story, located?",
+    "gold": "Land's End is located in Cornwall.",
+    "ans": "Cornwall.",
+    "correct": 1,
+    "raw": "{\"correct\": 1}"
+  },
+  {
+    "id": "Novel-45b7e7da",
+    "question": "During the events of 'Toto's Merry Winter', when Toto is listening to a story in the cottage, what was he staring at in the room?",
+    "gold": "Bear",
+    "ans": "The hermit.",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Novel-69907f97",
+    "question": "During their journey home from the woodmouse wedding, with whom did Toto walk through the snowy woods?",
+    "gold": "Toto walked with companions.",
+    "ans": "The narrator.",
+    "correct": 1,
+    "raw": "{\"correct\": 1}"
+  },
+  {
+    "id": "Novel-4bb6d825",
+    "question": "What did Chloe Angeline Stickney tell her sons about her birthday?",
+    "gold": "Chloe Angeline Stickney told her sons that her birthday fell on All Saints’ Day.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Novel-8d39da2e",
+    "question": "Where did Samuel Pepys observe the Duke of York during a performance?",
+    "gold": "The Duke of York was at the Opera.",
+    "ans": "Sir William Davenant's Opera.",
+    "correct": 1,
+    "raw": "{\"correct\": 1}"
+  },
+  {
+    "id": "Novel-651ea4b6",
+    "question": "Which child did Tom Ditamus attempt to remove from Port William in his covered wagon as part of a scheme involving Aunt Katy's estate?",
+    "gold": "Suza Fairfield was captured by Tom Ditamus.",
+    "ans": "Suza Fairfield.",
+    "correct": 1,
+    "raw": "{\"correct\": 1}"
+  },
+  {
+    "id": "Novel-c06a99a5",
+    "question": "Where did Elisha Cook travel after leaving Connecticut in the early 1800s?",
+    "gold": "Elisha Cook traveled to New York State and Lake Ontario.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 1,
+    "raw": "{\"correct\": 1}"
+  },
+  {
+    "id": "Novel-038b92bd",
+    "question": "Which musical instrument, known for its array of tuned bells, is especially popular in Italy?",
+    "gold": "The carillon is popular in Italy.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Novel-e9a8741e",
+    "question": "With which organization did the Foreign Office make stipulations regarding the conditions and arrangements for overseas medical work during World War I?",
+    "gold": "The Foreign Office made stipulations with the Scottish Women's Hospitals regarding work abroad.",
+    "ans": "The British outpost hospitals under Dr. Inglis' care.",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Novel-6d2a190d",
+    "question": "During the diplomatic interactions noted in Samuel Pepys's diary, which foreign envoy had an audience with the King?",
+    "gold": "The Portuguese Embassador took leave of the King.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Novel-e39fe71c",
+    "question": "At which institution did Elsie Inglis receive her first formal medical teaching during her early studies to become a doctor?",
+    "gold": "Elsie received her first medical teaching from the Edinburgh School of Medicine for Women.",
+    "ans": "Edinburgh University Commissions' reports were issued, but the working out of them was left in the hands of men who excluded women from the medical profession, and clinical teaching could only be carried on in a few hospitals.",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Novel-554369df",
+    "question": "With whom was Ruth, the younger sister, especially close during her childhood in Rodman?",
+    "gold": "Ruth was companion of Angeline.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Novel-ebb0af4d",
+    "question": "In the journey along the Cornish coastline, what notable location is described as being near Housel Cove?",
+    "gold": "Lizard is near Housel Cove.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Novel-fc6d1c33",
+    "question": "In the story, where was Venus especially worshipped?",
+    "gold": "Amathus",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Novel-9536f8e7",
+    "question": "During the impromptu wedding he helped arrange, whom did Van Bibber press into service as witnesses to give the ceremony an air of legitimacy?",
+    "gold": "Van Bibber pressed club men into service as wedding witnesses.",
+    "ans": "The club men.",
+    "correct": 1,
+    "raw": "{\"correct\": 1}"
+  },
+  {
+    "id": "Novel-75c9949b",
+    "question": "Within the context of Ovid's references to imperial lineage, from which deity was Augustus believed to descend?",
+    "gold": "Venus",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  }
+]

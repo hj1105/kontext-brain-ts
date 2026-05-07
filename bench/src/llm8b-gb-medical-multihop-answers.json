@@ -1,0 +1,182 @@
+[
+  {
+    "id": "Medical-73586ddc",
+    "answer": "Basal cell carcinoma (BCC).",
+    "fromThinkingFallback": false,
+    "latencyMs": 21736
+  },
+  {
+    "id": "Medical-1517e1c3",
+    "answer": "Papillary thyroid carcinoma (PTC) is the most common of all the thyroid cancers.",
+    "fromThinkingFallback": false,
+    "latencyMs": 24097
+  },
+  {
+    "id": "Medical-aed3f61c",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 25482
+  },
+  {
+    "id": "Medical-85ed509e",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 25444
+  },
+  {
+    "id": "Medical-9418792b",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 26207
+  },
+  {
+    "id": "Medical-2bbad791",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 21658
+  },
+  {
+    "id": "Medical-9d5ac399",
+    "answer": "popcorn-shaped cells.",
+    "fromThinkingFallback": false,
+    "latencyMs": 25775
+  },
+  {
+    "id": "Medical-2bd43819",
+    "answer": "Breast cancer, lung cancer, and kidney cancer.",
+    "fromThinkingFallback": false,
+    "latencyMs": 23431
+  },
+  {
+    "id": "Medical-ebb0af4d",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 24225
+  },
+  {
+    "id": "Medical-653c0da3",
+    "answer": "Classic Hodgkin lymphoma (CHL).",
+    "fromThinkingFallback": false,
+    "latencyMs": 27778
+  },
+  {
+    "id": "Medical-8d545fa4",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 18432
+  },
+  {
+    "id": "Medical-a4dcffa3",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 29146
+  },
+  {
+    "id": "Medical-5dd8e62d",
+    "answer": "Gray zone lymphomas have overlapping features of non-Hodgkin primary mediastinal B-cell lymphoma (PMBL) and Hodgkin lymphoma (HL).",
+    "fromThinkingFallback": false,
+    "latencyMs": 37887
+  },
+  {
+    "id": "Medical-8a166224",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 24345
+  },
+  {
+    "id": "Medical-e875d9cd",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 26217
+  },
+  {
+    "id": "Medical-deee1f4b",
+    "answer": "Siewert types describe where the tumor is relative to the esophagus and stomach as part of cancer staging.",
+    "fromThinkingFallback": false,
+    "latencyMs": 27233
+  },
+  {
+    "id": "Medical-d8a3772b",
+    "answer": "Cemiplimab (Libtayo) and pembrolizumab (Keytruda).",
+    "fromThinkingFallback": false,
+    "latencyMs": 28003
+  },
+  {
+    "id": "Medical-13fbbea3",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 21560
+  },
+  {
+    "id": "Medical-304b0354",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 32722
+  },
+  {
+    "id": "Medical-fca41ac7",
+    "answer": "Carcinoma in situ, an intraductal tumor.",
+    "fromThinkingFallback": false,
+    "latencyMs": 20565
+  },
+  {
+    "id": "Medical-e773a3cf",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 18418
+  },
+  {
+    "id": "Medical-c99a29ae",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 21075
+  },
+  {
+    "id": "Medical-c89d3c38",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 27035
+  },
+  {
+    "id": "Medical-f5e27a80",
+    "answer": "HPV types 16, 18, and 33.",
+    "fromThinkingFallback": false,
+    "latencyMs": 25313
+  },
+  {
+    "id": "Medical-7caf80a1",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 22452
+  },
+  {
+    "id": "Medical-06384900",
+    "answer": "Follicular lymphoma.",
+    "fromThinkingFallback": false,
+    "latencyMs": 20714
+  },
+  {
+    "id": "Medical-d272b033",
+    "answer": "A genetic mutation.",
+    "fromThinkingFallback": false,
+    "latencyMs": 17954
+  },
+  {
+    "id": "Medical-bb899a92",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 21468
+  },
+  {
+    "id": "Medical-a43ea44f",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 20845
+  },
+  {
+    "id": "Medical-dfc549c9",
+    "answer": "A clinical trial is the preferred treatment for these types of B-ALL.",
+    "fromThinkingFallback": false,
+    "latencyMs": 25776
+  }
+]

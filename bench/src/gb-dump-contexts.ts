@@ -69,8 +69,9 @@ async function indexAndQuery(
   retrieverName: "vanilla" | "hybrid" | "multihop",
   topK: number,
   vectorStore: LangChainVectorStore,
+  noiseDocsForRetrieval?: Set<string>,
 ): Promise<ContextEntry[]> {
-  console.log(`\n[${sample.domain}/${retrieverName}] corpus=${sample.docs.length} queries=${sample.queries.length} topK=${topK}`);
+  console.log(`\n[${sample.domain}/${retrieverName}] corpus=${sample.docs.length} queries=${sample.queries.length} topK=${topK}${noiseDocsForRetrieval ? ` noise-docs=${noiseDocsForRetrieval.size}` : ""}`);
 
   const docById = new Map(sample.docs.map((d) => [d.id, d]));
   const retriever =
@@ -96,7 +97,10 @@ async function indexAndQuery(
         }
       }
     } else if (retrieverName === "multihop") {
-      const ranked = await retriever!.retrieve(q.question, topK);
+      const ranked = await retriever!.retrieve(q.question, topK, {
+        noiseDocs: noiseDocsForRetrieval,
+        useContentBM25: true,
+      });
       for (const r of ranked) {
         retrievedIds.push(r.docId);
         retrievedTexts.push(r.body);
@@ -160,13 +164,27 @@ async function main(): Promise<void> {
     `${dataDir}/gb-medical-questions.json`,
     N,
     "Fact Retrieval",
-    4000, // larger chunks → fewer embeddings
+    1024, // ≈256 tokens, matches GraphRAG-Bench leaderboard chunk size
   );
   console.log(`\n=== Medical (${medical.queries.length} fact-retrieval queries, ${medical.docs.length} chunks) ===`);
   const medVS = await buildVectorStore(medical);
 
+  // Two-pass for multi-hop: pass 1 identifies "noise docs" (those that
+  // appear in >50% of vanilla retrievals), pass 2 uses them as a penalty.
+  console.log("\n  [pass 1: identifying noise docs from vanilla retrieval]");
+  const vanillaCounts = new Map<string, number>();
+  for (const q of medical.queries) {
+    const hits = await medVS.similaritySearchWithPrefix(q.question, "doc:", 5);
+    for (const id of hits) vanillaCounts.set(id, (vanillaCounts.get(id) ?? 0) + 1);
+  }
+  const medNoise = new Set<string>();
+  for (const [id, c] of vanillaCounts) {
+    if (c / medical.queries.length >= 0.5) medNoise.add(id);
+  }
+  console.log(`  noise docs (≥50% queries): ${medNoise.size} → ${Array.from(medNoise).slice(0, 5).join(", ")}`);
+
   for (const r of ["vanilla", "hybrid", "multihop"] as const) {
-    const entries = await indexAndQuery(medical, r, 5, medVS);
+    const entries = await indexAndQuery(medical, r, 5, medVS, r === "multihop" ? medNoise : undefined);
     const avgCov = entries.reduce((s, e) => s + e.evidenceCoverage, 0) / entries.length;
     const fullCov = entries.filter((e) => e.evidenceCoverage >= 0.7).length;
     console.log(`  ${r}: avg evidence-token coverage ${avgCov.toFixed(3)} | ≥0.7 coverage in ${fullCov}/${entries.length} queries`);
@@ -181,13 +199,25 @@ async function main(): Promise<void> {
     `${dataDir}/gb-novel-questions.json`,
     N,
     "Fact Retrieval",
-    4000,
+    1024,
   );
   console.log(`\n=== Novel (${novel.queries.length} fact-retrieval queries, ${novel.docs.length} chunks across ${new Set(novel.docs.map((d) => d.id.replace(/-\d+$/, ""))).size} novels) ===`);
   const novVS = await buildVectorStore(novel);
 
+  console.log("\n  [pass 1: identifying noise docs from vanilla retrieval]");
+  const vanillaCountsN = new Map<string, number>();
+  for (const q of novel.queries) {
+    const hits = await novVS.similaritySearchWithPrefix(q.question, "doc:", 5);
+    for (const id of hits) vanillaCountsN.set(id, (vanillaCountsN.get(id) ?? 0) + 1);
+  }
+  const novNoise = new Set<string>();
+  for (const [id, c] of vanillaCountsN) {
+    if (c / novel.queries.length >= 0.5) novNoise.add(id);
+  }
+  console.log(`  noise docs (≥50% queries): ${novNoise.size} → ${Array.from(novNoise).slice(0, 5).join(", ")}`);
+
   for (const r of ["vanilla", "hybrid", "multihop"] as const) {
-    const entries = await indexAndQuery(novel, r, 5, novVS);
+    const entries = await indexAndQuery(novel, r, 5, novVS, r === "multihop" ? novNoise : undefined);
     const avgCov = entries.reduce((s, e) => s + e.evidenceCoverage, 0) / entries.length;
     const fullCov = entries.filter((e) => e.evidenceCoverage >= 0.7).length;
     console.log(`  ${r}: avg evidence-token coverage ${avgCov.toFixed(3)} | ≥0.7 coverage in ${fullCov}/${entries.length} queries`);

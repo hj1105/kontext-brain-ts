@@ -1,0 +1,182 @@
+[
+  {
+    "id": "Medical-73586ddc",
+    "answer": "Basal cell carcinoma.",
+    "fromThinkingFallback": false,
+    "latencyMs": 21684
+  },
+  {
+    "id": "Medical-1517e1c3",
+    "answer": "Papillary thyroid carcinoma (PTC) is the most common of all the thyroid cancers.",
+    "fromThinkingFallback": false,
+    "latencyMs": 23158
+  },
+  {
+    "id": "Medical-aed3f61c",
+    "answer": "Those between 20 to 40 years of age, assigned male at birth.",
+    "fromThinkingFallback": false,
+    "latencyMs": 31587
+  },
+  {
+    "id": "Medical-85ed509e",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 29570
+  },
+  {
+    "id": "Medical-9418792b",
+    "answer": "A core needle or surgical biopsy.",
+    "fromThinkingFallback": false,
+    "latencyMs": 20317
+  },
+  {
+    "id": "Medical-2bbad791",
+    "answer": "A history of smoking, having given birth more than once (multiparity), oral contraceptive use, being sexually active at an early age, a high number of sexual partners, a history of sexually transmitted infection, certain autoimmune diseases, and a weakened immune system due to HIV or AIDS.",
+    "fromThinkingFallback": false,
+    "latencyMs": 30697
+  },
+  {
+    "id": "Medical-9d5ac399",
+    "answer": "Popcorn-shaped cells distinguish NLPHL from CHL, which are known for Reed-Sternberg cells.",
+    "fromThinkingFallback": false,
+    "latencyMs": 29988
+  },
+  {
+    "id": "Medical-2bd43819",
+    "answer": "Breast cancer can metastasize almost anywhere but most commonly spreads to the bone (including spine), lungs, liver, brain, or distant lymph nodes.",
+    "fromThinkingFallback": false,
+    "latencyMs": 26604
+  },
+  {
+    "id": "Medical-ebb0af4d",
+    "answer": "Those at risk for developing lung cancer.",
+    "fromThinkingFallback": false,
+    "latencyMs": 17875
+  },
+  {
+    "id": "Medical-653c0da3",
+    "answer": "Classic Hodgkin lymphoma (CHL).",
+    "fromThinkingFallback": false,
+    "latencyMs": 24780
+  },
+  {
+    "id": "Medical-8d545fa4",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 23510
+  },
+  {
+    "id": "Medical-a4dcffa3",
+    "answer": "The central nervous system (CNS).",
+    "fromThinkingFallback": false,
+    "latencyMs": 32509
+  },
+  {
+    "id": "Medical-5dd8e62d",
+    "answer": "Gray zone lymphomas have overlapping features of non-Hodgkin primary mediastinal B-cell lymphoma (PMBL) and Hodgkin lymphoma (HL).",
+    "fromThinkingFallback": false,
+    "latencyMs": 38999
+  },
+  {
+    "id": "Medical-8a166224",
+    "answer": "BCL2 protein.",
+    "fromThinkingFallback": false,
+    "latencyMs": 24382
+  },
+  {
+    "id": "Medical-e875d9cd",
+    "answer": "Chemotherapy.",
+    "fromThinkingFallback": false,
+    "latencyMs": 26336
+  },
+  {
+    "id": "Medical-deee1f4b",
+    "answer": "Siewert types describe where the tumor is relative to the esophagus and stomach as part of cancer staging.",
+    "fromThinkingFallback": false,
+    "latencyMs": 29934
+  },
+  {
+    "id": "Medical-d8a3772b",
+    "answer": "Cemiplimab (Libtayo) and pembrolizumab (Keytruda).",
+    "fromThinkingFallback": false,
+    "latencyMs": 30746
+  },
+  {
+    "id": "Medical-13fbbea3",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 22380
+  },
+  {
+    "id": "Medical-304b0354",
+    "answer": "The eyes, the testicles, and the spinal cord.",
+    "fromThinkingFallback": false,
+    "latencyMs": 31389
+  },
+  {
+    "id": "Medical-fca41ac7",
+    "answer": "Carcinoma in situ (an intraductal tumor).",
+    "fromThinkingFallback": false,
+    "latencyMs": 23320
+  },
+  {
+    "id": "Medical-e773a3cf",
+    "answer": "Treatment options include preferred therapies, therapies used in certain cases, and chemotherapy, but the goal is not to cure CLL, rather to prevent problems and make it non-life-threatening.",
+    "fromThinkingFallback": false,
+    "latencyMs": 19100
+  },
+  {
+    "id": "Medical-c99a29ae",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 22147
+  },
+  {
+    "id": "Medical-c89d3c38",
+    "answer": "The pathologic stage is determined by examining tissue removed during surgery.",
+    "fromThinkingFallback": false,
+    "latencyMs": 28504
+  },
+  {
+    "id": "Medical-f5e27a80",
+    "answer": "HPV type 16 is responsible for 9 out of 10 throat cancers.",
+    "fromThinkingFallback": false,
+    "latencyMs": 29859
+  },
+  {
+    "id": "Medical-7caf80a1",
+    "answer": "Platinum chemotherapy is typically recommended, especially for the first recurrence.",
+    "fromThinkingFallback": false,
+    "latencyMs": 29477
+  },
+  {
+    "id": "Medical-06384900",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 21066
+  },
+  {
+    "id": "Medical-d272b033",
+    "answer": "Each type of glioma has its own biomarker or set of biomarkers.",
+    "fromThinkingFallback": false,
+    "latencyMs": 19155
+  },
+  {
+    "id": "Medical-bb899a92",
+    "answer": "Your age, the type of cancer, your overall health, and your personal preferences about treatment.",
+    "fromThinkingFallback": false,
+    "latencyMs": 28608
+  },
+  {
+    "id": "Medical-a43ea44f",
+    "answer": "Yes.",
+    "fromThinkingFallback": false,
+    "latencyMs": 25832
+  },
+  {
+    "id": "Medical-dfc549c9",
+    "answer": "A clinical trial is the preferred treatment for these types of B-ALL.",
+    "fromThinkingFallback": false,
+    "latencyMs": 23495
+  }
+]
