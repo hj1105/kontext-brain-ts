@@ -102,7 +102,7 @@ async function main(): Promise<void> {
   const model = process.env.GB_JUDGE_MODEL ?? "llama3.1:8b-instruct-q4_K_M";
   console.log(`=== LLM-judge ACC pass ===\nmodel=${model}`);
   for (const d of ["medical", "novel"]) {
-    for (const r of ["vanilla", "hybrid", "multihop"]) {
+    for (const r of ["vanilla", "hybrid", "multihop", "kg"]) {
       await judgeAll(d, r, model);
     }
   }

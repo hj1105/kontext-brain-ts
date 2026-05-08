@@ -157,7 +157,7 @@ async function main(): Promise<void> {
   const onlyRetriever = process.env.GB_RETRIEVER;
   console.log(`=== GraphRAG-Bench 8B LLM answer pass ===\nmodel=${model}`);
   const domains = onlyDomain ? [onlyDomain] : ["medical", "novel"];
-  const retrievers = onlyRetriever ? [onlyRetriever] : ["vanilla", "hybrid", "multihop"];
+  const retrievers = onlyRetriever ? [onlyRetriever] : ["vanilla", "hybrid", "multihop", "kg"];
   for (const d of domains) {
     for (const r of retrievers) {
       await answerAll(d, r, model);

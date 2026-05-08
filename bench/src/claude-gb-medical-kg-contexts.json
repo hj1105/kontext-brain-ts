@@ -1,0 +1,806 @@
+[
+  {
+    "id": "Medical-73586ddc",
+    "question": "What is the most common type of skin cancer?",
+    "referenceAnswer": "Basal cell carcinoma (BCC) is the most common type of skin cancer.",
+    "evidence": "Basal cell carcinoma (BCC) is the most common type of skin cancer.",
+    "retrievedDocIds": [
+      "med-242",
+      "med-477",
+      "med-107",
+      "med-694",
+      "med-687"
+    ],
+    "matchedEntities": [
+      "hgb",
+      "anc",
+      "ealth",
+      "measurement",
+      "transfusion",
+      "absolute",
+      "neutrophil",
+      "attention",
+      "skin",
+      "ancer"
+    ],
+    "evidenceCoverage": 0.8571428571428571,
+    "context": "### med chunk 242\nA differential counts the number of each type of white blood cell. This test may show a high number of blasts in the blood. Your care team will pay particular attention to the following CBC measurements: Hemoglobin (Hgb) is a measurement of how much oxygen can move through blood and if a red blood cell transfusion might be needed. Platelets (PLTs) are cells that make the clot, thus preventing or stopping the bleeding. h An absolute neutrophil count (ANC) measures cells that fight bacteria and protect us from infections Blasts or leukemia cells can sometimes be detected in the blood and usually are reported as a percentage of cells\n\n### med chunk 477\nA differential counts the number of each type of white blood cell. This test may show a high number of blasts in the blood. Your care team will pay particular attention to the following CBC measurements: Hemoglobin (Hgb) is a measurement of how much oxygen can move through blood and if a red blood cell transfusion might be needed. Platelets (PLTs) are cells that make the clot, thus preventing or stopping the bleeding. h An absolute neutrophil count (ANC) measures cells that fight bacteria and protect us from infections Blasts or leukemia cells can sometimes be detected in the blood and usually are reported as a percentage of cells\n\n### med chunk 107\nAfter that, having an exam once a year for the rest of your life is recommended by NCCN experts. For very high-risk local CSCC, exams should occur every 3 to 6 months during the first 2 years, then every 6 months for the next 3 Skin exams by your doctor After finishing treatment, you should have your skin examined by a doctor on a regular basis. How often you should have skin exams depends on whether cancer has spread to nearby lymph nodes. After that, exams can be spaced out to every 6 to 12 months (once or twice a year) for the rest of your life, as recommended by NCCN experts. For regional CSCC, physical exams with skin checks should be performed every 2 to 3 months for 1 year, every 2 to 4 months for the second year, every 4 to 6 months for another 3 years, and then every 6 to 12 months for the rest of your life\n\n### med chunk 694\ntarts in the lobules (milk glands) of the breast. It is the second most common type of breast cancer. Inflammatory breast cancer Most inflammatory breast cancers (IBCs) are invasive ductal carcinomas. It’s important not to dismiss any strange skin changes to the breast, including redness, swollen nipple area, or warmth to the touch. Possible signs of IBC: Peau d’orange (pitted or dimpled appearance of skin) Skin thickening (skin has an orange-peel texture) Edema (swelling caused by excess fluid in body tissue) Erythema (reddening of the skin, usually in patches) Inflammatory breast cancer In inflammatory breast cancer (IBC), cancer cells block lymph vessels in the skin of the breast\n\n### med chunk 687\nancer early. Breast cancer found earlier is treated more successfully, reducing the risk of dying from breast cancer. This book will cover screening recommendations for those assigned female at birth. It will also discuss screening and testing options for those who are pregnant or lactating (breastfeeding), and those with breast pain, nipple discharge, changes in the skin, lumps, or other symptoms that require further testing. Transgender individuals Due to lack of evidence, this book does not provide screening guidance for transgender individuals"
+  },
+  {
+    "id": "Medical-1517e1c3",
+    "question": "Which thyroid cancer subtype is the most common?",
+    "referenceAnswer": "Papillary thyroid carcinoma is the most common thyroid cancer.",
+    "evidence": "Papillary thyroid carcinoma is the most common thyroid cancer.",
+    "retrievedDocIds": [
+      "med-242",
+      "med-477",
+      "med-1039",
+      "med-693",
+      "med-1058"
+    ],
+    "matchedEntities": [
+      "hgb",
+      "anc",
+      "ealth",
+      "measurement",
+      "transfusion",
+      "absolute",
+      "neutrophil",
+      "attention",
+      "can",
+      "thyroid",
+      "subtype",
+      "most"
+    ],
+    "evidenceCoverage": 0.8333333333333334,
+    "context": "### med chunk 242\nA differential counts the number of each type of white blood cell. It also checks if the counts are in balance with each other. This test may show a high number of blasts in the blood. Your care team will pay particular attention to the following CBC measurements: Hemoglobin (Hgb) is a measurement of how much oxygen can move through blood and if a red blood cell transfusion might be needed. Platelets (PLTs) are cells that make the clot, thus preventing or stopping the bleeding\n\n### med chunk 477\nA differential counts the number of each type of white blood cell. It also checks if the counts are in balance with each other. This test may show a high number of blasts in the blood. Your care team will pay particular attention to the following CBC measurements: Hemoglobin (Hgb) is a measurement of how much oxygen can move through blood and if a red blood cell transfusion might be needed. Platelets (PLTs) are cells that make the clot, thus preventing or stopping the bleeding\n\n### med chunk 1039\nThey are generally only used for thyroid cancers that: Can't be treated with surgery or RAI therapy Have returned after treatment Have spread to areas far from the neck (metastasized) and are continuing to grow The targeted therapies currently used for thyroid cancer are called kinase inhibitors. Chemotherapy Chemotherapy doesn't work well against most thyroid cancers. It may be used for cancer that isn't responding to other treatment, or that has spread to distant areas of the body. It is most often used in combination with radiation therapy for anaplastic thyroid cancer—the least common and most aggressive type. Most chemotherapy medicines are put directly into the bloodstream through a vein\n\n### med chunk 693\nBreast cancer Breast cancer starts in the cells of the breast. Almost all breast cancers are a subtype called carcinomas. The most common types are either ductal or lobular. It is the most common type of breast cancer. It is the second most common type of breast cancer\n\n### med chunk 1058\n keep your TSH level normal. Radioactive iodine therapy If all or most of the cancer was removed during total thyroidectomy, RAI therapy may be an option to kill thyroid cancer cells left in the body. Your provider will consider the following factors to help decide if RAI may be helpful: The size of the tumor The tumor subtype Whether the cancer invaded lymph or blood vessels Whether the cancer has spread to lymph nodes The thyroglobulin (Tg) level after surgery Age at diagnosis RAI therapy is usually recommended if any of the following is true: The cancer had spread significantly beyond the thyroid The cancer had invaded blood vessels (applies to follicular and oncocytic tumors) The Tg level was high 6 to 12 weeks after surgery There were large, or more than 5, lymph nodes with cancer The tumor is a differentiated high-grade carcinoma Monitoring and follow-up care Follow-up testing and surveillance are somewhat different after lobectomy versus after total thyroidectomy."
+  },
+  {
+    "id": "Medical-aed3f61c",
+    "question": "Which age group is most commonly affected by MGZL?",
+    "referenceAnswer": "MGZL commonly affects individuals aged 20 to 40 years.",
+    "evidence": "MGZL commonly affects individuals aged 20 to 40 years.",
+    "retrievedDocIds": [
+      "med-603",
+      "med-604",
+      "med-1016",
+      "med-1013",
+      "med-1015"
+    ],
+    "matchedEntities": [
+      "grade group 1",
+      "grade group 2",
+      "grade group 3",
+      "grade group",
+      "mgzl",
+      "mediastinal"
+    ],
+    "evidenceCoverage": 0.5,
+    "context": "### med chunk 603\nA Gleason score of 7 is intermediate-grade, and 8 to 10 is high-grade. Grade Groups A Grade Group is a way to interpret a Gleason score. So cancer with a Gleason score of 6 is assigned as Grade Group 1 to show that it is the lowest score. Likewise, cancer with a Gleason score of 9 or 10 becomes Grade Group 5, the highest score. Importantly, the Grade Group system also takes into account that Grade Group 2 and Grade Group 3 both have a Gleason score of The difference is the cancer in Grade Group 3 is more serious\n\n### med chunk 604\nImportantly, the Grade Group system also takes into account that Grade Group 2 and Grade Group 3 both have a Gleason score of The difference is the cancer in Grade Group 3 is more serious. Because the first number of the Gleason score in Grade Group 3 is higher than the first number in Grade Group 2. Grade Group 1 indicates low risk. Prostate cancer basics What is prostate cancer. What is advanced-stage prostate cancer\n\n### med chunk 1016\nHowever, those with cancer found outside the mediastinum (extra-mediastinal disease) should be diagnosed as having DLBCL, not otherwise specified (DLBCL-NOS), see page Treatment Since MGZL has features of both classical Hodgkin lymphoma (CHL) and non-Hodgkin PMBL, treatment is a challenge. MGZL is usually treated with chemotherapy. This is called chemoimmunotherapy. About thyroid cancer 5 The thyroid 6 Who is at risk. Most are curable with the right treatment\n\n### med chunk 1013\nAsk your treatment team if there is an open clinical trial that you can join. There are many benefits to advance care planning, including: Knowing what to expect Making the most of your time Lowering the stress of caregivers Having your wishes followed Having a better quality of life. Mediastinal gray zone lymphomas 69 Overview 70 Treatment 71 Key points 71 Questions to ask Mediastinal gray zone lymphoma (MGZL) has overlapping features of primary mediastinal B-cell lymphoma (PMBL) and Hodgkin lymphoma (HL). Treatment is usually chemotherapy. Mediastinal gray zone lymphoma (MGZL) is different than primary mediastinal large B-cell lymphoma (PMBL)\n\n### med chunk 1015\ntinal gray zone lymphomas Mediastinal gray zone lymphomas Mediastinal lymphomas are growths found behind the breastbone (sternum) in the part of the chest that separates the lungs and holds the heart. Mediastinal gray zone lymphoma (MGZL) is different than primary mediastinal large B-cell lymphoma (PMBL). Primary mediastinal lymphomas are discussed in Chapter MGZLs are more commonly seen in those between 20 to 40 years of age, assigned male at birth. They are characterized by the presence of a large mediastinal mass. An expert hematopathologist review is essential to confirm the diagnosis of mediastinal gray zone lymphoma"
+  },
+  {
+    "id": "Medical-85ed509e",
+    "question": "Which inhibitors are used for hormone receptor-positive, HER2-negative breast cancer?",
+    "referenceAnswer": "CDK4/6 inhibitors are used for hormone receptor-positive, HER2-negative breast cancer.",
+    "evidence": "CDK4/6 inhibitors are used for hormone receptor-positive, HER2-negative breast cancer.",
+    "retrievedDocIds": [
+      "med-727",
+      "med-242",
+      "med-477",
+      "med-726",
+      "med-729"
+    ],
+    "matchedEntities": [
+      "receptor-positive",
+      "negative",
+      "positive",
+      "receptor",
+      "hgb",
+      "anc",
+      "ealth",
+      "measurement",
+      "transfusion",
+      "absolute",
+      "neutrophil",
+      "attention",
+      "her2-",
+      "her2"
+    ],
+    "evidenceCoverage": 0.8,
+    "context": "### med chunk 727\nbreast cancer is treated with endocrine therapy, which blocks estrogen receptor signaling. Hormone receptor-negative Hormone receptor-negative (HR-) breast cancer cells do not have either estrogen or progesterone hormone receptors. These cancers are sometimes simply called hormone negative. Estrogen receptor-positive breast cancer cells In breast cancer, testing finds estrogen hormone receptors in at least 1 out of every 100 cancer cells. Endocrine therapy might not be recommended for ER-low–positive invasive breast cancer\n\n### med chunk 242\nAML often causes low counts of healthy blood cells, but it can also present with a high number of abnormal, malignant (abnormal) white blood cells. There are several types of white blood cells. It also checks if the counts are in balance with each other. Platelets (PLTs) are cells that make the clot, thus preventing or stopping the bleeding. h An absolute neutrophil count (ANC) measures cells that fight bacteria and protect us from infections Blasts or leukemia cells can sometimes be detected in the blood and usually are reported as a percentage of cells\n\n### med chunk 477\nAML often causes low counts of healthy blood cells, but it can also present with a high number of abnormal, malignant (abnormal) white blood cells. There are several types of white blood cells. It also checks if the counts are in balance with each other. Platelets (PLTs) are cells that make the clot, thus preventing or stopping the bleeding. h An absolute neutrophil count (ANC) measures cells that fight bacteria and protect us from infections Blasts or leukemia cells can sometimes be detected in the blood and usually are reported as a percentage of cells\n\n### med chunk 726\nThere are 2 types of hormone receptors: Estrogen – plays a role in breast development Progesterone – plays a role in menstrual cycle and pregnancy Hormone receptor (HR) testing should be done on any new tumors. A biopsy sample will be used. Hormone receptor-positive In hormone receptor-positive breast cancer, IHC finds estrogen and/or progesterone hormone receptors. Most breast cancers are. Cancer cells deprived of estrogen or which have their ER signal blocked with treatment may stop growing or die\n\n### med chunk 729\n, it is considered HER2-. A tumor biopsy sample will be used. These cells are then studied using a microscope. IHC can find estrogen, progesterone, and HER2 receptors in breast cancer cells. This information is used to choose the best treatment for you"
+  },
+  {
+    "id": "Medical-9418792b",
+    "question": "Which diagnostic methods are used for bone sarcomas?",
+    "referenceAnswer": "Diagnostic methods for bone sarcomas include X-ray, bone scan, CT scan, MRI, PET scan, and biopsy.",
+    "evidence": "X-ray is a diagnostic method for bone sarcomas.; Bone scan is a diagnostic method for bone sarcomas.; CT scan is a diagnostic method for bone sarcomas.; MRI is a diagnostic method for bone sarcomas.; PET scan is a diagnostic method for bone sarcomas.; Biopsy is a diagnostic method for bone sarcomas.",
+    "retrievedDocIds": [
+      "med-1068",
+      "med-1067",
+      "med-1076",
+      "med-1098",
+      "med-167"
+    ],
+    "matchedEntities": [
+      "sarcomas most",
+      "myeloma",
+      "sarcomas",
+      "sarcoma",
+      "bone",
+      "use",
+      "method"
+    ],
+    "evidenceCoverage": 0.4827586206896552,
+    "context": "### med chunk 1068\nSarcomas Most primary bone cancers are sarcomas. Sarcomas are a rare group of cancers. Soft tissue sarcomas are more common than bone sarcomas. Bone sarcomas, such as osteosarcomas, start in the cells that form NCCN Guidelines for Patients® Bone Cancer, 2025 bone. For more information, see NCCN Guidelines for Patients®: Soft Tissue Sarcoma and NCCN Guidelines for Patients®: Multiple Myeloma at NCCN\n\n### med chunk 1067\ninical trial is strongly encouraged for everyone with metastatic thyroid cancer. Cancers that start in the bone are called primary bone cancers. Bone cancers that start in another part of the body (such as the breast, lungs, or kidney) and travel to the bones are called secondary bone malignancies or metastatic cancer. Sarcomas Most primary bone cancers are sarcomas. Sarcomas are a rare group of cancers\n\n### med chunk 1076\nAccurate testing is needed to diagnose and treat primary bone cancer. Bone cancer is very rare. Many health care providers are not experts in diagnosing or treating these tumors. Therefore, it is important to find a doctor, treatment center, or hospital that has experience in your type of bone cancer. General health tests Some general health tests are described next\n\n### med chunk 1098\nWill my insurance pay for these tests. Where can I find help to pay for tests. 3 Bone cancer staging Overview How is bone formed. TNM scores Numbered stages Key points Questions to ask Cancer staging is used to help make treatment decisions. Overview There are many staging systems\n\n### med chunk 167\nmmendations for your situation, you are more likely to improve your care and have better outcomes as a result. Use this book as your guide to find the information you need to make important decisions. 2 Testing for Hodgkin lymphoma Biopsy and lab testing Health history and physical exam Blood tests Imaging tests Heart and lung tests Other testing and care Key points Questions to ask This chapter explains how Hodgkin lymphoma is identified (diagnosed). Other testing and care you may have before treatment is described. Biopsy and lab testing The best way to diagnose Hodgkin lymphoma is to have 1 or more whole lymph nodes removed and tested"
+  },
+  {
+    "id": "Medical-2bbad791",
+    "question": "Which factors increase the risk of cervical cancer?",
+    "referenceAnswer": "HPV infection, smoking, immunosuppression, and HIV increase risk.",
+    "evidence": "HPV infection increases the risk of cervical cancer.; Smoking increases the risk of cervical cancer.; Immunosuppression increases the risk of cervical cancer.; HIV increases the risk of cervical cancer.",
+    "retrievedDocIds": [
+      "med-242",
+      "med-477",
+      "med-158",
+      "med-556",
+      "med-609"
+    ],
+    "matchedEntities": [
+      "hgb",
+      "anc",
+      "ealth",
+      "measurement",
+      "transfusion",
+      "absolute",
+      "neutrophil",
+      "attention",
+      "inc",
+      "risk",
+      "factor",
+      "increase"
+    ],
+    "evidenceCoverage": 0.47368421052631576,
+    "context": "### med chunk 242\nA differential counts the number of each type of white blood cell. This test may show a high number of blasts in the blood. Your care team will pay particular attention to the following CBC measurements: Hemoglobin (Hgb) is a measurement of how much oxygen can move through blood and if a red blood cell transfusion might be needed. Platelets (PLTs) are cells that make the clot, thus preventing or stopping the bleeding. h An absolute neutrophil count (ANC) measures cells that fight bacteria and protect us from infections Blasts or leukemia cells can sometimes be detected in the blood and usually are reported as a percentage of cells\n\n### med chunk 477\nA differential counts the number of each type of white blood cell. This test may show a high number of blasts in the blood. Your care team will pay particular attention to the following CBC measurements: Hemoglobin (Hgb) is a measurement of how much oxygen can move through blood and if a red blood cell transfusion might be needed. Platelets (PLTs) are cells that make the clot, thus preventing or stopping the bleeding. h An absolute neutrophil count (ANC) measures cells that fight bacteria and protect us from infections Blasts or leukemia cells can sometimes be detected in the blood and usually are reported as a percentage of cells\n\n### med chunk 158\nidelines for Patients. Our corporate supporters do not participate in the development of the NCCN Guidelines for Patients and are not responsible for the content and recommendations contained therein. To make a gift or learn more, visit online or email Contents About Hodgkin lymphoma Testing for Hodgkin lymphoma Staging Treatment for classic Hodgkin lymphoma (CHL) Refractory or relapsed CHL Treatment for NLPHL When treatment is over Other resources Words to know NCCN Contributors NCCN Cancer Centers Index 2025 National Comprehensive Cancer Network, Inc. All rights reserved. NCCN Guidelines for Patients and illustrations herein may not be reproduced in any form for any purpose without the express written permission of NCCN.\n\n### med chunk 556\nThe fact is, everyone with a prostate has a risk of getting prostate cancer. But several factors are linked to a higher risk of prostate cancer. These are called risk factors. Risk factors don’t necessarily cause prostate cancer, but people with prostate cancer usually have one or more of these risk factors: Age The biggest risk factor for prostate cancer is age. Your chances of getting prostate cancer increase as you become older\n\n### med chunk 609\nThe fact is, everyone with a prostate has a risk of getting prostate cancer. But several factors are linked to a higher risk of prostate cancer. These are called risk factors. Risk factors don’t necessarily cause prostate cancer, but people with prostate cancer usually have one or more of these risk factors: Age The biggest risk factor for prostate cancer is age. Your chances of getting prostate cancer increase as you become older"
+  },
+  {
+    "id": "Medical-9d5ac399",
+    "question": "What is the main cell type that distinguishes NLPHL from CHL?",
+    "referenceAnswer": "Popcorn-shaped cells distinguish NLPHL from CHL.",
+    "evidence": "Popcorn-shaped cells distinguish NLPHL from CHL.",
+    "retrievedDocIds": [
+      "med-164",
+      "med-158",
+      "med-729",
+      "med-1297",
+      "med-728"
+    ],
+    "matchedEntities": [
+      "nlphl",
+      "chl",
+      "ish",
+      "ain"
+    ],
+    "evidenceCoverage": 0.8,
+    "context": "### med chunk 164\nHere lymphocytes develop into T lymphocytes (T cells), one of the two main types of lymphocytes. They help trap disease-causing germs that enter through you nose or mouth. While there are different subtypes of CHL, the same care is recommended for all of them. NLPHL While CHL is known for Reed-Sternberg cells, nodular lymphocyte-predominant Hodgkin lymphoma (NLPHL) is known for popcornshaped cells. What can you do to get the best care\n\n### med chunk 158\nidelines for Patients. Our corporate supporters do not participate in the development of the NCCN Guidelines for Patients and are not responsible for the content and recommendations contained therein. To make a gift or learn more, visit online or email Contents About Hodgkin lymphoma Testing for Hodgkin lymphoma Staging Treatment for classic Hodgkin lymphoma (CHL) Refractory or relapsed CHL Treatment for NLPHL When treatment is over Other resources Words to know NCCN Contributors NCCN Cancer Centers Index 2025 National Comprehensive Cancer Network, Inc. All rights reserved. NCCN Guidelines for Patients and illustrations herein may not be reproduced in any form for any purpose without the express written permission of NCCN.\n\n### med chunk 729\nIf the score is , further testing is needed. This test is done mainly when the IHC score is unclear. Immunohistochemistry Immunohistochemistry (IHC) is a special staining process that involves adding a chemical marker to cells. A pathologist will measure how many cells have estrogen and/ or progesterone receptors and the number of receptors inside each cell. This information is used to choose the best treatment for you\n\n### med chunk 1297\ncancer starts as areas of abnormal cells, called lesions, in or near the anus. Other names for anal dysplasia include: Low-grade squamous intraepithelial lesion (LSIL) (mild dysplasia) High-grade squamous intraepithelial lesion (HSIL) (moderate or severe dysplasia) Anal intraepithelial neoplasia (AIN) Stage 0 anal cancer The HPV vaccine A vaccine that protects against 9 different strains of HPV, including the highest-risk strains, is available. While previously only recommended for routine use in adolescents and young adults, vaccination is now an option for adults aged 45 years and under. However, it is most effective in younger people because they have likely never been exposed to HPV. Also, while the vaccine can prevent new HPV infections, it does not treat existing HPV infections or HPV-related cancers\n\n### med chunk 728\nHER2 status Inflammatory breast cancers often produce greater than normal amounts of HERHuman epidermal growth factor receptor 2 (HER2) is a protein involved in normal cell growth. If the IHC score is , the cancer is. If the score is 0 or 1, it is considered HER2-. If the score is , further testing is needed. This test is done mainly when the IHC score is unclear"
+  },
+  {
+    "id": "Medical-2bd43819",
+    "question": "Which cancers commonly metastasize to bone?",
+    "referenceAnswer": "Breast cancer, lung cancer, and kidney cancer can metastasize to bone.",
+    "evidence": "Breast cancer can metastasize to bone.; Lung cancer can metastasize to bone.; Kidney cancer can metastasize to bone.",
+    "retrievedDocIds": [
+      "med-242",
+      "med-477",
+      "med-1141",
+      "med-1067",
+      "med-669"
+    ],
+    "matchedEntities": [
+      "hgb",
+      "anc",
+      "ealth",
+      "measurement",
+      "transfusion",
+      "absolute",
+      "neutrophil",
+      "attention",
+      "only",
+      "can",
+      "metastasize",
+      "bone",
+      "commonly"
+    ],
+    "evidenceCoverage": 1,
+    "context": "### med chunk 242\nAML often causes low counts of healthy blood cells, but it can also present with a high number of abnormal, malignant (abnormal) white blood cells. There are several types of white blood cells. A differential counts the number of each type of white blood cell. It also checks if the counts are in balance with each other. Your care team will pay particular attention to the following CBC measurements: Hemoglobin (Hgb) is a measurement of how much oxygen can move through blood and if a red blood cell transfusion might be needed\n\n### med chunk 477\nAML often causes low counts of healthy blood cells, but it can also present with a high number of abnormal, malignant (abnormal) white blood cells. There are several types of white blood cells. A differential counts the number of each type of white blood cell. It also checks if the counts are in balance with each other. Your care team will pay particular attention to the following CBC measurements: Hemoglobin (Hgb) is a measurement of how much oxygen can move through blood and if a red blood cell transfusion might be needed\n\n### med chunk 1141\ns in multiple locations, and if they had genetic testing. About glioma What is a glioma. What causes a glioma. Are there types of gliomas. Gliomas can be challenging to treat, but treatment is improving\n\n### med chunk 1067\n7 What can you do to get the best care. This is called primary bone cancer and differs from other types of cancers that can spread (metastasize) to the bone. Cancers that start in the bone are called primary bone cancers. Bone cancers that start in another part of the body (such as the breast, lungs, or kidney) and travel to the bones are called secondary bone malignancies or metastatic cancer. Metastatic cancers to bone behave very differently from primary bone cancers\n\n### med chunk 669\nIt might be referred to as locoregional disease or locally advanced. Cancer that has spread to a body part far from the primary tumor is called a distant metastasis. Breast cancer can metastasize almost anywhere but most commonly spreads to the bone (including spine), lungs, liver, brain, or distant lymph nodes. Breast cancer that has metastasized to other parts of the body is still called breast cancer. Ducts carry breast milk from the lobules to the nipple"
+  },
+  {
+    "id": "Medical-ebb0af4d",
+    "question": "Who is recommended to undergo lung cancer screening?",
+    "referenceAnswer": "Lung cancer screening is recommended for people at high risk.",
+    "evidence": "Lung cancer screening is recommended for people at high risk.",
+    "retrievedDocIds": [
+      "med-242",
+      "med-477",
+      "med-133",
+      "med-1081",
+      "med-687"
+    ],
+    "matchedEntities": [
+      "hgb",
+      "anc",
+      "ealth",
+      "measurement",
+      "transfusion",
+      "absolute",
+      "neutrophil",
+      "attention",
+      "under",
+      "lung",
+      "screening",
+      "ecommended",
+      "ancer",
+      "undergo"
+    ],
+    "evidenceCoverage": 0.7142857142857143,
+    "context": "### med chunk 242\nAML often causes low counts of healthy blood cells, but it can also present with a high number of abnormal, malignant (abnormal) white blood cells. There are several types of white blood cells. A differential counts the number of each type of white blood cell. It also checks if the counts are in balance with each other. Your care team will pay particular attention to the following CBC measurements: Hemoglobin (Hgb) is a measurement of how much oxygen can move through blood and if a red blood cell transfusion might be needed\n\n### med chunk 477\nAML often causes low counts of healthy blood cells, but it can also present with a high number of abnormal, malignant (abnormal) white blood cells. There are several types of white blood cells. A differential counts the number of each type of white blood cell. It also checks if the counts are in balance with each other. Your care team will pay particular attention to the following CBC measurements: Hemoglobin (Hgb) is a measurement of how much oxygen can move through blood and if a red blood cell transfusion might be needed\n\n### med chunk 133\nSmall cell lung cancer Small cell lung cancer (SCLC) is a fast-dividing cancer of the neuroendocrine cells. It is the second most common type of lung cancer. Early detection The goal of lung cancer screening is to find lung cancer at an early stage, even before there are any symptoms. Early detection of lung cancer helps prevent death. Together, you and your health care provider should discuss if screening is right for you\n\n### med chunk 1081\necommended, so ask your doctor about options such as intrauterine devices (IUDs) and barrier methods. Performance status Performance status (PS) is a person’s general level of fitness and ability to perform daily tasks. PS is one factor taken into consideration when choosing a treatment plan. They require a sample of your blood, which is removed through a needle placed into a vein in your arm. Alkaline phosphatase Alkaline phosphatase (ALP) is an enzyme found in the blood\n\n### med chunk 687\nBreast cancer found earlier is treated more successfully, reducing the risk of dying from breast cancer. It will also discuss screening and testing options for those who are pregnant or lactating (breastfeeding), and those with breast pain, nipple discharge, changes in the skin, lumps, or other symptoms that require further testing. Transgender individuals Due to lack of evidence, this book does not provide screening guidance for transgender individuals. Transgender individuals should consult with their primary care physician to determine when/whether screening would be appropriate. Those assigned male at birth Those assigned male at birth do not undergo regular mammogram screening"
+  },
+  {
+    "id": "Medical-653c0da3",
+    "question": "Which lymphoma subtype is most frequently associated with Reed-Sternberg cells?",
+    "referenceAnswer": "Classic Hodgkin lymphoma (CHL) is most frequently associated with Reed-Sternberg cells.",
+    "evidence": "Classic Hodgkin lymphoma (CHL) is most frequently associated with Reed-Sternberg cells.",
+    "retrievedDocIds": [
+      "med-1014",
+      "med-164",
+      "med-165",
+      "med-1015",
+      "med-384"
+    ],
+    "matchedEntities": [
+      "reed",
+      "sternberg",
+      "overlapping",
+      "reed-sternberg",
+      "nucleus",
+      "non-mediastinal",
+      "sternum",
+      "pmbl",
+      "mediastinal",
+      "reedsternberg",
+      "nlphl",
+      "behaves",
+      "aggressively",
+      "chl",
+      "suggested",
+      "satisfied",
+      "with",
+      "cell"
+    ],
+    "evidenceCoverage": 0.75,
+    "context": "### med chunk 1014\nTogether, you and your care team will choose a treatment plan that is best for you. Mediastinal gray zone lymphoma (MGZL) is different than primary mediastinal large B-cell lymphoma (PMBL). Those with gray zone lymphomas are best managed in cancer centers with experience in treating this type of lymphoma. This means that the cells are large but can vary in size and might look similar to Hodgkin cells (Reed-Sternberg cells). Reed-Sternberg cells are large, abnormal lymphocytes that may contain more than one nucleus\n\n### med chunk 164\nHere lymphocytes develop into T lymphocytes (T cells), one of the two main types of lymphocytes. Classic Hodgkin lymphoma Most people with Hodgkin lymphoma have classic Hodgkin lymphoma (CHL). CHL can be recognized by large lymphocytes called ReedSternberg cells. While there are different subtypes of CHL, the same care is recommended for all of them. NLPHL While CHL is known for Reed-Sternberg cells, nodular lymphocyte-predominant Hodgkin lymphoma (NLPHL) is known for popcornshaped cells\n\n### med chunk 165\nin rare cases behaves aggressively. Over time, it can transform into one of several types of fast-growing cancer, including diffuse large B-cell lymphoma (DLBCL). In fact, you’re more likely to get the care you want by asking questions and making shared decisions with your care team. With better understanding, you’ll be more prepared to discuss your care with your team and share your concerns. Each chapter in this book ends with an important section called Questions to ask\n\n### med chunk 1015\ntinal gray zone lymphomas Mediastinal gray zone lymphomas Mediastinal lymphomas are growths found behind the breastbone (sternum) in the part of the chest that separates the lungs and holds the heart. Mediastinal gray zone lymphoma (MGZL) is different than primary mediastinal large B-cell lymphoma (PMBL). They are treated differently. Primary mediastinal lymphomas are discussed in Chapter MGZLs are more commonly seen in those between 20 to 40 years of age, assigned male at birth. An expert hematopathologist review is essential to confirm the diagnosis of mediastinal gray zone lymphoma\n\n### med chunk 384\nTumor mutation testing Tumor mutation testing or tumor genomic aberration testing uses a sample of your tumor or blood to see if the cancer cells have any specific DNA mutations. This is a different type of DNA testing than the genetic testing for mutations you may have inherited from your biological parents. In tumor mutation testing, only the tumor is tested and not the rest of your body. Some mutations can be targeted with specific therapies. Cell-free DNA testing Cell-free or circulating tumor DNA (ctDNA) testing uses a sample of blood to look for cancer cells or for pieces of DNA from tumor cells"
+  },
+  {
+    "id": "Medical-8d545fa4",
+    "question": "What is the recommended follow-up strategy after CSCC treatment?",
+    "referenceAnswer": "Follow-up after treatment includes regular skin and lymph node exams, with frequency based on risk and stage.",
+    "evidence": "Follow-up after CSCC treatment includes regular skin exams.; Follow-up after CSCC treatment includes regular lymph node exams.; The frequency of follow-up exams is based on risk and stage.",
+    "retrievedDocIds": [
+      "med-46",
+      "med-1081",
+      "med-202",
+      "med-80",
+      "med-319"
+    ],
+    "matchedEntities": [
+      "follow",
+      "cscc",
+      "ecommended",
+      "low",
+      "recommend"
+    ],
+    "evidenceCoverage": 0.5652173913043478,
+    "context": "### med chunk 46\nThis helps them find any usage that is not normal. Cancer cells show up as bright spots on PET scans. When a PET scan is combined with CT, it is called a PET/CT scan. Confirmed CSCC Once a diagnosis of CSCC is made, your doctor will follow up with: A complete head-to-toe skin exam to look for other lesions An exam of the lymph nodes Cancer cells can travel through blood and a fluid called lymph to form tumors in other parts of the body. If your lymph nodes feel larger than they should be, cancer may have spread to the lymph nodes (this is also called “nodal disease”)\n\n### med chunk 1081\nTypes of barrier methods include condoms, diaphragms, cervical caps, and the contraceptive sponge. Performance status Performance status (PS) is a person’s general level of fitness and ability to perform daily tasks. Your state of general health will be rated using a PS scale called the Eastern Cooperative Oncology Group (ECOG) score or the Karnofsky Performance Status (KPS). PS is one factor taken into consideration when choosing a treatment plan. Alkaline phosphatase Alkaline phosphatase (ALP) is an enzyme found in the blood\n\n### med chunk 202\nCancer treatment can hurt the developing baby if you are or become pregnant during treatment. Therefore, birth control to prevent pregnancy during and after treatment is recommended. Menstruation, menses, menstrual flow, or your “period” may stop during treatment, but often returns within 2 years after treatment in those 35 years of age and under. It is still possible to become pregnant even though you might not have a period. Therefore, birth control is recommended during and after treatment\n\n### med chunk 80\nEnrolling in a clinical trial is another option for treatment. The goal of treatment is to remove all of the cancer with as little damage to the surrounding skin as possible. Risk assessment After squamous cell skin cancer is confirmed, your doctor will consider several features of the cancer to determine if it is a low-, high-, or very high-risk skin cancer. A high-risk CSCC has an increased risk of local recurrence. A very high-risk CSCC has an increased risk of local recurrence and of metastasis (spread)\n\n### med chunk 319\nSurgery performed after chemotherapy is called interval cytoreductive surgery (ICS). HIPEC is a technique in which chemotherapy is warmed and then circulated in the spaces between the organs of the abdomen during surgery. If cancer improves after several cycles of chemotherapy, surgery is usually recommended. After surgery, more chemotherapy is usually given. Maintenance therapy may follow once your cancer is in remission"
+  },
+  {
+    "id": "Medical-a4dcffa3",
+    "question": "What is a potential site of relapse for primary CNS lymphoma?",
+    "referenceAnswer": "Primary CNS lymphoma can relapse in the brain, spinal cord, or eyes.",
+    "evidence": "Primary CNS lymphoma can relapse in the brain.; Primary CNS lymphoma can relapse in the spinal cord.; Primary CNS lymphoma can relapse in the eyes.",
+    "retrievedDocIds": [
+      "med-846",
+      "med-563",
+      "med-785",
+      "med-777",
+      "med-791"
+    ],
+    "matchedEntities": [
+      "cns",
+      "lymphoma",
+      "primary",
+      "unless",
+      "life-long",
+      "prolong",
+      "managed",
+      "advanced-stage",
+      "potential",
+      "requires",
+      "early-stage",
+      "primary cns",
+      "cns tests"
+    ],
+    "evidenceCoverage": 0.5384615384615384,
+    "context": "### med chunk 846\ninduction therapy, high-dose methotrexate is given together with the immunotherapy drug rituximab (Rituxan). Rituximab can be given on its own but it usually works better when given with chemotherapy. In addition to methotrexate and rituximab, one or more other chemotherapy medicines such as temozolomide, vincristine, and procarbazine may also be included. Alternatives to methotrexate High-dose methotrexate (with or without additional medicines) is the preferred induction therapy for primary CNS lymphoma. But it’s not the best option for everyone.\n\n### med chunk 563\nbefore. Treatments for early-stage prostate cancer include surgery, radiation therapy, and hormone therapy, among others. However, some people with prostate cancer don’t need to be treated right away. The goal of active surveillance is to avoid the potential side effects of treatment, with the option for treatment in the future if you need it. Advanced-stage prostate cancer has spread to other areas of the pelvis (regional prostate cancer) or the body (metastatic prostate cancer), and it's usually a life-long disease\n\n### med chunk 785\nCan primary CNS lymphoma be cured. Curing primary CNS lymphoma is rare, but it may be possible if it’s diagnosed early and treated immediately. Sometimes the bigger problem is managing the major side effects of the intense treatment. The main treatments for primary CNS lymphoma include chemotherapy, radiation therapy, stem cell transplant, or a combination of these treatments. Joining a clinical trial of a potential new therapy is another recommended option\n\n### med chunk 777\nWhat is primary CNS lymphoma. What causes primary CNS lymphoma. How is primary CNS lymphoma diagnosed. Can primary CNS lymphoma be cured. What is primary CNS lymphoma\n\n### med chunk 791\n2 Tests for primary CNS Tests for diagnosis Tests after diagnosis What’s next. Key points Different tests are needed to identify primary CNS lymphoma and to make a treatment plan. The key to confirming the diagnosis is removing a small sample of the tumor tissue and testing it. Many diseases have signs and symptoms similar to primary central nervous system (CNS) lymphoma, including neurological illnesses and other types of brain cancer. Tests for diagnosis If you haven’t yet been diagnosed with primary CNS lymphoma, you’ll first have a physical examination and some general assessments of your health"
+  },
+  {
+    "id": "Medical-5dd8e62d",
+    "question": "What is the relationship between gray zone lymphoma and primary mediastinal B-cell lymphoma?",
+    "referenceAnswer": "Gray zone lymphomas have overlapping features with primary mediastinal B-cell lymphoma (PMBL).",
+    "evidence": "Gray zone lymphomas have overlapping features with primary mediastinal B-cell lymphoma (PMBL).",
+    "retrievedDocIds": [
+      "med-1015",
+      "med-1014",
+      "med-1013",
+      "med-384",
+      "med-385"
+    ],
+    "matchedEntities": [
+      "mediastinal",
+      "b-cell",
+      "cell"
+    ],
+    "evidenceCoverage": 1,
+    "context": "### med chunk 1015\ntinal gray zone lymphomas Mediastinal gray zone lymphomas Mediastinal lymphomas are growths found behind the breastbone (sternum) in the part of the chest that separates the lungs and holds the heart. Mediastinal gray zone lymphoma (MGZL) is different than primary mediastinal large B-cell lymphoma (PMBL). Primary mediastinal lymphomas are discussed in Chapter MGZLs are more commonly seen in those between 20 to 40 years of age, assigned male at birth. An expert hematopathologist review is essential to confirm the diagnosis of mediastinal gray zone lymphoma. Non-mediastinal gray zone lymphomas Non-mediastinal gray zone lymphomas occur in older persons, have a higher rate of bone marrow involvement, include disease outside the lymph nodes (extranodal disease), and have more advanced-stage disease than mediastinal gray zone lymphomas\n\n### med chunk 1014\nTogether, you and your care team will choose a treatment plan that is best for you. Mediastinal gray zone lymphoma (MGZL) is different than primary mediastinal large B-cell lymphoma (PMBL). Those with gray zone lymphomas are best managed in cancer centers with experience in treating this type of lymphoma. Overview Gray zone lymphomas have overlapping features of non-Hodgkin primary mediastinal B-cell lymphoma (PMBL) and Hodgkin lymphoma (HL). There are 2 main types of gray zone lymphomas: Mediastinal gray zone lymphoma (MGZL) h Non-mediastinal gray zone lymphomas Mediastinal gray zone lymphomas Mediastinal lymphomas are growths found behind the breastbone (sternum) in the part of the chest that separates the lungs and holds the heart\n\n### med chunk 1013\nIf the cancer cannot be controlled or cured, a care plan for the end of life can be made. There are many benefits to advance care planning, including: Knowing what to expect Making the most of your time Lowering the stress of caregivers Having your wishes followed Having a better quality of life. Mediastinal gray zone lymphomas 69 Overview 70 Treatment 71 Key points 71 Questions to ask Mediastinal gray zone lymphoma (MGZL) has overlapping features of primary mediastinal B-cell lymphoma (PMBL) and Hodgkin lymphoma (HL). Together, you and your care team will choose a treatment plan that is best for you. Mediastinal gray zone lymphoma (MGZL) is different than primary mediastinal large B-cell lymphoma (PMBL)\n\n### med chunk 384\nTumor mutational burden When there are 10 or more mutations per million base pairs of tumor DNA, it is called tumor mutational burden-high (TMB-H). Metastatic or unresectable TMB cancers are often treated using immune checkpoint inhibitors that target the proteins called programmed cell death protein 1 (PD-1) and programmed death-ligand 1 (PD-L1). This is a different type of DNA testing than the genetic testing for mutations you may have inherited from your biological parents. In tumor mutation testing, only the tumor is tested and not the rest of your body. Cell-free DNA testing Cell-free or circulating tumor DNA (ctDNA) testing uses a sample of blood to look for cancer cells or for pieces of DNA from tumor cells\n\n### med chunk 385\nCell-free DNA testing Cell-free or circulating tumor DNA (ctDNA) testing uses a sample of blood to look for cancer cells or for pieces of DNA from tumor cells. Although this test is not a recommended standard and its use has not been agreed upon, many providers use it to monitor treatment response and for cancer recurrence. Often, information is collected over time, even as treatment begins. Your overall health may guide the best treatment for your cancer. Head and neck cancer and its treatment can affect the health of your jaw, teeth, and gums"
+  },
+  {
+    "id": "Medical-8a166224",
+    "question": "Which biomarker is commonly associated with follicular lymphoma (FL)?",
+    "referenceAnswer": "BCL2 protein is a biomarker commonly associated with FL.",
+    "evidence": "BCL2 protein is a biomarker commonly associated with follicular lymphoma.",
+    "retrievedDocIds": [
+      "med-1021",
+      "med-638",
+      "med-586",
+      "med-115",
+      "med-303"
+    ],
+    "matchedEntities": [
+      "only",
+      "follicular",
+      "knowing",
+      "with",
+      "marker"
+    ],
+    "evidenceCoverage": 0.2857142857142857,
+    "context": "### med chunk 1021\nOnly a small number are hereditary, or the result of inherited gene mutations (changes). Cowden syndrome is also known as PTEN hamartoma tumor syndrome (PHTS). This inherited syndrome can cause follicular thyroid cancer, and other cancers and health problems. Key points The thyroid is a butterfly-shaped gland in the neck. Thyroid cancer is the most common cancer in adults aged 18 to 33 years\n\n### med chunk 638\nas a raisin. The urologist will usually take 12 or more core samples from different parts of the prostate. With this information, the pathologist can estimate the amount of cancer in the prostate and how aggressive it may be. Also, by knowing where each core sample was taken, the pathologist can tell if the cancer is concentrated in a certain section of the prostate. Ask your doctor or another member of Biopsy of the prostate A biopsy removes a sample of tissue that is tested for cancer\n\n### med chunk 586\ne gland. After the biopsy samples are removed, they’ll be sent to a lab for testing. With this information, the pathologist can estimate the amount of cancer in the prostate. Also, by knowing where each core sample was taken, the pathologist can tell if the cancer is concentrated in a certain section of the prostate. Ask your doctor to review the pathology report with you\n\n### med chunk 115\ne you want by asking questions and making shared decisions with your care team. With better understanding, you’ll be more prepared to discuss your care with your team and share your concerns. Each chapter in this book ends with an important section called Questions to ask. Take the next step and keep reading to learn what is the best care for you. This book is organized into chapters on: Testing Treatment CML phases 2 Tests Test results General health tests Blood tests Fertility (all genders) Performance status Bone marrow tests Testing for CML biomarker and genetic changes Heart tests Key points Questions to ask Treatment planning starts with testing\n\n### med chunk 303\nones, and other organs and tissues. The liver is an organ that does many important jobs, such as removing toxins from your blood. Tumor markers A tumor marker is a substance found in body tissue or fluid that may be a sign of cancer. Along with other information, tumor markers can help diagnose ovarian cancer and monitor response to treatment. A cancer antigen-125 (CA-125) test is the most common tumor marker test for ovarian cancer"
+  },
+  {
+    "id": "Medical-e875d9cd",
+    "question": "What is the recommended initial treatment for MGZL?",
+    "referenceAnswer": "MGZL is usually treated with chemotherapy.",
+    "evidence": "MGZL is usually treated with chemotherapy.",
+    "retrievedDocIds": [
+      "med-1081",
+      "med-984",
+      "med-202",
+      "med-646",
+      "med-643"
+    ],
+    "matchedEntities": [
+      "ecommended",
+      "recommend",
+      "for",
+      "recommended",
+      "atm"
+    ],
+    "evidenceCoverage": 0,
+    "context": "### med chunk 1081\nTypes of barrier methods include condoms, diaphragms, cervical caps, and the contraceptive sponge. Your state of general health will be rated using a PS scale called the Eastern Cooperative Oncology Group (ECOG) score or the Karnofsky Performance Status (KPS). PS is one factor taken into consideration when choosing a treatment plan. Blood tests Blood tests check for signs of disease and how well organs are working. Alkaline phosphatase Alkaline phosphatase (ALP) is an enzyme found in the blood\n\n### med chunk 984\nFor stage 1A1 cancers with LVSI, treatment with either cone biopsy or radical trachelectomy is recommended. If trachelectomy is planned, see the next page for information on treatment after surgery. Pelvic lymph node evaluation is performed in addition to the cone biopsy. For stage 1A2 cancers with LVSI, treatment with either cone biopsy or radical trachelectomy is recommended. If trachelectomy is planned, see the next page for information on treatment after surgery\n\n### med chunk 202\nCancer treatment can hurt the developing baby if you are or become pregnant during treatment. Therefore, birth control to prevent pregnancy during and after treatment is recommended. It is still possible to become pregnant even though you might not have a period. Therefore, birth control is recommended during and after treatment. Consult your doctor for the best time to plan a pregnancy\n\n### med chunk 646\nIn this type of testing, the sample is analyzed to look at its molecular components. Tumors often release molecules that can be used as clues for finding and learning about the cancer. This information helps figure out the likelihood that your cancer could spread to other parts of the body. Importantly, targeted therapies (PARP inhibitors, for example) can be used against cancers that have particular molecular tumor markers. So the testing looks for specific abnormalities in a number of genes involved in DNA repair, including BRCA1, BRCA2, ATM, PALB2, FANCA, and others\n\n### med chunk 643\nal of this type of genetic testing is to look for inherited (germline) mutations that occur in every cell in your body. Genetic germline testing is done using a sample of your blood, urine, or saliva. For prostate cancer, this testing typically looks for characteristic changes in these genes: BRCA1, BRCA2, ATM, CHEK2, MLH1, MSH2, MSH6, PALB2, PMS2, and others. It means your chances for developing certain cancers is higher. Some mutations can put you at risk for more than one type of cancer"
+  },
+  {
+    "id": "Medical-deee1f4b",
+    "question": "What are Siewert types used for in esophageal cancer?",
+    "referenceAnswer": "Siewert types are used to stage tumors at the esophagogastric junction.",
+    "evidence": "Siewert types are used to stage tumors.; Siewert types are used for tumors at the esophagogastric junction.",
+    "retrievedDocIds": [
+      "med-242",
+      "med-477",
+      "med-884",
+      "med-883",
+      "med-687"
+    ],
+    "matchedEntities": [
+      "hgb",
+      "anc",
+      "ealth",
+      "measurement",
+      "transfusion",
+      "absolute",
+      "neutrophil",
+      "attention",
+      "esophageal",
+      "ancer"
+    ],
+    "evidenceCoverage": 0.45454545454545453,
+    "context": "### med chunk 242\nThere are several types of white blood cells. It also checks if the counts are in balance with each other. This test may show a high number of blasts in the blood. h An absolute neutrophil count (ANC) measures cells that fight bacteria and protect us from infections Blasts or leukemia cells can sometimes be detected in the blood and usually are reported as a percentage of cells. Comprehensive metabolic panel A comprehensive metabolic panel (CMP) measures substances in your blood\n\n### med chunk 477\nThere are several types of white blood cells. It also checks if the counts are in balance with each other. This test may show a high number of blasts in the blood. h An absolute neutrophil count (ANC) measures cells that fight bacteria and protect us from infections Blasts or leukemia cells can sometimes be detected in the blood and usually are reported as a percentage of cells. Comprehensive metabolic panel A comprehensive metabolic panel (CMP) measures substances in your blood\n\n### med chunk 884\nNasopharyngeal cancer shouldn't be confused with other types of cancer that also affect the throat, such as laryngeal cancer and esophageal cancer. More information on esophageal cancer can be found at NCCN. org/patientguidelines and on the NCCN Patient Guides for Cancer app. Head and neck cancers are a group of cancers that arise in the head or neck area of the body. It forms in the thin, flat cells of the mucus membranes of the nasopharynx\n\n### med chunk 883\nSquamous cell carcinoma (SCC) is the most common type of nasopharyngeal cancer and is the focus of this book. Cancer cells often spread to lymph nodes in the neck, and less frequently to the lungs. It's often difficult to recognize nasopharyngeal cancer because the symptoms are similar to other less serious conditions. Also, many people with nasopharyngeal cancer don't have any symptoms until the cancer reaches an advanced stage. Nasopharyngeal cancer shouldn't be confused with other types of cancer that also affect the throat, such as laryngeal cancer and esophageal cancer\n\n### med chunk 687\nancer early. Breast cancer found earlier is treated more successfully, reducing the risk of dying from breast cancer. This book will cover screening recommendations for those assigned female at birth. It will also discuss screening and testing options for those who are pregnant or lactating (breastfeeding), and those with breast pain, nipple discharge, changes in the skin, lumps, or other symptoms that require further testing. Transgender individuals Due to lack of evidence, this book does not provide screening guidance for transgender individuals"
+  },
+  {
+    "id": "Medical-d8a3772b",
+    "question": "Which immunotherapy agents are used for metastatic CSCC?",
+    "referenceAnswer": "PD-1 inhibitors such as cemiplimab and pembrolizumab are used for metastatic CSCC.",
+    "evidence": "PD-1 inhibitors are used for metastatic CSCC.; Cemiplimab is a PD-1 inhibitor used for metastatic CSCC.; Pembrolizumab is a PD-1 inhibitor used for metastatic CSCC.",
+    "retrievedDocIds": [
+      "med-97",
+      "med-167",
+      "med-98",
+      "med-564",
+      "med-104"
+    ],
+    "matchedEntities": [
+      "agents",
+      "cscc",
+      "use",
+      "other",
+      "immunotherapy",
+      "age",
+      "not"
+    ],
+    "evidenceCoverage": 0.7142857142857143,
+    "context": "### med chunk 97\nhas spread to nearby lymph nodes, a computed tomography (CT) scan of lymph nodes near the CSCC is recommended. More advanced imaging tests like a PET/CT, that uses special injectable agents to detect cancer, may be needed to see if cancer has spread farther than the lymph nodes, or to help plan treatment. Testing Biopsy If lymph nodes near the CSCC feel swollen or look abnormal on initial imaging tests, the next step is a biopsy. The types of biopsies used for squamous cell skin cancer are fine-needle aspiration (FNA) and core needle biopsy. Surgical evaluation The results of testing will be considered in order to determine if you are a candidate for surgery to remove the cancerous lesion and nearby lymph nodes\n\n### med chunk 167\nmmendations for your situation, you are more likely to improve your care and have better outcomes as a result. Use this book as your guide to find the information you need to make important decisions. 2 Testing for Hodgkin lymphoma Biopsy and lab testing Health history and physical exam Blood tests Imaging tests Heart and lung tests Other testing and care Key points Questions to ask This chapter explains how Hodgkin lymphoma is identified (diagnosed). Other testing and care you may have before treatment is described. Biopsy and lab testing The best way to diagnose Hodgkin lymphoma is to have 1 or more whole lymph nodes removed and tested\n\n### med chunk 98\nKnow your options It is always important to discuss with your doctor and care team about what your treatment options are, and any preferences or concerns you might have. Surgery for regional CSCC involves excision (removal) of the cancerous lesion and nearby lymph nodes. Although surgery is preferred, it may not be an option for one or more reasons. In this case, see If surgery is not an option below for information. If surgery is very risky or might not completely remove your cancer, your doctor may suggest immunotherapy with cemiplimab-rwlc (Libtayo) first\n\n### med chunk 564\nof the pelvis (regional prostate cancer) or the body (metastatic prostate cancer), and it's usually a life-long disease. But treatment can slow down its growth, reduce symptoms, and prolong your life. Treatments for advanced-stage prostate cancer include hormone therapy, chemotherapy, radiation therapy, surgery, and other therapies. Age is the biggest risk factor for prostate cancer. Everyone with a prostate is at risk for prostate cancer\n\n### med chunk 104\nystemic therapy is often given after surgery to kill leftover cancer cells. Metastatic CSCC that cannot be removed with surgery and/or radiation is treated with systemic therapy. Systemic therapy options for metastatic CSCC include immunotherapy or a systemic therapy given in a clinical trial. If you are not a candidate for either of these, your doctor may recommend platinum-based chemotherapy or targeted therapy. 5 When treatment is over Skin exams by your doctor Prevention for patients at high-risk Steps you can take Key points You’ve finished treatment"
+  },
+  {
+    "id": "Medical-13fbbea3",
+    "question": "What blood tests are recommended for initial evaluation of colon cancer?",
+    "referenceAnswer": "Blood tests (CBC, chemistry profile, CEA) are recommended for initial testing.",
+    "evidence": "Blood tests recommended for initial evaluation of colon cancer include CBC.; Blood tests recommended for initial evaluation of colon cancer include chemistry profile.; Blood tests recommended for initial evaluation of colon cancer include CEA.",
+    "retrievedDocIds": [
+      "med-242",
+      "med-477",
+      "med-984",
+      "med-1081",
+      "med-983"
+    ],
+    "matchedEntities": [
+      "hgb",
+      "anc",
+      "ealth",
+      "measurement",
+      "transfusion",
+      "absolute",
+      "neutrophil",
+      "attention",
+      "evaluation",
+      "recommend",
+      "for",
+      "recommended",
+      "ecommended"
+    ],
+    "evidenceCoverage": 0.5769230769230769,
+    "context": "### med chunk 242\nAML often causes low counts of healthy blood cells, but it can also present with a high number of abnormal, malignant (abnormal) white blood cells. There are several types of white blood cells. A differential counts the number of each type of white blood cell. It also checks if the counts are in balance with each other. h An absolute neutrophil count (ANC) measures cells that fight bacteria and protect us from infections Blasts or leukemia cells can sometimes be detected in the blood and usually are reported as a percentage of cells\n\n### med chunk 477\nAML often causes low counts of healthy blood cells, but it can also present with a high number of abnormal, malignant (abnormal) white blood cells. There are several types of white blood cells. A differential counts the number of each type of white blood cell. It also checks if the counts are in balance with each other. h An absolute neutrophil count (ANC) measures cells that fight bacteria and protect us from infections Blasts or leukemia cells can sometimes be detected in the blood and usually are reported as a percentage of cells\n\n### med chunk 984\nFor stage 1A1 cancers with LVSI, treatment with either cone biopsy or radical trachelectomy is recommended. Pelvic lymph node evaluation should also be performed. For stage 1A2 cancers with LVSI, treatment with either cone biopsy or radical trachelectomy is recommended. Pelvic lymph node evaluation is also performed. Pelvic lymph node evaluation is also performed\n\n### med chunk 1081\nBlood tests Blood tests check for signs of disease and how well organs are working. They require a sample of your blood, which is removed through a needle placed into a vein in your arm. Some blood tests are described next. Alkaline phosphatase Alkaline phosphatase (ALP) is an enzyme found in the blood. High levels of ALP can be a sign of bone tumors, liver disorders, or pregnancy\n\n### med chunk 983\nReproductive endocrinologists are doctors that specialize in fertility. A fertility-sparing approach is not appropriate for some uncommon types of cervical cancer. Stage 1A1 Cone biopsy is recommended for stage 1A1 cancers without known LVSI. For stage 1A1 cancers with LVSI, treatment with either cone biopsy or radical trachelectomy is recommended. Pelvic lymph node evaluation should also be performed"
+  },
+  {
+    "id": "Medical-304b0354",
+    "question": "List three anatomical sites, other than the brain, that primary CNS lymphoma can involve.",
+    "referenceAnswer": "Primary CNS lymphoma can involve the spinal cord, cerebrospinal fluid, and eyes.",
+    "evidence": "Primary CNS lymphoma can involve the spinal cord.; Primary CNS lymphoma can involve cerebrospinal fluid.; Primary CNS lymphoma can involve the eyes.",
+    "retrievedDocIds": [
+      "med-220",
+      "med-777",
+      "med-791",
+      "med-778",
+      "med-846"
+    ],
+    "matchedEntities": [
+      "anatomic",
+      "sites",
+      "primary cns",
+      "can",
+      "cns",
+      "brain",
+      "lymphoma",
+      "the cns",
+      "involve",
+      "primary"
+    ],
+    "evidenceCoverage": 1,
+    "context": "### med chunk 220\nThe spread (metastasis) to distant sites (M): Has the cancer spread to distant organs such as the lungs or liver. Biomarker testing: Does the cancer have any genes or mutations that might suggest treatment. More information can be gathered as treatment begins. Doctors may explain your cancer stage in different ways than described next. The prognostic stage also includes the assumption that you are treated with the standard-of-care approaches\n\n### med chunk 777\nWhat is primary CNS lymphoma. Can primary CNS lymphoma be cured. Key points Being diagnosed with a brain tumor can be frightening and overwhelming. Primary central nervous system lymphoma is a rare and aggressive cancer that affects the central nervous system (CNS). Primary CNS lymphoma starts in the central nervous system\n\n### med chunk 791\nKey points Different tests are needed to identify primary CNS lymphoma and to make a treatment plan. The key to confirming the diagnosis is removing a small sample of the tumor tissue and testing it. Many diseases have signs and symptoms similar to primary central nervous system (CNS) lymphoma, including neurological illnesses and other types of brain cancer. If you're given a diagnosis of primary CNS lymphoma, you’ll have more tests to find out how far the cancer extends within the central nervous system or if it has spread to another area of the body. Tests for diagnosis If you haven’t yet been diagnosed with primary CNS lymphoma, you’ll first have a physical examination and some general assessments of your health\n\n### med chunk 778\nPrimary CNS lymphoma starts in the central nervous system. Central nervous system – The CNS is made up of the brain and spinal cord. Primary CNS lymphoma occurs more often in the brain than in the spinal cord, but it can also involve the cerebrospinal fluid (CSF), and/or the eyes. Now let’s put it all together: Primary CNS lymphoma is a cancer that begins when lymphocytes in the brain and spinal cord grow out of control. Primary CNS lymphoma starts in lymphocytes in the immune system\n\n### med chunk 846\ninduction therapy, high-dose methotrexate is given together with the immunotherapy drug rituximab (Rituxan). Rituximab can be given on its own but it usually works better when given with chemotherapy. In addition to methotrexate and rituximab, one or more other chemotherapy medicines such as temozolomide, vincristine, and procarbazine may also be included. Alternatives to methotrexate High-dose methotrexate (with or without additional medicines) is the preferred induction therapy for primary CNS lymphoma. But it’s not the best option for everyone."
+  },
+  {
+    "id": "Medical-fca41ac7",
+    "question": "What are the tumor characteristics of Tis stage in intrahepatic bile duct cancer?",
+    "referenceAnswer": "Tis is characterized by carcinoma in situ, intraductal tumor, and confinement to the epithelium.",
+    "evidence": "Tis is characterized by carcinoma in situ.; Tis is characterized by an intraductal tumor.; Tis is characterized by confinement to the epithelium.",
+    "retrievedDocIds": [
+      "med-276",
+      "med-511",
+      "med-948",
+      "med-242",
+      "med-477"
+    ],
+    "matchedEntities": [
+      "ara",
+      "anc"
+    ],
+    "evidenceCoverage": 0,
+    "context": "### med chunk 276\nAsk your care team for the details of your treatment. What is the dose. Will I need to spend time in the hospital. In this case, it is injected into the spinal fluid. Hypomethylating agents Methyl groups are molecules found in DNA\n\n### med chunk 511\nAsk your care team for the details of your treatment. What is the dose. Will I need to spend time in the hospital. In this case, it is injected into the spinal fluid. Hypomethylating agents Methyl groups are molecules found in DNA\n\n### med chunk 948\n5 mm is about the size of a standard pencil eraser. Cancers 3 mm or smaller are stage 1ACancers between 3 and are stage 1A Stage 1B1 cervical cancer The cancer is larger than 5 mm but smaller than 2 cm. Stage 1B2 and 1B3 cervical cancer The cancer is only in the cervix. In stage 1B2, the cancer is between 2 and 4 cm. In stage 1B3, the cancer is larger than 4 cm\n\n### med chunk 242\nThere are several types of white blood cells. It also checks if the counts are in balance with each other. This test may show a high number of blasts in the blood. Platelets (PLTs) are cells that make the clot, thus preventing or stopping the bleeding. h An absolute neutrophil count (ANC) measures cells that fight bacteria and protect us from infections Blasts or leukemia cells can sometimes be detected in the blood and usually are reported as a percentage of cells\n\n### med chunk 477\nThere are several types of white blood cells. It also checks if the counts are in balance with each other. This test may show a high number of blasts in the blood. Platelets (PLTs) are cells that make the clot, thus preventing or stopping the bleeding. h An absolute neutrophil count (ANC) measures cells that fight bacteria and protect us from infections Blasts or leukemia cells can sometimes be detected in the blood and usually are reported as a percentage of cells"
+  },
+  {
+    "id": "Medical-e773a3cf",
+    "question": "What are the treatment options for CLL/SLL?",
+    "referenceAnswer": "Treatment options include oral medications, IV infusions, and combination therapies.",
+    "evidence": "Treatment options for CLL/SLL include oral medications.; Treatment options for CLL/SLL include IV infusions.; Treatment options for CLL/SLL include combination therapies.",
+    "retrievedDocIds": [
+      "med-1172",
+      "med-1178",
+      "med-1183",
+      "med-1179",
+      "med-1171"
+    ],
+    "matchedEntities": [
+      "sll",
+      "cll"
+    ],
+    "evidenceCoverage": 0.42857142857142855,
+    "context": "### med chunk 1172\n6 What are the symptoms of CLL. 6 What causes CLL. 7 Is there a cure for CLL. 7 What is SLL. Treatment may not be needed for years\n\n### med chunk 1178\nWhile the goal of treatment is not to cure CLL, the goal is to prevent the disease from causing problems and from becoming life-threatening. What is SLL. Small lymphocytic lymphoma, or SLL, is the same cancer as CLL. The only difference between the two is where the abnormal cells are found. Treatment of CLL and SLL is the same because the cancer cells are the same\n\n### med chunk 1183\nA CLL diagnosis requires at least 5,000 or more of the same white blood cells called monoclonal B lymphocytes to be found per microliter in your blood. Diagnosis by biopsy A biopsy is a procedure that removes samples from the body for testing. If the blood results aren’t clear, you’ll have a biopsy of your lymph nodes or bone marrow to confirm CLL. Tests of lymph nodes will also confirm small lymphocytic lymphoma (SLL). There are many lymph nodes throughout your body, so if you have a lymph node removed, you won’t lose your ability to fight infections and disease\n\n### med chunk 1179\nLymph nodes and the spleen may be swollen because of a buildup of CLL or SLL cells. Treatment of CLL and SLL is the same because the cancer cells are the same. For this book, treat any recommendation for CLL as one for SLL. For this reason, the disease is often referred to as CLL/SLL. What can you do to get the best care\n\n### med chunk 1171\nYou’ll also talk about your options for treatment based on your test results. The next chapter discusses the different options for treating gliomas. About CLL 5 What is CLL. 6 What are the symptoms of CLL. 7 What is SLL"
+  },
+  {
+    "id": "Medical-c99a29ae",
+    "question": "Which symptoms may indicate throat cancer?",
+    "referenceAnswer": "Symptoms may include difficulty swallowing, sore throat, and changes in voice.",
+    "evidence": "Difficulty swallowing may indicate throat cancer.; Sore throat may indicate throat cancer.; Changes in voice may indicate throat cancer.",
+    "retrievedDocIds": [
+      "med-242",
+      "med-477",
+      "med-246",
+      "med-481",
+      "med-606"
+    ],
+    "matchedEntities": [
+      "hgb",
+      "anc",
+      "ealth",
+      "measurement",
+      "transfusion",
+      "absolute",
+      "neutrophil",
+      "attention",
+      "dic",
+      "disseminated",
+      "intravascular",
+      "coagulopathy",
+      "bruises",
+      "hlas",
+      "gel-like",
+      "coagulation",
+      "survive",
+      "replace",
+      "problem",
+      "indicate",
+      "symptom"
+    ],
+    "evidenceCoverage": 0.4666666666666667,
+    "context": "### med chunk 242\nAML often causes low counts of healthy blood cells, but it can also present with a high number of abnormal, malignant (abnormal) white blood cells. There are several types of white blood cells. A differential counts the number of each type of white blood cell. It also checks if the counts are in balance with each other. This test may show a high number of blasts in the blood\n\n### med chunk 477\nAML often causes low counts of healthy blood cells, but it can also present with a high number of abnormal, malignant (abnormal) white blood cells. There are several types of white blood cells. A differential counts the number of each type of white blood cell. It also checks if the counts are in balance with each other. This test may show a high number of blasts in the blood\n\n### med chunk 246\nThe gel-like blood forms into a solid mass called a blood clot. Clotting is a process or series of events. Proteins, called coagulation factors, are needed for clotting. You may have bleeding and bruises or blood clots. Your body detects these markers to tell which cells are yours\n\n### med chunk 481\nThe gel-like blood forms into a solid mass called a blood clot. Clotting is a process or series of events. Proteins, called coagulation factors, are needed for clotting. You may have bleeding and bruises or blood clots. Your body detects these markers to tell which cells are yours\n\n### med chunk 606\nCancer cells develop genetic changes (mutations) that allow them to multiply and make many more cancer cells. What are the symptoms of prostate cancer. A symptom is a feeling or problem that can indicate a disease or condition. Prostate cancer often grows slowly and shows no symptoms for a long time. You don’t have to have symptoms to have prostate cancer"
+  },
+  {
+    "id": "Medical-c89d3c38",
+    "question": "How is pathologic stage determined in throat cancer?",
+    "referenceAnswer": "Pathologic stage is determined after surgery based on tissue examination.",
+    "evidence": "Pathologic stage of throat cancer is determined after surgery.; Pathologic stage is based on tissue examination.",
+    "retrievedDocIds": [
+      "med-948",
+      "med-1251",
+      "med-242",
+      "med-477",
+      "med-949"
+    ],
+    "matchedEntities": [
+      "stage 1a",
+      "stage 2b",
+      "stage 2a2",
+      "stage 2",
+      "stage",
+      "stage 3a",
+      "stage 3b",
+      "stage 4a",
+      "stage 4b",
+      "stage 4",
+      "anc"
+    ],
+    "evidenceCoverage": 0.3333333333333333,
+    "context": "### med chunk 948\nStage 1A cervical cancer The cancer is 5 millimeters (mm) or smaller. Stage 1B2 and 1B3 cervical cancer The cancer is only in the cervix. In stage 1B2, the cancer is between 2 and 4 cm. In stage 1B3, the cancer is larger than 4 cm. If the cancer has grown into the upper vagina, the stage is 2A\n\n### med chunk 1251\nStage 3B has the same traits as stage 3A but has spread to multiple lymph nodes in the pelvis. Stage 4B is metastatic bladder cancer. Grade Subtypes The next piece of information used to plan treatment is the cancer grade. The grade measures how aggressive the cancer is. It’s a rating of how fast the cancer will likely grow and spread\n\n### med chunk 242\nIt also checks if the counts are in balance with each other. This test may show a high number of blasts in the blood. Your care team will pay particular attention to the following CBC measurements: Hemoglobin (Hgb) is a measurement of how much oxygen can move through blood and if a red blood cell transfusion might be needed. h An absolute neutrophil count (ANC) measures cells that fight bacteria and protect us from infections Blasts or leukemia cells can sometimes be detected in the blood and usually are reported as a percentage of cells. Comprehensive metabolic panel A comprehensive metabolic panel (CMP) measures substances in your blood\n\n### med chunk 477\nIt also checks if the counts are in balance with each other. This test may show a high number of blasts in the blood. Your care team will pay particular attention to the following CBC measurements: Hemoglobin (Hgb) is a measurement of how much oxygen can move through blood and if a red blood cell transfusion might be needed. h An absolute neutrophil count (ANC) measures cells that fight bacteria and protect us from infections Blasts or leukemia cells can sometimes be detected in the blood and usually are reported as a percentage of cells. Comprehensive metabolic panel A comprehensive metabolic panel (CMP) measures substances in your blood\n\n### med chunk 949\nStage 2B cancer has grown into the parametrium. The parametrium is the fat and connective tissue that surrounds the cervix and uterus. Stages IIA1 and lIA2 Cervical Cancer Stage lIB Cervical Cancer Stage 3A cervical cancer The cancer has grown into the lower third of the vagina. Stage 3C cervical cancer There is cancer in lymph nodes near the cervix (pelvic lymph nodes) and/ or in lymph nodes in the abdomen, called the para-aortic lymph nodes. Stage 4B cervical cancer The cancer is metastatic"
+  },
+  {
+    "id": "Medical-f5e27a80",
+    "question": "Which genetic alterations are associated with squamous cell carcinoma of the throat?",
+    "referenceAnswer": "HPV-mediated, p16-positive, and p16-negative are associated genetic alterations.",
+    "evidence": "HPV-mediated genetic alterations are associated with squamous cell carcinoma of the throat.; p16-positive genetic alterations are associated with squamous cell carcinoma of the throat.; p16-negative genetic alterations are associated with squamous cell carcinoma of the throat.",
+    "retrievedDocIds": [
+      "med-384",
+      "med-188",
+      "med-385",
+      "med-520",
+      "med-1075"
+    ],
+    "matchedEntities": [
+      "cell",
+      "squamous",
+      "carcinoma",
+      "with"
+    ],
+    "evidenceCoverage": 0.5,
+    "context": "### med chunk 384\nTumor mutational burden When there are 10 or more mutations per million base pairs of tumor DNA, it is called tumor mutational burden-high (TMB-H). Metastatic or unresectable TMB cancers are often treated using immune checkpoint inhibitors that target the proteins called programmed cell death protein 1 (PD-1) and programmed death-ligand 1 (PD-L1). This is a different type of DNA testing than the genetic testing for mutations you may have inherited from your biological parents. Some mutations can be targeted with specific therapies. Cell-free DNA testing Cell-free or circulating tumor DNA (ctDNA) testing uses a sample of blood to look for cancer cells or for pieces of DNA from tumor cells\n\n### med chunk 188\nneous squamous cell carcinoma of the vermilion lip can be found in NCCN Guidelines for Patients: Squamous Cell Skin Cancer at NCCN. Head and neck cancers are a group of cancers that arise in the head or neck area of the body. Squamous cell carcinoma (SCC) is the most common type of mouth cancer. It forms in the thin, flat cells of the mucous membranes of the mouth. SCC is the focus of this book\n\n### med chunk 385\ncan be targeted with specific therapies. Cell-free DNA testing Cell-free or circulating tumor DNA (ctDNA) testing uses a sample of blood to look for cancer cells or for pieces of DNA from tumor cells. Online portals are a great way to access your test results. Your overall health may guide the best treatment for your cancer. Head and neck cancer and its treatment can affect the health of your jaw, teeth, and gums\n\n### med chunk 520\nThe BCR::ABL1 gene makes a new protein that leads to uncontrolled blood cell growth. Treatment for CML aims to stop the activity of the BCR::ABL1 protein. Those with CML should be treated at centers experienced in this type of cancer. Consider seeking the opinion of a CML specialist. With better understanding, you’ll be more prepared to discuss your care with your team and share your concerns\n\n### med chunk 1075\nConsider seeking the opinion of a specialist in your type of bone cancer. The NCCN Guidelines for Patients will help you understand cancer care. These suggested questions will help you get more information on all aspects of your care. Take the next step and keep reading to learn what is the best care for you. 2 Testing for bone cancer General health tests Fertility (all genders) Performance status Blood tests Imaging tests Biopsy Genetic cancer risk testing Biomarker testing Key points Questions to ask Treatment planning starts with testing"
+  },
+  {
+    "id": "Medical-7caf80a1",
+    "question": "How is platinum-sensitive recurrence of ovarian cancer treated?",
+    "referenceAnswer": "Platinum-sensitive recurrence is treated with platinum-based chemotherapy, possibly with bevacizumab, and may include secondary cytoreductive surgery.",
+    "evidence": "Platinum-sensitive recurrence of ovarian cancer is treated with platinum-based chemotherapy.; Bevacizumab may be used in the treatment of platinum-sensitive recurrence.; Secondary cytoreductive surgery may be included in the treatment of platinum-sensitive recurrence.",
+    "retrievedDocIds": [
+      "med-242",
+      "med-477",
+      "med-260",
+      "med-495",
+      "med-259"
+    ],
+    "matchedEntities": [
+      "hgb",
+      "anc",
+      "ealth",
+      "measurement",
+      "transfusion",
+      "absolute",
+      "neutrophil",
+      "attention",
+      "nsitive",
+      "reverse",
+      "transcriptase",
+      "rearrangements",
+      "pml",
+      "rara",
+      "real-time",
+      "individual",
+      "sensitive"
+    ],
+    "evidenceCoverage": 0.30434782608695654,
+    "context": "### med chunk 242\nAML often causes low counts of healthy blood cells, but it can also present with a high number of abnormal, malignant (abnormal) white blood cells. There are several types of white blood cells. A differential counts the number of each type of white blood cell. This test may show a high number of blasts in the blood. Your care team will pay particular attention to the following CBC measurements: Hemoglobin (Hgb) is a measurement of how much oxygen can move through blood and if a red blood cell transfusion might be needed\n\n### med chunk 477\nAML often causes low counts of healthy blood cells, but it can also present with a high number of abnormal, malignant (abnormal) white blood cells. There are several types of white blood cells. A differential counts the number of each type of white blood cell. This test may show a high number of blasts in the blood. Your care team will pay particular attention to the following CBC measurements: Hemoglobin (Hgb) is a measurement of how much oxygen can move through blood and if a red blood cell transfusion might be needed\n\n### med chunk 260\nThis is important when testing for treatment response or remission. A real-time or reverse transcriptase (RT) is a type of PCR used to look for gene rearrangements such as PML::RARA. This is based on your individual situation. Imaging tests take pictures of the inside of the body to look for sites with leukemia outside the bone marrow. It rarely spreads to the lining of the brain and spinal cord\n\n### med chunk 495\nThis is important when testing for treatment response or remission. A real-time or reverse transcriptase (RT) is a type of PCR used to look for gene rearrangements such as PML::RARA. This is based on your individual situation. Imaging tests take pictures of the inside of the body to look for sites with leukemia outside the bone marrow. It rarely spreads to the lining of the brain and spinal cord\n\n### med chunk 259\ntype is a picture of chromosomes. Next-generation sequencing Next-generation sequencing (NGS) is a method used to determine a portion of a person’s DNA sequence. It shows if a gene has any mutations that might affect how the gene works. PCR A polymerase chain reaction (PCR) is a technique that can make millions or billions of copies of your DNA or RNA (genetic information). PCR is very sensitive"
+  },
+  {
+    "id": "Medical-06384900",
+    "question": "Which cancer subtype starts specifically in B cells?",
+    "referenceAnswer": "Cutaneous B-cell lymphoma (CBCL) starts in B cells.",
+    "evidence": "Cutaneous B-cell lymphoma (CBCL) starts in B cells.",
+    "retrievedDocIds": [
+      "med-242",
+      "med-477",
+      "med-241",
+      "med-476",
+      "med-384"
+    ],
+    "matchedEntities": [
+      "hgb",
+      "anc",
+      "ealth",
+      "measurement",
+      "transfusion",
+      "absolute",
+      "neutrophil",
+      "attention",
+      "differential",
+      "plts",
+      "malignant",
+      "counts",
+      "pecific",
+      "recovery",
+      "rbcs",
+      "wbcs",
+      "cell"
+    ],
+    "evidenceCoverage": 0.5,
+    "context": "### med chunk 242\nAML often causes low counts of healthy blood cells, but it can also present with a high number of abnormal, malignant (abnormal) white blood cells. There are several types of white blood cells. It also checks if the counts are in balance with each other. This test may show a high number of blasts in the blood. h An absolute neutrophil count (ANC) measures cells that fight bacteria and protect us from infections Blasts or leukemia cells can sometimes be detected in the blood and usually are reported as a percentage of cells\n\n### med chunk 477\nAML often causes low counts of healthy blood cells, but it can also present with a high number of abnormal, malignant (abnormal) white blood cells. There are several types of white blood cells. It also checks if the counts are in balance with each other. This test may show a high number of blasts in the blood. h An absolute neutrophil count (ANC) measures cells that fight bacteria and protect us from infections Blasts or leukemia cells can sometimes be detected in the blood and usually are reported as a percentage of cells\n\n### med chunk 241\npecific type of cancer or where the cancer started, if it is in multiple locations, and if they had genetic testing. They require a sample of blood, which is removed through a needle placed into a vein in your arm. The list starts with more common tests. Complete blood count and differential A complete blood count (CBC) measures the levels of red blood cells (RBCs), white blood cells (WBCs), and platelets (PLTs) in your blood. There are several types of white blood cells\n\n### med chunk 476\npecific type of cancer or where the cancer started, if it is in multiple locations, and if they had genetic testing. They require a sample of blood, which is removed through a needle placed into a vein in your arm. The list starts with more common tests. Complete blood count and differential A complete blood count (CBC) measures the levels of red blood cells (RBCs), white blood cells (WBCs), and platelets (PLTs) in your blood. There are several types of white blood cells\n\n### med chunk 384\na lymph node, or other sites in your body if needed. Tumor mutational burden When there are 10 or more mutations per million base pairs of tumor DNA, it is called tumor mutational burden-high (TMB-H). Tumor mutation testing Tumor mutation testing or tumor genomic aberration testing uses a sample of your tumor or blood to see if the cancer cells have any specific DNA mutations. In tumor mutation testing, only the tumor is tested and not the rest of your body. Cell-free DNA testing Cell-free or circulating tumor DNA (ctDNA) testing uses a sample of blood to look for cancer cells or for pieces of DNA from tumor cells"
+  },
+  {
+    "id": "Medical-d272b033",
+    "question": "What biomarker is used to classify gliomas?",
+    "referenceAnswer": "IDH mutation is a biomarker used to classify gliomas.",
+    "evidence": "IDH mutation is a biomarker used to classify gliomas.",
+    "retrievedDocIds": [
+      "med-1140",
+      "med-1166",
+      "med-1171",
+      "med-1165",
+      "med-1167"
+    ],
+    "matchedEntities": [
+      "gliomas",
+      "otc",
+      "glioma",
+      "classify",
+      "identified"
+    ],
+    "evidenceCoverage": 0.8,
+    "context": "### med chunk 1140\nIt’s important to know the specific type of cancer or where the cancer started, if it is in multiple locations, and if they had genetic testing. About glioma What is a glioma. How are gliomas diagnosed. Can gliomas be cured. What’s next\n\n### med chunk 1166\nbnormal its cells, the faster and farther the tumor is likely to grow. Biomarkers – A glioma is also identified by its biomarkers. A biomarker is a molecular characteristic such as a genetic mutation. Each type of glioma has its own biomarker or set of biomarkers. The neuropathologist will examine the tumor cells to classify the disease\n\n### med chunk 1171\nAsk what biomarker testing is available for your glioma. Some hospitals and treatment centers aren’t able to provide a full range of biomarker tests. But you can request your tissue to be sent to another lab for further testing. About CLL 5 What is CLL. 7 What is SLL\n\n### med chunk 1165\nsy is needed to diagnose a glioma tumor. The sample is sent to a lab to be tested for cancer cells. There are 3 ways to classify a glioma: Histology – The first way to classify the tumor is by looking at it under a microscope. Grade – Another way to classify a tumor is by grade, which is a rating of how abnormal its cells are. A biomarker is a molecular characteristic such as a genetic mutation\n\n### med chunk 1167\nThe neuropathologist will examine the tumor cells to classify the disease. If the tumor is a glioma, the cell type will be noted in the report. The types of gliomas are named after the glial cells that they resemble. ” Grade Another way that gliomas are classified is by grade. The grade indicates how quickly the glioma is likely to grow and spread"
+  },
+  {
+    "id": "Medical-bb899a92",
+    "question": "What factors are considered in treatment planning for mouth cancer?",
+    "referenceAnswer": "Treatment planning is based on tumor location and stage.",
+    "evidence": "Treatment planning for mouth cancer is based on tumor location.; Treatment planning for mouth cancer is based on tumor stage.",
+    "retrievedDocIds": [
+      "med-242",
+      "med-477",
+      "med-760",
+      "med-94",
+      "med-100"
+    ],
+    "matchedEntities": [
+      "hgb",
+      "anc",
+      "ealth",
+      "measurement",
+      "transfusion",
+      "absolute",
+      "neutrophil",
+      "attention",
+      "worse",
+      "expected",
+      "factors",
+      "considered",
+      "factor",
+      "consider",
+      "treat"
+    ],
+    "evidenceCoverage": 0.42857142857142855,
+    "context": "### med chunk 242\nThere are several types of white blood cells. It also checks if the counts are in balance with each other. This test may show a high number of blasts in the blood. h An absolute neutrophil count (ANC) measures cells that fight bacteria and protect us from infections Blasts or leukemia cells can sometimes be detected in the blood and usually are reported as a percentage of cells. Comprehensive metabolic panel A comprehensive metabolic panel (CMP) measures substances in your blood\n\n### med chunk 477\nThere are several types of white blood cells. It also checks if the counts are in balance with each other. This test may show a high number of blasts in the blood. h An absolute neutrophil count (ANC) measures cells that fight bacteria and protect us from infections Blasts or leukemia cells can sometimes be detected in the blood and usually are reported as a percentage of cells. Comprehensive metabolic panel A comprehensive metabolic panel (CMP) measures substances in your blood\n\n### med chunk 760\nor treatment and your treatment plan. There are many treatment options. However, not everyone will respond to treatment in the same way. Some people will do better than expected. Many factors play a role in how the cancer will respond to treatment\n\n### med chunk 94\nSystemic therapy may be given in addition to radiation. If you are eligible, immunotherapy with an immune checkpoint inhibitor is a recommended treatment option. Enrolling in a clinical trial for systemic therapy is also an option.  See Part 5: When treatment is over for information on monitoring and follow-up care. Key features of the cancer will be considered to determine if it is a low-, high- or very high-risk CSCC\n\n### med chunk 100\nRadiation therapy may be given after surgery to kill leftover cancer cells. This is important if there was more than one lymph node with cancer, or if cancer was found to have grown through the protective outer layer of any lymph nodes removed during surgery. If surgery is not an option If you cannot have surgery, a discussion between different cancer doctors to consider your treatment options is recommended. Platinumbased chemotherapy is a recommended option for use with radiation. If you are eligible, immunotherapy with an immune checkpoint inhibitor is preferred"
+  },
+  {
+    "id": "Medical-a43ea44f",
+    "question": "Is family history a risk factor for colon cancer?",
+    "referenceAnswer": "Family history of colorectal cancer is a risk factor.",
+    "evidence": "Family history of colorectal cancer is a risk factor for colon cancer.",
+    "retrievedDocIds": [
+      "med-242",
+      "med-477",
+      "med-1214",
+      "med-1221",
+      "med-556"
+    ],
+    "matchedEntities": [
+      "hgb",
+      "anc",
+      "ealth",
+      "measurement",
+      "transfusion",
+      "absolute",
+      "neutrophil",
+      "attention",
+      "risk",
+      "factor",
+      "story"
+    ],
+    "evidenceCoverage": 0.75,
+    "context": "### med chunk 242\nAML often causes low counts of healthy blood cells, but it can also present with a high number of abnormal, malignant (abnormal) white blood cells. There are several types of white blood cells. A differential counts the number of each type of white blood cell. It also checks if the counts are in balance with each other. Your care team will pay particular attention to the following CBC measurements: Hemoglobin (Hgb) is a measurement of how much oxygen can move through blood and if a red blood cell transfusion might be needed\n\n### med chunk 477\nAML often causes low counts of healthy blood cells, but it can also present with a high number of abnormal, malignant (abnormal) white blood cells. There are several types of white blood cells. A differential counts the number of each type of white blood cell. It also checks if the counts are in balance with each other. Your care team will pay particular attention to the following CBC measurements: Hemoglobin (Hgb) is a measurement of how much oxygen can move through blood and if a red blood cell transfusion might be needed\n\n### med chunk 1214\nStill, you may have a higher risk for bladder cancer if another family member also had bladder cancer. This results in an increased risk of getting bladder cancer. What are the risk factors for bladder cancer. A risk factor is something that increases your chance of developing a disease. Risk factors don’t necessarily cause bladder cancer\n\n### med chunk 1221\nr cancer is blood in the urine. Smoking is the greatest risk factor for bladder cancer. For most people with bladder cancer, treatment requires more than one type of therapy. Every person’s cancer story and situation is different. ” 2 Tests for bladder cancer General health tests Blood and urine tests Cystoscopy and biopsy Imaging Inherited cancer risk Quitting smoking Key points Several tests are needed to diagnose and treat bladder cancer\n\n### med chunk 556\nThe fact is, everyone with a prostate has a risk of getting prostate cancer. But several factors are linked to a higher risk of prostate cancer. A risk factor is anything that increases your chance of getting cancer. Risk factors don’t necessarily cause prostate cancer, but people with prostate cancer usually have one or more of these risk factors: Age The biggest risk factor for prostate cancer is age. Family history Your family health history is information about the diseases and health conditions in your family"
+  },
+  {
+    "id": "Medical-dfc549c9",
+    "question": "What is the preferred treatment approach for certain subtypes such as BCR::ABL1-negative or BCR::ABL1-like B-ALL?",
+    "referenceAnswer": "Clinical trials are preferred for certain subtypes such as BCR::ABL1-negative or BCR::ABL1-like B-ALL.",
+    "evidence": "Clinical trials are preferred for certain subtypes of ALL.; Certain subtypes include BCR::ABL1-negative or BCR::ABL1-like B-ALL.",
+    "retrievedDocIds": [
+      "med-532",
+      "med-403",
+      "med-404",
+      "med-519",
+      "med-114"
+    ],
+    "matchedEntities": [
+      "abl",
+      "abl1-negative",
+      "abl1-like",
+      "abl1-positive",
+      "multiagent",
+      "bcr",
+      "abl1",
+      "b-all"
+    ],
+    "evidenceCoverage": 0.5833333333333334,
+    "context": "### med chunk 532\nChapter 4: Supportive care discusses what is supportive care and possible side effects of treatment. Chapter 5: BCR::ABL1-negative or BCR::ABL1-like B-ALL discusses treatment for the most common type of B-ALL. A clinical trial is the preferred treatment for these types of B-ALL. Chapter 6: BCR::ABL1-positive B-ALL treatment aims to stop the activity of the BCR::ABL protein caused by the BCR::ABL1 gene. Chapter 8: Infant ALL treatment is different than for other age groups\n\n### med chunk 403\nChapter 4: Supportive care discusses what is supportive care and possible side effects of treatment. Chapter 5: BCR::ABL1-negative or BCR::ABL1-like B-ALL discusses treatment for the most common type of B-ALL. A clinical trial is the preferred treatment for these types of B-ALL. Chapter 6: BCR::ABL1-positive B-ALL treatment aims to stop the activity of the BCR::ABL protein caused by the BCR::ABL1 gene. T-ALL is less common than B-ALL\n\n### med chunk 404\nhe BCR::ABL1 gene. T-ALL is less common than B-ALL. Treatment options include a clinical trial or chemotherapy. Chapter 8: Infant ALL treatment is different than for other age groups. What can you do to get the best care\n\n### med chunk 519\nWhat causes CML. This creates a new, abnormal chromosome 22 that contains a small part of chromosome This new chromosome is referred to as the Philadelphia chromosome (Ph) and is the hallmark of CML. If you do not have the Ph chromosome or the BCR::ABL1 gene, you do not have CML. BCR::ABL1 is not found in normal blood cells. The BCR::ABL1 gene makes a new protein that leads to uncontrolled blood cell growth\n\n### med chunk 114\nThis creates a new, abnormal chromosome 22 that contains a small part of chromosome This new chromosome is referred to as the Philadelphia chromosome (Ph) and is the hallmark of CML. If you do not have the Ph chromosome or the BCR::ABL1 gene, you do not have CML. BCR::ABL1 is not found in normal blood cells. The BCR::ABL1 gene makes a new protein that leads to uncontrolled blood cell growth. Treatment for CML aims to stop the activity of the BCR::ABL1 protein"
+  }
+]

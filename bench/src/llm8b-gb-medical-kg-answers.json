@@ -1,0 +1,182 @@
+[
+  {
+    "id": "Medical-73586ddc",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 898
+  },
+  {
+    "id": "Medical-1517e1c3",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 966
+  },
+  {
+    "id": "Medical-aed3f61c",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 961
+  },
+  {
+    "id": "Medical-85ed509e",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 971
+  },
+  {
+    "id": "Medical-9418792b",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 974
+  },
+  {
+    "id": "Medical-2bbad791",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 982
+  },
+  {
+    "id": "Medical-9d5ac399",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 1147
+  },
+  {
+    "id": "Medical-2bd43819",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 1045
+  },
+  {
+    "id": "Medical-ebb0af4d",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 1026
+  },
+  {
+    "id": "Medical-653c0da3",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 1051
+  },
+  {
+    "id": "Medical-8d545fa4",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 1020
+  },
+  {
+    "id": "Medical-a4dcffa3",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 988
+  },
+  {
+    "id": "Medical-5dd8e62d",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 1074
+  },
+  {
+    "id": "Medical-8a166224",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 1027
+  },
+  {
+    "id": "Medical-e875d9cd",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 979
+  },
+  {
+    "id": "Medical-deee1f4b",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 1041
+  },
+  {
+    "id": "Medical-d8a3772b",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 977
+  },
+  {
+    "id": "Medical-13fbbea3",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 1010
+  },
+  {
+    "id": "Medical-304b0354",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 1020
+  },
+  {
+    "id": "Medical-fca41ac7",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 1024
+  },
+  {
+    "id": "Medical-e773a3cf",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 1004
+  },
+  {
+    "id": "Medical-c99a29ae",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 1065
+  },
+  {
+    "id": "Medical-c89d3c38",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 1484
+  },
+  {
+    "id": "Medical-f5e27a80",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 1032
+  },
+  {
+    "id": "Medical-7caf80a1",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 933
+  },
+  {
+    "id": "Medical-06384900",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 949
+  },
+  {
+    "id": "Medical-d272b033",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 958
+  },
+  {
+    "id": "Medical-bb899a92",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 995
+  },
+  {
+    "id": "Medical-a43ea44f",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 952
+  },
+  {
+    "id": "Medical-dfc549c9",
+    "answer": "INSUFFICIENT_CONTEXT",
+    "fromThinkingFallback": false,
+    "latencyMs": 975
+  }
+]

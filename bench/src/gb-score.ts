@@ -94,7 +94,7 @@ function main(): void {
   }
   console.log(`\n=== Ollama 8B as LLM (apples-to-apples vs leaderboard) ===\n`);
   for (const dom of ["medical", "novel"]) {
-    for (const retr of ["vanilla", "hybrid", "multihop"]) {
+    for (const retr of ["vanilla", "hybrid", "multihop", "kg"]) {
       score(dom, retr, dataDir, "llm8b");
     }
     console.log();

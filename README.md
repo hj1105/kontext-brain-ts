@@ -899,6 +899,43 @@ qwen2.5-14b, ours is Llama-3.1-8B — we use a *smaller* model):
 
 Full analysis: [`bench/data/round17-report.md`](./bench/data/round17-report.md).
 
+### Round 18: Real ontology graph attempt — RAM-blocked
+
+Round 17 used flat chunks. The kontext-brain framework was *built* for
+ontology-based retrieval but we hadn't applied it on GraphRAG-Bench.
+Round 18 added a 4th retriever (`kg`) doing HippoRAG2-style:
+1. Per-chunk entity + triple extraction → knowledge graph
+2. Personalized PageRank from query entities
+3. Score chunks by entity-activation
+
+**Blocked by RAM**: Llama-3.1-8B Q4_K_M needs ~4.4-4.8 GB but only
+2.7-3.4 GB available — Ollama OOM'd every extraction call. Direct test:
+`model requires more system memory (4.4 GiB) than is available (2.7 GiB)`.
+
+**Heuristic fallback** (regex co-occurrence, no LLM) underperforms hybrid:
+
+| Retriever | Medical evidence-coverage | Novel evidence-coverage |
+|-----------|--------------------------|------------------------|
+| vanilla | 0.798 | 0.487 |
+| hybrid | 0.784 | 0.735 |
+| multi-hop | 0.746 | 0.701 |
+| **kg (heuristic)** | **0.581** | **0.549** |
+
+Why heuristic KG underperforms: co-occurrence ≠ semantics, untyped edges,
+PPR amplifies noise on uncurated graphs. The HippoRAG2-style typed-triple
+extraction would have worked, but RAM blocked it.
+
+What's shipped (ready when RAM frees up):
+- `bench/src/kg-builder.ts` (heuristic + LLM stubs both present)
+- `bench/src/kg-retriever.ts` (PPR retrieval)
+- `bench/src/gb-dump-kg.ts` (bench integration)
+
+Honest finding documented: a real LLM-extracted KG is the right approach
+to match HippoRAG2 (Stanford NeurIPS'24). The framework supports it but
+this hardware doesn't. Round 17 result (hybrid+8B Medical 76.67%) stands.
+
+Full analysis: [`bench/data/round18-report.md`](./bench/data/round18-report.md).
+
 ### Round 9 results — attribute model + re-measurement
 
 After extending the entity model with `nodeId` + `attributes` +

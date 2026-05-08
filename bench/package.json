@@ -17,7 +17,8 @@
     "gb-score": "node --import tsx src/gb-score.ts",
     "gb-compare": "node --import tsx src/gb-controlled-compare.ts",
     "gb-llm-answer": "node --import tsx src/gb-llm-answer.ts",
-    "gb-llm-judge": "node --import tsx src/gb-llm-judge.ts"
+    "gb-llm-judge": "node --import tsx src/gb-llm-judge.ts",
+    "gb-dump-kg": "node --import tsx src/gb-dump-kg.ts"
   },
   "dependencies": {
     "@kontext-brain/core": "workspace:*",
