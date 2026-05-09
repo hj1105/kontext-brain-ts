@@ -1,0 +1,100 @@
+{"id":"Novel-47676-294","entities":["augustus","ovid","tristia","isis","rome","campus martius","field of mars","nisard"],"triples":[["augustus","associated_with","rome"],["ovid","written_by","tristia"],["isis","located_in","rome"],["isis","located_in","campus martius"],["campus martius","part_of","rome"],["campus martius","known_as","field of mars"]]}
+{"id":"Novel-47676-295","entities":["isis","rome","campus martius","field of mars","bagous","delphin editor"],"triples":[["isis","located_in","rome"],["isis","located_in","campus martius"],["campus martius","known_as","field of mars"],["campus martius","part_of","rome"]]}
+{"id":"Novel-47676-296","entities":["romans","slaves"],"triples":[["slaves","member_of","romans"]]}
+{"id":"Novel-47676-297","entities":["bagous"],"triples":[]}
+{"id":"Novel-47676-298","entities":["argus","juno","metamorphoses","semiramis","cupid","mars","bagous"],"triples":[["argus","associated_with","juno"],["argus","part_of","metamorphoses"],["semiramis","associated_with","cupid"]]}
+{"id":"Novel-47676-299","entities":["juvenal","sabine women","burmann"],"triples":[["sabine women","associated_with","juvenal"]]}
+{"id":"Novel-47676-300","entities":["romans","republic","empire","rome"],"triples":[["republic","part_of","rome"],["empire","part_of","rome"],["romans","lived_in","rome"]]}
+{"id":"Novel-47676-301","entities":["hippolytus","priapus","andromache"],"triples":[["hippolytus","associated_with","priapus"]]}
+{"id":"Novel-47676-302","entities":["poet"],"triples":[]}
+{"id":"Novel-47676-303","entities":["paris","helen"],"triples":[["paris","associated_with","helen"]]}
+{"id":"Novel-47676-304","entities":["assyria","india","lydians"],"triples":[["assyria","located_in","india"],["lydians","associated_with","assyria"]]}
+{"id":"Novel-47676-305","entities":["consuls","romans"],"triples":[["consuls","member_of","romans"]]}
+{"id":"Novel-47676-306","entities":["statius","aulus gellius","appius claudius","fasti"],"triples":[["fasti","written_by","statius"]]}
+{"id":"Novel-47676-307","entities":["sappho","phaon","orestes","pylades","strophius","phocia"],"triples":[["pylades","friend_of","orestes"],["pylades","born_in","phocia"],["pylades","child_of","strophius"],["sappho","associated_with","phaon"]]}
+{"id":"Novel-47676-308","entities":["aristotle","festus avienus","minerva","coronis","metamorphoses","pliny"],"triples":[["coronis","part_of","metamorphoses"],["minerva","associated_with","coronis"]]}
+{"id":"Novel-47676-309","entities":["hippocrates","ovid","corinna","poet"],"triples":[["corinna","associated_with","ovid"]]}
+{"id":"Novel-47676-310","entities":["ovid","heinsius","elysian fields"],"triples":[]}
+{"id":"Novel-47676-311","entities":["vesta","corinna","cypassis","fasti"],"triples":[["cypassis","works_at","corinna"]]}
+{"id":"Novel-47676-312","entities":["egypt","syria","cypassis","telephus","achilles","quirinus","mars","romulus","rome","fasti"],"triples":[["cypassis","born_in","egypt"],["quirinus","child_of","mars"],["romulus","lived_in","rome"]]}
+{"id":"Novel-47676-313","entities":["romulus","rome","mantua","virgil","augustus","tityrus","fasti","tristia","graecinus"],"triples":[["romulus","lived_in","rome"],["virgil","lived_in","mantua"],["virgil","known_as","tityrus"]]}
+{"id":"Novel-47676-314","entities":["graecinus","ovid","pontic epistles","egyptians","juvenal","appian"],"triples":[["pontic epistles","written_by","ovid"],["graecinus","friend_of","ovid"]]}
+{"id":"Novel-47676-315","entities":["cornelius gallus","t. haterius","valerius maximus","pliny the elder","medea","jason"],"triples":[["medea","associated_with","jason"]]}
+{"id":"Novel-47676-316","entities":["propertius","virgil","malea","laconia","libya","leda","castor","pollux","horace","helen"],"triples":[["malea","located_in","laconia"],["castor","child_of","leda"],["pollux","child_of","leda"],["helen","child_of","leda"]]}
+{"id":"Novel-47676-317","entities":["castor","pollux"],"triples":[]}
+{"id":"Novel-47676-318","entities":["romans","fasti","tristia","aeneas","turnus","lavinia","latinus","amata","metamorphoses"],"triples":[["lavinia","child_of","latinus"],["lavinia","child_of","amata"],["aeneas","associated_with","turnus"]]}
+{"id":"Novel-47676-319","entities":["romulus","sabines","tarpeia","io","isis","paraetonium","nile","egypt","libya","strabo","ammonia","canopus","aboukir"],"triples":[["paraetonium","located_in","egypt"],["paraetonium","known_as","ammonia"],["canopus","located_in","egypt"],["canopus","known_as","aboukir"],["io","known_as","isis"]]}
+{"id":"Novel-47676-320","entities":["alexandria","nile","ovid","tristia","memphis","egypt","osiris","pharos","metamorphoses","isis","anubis","pontic epistles"],"triples":[["alexandria","located_in","egypt"],["memphis","located_in","egypt"],["memphis","located_in","nile"],["memphis","part_of","egypt"],["pharos","part_of","metamorphoses"],["anubis","associated_with","isis"]]}
+{"id":"Novel-47676-321","entities":["anubis","osiris","metamorphoses","macrobius","serapis","egyptians","egypt"],"triples":[["serapis","associated_with","egyptians"],["egyptians","lived_in","egypt"]]}
+{"id":"Novel-47676-322","entities":["egypt","metamorphoses","apis","isis","diana lucina","telethusa","crete"],"triples":[["telethusa","born_in","crete"],["isis","known_as","diana lucina"],["apis","located_in","egypt"]]}
+{"id":"Novel-47676-323","entities":["isis","ovid","pontic epistles","galli","cybele"],"triples":[["pontic epistles","written_by","ovid"],["galli","member_of","cybele"]]}
+{"id":"Novel-47676-324","entities":["cybele","galli","corybantes","isis","osiris","metamorphoses","ilithyia","amazons"],"triples":[["galli","member_of","cybele"],["corybantes","member_of","cybele"],["osiris","associated_with","isis"]]}
+{"id":"Novel-47676-325","entities":["amazons","metamorphoses","deucalion","pyrrha","ilia","romulus","canace","macareus"],"triples":[["romulus","child_of","ilia"],["macareus","friend_of","canace"]]}
+{"id":"Novel-47676-326","entities":["metamorphoses","tristia","amores","proteus","fasti"],"triples":[]}
+{"id":"Novel-47676-327","entities":["sulmo","peligni","corfinienses","superequani","sulmonenses","pliny the elder"],"triples":[["corfinienses","member_of","peligni"],["superequani","member_of","peligni"],["sulmonenses","member_of","peligni"],["sulmo","located_in","peligni"]]}
+{"id":"Novel-47676-328","entities":["pallas","nisard","alps","metamorphoses"],"triples":[]}
+{"id":"Novel-47676-329","entities":["cilicia","asia minor","pompey","britons","caesar","metamorphoses","britain"],"triples":[["cilicia","located_in","asia minor"],["britons","lived_in","britain"],["caesar","traveled_to","britain"]]}
+{"id":"Novel-47676-330","entities":["caesar","metamorphoses","romans","gaul","rome","sulmo","corinna"],"triples":[["sulmo","located_in","rome"]]}
+{"id":"Novel-47676-331","entities":["rome","sulmo","corinna","pontic epistles","thetis","peleus","phthia","thessaly"],"triples":[["thetis","married_to","peleus"],["peleus","lived_in","phthia"],["phthia","located_in","thessaly"]]}
+{"id":"Novel-47676-332","entities":["corinna","poet"],"triples":[]}
+{"id":"Novel-47676-333","entities":["macer","homer","iliad","ovid","tristia","achilles","aemilius macer"],"triples":[["iliad","written_by","homer"],["macer","known_as","aemilius macer"]]}
+{"id":"Novel-47676-334","entities":["ovid","macer","verona","virgil","tibullus","pontus","ilium","asia minor","sicily","medea","quintilian"],"triples":[["macer","born_in","verona"],["macer","friend_of","virgil"],["macer","friend_of","ovid"],["macer","friend_of","tibullus"],["medea","written_by","ovid"],["macer","traveled_to","asia minor"],["macer","traveled_to","sicily"]]}
+{"id":"Novel-47676-335","entities":["sabinus","ulysses","penelope","hippolytus","phaedra","aeneas","dido","demophoon","phyllis","jason","hypsipyle","phaon","sappho"],"triples":[["ulysses","married_to","penelope"],["aeneas","associated_with","dido"],["demophoon","associated_with","phyllis"],["jason","associated_with","hypsipyle"],["phaon","associated_with","sappho"]]}
+{"id":"Novel-47676-336","entities":["sappho","phaon","phoebus","danae","metamorphoses"],"triples":[["sappho","associated_with","phaon"],["danae","part_of","metamorphoses"]]}
+{"id":"Novel-47676-337","entities":["romans","amores","lydia","etruria","rome"],"triples":[["lydia","located_in","asia minor"],["etruria","associated_with","lydia"]]}
+{"id":"Novel-47676-338","entities":["lydia","etruria","rome","greeks","romans","herodotus","lydians","amores","bacchus","india"],"triples":[["greeks","associated_with","lydians"],["bacchus","traveled_to","india"]]}
+{"id":"Novel-47676-339","entities":["bacchus","metamorphoses","ovid","medea","corinna"],"triples":[["medea","written_by","ovid"]]}
+{"id":"Novel-47676-340","entities":["corinna","plautus"],"triples":[]}
+{"id":"Novel-47676-341","entities":["ovid","horace","diphilus","gnathaena","athenaeus"],"triples":[["gnathaena","associated_with","diphilus"]]}
+{"id":"Novel-47676-342","entities":["ovid","metamorphoses","burmann","circus maximus","rome"],"triples":[["circus maximus","located_in","rome"]]}
+{"id":"Novel-47676-343","entities":["circus maximus","rome","nero","trajan","fasti"],"triples":[["circus maximus","located_in","rome"]]}
+{"id":"Novel-47676-344","entities":["domitian","art of love"],"triples":[]}
+{"id":"Novel-47676-345","entities":["consus","neptune","tristia"],"triples":[["consus","known_as","neptune"]]}
+{"id":"Novel-47676-346","entities":["hippolytus","metamorphoses","tristia"],"triples":[["hippolytus","part_of","metamorphoses"]]}
+{"id":"Novel-47676-347","entities":["pelops","oenomaus","pisa","arcadia","hippodamia","myrtilus"],"triples":[["oenomaus","located_in","pisa"],["pisa","located_in","arcadia"],["hippodamia","child_of","oenomaus"],["myrtilus","works_at","oenomaus"]]}
+{"id":"Novel-47676-348","entities":[],"triples":[]}
+{"id":"Novel-47676-349","entities":["atalanta","iasius","milanion","hippomenes","metamorphoses","arcadia","boeotia","apollodorus"],"triples":[["atalanta","child_of","iasius"],["atalanta","born_in","arcadia"],["milanion","known_as","hippomenes"],["atalanta","part_of","metamorphoses"]]}
+{"id":"Novel-47676-350","entities":["atalanta","metamorphoses","ovid"],"triples":[["atalanta","part_of","metamorphoses"]]}
+{"id":"Novel-47676-351","entities":["augustus","suetonius","romans"],"triples":[]}
+{"id":"Novel-47676-352","entities":["capitol","forum","circus maximus","rome","fasti"],"triples":[["capitol","located_in","rome"],["forum","located_in","rome"],["circus maximus","located_in","rome"]]}
+{"id":"Novel-47676-353","entities":["victory","neptune","minerva","fasti","apollo","hercules","pollux"],"triples":[["minerva","associated_with","fasti"]]}
+{"id":"Novel-47676-354","entities":["apollo","hercules","pollux","greeks","olympic games","nemean games","isthmian games","fasti","etruria","italy"],"triples":[["etruria","located_in","italy"]]}
+{"id":"Novel-47676-355","entities":["italy","etruria","republic","empire","ovid"],"triples":[["etruria","located_in","italy"]]}
+{"id":"Novel-47676-356","entities":[],"triples":[]}
+{"id":"Novel-47676-357","entities":["praetor","nero"],"triples":[]}
+{"id":"Novel-47676-358","entities":[],"triples":[]}
+{"id":"Novel-47676-359","entities":["crispinus","burmann"],"triples":[]}
+{"id":"Novel-47676-360","entities":[],"triples":[]}
+{"id":"Novel-47676-361","entities":["poet","tibullus"],"triples":[]}
+{"id":"Novel-47676-362","entities":["andromeda","cepheus","cassiope","nereids","jupiter","perseus","metamorphoses"],"triples":[["andromeda","child_of","cepheus"],["andromeda","child_of","cassiope"],["cassiope","married_to","cepheus"],["andromeda","married_to","perseus"]]}
+{"id":"Novel-47676-363","entities":["perseus","metamorphoses"],"triples":[]}
+{"id":"Novel-47676-364","entities":["seneca","semele","metamorphoses"],"triples":[["semele","part_of","metamorphoses"]]}
+{"id":"Novel-47676-365","entities":["argus","metamorphoses","danae","pausanias","lucian"],"triples":[["argus","part_of","metamorphoses"]]}
+{"id":"Novel-47676-366","entities":["amores"],"triples":[]}
+{"id":"Novel-47676-367","entities":["ovid","sulmo","ciofanus","vella","moronian hill"],"triples":[["ovid","lived_in","sulmo"],["vella","located_in","sulmo"]]}
+{"id":"Novel-47676-368","entities":["sulmo","soracte","flaminian way","falisci","ciofanus","majella","italy"],"triples":[["soracte","located_in","falisci"],["majella","known_as","soracte"],["majella","located_in","italy"]]}
+{"id":"Novel-47676-369","entities":["danae","mercury","perseus","medusa","ceres","triptolemus","fasti","inachus","argolis","peloponnesus","melie","neptune","amycus","bebrycia","bithynia","asia minor"],"triples":[["perseus","child_of","danae"],["amycus","child_of","melie"],["amycus","child_of","neptune"],["bebrycia","known_as","bithynia"],["bithynia","located_in","asia minor"],["inachus","located_in","argolis"],["argolis","part_of","peloponnesus"]]}
+{"id":"Novel-47676-370","entities":["alpheus","arethusa","metamorphoses","creusa","hypseas","lapithae","peneus","thessaly","xanthus","troy","mars","metope","ladon","asopus","boeotia","corcyra","aegina","salamis","thebe","harpinna"],"triples":[["creusa","married_to","peneus"],["hypseas","child_of","creusa"],["peneus","located_in","thessaly"],["xanthus","located_in","troy"],["asopus","located_in","boeotia"],["metope","child_of","ladon"],["thebe","child_of","asopus"]]}
+{"id":"Novel-47676-371","entities":["thebe","mars","evadne","hercules","achelous","deianira","metamorphoses","oeneus","meleager","aetolia","calydon","nile"],"triples":[["evadne","child_of","thebe"],["evadne","child_of","mars"],["meleager","child_of","oeneus"],["deianira","child_of","oeneus"],["oeneus","lived_in","aetolia"],["calydon","located_in","aetolia"]]}
+{"id":"Novel-47676-372","entities":["evadne","asopus","enipeus","tyro","salmoneus","pisa","elis","neptune","pelias","neleus","tibur","argive","tyburtus","catillus","coras"],"triples":[["tyro","child_of","salmoneus"],["salmoneus","lived_in","pisa"],["pisa","located_in","elis"],["pelias","child_of","neptune"],["neleus","child_of","neptune"],["tibur","known_as","argive"]]}
+{"id":"Novel-47676-373","entities":["ilia","amulius","tiber","anio","acron","romulus"],"triples":[["ilia","parent_of","romulus"],["anio","part_of","tiber"]]}
+{"id":"Novel-47676-374","entities":["amulius","laomedon","ascanius","creusa","vestals"],"triples":[["ascanius","child_of","creusa"],["creusa","child_of","laomedon"]]}
+{"id":"Novel-47676-375","entities":["vestals"],"triples":[]}
+{"id":"Novel-47676-376","entities":["acheloes","inachus","nile","amores","ovid"],"triples":[["amores","written_by","ovid"]]}
+{"id":"Novel-47676-377","entities":["romans"],"triples":[]}
+{"id":"Novel-47676-378","entities":["triarii","romans","pontic epistles","empire","danae"],"triples":[["triarii","member_of","romans"]]}
+{"id":"Novel-47676-379","entities":[],"triples":[]}
+{"id":"Novel-47676-380","entities":["caesar","metamorphoses","fasti","senate","rome"],"triples":[["senate","located_in","rome"]]}
+{"id":"Novel-47676-381","entities":["fasti","field of mars","forum","rome"],"triples":[["field of mars","located_in","rome"],["forum","located_in","rome"]]}
+{"id":"Novel-47676-382","entities":["forum","rome","capitoline hill","palatine hill","romulus","tatius","julius caesar","venus genitrix"],"triples":[["forum","located_in","rome"],["capitoline hill","located_in","rome"],["palatine hill","located_in","rome"],["forum","part_of","julius caesar"]]}
+{"id":"Novel-47676-383","entities":["julius caesar","venus genitrix","augustus","mars","forum augustus","hadrian","pontic epistles","fasti","rome"],"triples":[["forum augustus","part_of","augustus"],["forum augustus","located_in","rome"],["forum augustus","associated_with","mars"]]}
+{"id":"Novel-47676-384","entities":["burmann"],"triples":[]}
+{"id":"Novel-47676-385","entities":["romans","servius"],"triples":[]}
+{"id":"Novel-47676-386","entities":["adonis","metamorphoses","fasti"],"triples":[["adonis","part_of","metamorphoses"]]}
+{"id":"Novel-47676-387","entities":["pompeii","romans"],"triples":[]}
+{"id":"Novel-47676-388","entities":["apollo","calliope","orpheus","metamorphoses","linus","athenaeus"],"triples":[["orpheus","child_of","apollo"],["orpheus","child_of","calliope"],["linus","child_of","apollo"]]}
+{"id":"Novel-47676-389","entities":["linus","apollo","orpheus","hercules","thebes","argos","statius"],"triples":[["linus","child_of","apollo"],["linus","born_in","thebes"]]}
+{"id":"Novel-47676-390","entities":["maeon","amores","penelope","nemesis","delia","tibullus","isis"],"triples":[["nemesis","associated_with","tibullus"],["delia","associated_with","tibullus"]]}
+{"id":"Novel-47676-391","entities":["delia","isis","fasti"],"triples":[]}
+{"id":"Novel-47676-392","entities":["venus","mount eryx","sicily","phaeacians","corcyra","corfu"],"triples":[["mount eryx","located_in","sicily"],["mount eryx","associated_with","venus"],["phaeacians","lived_in","corcyra"],["corcyra","known_as","corfu"]]}
+{"id":"Novel-47676-393","entities":["tibullus","messala","corcyra","rome","ovid"],"triples":[["tibullus","traveled_to","corcyra"],["tibullus","friend_of","messala"],["tibullus","lived_in","rome"]]}

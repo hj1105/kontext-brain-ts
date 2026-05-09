@@ -1,0 +1,242 @@
+[
+  {
+    "id": "Medical-73586ddc",
+    "question": "What is the most common type of skin cancer?",
+    "gold": "Basal cell carcinoma (BCC) is the most common type of skin cancer.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Medical-1517e1c3",
+    "question": "Which thyroid cancer subtype is the most common?",
+    "gold": "Papillary thyroid carcinoma is the most common thyroid cancer.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Medical-aed3f61c",
+    "question": "Which age group is most commonly affected by MGZL?",
+    "gold": "MGZL commonly affects individuals aged 20 to 40 years.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Medical-85ed509e",
+    "question": "Which inhibitors are used for hormone receptor-positive, HER2-negative breast cancer?",
+    "gold": "CDK4/6 inhibitors are used for hormone receptor-positive, HER2-negative breast cancer.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Medical-9418792b",
+    "question": "Which diagnostic methods are used for bone sarcomas?",
+    "gold": "Diagnostic methods for bone sarcomas include X-ray, bone scan, CT scan, MRI, PET scan, and biopsy.",
+    "ans": "Bone scan, MRI, CT, PET, and ultrasound.",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Medical-2bbad791",
+    "question": "Which factors increase the risk of cervical cancer?",
+    "gold": "HPV infection, smoking, immunosuppression, and HIV increase risk.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Medical-9d5ac399",
+    "question": "What is the main cell type that distinguishes NLPHL from CHL?",
+    "gold": "Popcorn-shaped cells distinguish NLPHL from CHL.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Medical-2bd43819",
+    "question": "Which cancers commonly metastasize to bone?",
+    "gold": "Breast cancer, lung cancer, and kidney cancer can metastasize to bone.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Medical-ebb0af4d",
+    "question": "Who is recommended to undergo lung cancer screening?",
+    "gold": "Lung cancer screening is recommended for people at high risk.",
+    "ans": "People at high risk for lung cancer are recommended to undergo lung cancer screening.",
+    "correct": 1,
+    "raw": "{\"correct\": 1}"
+  },
+  {
+    "id": "Medical-653c0da3",
+    "question": "Which lymphoma subtype is most frequently associated with Reed-Sternberg cells?",
+    "gold": "Classic Hodgkin lymphoma (CHL) is most frequently associated with Reed-Sternberg cells.",
+    "ans": "Hodgkin lymphoma.",
+    "correct": 1,
+    "raw": "{\"correct\": 1}"
+  },
+  {
+    "id": "Medical-8d545fa4",
+    "question": "What is the recommended follow-up strategy after CSCC treatment?",
+    "gold": "Follow-up after treatment includes regular skin and lymph node exams, with frequency based on risk and stage.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Medical-a4dcffa3",
+    "question": "What is a potential site of relapse for primary CNS lymphoma?",
+    "gold": "Primary CNS lymphoma can relapse in the brain, spinal cord, or eyes.",
+    "ans": "Other areas in the nervous system.",
+    "correct": 1,
+    "raw": "{\"correct\": 1}"
+  },
+  {
+    "id": "Medical-5dd8e62d",
+    "question": "What is the relationship between gray zone lymphoma and primary mediastinal B-cell lymphoma?",
+    "gold": "Gray zone lymphomas have overlapping features with primary mediastinal B-cell lymphoma (PMBL).",
+    "ans": "Mediastinal gray zone lymphomas have overlapping features with primary mediastinal B-cell lymphoma (PMBL).",
+    "correct": 1,
+    "raw": "{\"correct\": 1}"
+  },
+  {
+    "id": "Medical-8a166224",
+    "question": "Which biomarker is commonly associated with follicular lymphoma (FL)?",
+    "gold": "BCL2 protein is a biomarker commonly associated with FL.",
+    "ans": "The BCL2 protein.",
+    "correct": 1,
+    "raw": "{\"correct\": 1}"
+  },
+  {
+    "id": "Medical-e875d9cd",
+    "question": "What is the recommended initial treatment for MGZL?",
+    "gold": "MGZL is usually treated with chemotherapy.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Medical-deee1f4b",
+    "question": "What are Siewert types used for in esophageal cancer?",
+    "gold": "Siewert types are used to stage tumors at the esophagogastric junction.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Medical-d8a3772b",
+    "question": "Which immunotherapy agents are used for metastatic CSCC?",
+    "gold": "PD-1 inhibitors such as cemiplimab and pembrolizumab are used for metastatic CSCC.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Medical-13fbbea3",
+    "question": "What blood tests are recommended for initial evaluation of colon cancer?",
+    "gold": "Blood tests (CBC, chemistry profile, CEA) are recommended for initial testing.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Medical-304b0354",
+    "question": "List three anatomical sites, other than the brain, that primary CNS lymphoma can involve.",
+    "gold": "Primary CNS lymphoma can involve the spinal cord, cerebrospinal fluid, and eyes.",
+    "ans": "The eyes, cerebrospinal fluid (CSF), and/or the spinal cord.",
+    "correct": 1,
+    "raw": "{\"correct\": 1}"
+  },
+  {
+    "id": "Medical-fca41ac7",
+    "question": "What are the tumor characteristics of Tis stage in intrahepatic bile duct cancer?",
+    "gold": "Tis is characterized by carcinoma in situ, intraductal tumor, and confinement to the epithelium.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Medical-e773a3cf",
+    "question": "What are the treatment options for CLL/SLL?",
+    "gold": "Treatment options include oral medications, IV infusions, and combination therapies.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Medical-c99a29ae",
+    "question": "Which symptoms may indicate throat cancer?",
+    "gold": "Symptoms may include difficulty swallowing, sore throat, and changes in voice.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Medical-c89d3c38",
+    "question": "How is pathologic stage determined in throat cancer?",
+    "gold": "Pathologic stage is determined after surgery based on tissue examination.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Medical-f5e27a80",
+    "question": "Which genetic alterations are associated with squamous cell carcinoma of the throat?",
+    "gold": "HPV-mediated, p16-positive, and p16-negative are associated genetic alterations.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Medical-7caf80a1",
+    "question": "How is platinum-sensitive recurrence of ovarian cancer treated?",
+    "gold": "Platinum-sensitive recurrence is treated with platinum-based chemotherapy, possibly with bevacizumab, and may include secondary cytoreductive surgery.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Medical-06384900",
+    "question": "Which cancer subtype starts specifically in B cells?",
+    "gold": "Cutaneous B-cell lymphoma (CBCL) starts in B cells.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Medical-d272b033",
+    "question": "What biomarker is used to classify gliomas?",
+    "gold": "IDH mutation is a biomarker used to classify gliomas.",
+    "ans": "Each type of glioma has its own biomarker or set of biomarkers.",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Medical-bb899a92",
+    "question": "What factors are considered in treatment planning for mouth cancer?",
+    "gold": "Treatment planning is based on tumor location and stage.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Medical-a43ea44f",
+    "question": "Is family history a risk factor for colon cancer?",
+    "gold": "Family history of colorectal cancer is a risk factor.",
+    "ans": "INSUFFICIENT_CONTEXT",
+    "correct": 0,
+    "raw": "{\"correct\": 0}"
+  },
+  {
+    "id": "Medical-dfc549c9",
+    "question": "What is the preferred treatment approach for certain subtypes such as BCR::ABL1-negative or BCR::ABL1-like B-ALL?",
+    "gold": "Clinical trials are preferred for certain subtypes such as BCR::ABL1-negative or BCR::ABL1-like B-ALL.",
+    "ans": "A clinical trial is the preferred treatment for these types of B-ALL.",
+    "correct": 1,
+    "raw": "{\"correct\": 1}"
+  }
+]

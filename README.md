@@ -936,6 +936,56 @@ this hardware doesn't. Round 17 result (hybrid+8B Medical 76.67%) stands.
 
 Full analysis: [`bench/data/round18-report.md`](./bench/data/round18-report.md).
 
+### Round 19: Claude-extracted KG — high-quality typed triples, retrieval still loses
+
+Round 18 was blocked on RAM. Round 19 worked around it by dispatching
+**~20 parallel Claude-Code subagents** for entity+typed-triple extraction:
+
+- Medical: **100% (1385/1385 chunks)** extracted
+- Novel: **66% (2300/3503 chunks)** — quota limit hit ("resets 4:40am Asia/Seoul")
+
+Result: real LLM-quality KGs with **typed predicates** (treats, causes,
+located_in, etc.):
+- Medical: **2,432 entities, 9,333 typed edges**
+- Novel: **2,909 entities, 3,863 typed edges**
+
+End-to-end ACC (Llama-3.1-8B answerer + judge):
+
+| | vanilla | hybrid | multi-hop | **kg (Claude-extracted)** |
+|-|---------|--------|-----------|---------------------------|
+| Medical | 60.00% | **76.67%** | 36.67% | **23.33%** |
+| Novel | 30.00% | **53.33%** | 46.67% | **20.00%** |
+
+**Honest negative finding**: Even the highest-quality LLM-extracted KG we
+can build does NOT make our PPR-based retriever competitive — KG lost
+to hybrid by **-53pp Medical / -33pp Novel**. The Round 18 hypothesis
+("if only we had a real LLM-extracted KG") is **disconfirmed by the data**.
+
+Why KG lost despite high-quality extraction:
+1. **PPR diffuses signal** — α=0.15 over 9,333 edges spreads score
+   across the entity graph; a focused BM25 hit is sharper
+2. **Coverage cliff on novel** — 34% of chunks not in KG → invisible
+   to KG retriever
+3. **Seed selection too lenient** — substring/token-overlap matches
+   too many entities; PPR activates a broad cluster
+
+Closing the gap to HippoRAG2 requires algorithmic work on retrieval
+(smarter LLM-based seed selection, hop-aware walks, KG → vector
+reranking hybrid), not just better extraction.
+
+**Round 17 result stands as the headline**: kontext-brain hybrid +
+Llama-3.1-8B = 76.67% Medical, beats every leaderboard entry with
+*smaller* LLM. Round 19 is a documented negative result on the
+typed-KG direction.
+
+What's shipped: `bench/src/dump-chunks-for-claude.ts`,
+`merge-claude-kg.ts`, `bench/data/claude-kg-{medical,novel}-batch-*.jsonl`
+(37 batch files), and the final KG caches at
+`bench/data/gb-{medical,novel}-kg.json`. Reusable substrate for future
+retrieval-algorithm experiments.
+
+Full analysis: [`bench/data/round19-report.md`](./bench/data/round19-report.md).
+
 ### Round 9 results — attribute model + re-measurement
 
 After extending the entity model with `nodeId` + `attributes` +

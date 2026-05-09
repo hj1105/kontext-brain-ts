@@ -1,0 +1,100 @@
+{"id":"Novel-8559-184","entities":["england","brewster","walter scott","humphry davy","chevalier aldini","milan","france"],"triples":[["brewster","associated_with","walter scott"],["chevalier aldini","lived_in","milan"],["chevalier aldini","associated_with","humphry davy"]]}
+{"id":"Novel-8559-185","entities":["chevalier aldini","milan","davy"],"triples":[["chevalier aldini","lived_in","milan"],["chevalier aldini","associated_with","davy"]]}
+{"id":"Novel-8559-186","entities":["aldini","europe"],"triples":[["aldini","traveled_to","europe"]]}
+{"id":"Novel-8559-187","entities":["aldini"],"triples":[]}
+{"id":"Novel-8559-188","entities":["paris","academic des sciences"],"triples":[["academic des sciences","located_in","paris"]]}
+{"id":"Novel-8559-189","entities":["aldini"],"triples":[]}
+{"id":"Novel-8559-190","entities":["england","joseph banks","charles blagden","dr. solander"],"triples":[["joseph banks","friend_of","charles blagden"],["charles blagden","friend_of","dr. solander"],["joseph banks","lived_in","england"]]}
+{"id":"Novel-8559-191","entities":["blagden"],"triples":[]}
+{"id":"Novel-8559-192","entities":["blogden","england"],"triples":[["blogden","lived_in","england"]]}
+{"id":"Novel-8559-193","entities":["angoumois","france"],"triples":[["angoumois","located_in","france"]]}
+{"id":"Novel-8559-194","entities":["dr. berger","paris","hammam","dr. e. martin","pekin","edwards","lemoine","bareges"],"triples":[["hammam","located_in","paris"],["dr. e. martin","lived_in","paris"]]}
+{"id":"Novel-8559-195","entities":["lemoine","brewster","egyptian mysteries","arabian balm","egyptian thorn","tamarind"],"triples":[["arabian balm","is_a","tamarind"]]}
+{"id":"Novel-8559-196","entities":["abbe terrason","sethos"],"triples":[["sethos","written_by","abbe terrason"]]}
+{"id":"Novel-8559-197","entities":["sethos"],"triples":[]}
+{"id":"Novel-8559-198","entities":["aldini"],"triples":[]}
+{"id":"Novel-8559-199","entities":["new netherlands","boston","dutch","english"],"triples":[["boston","located_in","new netherlands"]]}
+{"id":"Novel-8559-200","entities":["boston","king's chapel","braintree","massachusetts","new england","quincy","new orleans"],"triples":[["king's chapel","located_in","boston"],["braintree","located_in","massachusetts"],["quincy","located_in","massachusetts"]]}
+{"id":"Novel-8559-201","entities":["quincy","merchants' exchange","new york","astor house","custom house","new orleans","massachusetts","neponset river"],"triples":[["merchants' exchange","located_in","new york"],["astor house","located_in","new york"],["custom house","located_in","new orleans"],["quincy","located_in","massachusetts"]]}
+{"id":"Novel-8559-202","entities":["massachusetts","maine","fox island","westerly","rhode island","staten island","new york","quincy"],"triples":[["fox island","located_in","maine"],["westerly","located_in","rhode island"],["staten island","located_in","new york"],["quincy","located_in","massachusetts"]]}
+{"id":"Novel-8559-203","entities":["weehawken","new jersey","port deposit","maryland","richmond","virginia","abbeville","south carolina","georgia","quincy","rocky mountains","california"],"triples":[["weehawken","located_in","new jersey"],["port deposit","located_in","maryland"],["richmond","located_in","virginia"],["abbeville","located_in","south carolina"]]}
+{"id":"Novel-8559-204","entities":["king's chapel","boston","portland","connecticut river","middletown"],"triples":[["king's chapel","located_in","boston"],["portland","located_in","connecticut river"]]}
+{"id":"Novel-8559-205","entities":["portland","new york","belleville","new jersey","trinity church","boston atheneum","st. lawrence county","potsdam","connecticut"],"triples":[["belleville","located_in","new jersey"],["trinity church","located_in","new york"],["st. lawrence county","located_in","new york"]]}
+{"id":"Novel-8559-206","entities":["new england","new york","eastern pennsylvania","potsdam","shawangunk mountain","ulster county","greene","albany","kingston","saugerties","coxsackie","hudson"],"triples":[["shawangunk mountain","located_in","ulster county"],["ulster county","located_in","new york"],["kingston","located_in","new york"]]}
+{"id":"Novel-8559-207","entities":["medina","new york","potomac","washington","ohio","berea","amherst","vermilion","massillon","st. genevieve","missouri","caen","france","lake superior"],"triples":[["medina","located_in","new york"],["berea","located_in","ohio"],["st. genevieve","located_in","missouri"],["caen","located_in","france"]]}
+{"id":"Novel-8559-208","entities":["st. genevieve","missouri","caen","france","lake superior","new york","topeka","florida","bermuda","canton","joliet","athens","illinois","dayton","sandusky","ohio"],"triples":[["st. genevieve","located_in","missouri"],["caen","located_in","france"],["dayton","located_in","ohio"],["sandusky","located_in","ohio"]]}
+{"id":"Novel-8559-209","entities":["ellittsville","indiana","louisville","bowling green","kentucky","thomaston","penobscot river","pennsylvania","virginia","lynchburg","new orleans","smithfield","westchester county","kingston","ulster county"],"triples":[["louisville","located_in","kentucky"],["bowling green","located_in","kentucky"],["lynchburg","located_in","virginia"],["kingston","located_in","ulster county"]]}
+{"id":"Novel-8559-210","entities":["ohio","cuba","italy"],"triples":[]}
+{"id":"Novel-8559-211","entities":["girard college","philadelphia","new york","custom house","washington","cuba","italy","carrara","rutland","vermont"],"triples":[["girard college","located_in","philadelphia"],["custom house","located_in","new york"],["rutland","located_in","vermont"]]}
+{"id":"Novel-8559-212","entities":["rutland county","shoreham","vermont","lake champlain","new england","girard college","berkshire","massachusetts","new york","pennsylvania","maryland","district of columbia","virginia"],"triples":[["shoreham","located_in","vermont"],["rutland county","located_in","vermont"],["berkshire","located_in","massachusetts"],["girard college","associated_with","berkshire"]]}
+{"id":"Novel-8559-213","entities":["district of columbia","virginia","tennessee","carolinas","georgia","alabama","knoxville","vermont","rocky mountains","wales","northampton county","pennsylvania"],"triples":[["knoxville","located_in","tennessee"],["northampton county","located_in","pennsylvania"]]}
+{"id":"Novel-8559-214","entities":["schuylkill","philadelphia","piscataquis river","bangor","maine","vermont","new york","washington county","maryland","harford county","huron mountains","marquette"],"triples":[["bangor","located_in","maine"],["piscataquis river","located_in","maine"],["washington county","located_in","new york"],["harford county","located_in","maryland"]]}
+{"id":"Novel-8559-215","entities":["acworth","grafton","new hampshire","salt lake","haywood","yancey","mitchell","macon","north carolina"],"triples":[["acworth","located_in","new hampshire"],["grafton","located_in","new hampshire"],["haywood","located_in","north carolina"],["yancey","located_in","north carolina"],["macon","located_in","north carolina"]]}
+{"id":"Novel-8559-216","entities":["new york","new jersey","pennsylvania"],"triples":[]}
+{"id":"Novel-8559-217","entities":["ohio","indiana","illinois"],"triples":[]}
+{"id":"Novel-8559-218","entities":["michigan","wisconsin","iowa","minnesota","kansas","nebraska","dakota"],"triples":[]}
+{"id":"Novel-8559-219","entities":["texas","florida","arkansas","missouri","virginia"],"triples":[]}
+{"id":"Novel-8559-220","entities":["new york","west virginia","new jersey","north carolina","south carolina","georgia","alabama","virginia"],"triples":[]}
+{"id":"Novel-8559-221","entities":["mississippi river","kentucky","tennessee","mississippi","louisiana","alabama","georgia"],"triples":[]}
+{"id":"Novel-8559-222","entities":["kentucky","tennessee","virginia","west virginia","north carolina","alabama","atlantic coast","new york tribune","country gentleman"],"triples":[]}
+{"id":"Novel-8559-223","entities":["country gentleman"],"triples":[]}
+{"id":"Novel-8559-224","entities":[],"triples":[]}
+{"id":"Novel-8559-225","entities":[],"triples":[]}
+{"id":"Novel-8559-226","entities":[],"triples":[]}
+{"id":"Novel-8559-227","entities":["oswego","new york","dewitt c. peck"],"triples":[["oswego","located_in","new york"],["dewitt c. peck","lived_in","oswego"]]}
+{"id":"Novel-8559-228","entities":["mexico","oswego","new york","salmon creek"],"triples":[["mexico","located_in","oswego"],["oswego","located_in","new york"],["salmon creek","located_in","oswego"]]}
+{"id":"Novel-8559-229","entities":[],"triples":[]}
+{"id":"Novel-8559-230","entities":[],"triples":[]}
+{"id":"Novel-8559-231","entities":[],"triples":[]}
+{"id":"Novel-8559-232","entities":[],"triples":[]}
+{"id":"Novel-8559-233","entities":[],"triples":[]}
+{"id":"Novel-8559-234","entities":[],"triples":[]}
+{"id":"Novel-8559-235","entities":[],"triples":[]}
+{"id":"Novel-8559-236","entities":[],"triples":[]}
+{"id":"Novel-8559-237","entities":[],"triples":[]}
+{"id":"Novel-8559-238","entities":[],"triples":[]}
+{"id":"Novel-8559-239","entities":[],"triples":[]}
+{"id":"Novel-8559-240","entities":[],"triples":[]}
+{"id":"Novel-8559-241","entities":[],"triples":[]}
+{"id":"Novel-8559-242","entities":[],"triples":[]}
+{"id":"Novel-8559-243","entities":[],"triples":[]}
+{"id":"Novel-8559-244","entities":["m. pelletier","paris"],"triples":[["m. pelletier","lived_in","paris"]]}
+{"id":"Novel-8559-245","entities":["m. pelletier"],"triples":[]}
+{"id":"Novel-8559-246","entities":[],"triples":[]}
+{"id":"Novel-8559-247","entities":[],"triples":[]}
+{"id":"Novel-8559-248","entities":[],"triples":[]}
+{"id":"Novel-8559-249","entities":[],"triples":[]}
+{"id":"Novel-8559-250","entities":["j. cobnhill","the garden","tuileries gardens","soleil journal"],"triples":[]}
+{"id":"Novel-8559-251","entities":["france"],"triples":[]}
+{"id":"Novel-8559-252","entities":["professor mouchon","tours","m. pifre"],"triples":[["professor mouchon","lived_in","tours"],["professor mouchon","associated_with","m. pifre"]]}
+{"id":"Novel-8559-253","entities":["m. de rougaumond","india","egypt","england"],"triples":[]}
+{"id":"Novel-8559-254","entities":["england","engineers' club of philadelphia","professor l. m. haupt","paris correspondence london times"],"triples":[["engineers' club of philadelphia","located_in","philadelphia"]]}
+{"id":"Novel-8559-255","entities":[],"triples":[]}
+{"id":"Novel-8559-256","entities":[],"triples":[]}
+{"id":"Novel-8559-257","entities":["greenwich","washington"],"triples":[]}
+{"id":"Novel-8559-258","entities":[],"triples":[]}
+{"id":"Novel-8559-259","entities":["polaris","ursae minoris","nautical almanac"],"triples":[["polaris","known_as","ursae minoris"]]}
+{"id":"Novel-8559-260","entities":["polaris"],"triples":[]}
+{"id":"Novel-8559-261","entities":["polaris"],"triples":[]}
+{"id":"Novel-8559-262","entities":["alioth","polaris","dipper"],"triples":[["alioth","part_of","dipper"],["alioth","related_to","polaris"]]}
+{"id":"Novel-8559-263","entities":["polaris"],"triples":[]}
+{"id":"Novel-8559-264","entities":[],"triples":[]}
+{"id":"Novel-8559-265","entities":[],"triples":[]}
+{"id":"Novel-8559-266","entities":[],"triples":[]}
+{"id":"Novel-8559-267","entities":[],"triples":[]}
+{"id":"Novel-8559-268","entities":["polaris"],"triples":[]}
+{"id":"Novel-8559-269","entities":[],"triples":[]}
+{"id":"Novel-8559-270","entities":[],"triples":[]}
+{"id":"Novel-8559-271","entities":[],"triples":[]}
+{"id":"Novel-8559-272","entities":[],"triples":[]}
+{"id":"Novel-8559-273","entities":["united states"],"triples":[]}
+{"id":"Novel-8559-274","entities":["polaris","alioth"],"triples":[["alioth","related_to","polaris"]]}
+{"id":"Novel-8559-275","entities":["polaris"],"triples":[]}
+{"id":"Novel-8559-276","entities":["polaris"],"triples":[]}
+{"id":"Novel-8559-277","entities":[],"triples":[]}
+{"id":"Novel-8559-278","entities":[],"triples":[]}
+{"id":"Novel-8559-279","entities":[],"triples":[]}
+{"id":"Novel-8559-280","entities":[],"triples":[]}
+{"id":"Novel-8559-281","entities":["museum of natural history","paris","jardin des plantes","argus ocellatus","j. verreaux"],"triples":[["museum of natural history","located_in","paris"],["jardin des plantes","located_in","paris"],["j. verreaux","works_at","museum of natural history"]]}
+{"id":"Novel-8559-282","entities":["j. verreaux","prince ch. l. bonaparte","argus giganteus","slater","gray","elliot","museum of paris","phasianidae"],"triples":[["argus giganteus","known_as","argus ocellatus"],["argus giganteus","is_a","phasianidae"],["museum of paris","located_in","paris"]]}
+{"id":"Novel-8559-283","entities":["verreaux","bonaparte","elliot","malacca","argus grayi","borneo","phasianidae","mr. maingonnat","museum of natural history"],"triples":[["argus grayi","located_in","borneo"],["argus grayi","is_a","phasianidae"],["mr. maingonnat","associated_with","museum of natural history"]]}

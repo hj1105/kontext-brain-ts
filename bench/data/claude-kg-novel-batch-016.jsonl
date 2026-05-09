@@ -1,0 +1,100 @@
+{"id":"Novel-47558-69","entities":["aunt katy","tom fairfield","brother demitt","roxie","rose","suza"],"triples":[["roxie","child_of","tom fairfield"],["rose","child_of","tom fairfield"],["suza","child_of","tom fairfield"],["aunt katy","associated_with","suza"]]}
+{"id":"Novel-47558-70","entities":["aunt katy","suza","rose","roxie","mrs. evaline estep","aunt fillis foster","brother demitt","fairfield cabin"],"triples":[["aunt katy","associated_with","suza"],["aunt fillis foster","associated_with","roxie"],["mrs. evaline estep","associated_with","rose"],["rose","child_of","tom fairfield"],["roxie","child_of","tom fairfield"]]}
+{"id":"Novel-47558-71","entities":["roxie daymon","rose simon","ohio river"],"triples":[["roxie daymon","known_as","roxie fairfield"],["rose simon","known_as","rose fairfield"]]}
+{"id":"Novel-47558-72","entities":["roxie fairfield","aunt fillis foster","aunt fillis","ohio river"],"triples":[["aunt fillis","associated_with","roxie fairfield"],["roxie fairfield","child_of","tom fairfield"]]}
+{"id":"Novel-47558-73","entities":["roxie","aunt fillis"],"triples":[["roxie","lived_in","aunt fillis"]]}
+{"id":"Novel-47558-74","entities":["roxie","aunt fillis","louisville","chicago","illinois","daymon","roxie fairfield"],"triples":[["roxie","known_as","roxie fairfield"],["roxie","married_to","daymon"],["daymon","traveled_to","louisville"],["daymon","traveled_to","chicago"],["chicago","located_in","illinois"]]}
+{"id":"Novel-47558-75","entities":["daymon","roxie","louisville","chicago","p. j. marquette","canada"],"triples":[["daymon","traveled_to","chicago"],["roxie","married_to","daymon"],["p. j. marquette","born_in","canada"],["p. j. marquette","traveled_to","chicago"]]}
+{"id":"Novel-47558-76","entities":["p. j. marquette","canada","chicago","san domingo","john kinzie","daymon","roxie"],"triples":[["p. j. marquette","born_in","canada"],["john kinzie","lived_in","chicago"],["roxie","married_to","daymon"]]}
+{"id":"Novel-47558-77","entities":["daymon","roxie"],"triples":[["roxie","married_to","daymon"]]}
+{"id":"Novel-47558-78","entities":["roxie","suza","ben robertson","aunt patsy perkins","chicago"],"triples":[["aunt patsy perkins","lived_in","chicago"],["suza","related_to","roxie"]]}
+{"id":"Novel-47558-79","entities":["aunt patsy","roxie","perkins","indiana","mrs. daymon","alleghany mountains"],"triples":[["aunt patsy","married_to","perkins"],["mrs. daymon","known_as","roxie"]]}
+{"id":"Novel-47558-80","entities":["mrs. daymon","perkins","aunt patsy"],"triples":[["aunt patsy","married_to","perkins"]]}
+{"id":"Novel-47558-81","entities":["mrs. daymon","perkins","aunt patsy","jim","indiana","chicago"],"triples":[["aunt patsy","married_to","perkins"],["jim","child_of","aunt patsy"],["jim","traveled_to","chicago"],["jim","works_at","chicago"]]}
+{"id":"Novel-47558-82","entities":["aunt patsy","mrs. daymon","perkins","roxie","steamboat brandywine","mississippi river"],"triples":[["aunt patsy","married_to","perkins"],["roxie","known_as","mrs. daymon"]]}
+{"id":"Novel-47558-83","entities":["steamboat brandywine","mississippi river"],"triples":[["steamboat brandywine","located_in","mississippi river"]]}
+{"id":"Novel-47558-84","entities":["john a. lasco","susan lasco","england","america"],"triples":[["susan lasco","child_of","john a. lasco"],["john a. lasco","traveled_to","america"],["susan lasco","traveled_to","america"]]}
+{"id":"Novel-47558-85","entities":["susan lasco","john a. lasco","america","alonzo phelps"],"triples":[["susan lasco","related_to","john a. lasco"],["john a. lasco","traveled_to","america"]]}
+{"id":"Novel-47558-86","entities":["susan lasco","john a. lasco","memphis"],"triples":[["susan lasco","related_to","john a. lasco"]]}
+{"id":"Novel-47558-87","entities":["brindle bill","shirt-tail bend","susan lasco"],"triples":[["brindle bill","lived_in","shirt-tail bend"]]}
+{"id":"Novel-47558-88","entities":["brindle bill","susan lasco","simon","shirt-tail bend","sundown hill","don carlo","kentucky","carlo wood yard"],"triples":[["brindle bill","lived_in","shirt-tail bend"],["sundown hill","lived_in","shirt-tail bend"],["don carlo","traveled_to","kentucky"]]}
+{"id":"Novel-47558-89","entities":["brindle bill","sundown hill","simon","shirt-tail bend","rose simon","steamboat brandywine"],"triples":[["brindle bill","friend_of","sundown hill"],["rose simon","related_to","simon"],["simon","lived_in","shirt-tail bend"]]}
+{"id":"Novel-47558-90","entities":["brindle bill","sundown hill","simon","s. s. simon","mrs. simon","susan lasco","tom fairfield","shirt-tail bend","tennessee"],"triples":[["mrs. simon","child_of","susan lasco"],["mrs. simon","child_of","tom fairfield"],["mrs. simon","married_to","s. s. simon"],["s. s. simon","married_to","mrs. simon"],["mrs. simon","known_as","rose"]]}
+{"id":"Novel-47558-91","entities":["mrs. simon","mrs. evaline estep","brindle bill","simon","tennessee","rose"],"triples":[["mrs. simon","known_as","rose"],["rose","child_of","mrs. evaline estep"],["mrs. simon","married_to","simon"]]}
+{"id":"Novel-47558-92","entities":["simon","brindle bill","rose simon"],"triples":[["rose simon","married_to","simon"]]}
+{"id":"Novel-47558-93","entities":["rose simon","simon","susan lasco","john a. lasco","mrs. estep","tennessee","port william","kentucky river"],"triples":[["rose simon","married_to","simon"],["susan lasco","related_to","john a. lasco"],["mrs. estep","traveled_to","tennessee"]]}
+{"id":"Novel-47558-94","entities":["rose","simon","s. s. simon","tom fairfield","susan lasco","brindle bill"],"triples":[["rose","married_to","simon"],["rose","child_of","tom fairfield"],["rose","child_of","susan lasco"]]}
+{"id":"Novel-47558-95","entities":["rose simon","rose fairfield","tom fairfield","susan lasco","brindle bill","sundown hill","simon","port william","shirt-tail bend"],"triples":[["rose simon","known_as","rose fairfield"],["rose simon","child_of","tom fairfield"],["rose simon","child_of","susan lasco"],["brindle bill","lived_in","port william"],["rose simon","married_to","simon"]]}
+{"id":"Novel-47558-96","entities":["brindle bill","s. s. simon","simon"],"triples":[["s. s. simon","known_as","simon"]]}
+{"id":"Novel-47558-97","entities":["s. s. simon","brindle bill","rose","new orleans","louisiana","port william"],"triples":[["rose","married_to","s. s. simon"],["rose","traveled_to","new orleans"]]}
+{"id":"Novel-47558-98","entities":["port william","england"],"triples":[]}
+{"id":"Novel-47558-99","entities":["port william","england","brother demitt"],"triples":[["brother demitt","lived_in","port william"]]}
+{"id":"Novel-47558-100","entities":["port william","brother demitt","arch wheataker","dave deminish"],"triples":[["brother demitt","lived_in","port william"]]}
+{"id":"Novel-47558-101","entities":["dick","joe","canada","aunt katy","old demitt","port william"],"triples":[["joe","traveled_to","canada"],["aunt katy","married_to","old demitt"]]}
+{"id":"Novel-47558-102","entities":["aunt katy","ballard","port william","old demitt"],"triples":[["aunt katy","married_to","old demitt"],["aunt katy","lived_in","port william"]]}
+{"id":"Novel-47558-103","entities":["aunt katy","suza fairfield","port william","tom ditamus","cumberland mountains","ohio river"],"triples":[["aunt katy","lived_in","port william"],["suza fairfield","lived_in","port william"],["aunt katy","associated_with","suza fairfield"],["tom ditamus","lived_in","ohio river"]]}
+{"id":"Novel-47558-104","entities":["tom ditamus","suza fairfield","aunt katy","cumberland mountains"],"triples":[["tom ditamus","traveled_to","cumberland mountains"]]}
+{"id":"Novel-47558-105","entities":["tom ditamus","suza fairfield","aunt katy"],"triples":[["aunt katy","associated_with","suza fairfield"]]}
+{"id":"Novel-47558-106","entities":["tom ditamus","suza fairfield"],"triples":[]}
+{"id":"Novel-47558-107","entities":["tom ditamus","suza","aunt katy"],"triples":[]}
+{"id":"Novel-47558-108","entities":["tom ditamus","suza","aunt katy"],"triples":[]}
+{"id":"Novel-47558-109","entities":["suza fairfield","tom ditamus","port william","kentucky river"],"triples":[["suza fairfield","traveled_to","port william"]]}
+{"id":"Novel-47558-110","entities":["suza","white's creek","kentucky river","rome"],"triples":[["white's creek","part_of","kentucky river"]]}
+{"id":"Novel-47558-111","entities":["suza","aunt katy"],"triples":[]}
+{"id":"Novel-47558-112","entities":["suza fairfield","tom ditamus","port william","ohio river"],"triples":[["suza fairfield","traveled_to","port william"]]}
+{"id":"Novel-47558-113","entities":["suza fairfield","aunt katy","port william"],"triples":[["aunt katy","lived_in","port william"]]}
+{"id":"Novel-47558-114","entities":["aunt katy demitt","suza fairfield","aunt katy"],"triples":[["aunt katy","known_as","aunt katy demitt"],["aunt katy demitt","associated_with","suza fairfield"]]}
+{"id":"Novel-47558-115","entities":["aunt katy","tom ditamus","suza fairfield","old demitt","ballard","father tearful"],"triples":[["aunt katy","married_to","old demitt"],["aunt katy","associated_with","suza fairfield"]]}
+{"id":"Novel-47558-116","entities":["aunt katy demitt","suza fairfield","tom ditamus","port william"],"triples":[["aunt katy demitt","associated_with","suza fairfield"]]}
+{"id":"Novel-47558-117","entities":["don carlo","shirt-tail bend","ohio river","louisville","cincinnati","kentucky","red stone"],"triples":[["don carlo","known_as","hero of shirt-tail bend"],["don carlo","lived_in","kentucky"]]}
+{"id":"Novel-47558-118","entities":["port william","kentucky"],"triples":[["port william","located_in","kentucky"]]}
+{"id":"Novel-47558-119","entities":[],"triples":[]}
+{"id":"Novel-47558-120","entities":["don carlo","red stone"],"triples":[]}
+{"id":"Novel-47558-121","entities":["don carlo","america","greeks"],"triples":[]}
+{"id":"Novel-47558-122","entities":[],"triples":[]}
+{"id":"Novel-47558-123","entities":["don carlo"],"triples":[]}
+{"id":"Novel-47558-124","entities":["don carlo","suza fairfield","port william","aunt katy demitt","aunt katy"],"triples":[["aunt katy","known_as","aunt katy demitt"],["aunt katy demitt","associated_with","suza fairfield"],["suza fairfield","known_as","belle of port william"]]}
+{"id":"Novel-47558-125","entities":["aunt katy","suza fairfield","don carlo","port william","shirt-tail bend"],"triples":[["suza fairfield","known_as","belle of port william"],["don carlo","known_as","hero of shirt-tail bend"],["suza fairfield","married_to","don carlo"]]}
+{"id":"Novel-47558-126","entities":["aunt katy","betsey green","cousin sally"],"triples":[]}
+{"id":"Novel-47558-127","entities":["young simon","s. s. simon"],"triples":[["young simon","child_of","s. s. simon"]]}
+{"id":"Novel-47558-128","entities":["young simon","s. s. simon","mississippi river"],"triples":[["young simon","child_of","s. s. simon"]]}
+{"id":"Novel-47558-129","entities":["young simon","s. s. simon","roxie daymon","roxie fairfield","suza fairfield","louisville","mississippi river"],"triples":[["roxie daymon","known_as","roxie fairfield"],["s. s. simon","associated_with","roxie daymon"]]}
+{"id":"Novel-47558-130","entities":["s. s. simon","roxie daymon","mississippi"],"triples":[["s. s. simon","associated_with","roxie daymon"]]}
+{"id":"Novel-47558-131","entities":["s. s. simon"],"triples":[]}
+{"id":"Novel-47558-132","entities":["s. s. simon","young simon","roxie daymon"],"triples":[["young simon","child_of","s. s. simon"]]}
+{"id":"Novel-47558-133","entities":["young simon","caesar simon","s. s. simon","west tennessee","big-sis","little-sis"],"triples":[["caesar simon","child_of","s. s. simon"],["caesar simon","known_as","cousin caesar"],["caesar simon","related_to","young simon"]]}
+{"id":"Novel-47558-134","entities":["caesar simon","big-sis"],"triples":[["caesar simon","known_as","cousin caesar"]]}
+{"id":"Novel-47558-135","entities":["caesar simon","big-sis","little-sis","old smith","tennessee river","rob roy"],"triples":[["caesar simon","known_as","cousin caesar"],["caesar simon","works_at","old smith"],["rob roy","works_at","old smith"]]}
+{"id":"Novel-47558-136","entities":["rob roy","caesar simon","old smith"],"triples":[["caesar simon","known_as","cousin caesar"],["rob roy","works_at","old smith"]]}
+{"id":"Novel-47558-137","entities":["caesar simon","rob roy","old smith","cole conway","steve sharp","paducah","kentucky"],"triples":[["caesar simon","known_as","cole conway"],["caesar simon","traveled_to","paducah"],["paducah","located_in","kentucky"],["cole conway","friend_of","steve sharp"]]}
+{"id":"Novel-47558-138","entities":["cole conway","steve sharp"],"triples":[["cole conway","friend_of","steve sharp"]]}
+{"id":"Novel-47558-139","entities":["sharp","conway"],"triples":[]}
+{"id":"Novel-47558-140","entities":["sharp","conway"],"triples":[]}
+{"id":"Novel-47558-141","entities":[],"triples":[]}
+{"id":"Novel-47558-142","entities":[],"triples":[]}
+{"id":"Novel-47558-143","entities":["sharp","conway","steve brindle","brindle bill","sundown hill","mississippi","shirt-tail bend"],"triples":[["steve brindle","child_of","brindle bill"],["brindle bill","lived_in","shirt-tail bend"],["steve brindle","known_as","steve sharp"],["sundown hill","related_to","steve brindle"]]}
+{"id":"Novel-47558-144","entities":["conway","brindle","caesar simon","nancy wade","s. s. simon","tennessee"],"triples":[["caesar simon","child_of","nancy wade"],["caesar simon","born_in","tennessee"],["caesar simon","known_as","conway"]]}
+{"id":"Novel-47558-145","entities":["brindle","simon","s. s. simon","caesar simon","arkansas","roxie daymon","roxie fairfield","chicago"],"triples":[["caesar simon","related_to","s. s. simon"],["s. s. simon","lived_in","arkansas"],["roxie daymon","known_as","roxie fairfield"],["roxie daymon","lived_in","chicago"]]}
+{"id":"Novel-47558-146","entities":["roxie daymon","aunt patsy perkins","chicago","gov. morock","daymon"],"triples":[["aunt patsy perkins","lived_in","chicago"],["roxie daymon","child_of","daymon"],["roxie daymon","lived_in","chicago"]]}
+{"id":"Novel-47558-147","entities":["roxie","gov. morock","chicago","new orleans"],"triples":[["roxie","lived_in","chicago"],["roxie","traveled_to","new orleans"]]}
+{"id":"Novel-47558-148","entities":["roxie daymon","st. louis","new orleans","chicago"],"triples":[["roxie daymon","lived_in","chicago"],["roxie daymon","traveled_to","new orleans"]]}
+{"id":"Novel-47558-149","entities":["young simon","caesar simon","west indies","roxie daymon","simon plantations"],"triples":[["young simon","traveled_to","west indies"],["caesar simon","traveled_to","west indies"],["young simon","associated_with","simon plantations"]]}
+{"id":"Novel-47558-150","entities":["simon","young simon","roxie daymon","mississippi","roman eagle"],"triples":[["young simon","known_as","simon"]]}
+{"id":"Novel-47558-151","entities":["young simon","roxie daymon","roxie fairfield","kentucky","aunt patsey perkins","rose","suza"],"triples":[["roxie daymon","child_of","roxie fairfield"],["roxie fairfield","born_in","kentucky"],["rose","related_to","roxie fairfield"],["suza","related_to","roxie fairfield"]]}
+{"id":"Novel-47558-152","entities":["simon","young simon","caesar simon"],"triples":[["caesar simon","related_to","young simon"]]}
+{"id":"Novel-47558-153","entities":["simon","caesar simon","young simon","roxie daymon","brindle bill","kentucky","chicago","crescent city","west indies"],"triples":[["young simon","traveled_to","west indies"],["caesar simon","traveled_to","west indies"],["young simon","married_to","roxie daymon"],["roxie daymon","lived_in","chicago"]]}
+{"id":"Novel-47558-154","entities":["young simon","caesar simon","roxie daymon","chicago","gov. morock"],"triples":[["young simon","traveled_to","chicago"],["caesar simon","traveled_to","chicago"]]}
+{"id":"Novel-47558-155","entities":["caesar simon","young simon","roxie daymon","gov. morock","arkansas"],"triples":[["young simon","lived_in","arkansas"]]}
+{"id":"Novel-47558-156","entities":["caesar simon","young simon","roxie daymon"],"triples":[]}
+{"id":"Novel-47558-157","entities":["caesar simon","gov. morock","simon"],"triples":[["caesar simon","related_to","simon"]]}
+{"id":"Novel-47558-158","entities":["caesar simon","gov. morock"],"triples":[]}
+{"id":"Novel-47558-159","entities":["caesar simon","gov. morock","young simon"],"triples":[]}
+{"id":"Novel-47558-160","entities":["caesar simon","gov. morock","cliff carlo","don carlo","suza fairfield","kentucky","shirt-tail bend","port william"],"triples":[["cliff carlo","child_of","don carlo"],["don carlo","known_as","hero of shirt-tail bend"],["suza fairfield","known_as","belle of port william"],["don carlo","married_to","suza fairfield"],["caesar simon","traveled_to","kentucky"]]}
+{"id":"Novel-47558-161","entities":["american union"],"triples":[]}
+{"id":"Novel-47558-162","entities":["caesar simon","cliff carlo","ohio river","arkansas"],"triples":[]}
+{"id":"Novel-47558-163","entities":["cliff carlo","roxie daymon","caesar simon","arkansas","fort sumter","south carolina","washington city","united states"],"triples":[["roxie daymon","related_to","cliff carlo"],["fort sumter","located_in","south carolina"]]}
+{"id":"Novel-47558-164","entities":["caesar simon","carlo family","kentucky","missouri","united states","washington city"],"triples":[["caesar simon","traveled_to","missouri"]]}
+{"id":"Novel-47558-165","entities":["caesar simon","gen. lyon","gen. sterling price","missouri","united states","washington city","confederate states of america"],"triples":[["caesar simon","served_in","gen. sterling price"],["gen. lyon","served_in","united states"]]}
+{"id":"Novel-47558-166","entities":["price","jews","israel"],"triples":[["price","served_in","missouri"]]}
+{"id":"Novel-47558-167","entities":["gov. jackson","jefferson city","neosho","price","missouri","kentucky"],"triples":[["gov. jackson","traveled_to","neosho"],["neosho","located_in","missouri"],["price","served_in","missouri"]]}
+{"id":"Novel-47558-168","entities":["gen. price","romans","missouri","boonville"],"triples":[["gen. price","served_in","missouri"],["boonville","located_in","missouri"]]}

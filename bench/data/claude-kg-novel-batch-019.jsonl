@@ -1,0 +1,100 @@
+{"id":"Novel-5956-172","entities":["latimer","ellen","bishop"],"triples":[["bishop","parent_of","ellen"],["latimer","associated_with","ellen"]]}
+{"id":"Novel-5956-173","entities":["bishop","church","college"],"triples":[["bishop","member_of","church"],["bishop","associated_with","college"]]}
+{"id":"Novel-5956-174","entities":["bishop","ellen"],"triples":[["bishop","parent_of","ellen"]]}
+{"id":"Novel-5956-175","entities":["ellen"],"triples":[]}
+{"id":"Novel-5956-176","entities":["ellen","bishop"],"triples":[["bishop","parent_of","ellen"]]}
+{"id":"Novel-5956-177","entities":["latimer","bishop"],"triples":[["latimer","associated_with","bishop"]]}
+{"id":"Novel-5956-178","entities":["latimer","bishop"],"triples":[["latimer","associated_with","bishop"]]}
+{"id":"Novel-5956-179","entities":["latimer","north pole","africa"],"triples":[["north pole","type_of","place"],["africa","type_of","place"]]}
+{"id":"Novel-5956-180","entities":["latimer","bishop"],"triples":[["latimer","associated_with","bishop"]]}
+{"id":"Novel-5956-181","entities":["latimer","bishop","ellen"],"triples":[["bishop","parent_of","ellen"],["latimer","associated_with","ellen"]]}
+{"id":"Novel-5956-182","entities":["latimer","bishop","ellen"],"triples":[["bishop","parent_of","ellen"],["latimer","related_to","bishop"]]}
+{"id":"Novel-5956-183","entities":["latimer","bishop"],"triples":[["latimer","associated_with","bishop"]]}
+{"id":"Novel-5956-184","entities":["latimer","ellen","bishop"],"triples":[["bishop","parent_of","ellen"],["latimer","associated_with","bishop"]]}
+{"id":"Novel-5956-185","entities":["ellen","bishop"],"triples":[["bishop","parent_of","ellen"]]}
+{"id":"Novel-5956-186","entities":["ellen","bishop","latimer"],"triples":[["bishop","parent_of","ellen"],["latimer","associated_with","ellen"]]}
+{"id":"Novel-5956-187","entities":["ellen","latimer"],"triples":[["latimer","associated_with","ellen"]]}
+{"id":"Novel-5956-188","entities":["ellen","latimer"],"triples":[["latimer","associated_with","ellen"]]}
+{"id":"Novel-5956-189","entities":["latimer","ellen"],"triples":[["latimer","associated_with","ellen"]]}
+{"id":"Novel-5956-190","entities":["ellen","latimer"],"triples":[["latimer","associated_with","ellen"]]}
+{"id":"Novel-5956-191","entities":["latimer"],"triples":[]}
+{"id":"Novel-5956-192","entities":["latimer","bishop","ellen"],"triples":[["bishop","parent_of","ellen"],["latimer","associated_with","ellen"]]}
+{"id":"Novel-5956-193","entities":["ellen","latimer","bishop"],"triples":[["bishop","parent_of","ellen"],["latimer","associated_with","ellen"]]}
+{"id":"Novel-5956-194","entities":["latimer"],"triples":[]}
+{"id":"Novel-5956-195","entities":["latimer","case","green-goods men","room no. 8","case's tenement"],"triples":[["room no. 8","located_in","case's tenement"],["green-goods men","associated_with","room no. 8"]]}
+{"id":"Novel-5956-196","entities":["snipes","hegelman's slip","east river","penitentiary"],"triples":[["hegelman's slip","located_in","east river"]]}
+{"id":"Novel-5956-197","entities":["snipes","home"],"triples":[["snipes","known_as","trailer"]]}
+{"id":"Novel-5956-198","entities":["snipes","alf wolfe","green-goods men","home"],"triples":[["alf wolfe","member_of","green-goods men"],["snipes","works_at","green-goods men"]]}
+{"id":"Novel-5956-199","entities":["green-goods men","united states","new york"],"triples":[["new york","located_in","united states"],["green-goods men","located_in","new york"]]}
+{"id":"Novel-5956-200","entities":["countryman","green-goods men"],"triples":[]}
+{"id":"Novel-5956-201","entities":["snipes","trailer"],"triples":[["snipes","known_as","trailer"]]}
+{"id":"Novel-5956-202","entities":["snipes","alf wolfe","case","case's tenement","room no. 8"],"triples":[["room no. 8","located_in","case's tenement"],["alf wolfe","works_at","room no. 8"]]}
+{"id":"Novel-5956-203","entities":["alf wolfe","snipes","naseby raegen","rags raegen","fresh air fund"],"triples":[["naseby raegen","child_of","rags raegen"],["naseby raegen","traveled_to","fresh air fund"],["snipes","associated_with","alf wolfe"]]}
+{"id":"Novel-5956-204","entities":["naseby raegen","cherry street","snipes","case's tenement"],"triples":[["naseby raegen","lived_in","cherry street"],["case's tenement","type_of","tenement"]]}
+{"id":"Novel-5956-205","entities":["snipes","case's tenement","room no. 8"],"triples":[["room no. 8","located_in","case's tenement"]]}
+{"id":"Novel-5956-206","entities":["snipes","perceval","alf wolfe"],"triples":[["alf wolfe","known_as","perceval"]]}
+{"id":"Novel-5956-207","entities":["snipes"],"triples":[]}
+{"id":"Novel-5956-208","entities":["snipes","perceval"],"triples":[]}
+{"id":"Novel-5956-209","entities":["snipes","perceval","abraham"],"triples":[["abraham","child_of","old man"]]}
+{"id":"Novel-5956-210","entities":["abraham","perceval","fresh-air children"],"triples":[["abraham","traveled_to","city"]]}
+{"id":"Novel-5956-211","entities":["abraham","deacon","kate","perceval"],"triples":[["kate","child_of","deacon"],["abraham","associated_with","kate"]]}
+{"id":"Novel-5956-212","entities":["snipes","abe","gang"],"triples":[["snipes","member_of","gang"]]}
+{"id":"Novel-5956-213","entities":["snipes","grand central depot","alf wolfe","room no. 8"],"triples":[["alf wolfe","works_at","room no. 8"]]}
+{"id":"Novel-5956-214","entities":["snipes","alf wolfe","room no. 8"],"triples":[["alf wolfe","works_at","room no. 8"]]}
+{"id":"Novel-5956-215","entities":["wolfe"],"triples":[]}
+{"id":"Novel-5956-216","entities":["wolfe","snipes","bowery","grand central depot","abraham"],"triples":[["abraham","traveled_to","grand central depot"]]}
+{"id":"Novel-5956-217","entities":["abraham","deacon","trailer"],"triples":[["abraham","associated_with","deacon"]]}
+{"id":"Novel-5956-218","entities":["snipes","trailer"],"triples":[["snipes","known_as","trailer"]]}
+{"id":"Novel-5956-219","entities":["snipes","new york","perceval"],"triples":[["snipes","lived_in","new york"]]}
+{"id":"Novel-5956-220","entities":["harringford","goodwood plunger","monte carlo","casino"],"triples":[["harringford","known_as","goodwood plunger"],["harringford","traveled_to","monte carlo"],["casino","located_in","monte carlo"]]}
+{"id":"Novel-5956-221","entities":["harringford","monte carlo","casino"],"triples":[["casino","located_in","monte carlo"]]}
+{"id":"Novel-5956-222","entities":["harringford"],"triples":[]}
+{"id":"Novel-5956-223","entities":["harringford","monte carlo"],"triples":[["harringford","traveled_to","monte carlo"]]}
+{"id":"Novel-5956-224","entities":["harringford","surrey","goodwood plunger"],"triples":[["harringford","born_in","surrey"],["harringford","known_as","goodwood plunger"]]}
+{"id":"Novel-5956-225","entities":["harringford","surrey","goodwood plunger","fortune","casino"],"triples":[["harringford","known_as","goodwood plunger"],["harringford","born_in","surrey"]]}
+{"id":"Novel-5956-226","entities":["harringford","norton","siren","goodwood cup"],"triples":[["siren","associated_with","norton"],["norton","friend_of","harringford"]]}
+{"id":"Novel-5956-227","entities":["harringford","lord norton","siren","england"],"triples":[["siren","associated_with","lord norton"],["lord norton","parent_of","norton"]]}
+{"id":"Novel-5956-228","entities":["harringford"],"triples":[]}
+{"id":"Novel-5956-229","entities":["firefly","vixen","trouble","norton"],"triples":[]}
+{"id":"Novel-5956-230","entities":["siren","lord norton","harringford"],"triples":[["siren","associated_with","lord norton"]]}
+{"id":"Novel-5956-231","entities":["lord norton","siren","harringford"],"triples":[["siren","associated_with","lord norton"]]}
+{"id":"Novel-5956-232","entities":["norton","cecil","griffith","goodwood plunger","harringford","eton"],"triples":[["harringford","known_as","goodwood plunger"],["cecil","known_as","goodwood plunger"]]}
+{"id":"Novel-5956-233","entities":["harringford","fortune"],"triples":[]}
+{"id":"Novel-5956-234","entities":["harringford","surrey","jews"],"triples":[["harringford","lived_in","surrey"]]}
+{"id":"Novel-5956-235","entities":["harringford","boy plunger"],"triples":[["harringford","known_as","boy plunger"]]}
+{"id":"Novel-5956-236","entities":["harringford"],"triples":[]}
+{"id":"Novel-5956-237","entities":["harringford","grand prix"],"triples":[["harringford","associated_with","grand prix"]]}
+{"id":"Novel-5956-238","entities":["harringford","walters","frou frou"],"triples":[["walters","works_at","harringford"]]}
+{"id":"Novel-5956-239","entities":["harringford","paris","walters"],"triples":[["walters","works_at","harringford"],["harringford","traveled_to","paris"]]}
+{"id":"Novel-5956-240","entities":["harringford","monte carlo","casino","russian"],"triples":[["casino","located_in","monte carlo"],["harringford","traveled_to","monte carlo"]]}
+{"id":"Novel-5956-241","entities":["harringford","monte carlo"],"triples":[["harringford","traveled_to","monte carlo"]]}
+{"id":"Novel-5956-242","entities":["harringford","walters","paris","monte carlo"],"triples":[["walters","works_at","harringford"],["harringford","traveled_to","monte carlo"]]}
+{"id":"Novel-5956-243","entities":["harringford","paris"],"triples":[["harringford","traveled_to","paris"]]}
+{"id":"Novel-5956-244","entities":["harringford","hargraves"],"triples":[["hargraves","works_at","church"]]}
+{"id":"Novel-5956-245","entities":["harringford"],"triples":[]}
+{"id":"Novel-5956-246","entities":["cecil","harringford"],"triples":[["cecil","child_of","harringford"]]}
+{"id":"Novel-5956-247","entities":["cecil","harringford"],"triples":[["cecil","child_of","harringford"]]}
+{"id":"Novel-5956-248","entities":["goodwood plunger"],"triples":[]}
+{"id":"Novel-5956-249","entities":["goodwood plunger"],"triples":[]}
+{"id":"Novel-5956-250","entities":["goodwood plunger","monte carlo"],"triples":[["goodwood plunger","traveled_to","monte carlo"]]}
+{"id":"Novel-5956-251","entities":["goodwood plunger"],"triples":[]}
+{"id":"Novel-5956-252","entities":["louis","paris","duval"],"triples":[["louis","traveled_to","paris"]]}
+{"id":"Novel-5956-253","entities":["goodwood plunger","louis","carbut"],"triples":[["louis","works_at","carbut"]]}
+{"id":"Novel-5956-254","entities":["carbut","louis"],"triples":[["louis","works_at","carbut"]]}
+{"id":"Novel-5956-255","entities":["plunger","carbut"],"triples":[]}
+{"id":"Novel-5956-256","entities":["goodwood plunger"],"triples":[]}
+{"id":"Novel-5956-257","entities":["plunger","cecil","frenchman"],"triples":[]}
+{"id":"Novel-5956-258","entities":["frenchman","plunger"],"triples":[]}
+{"id":"Novel-5956-259","entities":["plunger"],"triples":[]}
+{"id":"Novel-5956-260","entities":["plunger","frenchman"],"triples":[]}
+{"id":"Novel-5956-261","entities":["plunger","frenchman"],"triples":[]}
+{"id":"Novel-5956-262","entities":["plunger","frenchman"],"triples":[]}
+{"id":"Novel-5956-263","entities":["plunger","frenchman","croupier"],"triples":[]}
+{"id":"Novel-5956-264","entities":["plunger","harringford","frenchman"],"triples":[]}
+{"id":"Novel-5956-265","entities":["plunger","frenchman","monte carlo"],"triples":[["frenchman","traveled_to","monte carlo"]]}
+{"id":"Novel-5956-266","entities":["paris","frenchman","carbut"],"triples":[["frenchman","traveled_to","paris"]]}
+{"id":"Novel-5956-267","entities":["frenchman","paris"],"triples":[["frenchman","traveled_to","paris"]]}
+{"id":"Novel-5956-268","entities":["plunger","harringford"],"triples":[["plunger","known_as","harringford"]]}
+{"id":"Novel-5956-269","entities":["harringford"],"triples":[]}
+{"id":"Novel-5956-270","entities":["cecil","walters","harringford"],"triples":[["walters","works_at","cecil"]]}
+{"id":"Novel-5956-271","entities":["plunger","walters","england","harringford","catherwaight"],"triples":[["walters","works_at","plunger"],["plunger","traveled_to","england"]]}

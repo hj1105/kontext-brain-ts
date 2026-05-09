@@ -1,0 +1,100 @@
+{"id":"Novel-47558-169","entities":["missouri","mississippi river","southern confederacy","cousin caesar"],"triples":[["cousin caesar","member_of","southern confederacy"],["southern confederacy","located_in","missouri"]]}
+{"id":"Novel-47558-170","entities":["cousin caesar","caesar simon","missouri","gen. price"],"triples":[["cousin caesar","known_as","caesar simon"],["caesar simon","served_in","gen. price"],["gen. price","located_in","missouri"]]}
+{"id":"Novel-47558-171","entities":["cousin caesar","battle of oak hill","battle of springfield","mississippi river","gen. lyon","mcculloch","price","pearce","wilson's creek","springfield"],"triples":[["battle of oak hill","called","battle of springfield"],["battle of oak hill","located_in","wilson's creek"],["gen. lyon","served_in","springfield"],["mcculloch","associated_with","price"],["price","associated_with","pearce"]]}
+{"id":"Novel-47558-172","entities":["gen. lyon","cousin caesar","springfield","confederates","federals"],"triples":[["federals","traveled_to","springfield"],["gen. lyon","member_of","federals"],["cousin caesar","member_of","confederates"]]}
+{"id":"Novel-47558-173","entities":["cousin caesar"],"triples":[]}
+{"id":"Novel-47558-174","entities":["cousin caesar","steve brindle","cherokee indian"],"triples":[["steve brindle","friend_of","cousin caesar"],["cherokee indian","associated_with","steve brindle"]]}
+{"id":"Novel-47558-175","entities":["cousin caesar","steve brindle","cherokee indian","general pearce","general mcculloch","arkansas","general price"],"triples":[["steve brindle","served_in","general pearce"],["steve brindle","born_in","arkansas"],["cherokee indian","member_of","general mcculloch"],["general price","associated_with","general mcculloch"]]}
+{"id":"Novel-47558-176","entities":["cousin caesar"],"triples":[]}
+{"id":"Novel-47558-177","entities":["cousin caesar","steve brindle","general price","missouri river","lexington","colonel mulligan"],"triples":[["steve brindle","friend_of","cousin caesar"],["general price","traveled_to","lexington"],["lexington","located_in","missouri river"],["colonel mulligan","member_of","general price"]]}
+{"id":"Novel-47558-178","entities":["governor morock","chicago","roxie daymon","washington","cousin caesar","price"],"triples":[["governor morock","works_at","chicago"],["roxie daymon","lived_in","chicago"],["cousin caesar","served_in","price"]]}
+{"id":"Novel-47558-179","entities":["roxie daymon","chicago","governor morock","caesar simon","young simon","arkansas"],"triples":[["roxie daymon","lived_in","chicago"],["governor morock","works_at","chicago"],["caesar simon","related_to","young simon"],["young simon","born_in","arkansas"]]}
+{"id":"Novel-47558-180","entities":["roxie daymon","governor morock"],"triples":[["governor morock","associated_with","roxie daymon"]]}
+{"id":"Novel-47558-181","entities":["roxie daymon","governor morock","simon plantations"],"triples":[["governor morock","associated_with","roxie daymon"],["governor morock","associated_with","simon plantations"]]}
+{"id":"Novel-47558-182","entities":["governor morock","roxie daymon","chicago"],"triples":[["governor morock","works_at","chicago"],["roxie daymon","associated_with","governor morock"]]}
+{"id":"Novel-47558-183","entities":["governor morock","chicago","roxie daymon","cliff carlo","simon estate","kentucky"],"triples":[["governor morock","works_at","chicago"],["cliff carlo","born_in","kentucky"],["governor morock","associated_with","simon estate"]]}
+{"id":"Novel-47558-184","entities":["cliff carlo","kentucky","caesar simon","missouri","price","earl van dorn","mcculloch","curtis","sturgis","elkhorn"],"triples":[["cliff carlo","born_in","kentucky"],["earl van dorn","member_of","price"],["price","associated_with","mcculloch"],["curtis","associated_with","sturgis"],["earl van dorn","traveled_to","elkhorn"]]}
+{"id":"Novel-47558-185","entities":["van dorn","price","cousin caesar","steve brindle"],"triples":[["cousin caesar","served_in","price"],["steve brindle","friend_of","cousin caesar"],["van dorn","associated_with","price"]]}
+{"id":"Novel-47558-186","entities":["cousin caesar","steve brindle","caesar simon","arkansas","price"],"triples":[["cousin caesar","known_as","caesar simon"],["steve brindle","friend_of","cousin caesar"],["caesar simon","served_in","price"]]}
+{"id":"Novel-47558-187","entities":["cousin caesar","caesar simon","steve","chicago"],"triples":[["cousin caesar","known_as","caesar simon"],["steve","friend_of","cousin caesar"]]}
+{"id":"Novel-47558-188","entities":["cousin caesar","caesar simon","steve brindle","cherokee indian","springfield","albert pike","mississippi river","van dorn"],"triples":[["cousin caesar","known_as","caesar simon"],["steve brindle","friend_of","cousin caesar"],["cherokee indian","associated_with","albert pike"],["cherokee indian","associated_with","steve brindle"]]}
+{"id":"Novel-47558-189","entities":["van dorn","mississippi river","price","cousin caesar","des arc","white river","memphis","tennessee","iuka","corinth","rosecrans"],"triples":[["des arc","located_in","white river"],["price","traveled_to","memphis"],["memphis","located_in","tennessee"],["cousin caesar","served_in","price"],["van dorn","associated_with","price"]]}
+{"id":"Novel-47558-190","entities":["corinth","rosecrans","price","van dorn","t. c. hindman","arkansas","mississippi river"],"triples":[["t. c. hindman","works_at","arkansas"],["arkansas","part_of","mississippi river"],["price","associated_with","van dorn"]]}
+{"id":"Novel-47558-191","entities":["s. s. simon","simon plantation","governor morock","cousin caesar","general hindman","mississippi","president davis","kirby","smith","holmes","price","helena"],"triples":[["governor morock","associated_with","simon plantation"],["s. s. simon","associated_with","simon plantation"],["general hindman","associated_with","mississippi"],["price","associated_with","holmes"]]}
+{"id":"Novel-47558-192","entities":["holmes","price","fagan","marmaduke","arkansas","missouri","helena"],"triples":[["price","member_of","holmes"],["fagan","born_in","arkansas"],["marmaduke","born_in","arkansas"],["marmaduke","associated_with","missouri"]]}
+{"id":"Novel-47558-193","entities":["price","marmaduke","fagan","cousin caesar","steve brindle","caesar simon"],"triples":[["cousin caesar","known_as","caesar simon"],["steve brindle","friend_of","cousin caesar"],["marmaduke","associated_with","price"]]}
+{"id":"Novel-47558-194","entities":["steve brindle","caesar simon","cousin caesar","holmes","price","simon family"],"triples":[["caesar simon","member_of","simon family"],["cousin caesar","known_as","caesar simon"],["caesar simon","served_in","price"],["price","associated_with","holmes"]]}
+{"id":"Novel-47558-195","entities":["caesar simon","simon family","president lincoln","simon plantations","governor morock","maine","florida","virginia","california"],"triples":[["caesar simon","member_of","simon family"],["governor morock","associated_with","simon plantations"]]}
+{"id":"Novel-47558-196","entities":["governor morock","roxie daymon","cliff carlo","kentucky","b. f. craig","pen pictures"],"triples":[["cliff carlo","lived_in","kentucky"],["pen pictures","written_by","b. f. craig"]]}
+{"id":"Novel-5956-0","entities":["juliet sutherland","charles franks","online distributed proofreading team","gallegher and other stories","richard harding davis","charles dana gibson","charles scribner's sons"],"triples":[["gallegher and other stories","written_by","richard harding davis"],["charles franks","member_of","online distributed proofreading team"],["juliet sutherland","member_of","online distributed proofreading team"]]}
+{"id":"Novel-5956-1","entities":["gibson","charles scribner's sons","gallegher","mr. raegen","miss catherwaight","van bibber"],"triples":[["gallegher","type_of","newspaper story"]]}
+{"id":"Novel-5956-2","entities":["gallegher"],"triples":[]}
+{"id":"Novel-5956-3","entities":["gallegher","pilgrim fathers","woolwich mills","black diamonds","wharf rats","richmond"],"triples":[["black diamonds","associated_with","gallegher"],["wharf rats","located_in","richmond"]]}
+{"id":"Novel-5956-4","entities":["gallegher","philadelphia","press"],"triples":[["gallegher","lived_in","philadelphia"],["gallegher","works_at","press"]]}
+{"id":"Novel-5956-5","entities":["gallegher","press"],"triples":[["gallegher","works_at","press"]]}
+{"id":"Novel-5956-6","entities":["gallegher"],"triples":[]}
+{"id":"Novel-5956-7","entities":["gallegher","home for destitute orphans"],"triples":[["gallegher","traveled_to","home for destitute orphans"]]}
+{"id":"Novel-5956-8","entities":["gallegher","philadelphia","dutchy mack","dick oxford","gentleman dan","united states","burrbank","new york","bombay"],"triples":[["dick oxford","known_as","gentleman dan"],["gallegher","lived_in","philadelphia"],["burrbank","located_in","new york"]]}
+{"id":"Novel-5956-9","entities":["richard f. burrbank","new york","stephen s. hade"],"triples":[["richard f. burrbank","lived_in","new york"],["stephen s. hade","works_at","richard f. burrbank"]]}
+{"id":"Novel-5956-10","entities":["stephen s. hade","new york","liverpool","sydney","australia"],"triples":[["sydney","located_in","australia"],["stephen s. hade","traveled_to","new york"]]}
+{"id":"Novel-5956-11","entities":["hade","philadelphia","new york","new jersey","gallegher","burrbank"],"triples":[["hade","known_as","burrbank"],["gallegher","lived_in","philadelphia"]]}
+{"id":"Novel-5956-12","entities":["gallegher","burrbank"],"triples":[]}
+{"id":"Novel-5956-13","entities":["gallegher","detective hefflefinger","inspector byrnes","philadelphia","new york"],"triples":[["detective hefflefinger","member_of","inspector byrnes"],["detective hefflefinger","traveled_to","philadelphia"],["detective hefflefinger","born_in","new york"]]}
+{"id":"Novel-5956-14","entities":["gallegher","byrnes","hefflefinger"],"triples":[["hefflefinger","member_of","byrnes"]]}
+{"id":"Novel-5956-15","entities":["gallegher","press"],"triples":[["gallegher","works_at","press"]]}
+{"id":"Novel-5956-16","entities":["gallegher","philadelphia","kensington railroad station","new york"],"triples":[["gallegher","lived_in","philadelphia"],["kensington raiload station","located_in","philadelphia"]]}
+{"id":"Novel-5956-17","entities":["gallegher","torresdale","philadelphia"],"triples":[["torresdale","located_in","philadelphia"],["gallegher","traveled_to","torresdale"]]}
+{"id":"Novel-5956-18","entities":["hade","torresdale","gallegher"],"triples":[["gallegher","traveled_to","torresdale"],["hade","traveled_to","torresdale"]]}
+{"id":"Novel-5956-19","entities":["gallegher","eagle inn","philadelphia","keppler"],"triples":[["eagle inn","located_in","philadelphia"],["keppler","works_at","eagle inn"]]}
+{"id":"Novel-5956-20","entities":["gallegher","keppler"],"triples":[["keppler","friend_of","gallegher"]]}
+{"id":"Novel-5956-21","entities":["gallegher","keppler","mr. carleton"],"triples":[["mr. carleton","associated_with","keppler"]]}
+{"id":"Novel-5956-22","entities":["mr. carleton","keppler"],"triples":[["mr. carleton","associated_with","keppler"]]}
+{"id":"Novel-5956-23","entities":["gallegher","hefflefinger","torresdale","pennsylvania railroad"],"triples":[["torresdale","located_in","pennsylvania railroad"],["hefflefinger","traveled_to","torresdale"]]}
+{"id":"Novel-5956-24","entities":["gallegher","torresdale","sporting editor"],"triples":[["gallegher","traveled_to","torresdale"]]}
+{"id":"Novel-5956-25","entities":["gallegher","hefflefinger","hade","new york","philadelphia"],"triples":[["hefflefinger","traveled_to","new york"],["hefflefinger","traveled_to","philadelphia"]]}
+{"id":"Novel-5956-26","entities":["gallegher","hefflefinger","hade","torresdale","new york","jersey city"],"triples":[["jersey city","located_in","new york"],["hefflefinger","traveled_to","torresdale"]]}
+{"id":"Novel-5956-27","entities":["gallegher","hefflefinger","sporting editor"],"triples":[]}
+{"id":"Novel-5956-28","entities":["gallegher","hefflefinger","mr. dwyer","michael e. dwyer","hade","burrbank"],"triples":[["mr. dwyer","known_as","michael e. dwyer"],["hade","associated_with","burrbank"]]}
+{"id":"Novel-5956-29","entities":["sporting editor","gallegher","ridge avenue road","broad street","eagle inn","torresdale","press"],"triples":[["eagle inn","located_in","torresdale"],["broad street","located_in","torresdale"]]}
+{"id":"Novel-5956-30","entities":["gallegher","sporting editor"],"triples":[]}
+{"id":"Novel-5956-31","entities":["gallegher"],"triples":[]}
+{"id":"Novel-5956-32","entities":["gallegher","torresdale","mr. dwyer","press","hade","new york"],"triples":[["mr. dwyer","works_at","press"],["hade","traveled_to","new york"]]}
+{"id":"Novel-5956-33","entities":["dwyer","gallegher","hade"],"triples":[]}
+{"id":"Novel-5956-34","entities":["dwyer","hefflefinger","gallegher","keppler","hade"],"triples":[["keppler","associated_with","hefflefinger"]]}
+{"id":"Novel-5956-35","entities":["keppler","mr. dwyer"],"triples":[["mr. dwyer","friend_of","keppler"]]}
+{"id":"Novel-5956-36","entities":["gallegher"],"triples":[]}
+{"id":"Novel-5956-37","entities":["gallegher","hefflefinger"],"triples":[]}
+{"id":"Novel-5956-38","entities":["gallegher"],"triples":[]}
+{"id":"Novel-5956-39","entities":["gallegher"],"triples":[]}
+{"id":"Novel-5956-40","entities":["gallegher","keppler","mr. dwyer"],"triples":[]}
+{"id":"Novel-5956-41","entities":["gallegher"],"triples":[]}
+{"id":"Novel-5956-42","entities":["hade","dwyer","keppler"],"triples":[["hade","associated_with","keppler"]]}
+{"id":"Novel-5956-43","entities":["hefflefinger","gallegher"],"triples":[]}
+{"id":"Novel-5956-44","entities":["gallegher"],"triples":[]}
+{"id":"Novel-5956-45","entities":["gallegher"],"triples":[]}
+{"id":"Novel-5956-46","entities":["gallegher"],"triples":[]}
+{"id":"Novel-5956-47","entities":[],"triples":[]}
+{"id":"Novel-5956-48","entities":["keppler"],"triples":[]}
+{"id":"Novel-5956-49","entities":["new york","mr. dwyer","heenan-sayers fight"],"triples":[["mr. dwyer","born_in","new york"]]}
+{"id":"Novel-5956-50","entities":["hefflefinger","hade"],"triples":[]}
+{"id":"Novel-5956-51","entities":["hade","hefflefinger"],"triples":[]}
+{"id":"Novel-5956-52","entities":["hade","hefflefinger"],"triples":[]}
+{"id":"Novel-5956-53","entities":["gallegher","hade"],"triples":[]}
+{"id":"Novel-5956-54","entities":["hefflefinger","byrnes","arlie lane","carleton","gallegher","new york"],"triples":[["arlie lane","known_as","carleton"],["hefflefinger","member_of","byrnes"],["hefflefinger","traveled_to","new york"]]}
+{"id":"Novel-5956-55","entities":["hefflefinger","gallegher","mr. dwyer","scott","captain scott"],"triples":[["captain scott","known_as","scott"]]}
+{"id":"Novel-5956-56","entities":["mr. dwyer","scott","new york","hade"],"triples":[["scott","associated_with","mr. dwyer"]]}
+{"id":"Novel-5956-57","entities":["mr. dwyer","captain scott","junior republican club"],"triples":[["captain scott","associated_with","junior republican club"]]}
+{"id":"Novel-5956-58","entities":["mr. dwyer","gallegher","hade"],"triples":[]}
+{"id":"Novel-5956-59","entities":["mr. dwyer","gallegher"],"triples":[]}
+{"id":"Novel-5956-60","entities":["gallegher","keppler"],"triples":[["keppler","parent_of","gallegher"]]}
+{"id":"Novel-5956-61","entities":["gallegher"],"triples":[]}
+{"id":"Novel-5956-62","entities":["gallegher"],"triples":[]}
+{"id":"Novel-5956-63","entities":["gallegher"],"triples":[]}
+{"id":"Novel-5956-64","entities":["gallegher"],"triples":[]}
+{"id":"Novel-5956-65","entities":["gallegher"],"triples":[]}
+{"id":"Novel-5956-66","entities":["gallegher"],"triples":[]}
+{"id":"Novel-5956-67","entities":["gallegher","keppler"],"triples":[]}
+{"id":"Novel-5956-68","entities":["gallegher"],"triples":[]}
+{"id":"Novel-5956-69","entities":["gallegher","broad street"],"triples":[]}
+{"id":"Novel-5956-70","entities":["gallegher"],"triples":[]}
+{"id":"Novel-5956-71","entities":["gallegher","luke mcgovern"],"triples":[["luke mcgovern","associated_with","gallegher"]]}

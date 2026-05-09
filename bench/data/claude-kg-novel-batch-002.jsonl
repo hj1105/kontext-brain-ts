@@ -1,0 +1,100 @@
+{"id":"Novel-51410-100","entities":["dr. p.","dr. b.","mr. b."],"triples":[["dr. b.","associated_with","mr. b."]]}
+{"id":"Novel-51410-101","entities":["mr. b.","queen margaret","university","glasgow","sir james crichton-browne","st. andrews","senatus academicus"],"triples":[["queen margaret","part_of","university"],["sir james crichton-browne","associated_with","senatus academicus"],["senatus academicus","part_of","st. andrews"],["queen margaret","located_in","glasgow"]]}
+{"id":"Novel-51410-102","entities":["mr. macewan","elsie","st. andrews","senatus academicus"],"triples":[["mr. macewan","friend_of","elsie"],["senatus academicus","part_of","st. andrews"]]}
+{"id":"Novel-51410-103","entities":["walt whitman","elsie","glasgow","london","new hospital for women","euston road","dublin","rotunda"],"triples":[["elsie","traveled_to","london"],["new hospital for women","located_in","euston road"],["new hospital for women","located_in","london"],["rotunda","located_in","dublin"],["elsie","works_at","new hospital for women"]]}
+{"id":"Novel-51410-104","entities":["elsie","bishop paget","elizabeth blackwell","sophia jex blake","scottish women's hospitals","new hospital for women"],"triples":[["elsie","member_of","scottish women's hospitals"],["elizabeth blackwell","associated_with","new hospital for women"],["sophia jex blake","associated_with","new hospital for women"],["bishop paget","associated_with","new hospital for women"]]}
+{"id":"Novel-51410-105","entities":["elsie inglis","london","boyd carpenter","father maturin"],"triples":[["elsie inglis","traveled_to","london"],["elsie inglis","associated_with","boyd carpenter"],["elsie inglis","associated_with","father maturin"]]}
+{"id":"Novel-51410-106","entities":["dr. garrett anderson","dr. louisa garrett anderson","women's hospital corps","england","france","victoria station","elsie inglis","new hospital for women"],"triples":[["dr. louisa garrett anderson","child_of","dr. garrett anderson"],["women's hospital corps","traveled_to","france"],["women's hospital corps","part_of","england"],["elsie inglis","member_of","new hospital for women"],["dr. garrett anderson","associated_with","new hospital for women"]]}
+{"id":"Novel-51410-107","entities":["new hospital for women","euston road","mrs. boyd","mrs. scharlieb","mrs. de la cherois"],"triples":[["new hospital for women","located_in","euston road"],["mrs. boyd","works_at","new hospital for women"],["mrs. scharlieb","works_at","new hospital for women"],["mrs. de la cherois","works_at","new hospital for women"]]}
+{"id":"Novel-51410-108","entities":["royal free","school of medicine","mrs. de la cherois","mrs. scharlieb"],"triples":[["mrs. de la cherois","works_at","royal free"],["mrs. scharlieb","associated_with","school of medicine"]]}
+{"id":"Novel-51410-109","entities":["mrs. scharlieb","mrs. g. anderson"],"triples":[["mrs. scharlieb","friend_of","mrs. g. anderson"]]}
+{"id":"Novel-51410-110","entities":["mrs. g. anderson","mrs. scharlieb","mrs. m'call","edinburgh","st. james' hall","cinderella dance"],"triples":[["mrs. g. anderson","friend_of","mrs. scharlieb"],["mrs. m'call","associated_with","mrs. g. anderson"],["cinderella dance","located_in","st. james' hall"]]}
+{"id":"Novel-51410-111","entities":["mrs. g. anderson","miss garrett","mrs. fawcett","chicago exhibition","england","english commissioners"],"triples":[["miss garrett","associated_with","chicago exhibition"],["mrs. fawcett","associated_with","english commissioners"],["english commissioners","part_of","england"]]}
+{"id":"Novel-51410-112","entities":["mrs. fawcett","baroness burdett coutts","english commission","england","edinburgh","miss b."],"triples":[["mrs. fawcett","member_of","english commission"],["baroness burdett coutts","associated_with","england"]]}
+{"id":"Novel-51410-113","entities":["mr. robertson","caroline croom robertson","mrs. scharlieb","edinburgh"],"triples":[["mr. robertson","married_to","caroline croom robertson"],["caroline croom robertson","associated_with","mr. robertson"]]}
+{"id":"Novel-51410-114","entities":["mrs. scharlieb"],"triples":[]}
+{"id":"Novel-51410-115","entities":["dr. b.","dr. s.","mrs. s.","miss walker","miss c."],"triples":[["dr. b.","friend_of","dr. s."]]}
+{"id":"Novel-51410-116","entities":["king lear","ellen terry","dover","mrs. s.","janet"],"triples":[["ellen terry","associated_with","king lear"],["king lear","located_in","dover"]]}
+{"id":"Novel-51410-117","entities":["mrs. s.","mrs. g. anderson","father maturin"],"triples":[["mrs. g. anderson","friend_of","mrs. s."]]}
+{"id":"Novel-51410-118","entities":["edinburgh"],"triples":[]}
+{"id":"Novel-51410-119","entities":["bailie walcot","london","edinburgh","kingsley","dr. littlejohn","jex","surgery hall","j. b."],"triples":[["bailie walcot","traveled_to","london"],["dr. littlejohn","works_at","surgery hall"]]}
+{"id":"Novel-51410-120","entities":["bailie walcot","mr. scott","st. george's","leith","edinburgh","mrs. g. anderson","mrs. garrett anderson","j. b."],"triples":[["bailie walcot","associated_with","leith"],["mr. scott","works_at","st. george's"],["bailie walcot","friend_of","mr. scott"],["mrs. g. anderson","known_as","mrs. garrett anderson"]]}
+{"id":"Novel-51410-121","entities":["mrs. anderson","edinburgh","sir roger","schottische","mrs. g. a."],"triples":[["mrs. anderson","known_as","mrs. g. a."]]}
+{"id":"Novel-51410-122","entities":["mrs. g. a.","miss garrett","mrs. scharlieb"],"triples":[["miss garrett","friend_of","mrs. g. a."]]}
+{"id":"Novel-51410-123","entities":["mrs. g. a.","miss inglis","mrs. b."],"triples":[["miss inglis","associated_with","mrs. g. a."]]}
+{"id":"Novel-51410-124","entities":["nurse rose","miss w.","miss r."],"triples":[]}
+{"id":"Novel-51410-125","entities":["mrs. k.","edinburgh","glasgow","scotland"],"triples":[["edinburgh","located_in","scotland"],["glasgow","located_in","scotland"]]}
+{"id":"Novel-51410-126","entities":["hydrabad commission","glasgow royal","glasgow"],"triples":[["glasgow royal","located_in","glasgow"]]}
+{"id":"Novel-51410-127","entities":["dr. vaughan","temple church","sister c.","nurse helen","stopford brooke","mr. s. brooke","edinburgh"],"triples":[["dr. vaughan","works_at","temple church"],["stopford brooke","known_as","mr. s. brooke"]]}
+{"id":"Novel-51410-128","entities":["edinburgh","mrs. g. anderson","westminster abbey","london","deanery","convocation","mrs. scharlieb"],"triples":[["deanery","part_of","westminster abbey"],["westminster abbey","located_in","london"],["convocation","located_in","westminster abbey"]]}
+{"id":"Novel-51410-129","entities":["london","miss c."],"triples":[]}
+{"id":"Novel-51410-130","entities":["edinburgh","infirmary","cattle market","lady lawson street","fountainbridge","grassmarket","cowgate","eva","rotunda","dublin"],"triples":[["infirmary","located_in","edinburgh"],["cattle market","located_in","lady lawson street"],["fountainbridge","located_in","edinburgh"],["grassmarket","located_in","edinburgh"],["cowgate","located_in","edinburgh"],["rotunda","located_in","dublin"]]}
+{"id":"Novel-51410-131","entities":["elsie","edinburgh","costigan's hotel","upper sackville st.","dublin","rotunda","dr. glenn","nizam's dominions","london","india"],"triples":[["costigan's hotel","located_in","upper sackville st."],["costigan's hotel","located_in","dublin"],["rotunda","located_in","dublin"],["dr. glenn","works_at","rotunda"],["elsie","traveled_to","dublin"]]}
+{"id":"Novel-51410-132","entities":["india","lord rosebery","mrs. c.","government","parish councils"],"triples":[["lord rosebery","member_of","government"]]}
+{"id":"Novel-51410-133","entities":["miss d.","royal infirmary","vienna","mrs. d.","ireland"],"triples":[["miss d.","member_of","royal infirmary"],["miss d.","traveled_to","vienna"],["mrs. d.","child_of","miss d."]]}
+{"id":"Novel-51410-134","entities":["mrs. d.","ireland","dr. b.","costigans","mrs. c."],"triples":[["mrs. d.","lived_in","ireland"]]}
+{"id":"Novel-51410-135","entities":["dr. s.","scotland","mrs. d."],"triples":[]}
+{"id":"Novel-51410-136","entities":["mrs. d.","papa"],"triples":[["mrs. d.","friend_of","papa"]]}
+{"id":"Novel-51410-137","entities":["france","africa","england","europe","australia","united states","canada","dr. b."],"triples":[["france","located_in","europe"],["england","located_in","europe"],["australia","associated_with","england"],["united states","associated_with","england"],["canada","associated_with","england"]]}
+{"id":"Novel-51410-138","entities":["dr. b.","ireland","miss inglis","north of ireland"],"triples":[["dr. b.","born_in","north of ireland"],["north of ireland","part_of","ireland"]]}
+{"id":"Novel-51410-139","entities":["paris","pozzi","apostoli","peon","rotunda","dublin"],"triples":[["pozzi","lived_in","paris"],["apostoli","lived_in","paris"],["peon","lived_in","paris"],["rotunda","located_in","dublin"]]}
+{"id":"Novel-51410-140","entities":["pozzi","apostoli","peon","costigan's","upper sackville street","dublin","miss macgregor","edinburgh"],"triples":[["costigan's","located_in","upper sackville street"],["costigan's","located_in","dublin"],["pozzi","friend_of","apostoli"],["apostoli","friend_of","peon"]]}
+{"id":"Novel-51410-141","entities":["miss macgregor","j.-b."],"triples":[["miss macgregor","member_of","j.-b."]]}
+{"id":"Novel-51410-142","entities":["miss macgregor","papa"],"triples":[["miss macgregor","friend_of","papa"]]}
+{"id":"Novel-51410-143","entities":["dublin","miss macgregor","eva","rotunda"],"triples":[["rotunda","located_in","dublin"],["miss macgregor","friend_of","eva"]]}
+{"id":"Novel-51410-144","entities":["elsie","mr. inglis","ernest","india"],"triples":[["ernest","child_of","mr. inglis"],["elsie","child_of","mr. inglis"],["ernest","traveled_to","india"],["elsie","related_to","ernest"]]}
+{"id":"Novel-51410-145","entities":["elsie","john inglis","dr. elsie inglis","india"],"triples":[["elsie","known_as","dr. elsie inglis"],["john inglis","lived_in","india"],["elsie","child_of","john inglis"]]}
+{"id":"Novel-51410-146","entities":["new zealand","reni","russia","mr. david inglis","e. m. i."],"triples":[["reni","located_in","russia"],["e. m. i.","traveled_to","russia"]]}
+{"id":"Novel-51410-147","entities":["mr. david inglis","david"],"triples":[["mr. david inglis","parent_of","david"]]}
+{"id":"Novel-51410-148","entities":["david"],"triples":[]}
+{"id":"Novel-51410-149","entities":[],"triples":[]}
+{"id":"Novel-51410-150","entities":["mr. inglis"],"triples":[]}
+{"id":"Novel-51410-151","entities":["elsie inglis","john stuart mill","dr. inglis"],"triples":[["elsie inglis","known_as","dr. inglis"]]}
+{"id":"Novel-51410-152","entities":["elsie inglis","british parliament","mary somerville","reform bill"],"triples":[["mary somerville","associated_with","british parliament"]]}
+{"id":"Novel-51410-153","entities":["john inglis","elsie"],"triples":[["elsie","child_of","john inglis"]]}
+{"id":"Novel-51410-154","entities":["eve"],"triples":[]}
+{"id":"Novel-51410-155","entities":["glasgow","westminster confession","paul"],"triples":[]}
+{"id":"Novel-51410-156","entities":["queen margaret","university","old testament"],"triples":[["queen margaret","part_of","university"]]}
+{"id":"Novel-51410-157","entities":["sir a. rollitt","woman's suffrage bill"],"triples":[["sir a. rollitt","associated_with","woman's suffrage bill"]]}
+{"id":"Novel-51410-158","entities":[],"triples":[]}
+{"id":"Novel-51410-159","entities":[],"triples":[]}
+{"id":"Novel-51410-160","entities":["miss webb"],"triples":[]}
+{"id":"Novel-51410-161","entities":["miss webb"],"triples":[]}
+{"id":"Novel-51410-162","entities":["miss webb","dr. inglis"],"triples":[["miss webb","friend_of","dr. inglis"]]}
+{"id":"Novel-51410-163","entities":["dr. inglis"],"triples":[]}
+{"id":"Novel-51410-164","entities":["mr. inglis","india","mr. gladstone","home rule bill","elsie","parliament"],"triples":[["mr. inglis","lived_in","india"],["mr. gladstone","associated_with","home rule bill"],["mr. gladstone","member_of","parliament"],["elsie","child_of","mr. inglis"]]}
+{"id":"Novel-51410-165","entities":["lady aberdeen","federation","w.l.f.","miss m'laren"],"triples":[["lady aberdeen","member_of","federation"]]}
+{"id":"Novel-51410-166","entities":["liberal club","liberal party","mrs. elmy","woman's suffrage"],"triples":[["mrs. elmy","associated_with","woman's suffrage"]]}
+{"id":"Novel-51410-167","entities":["mrs. elmy","mr. wilkins"],"triples":[["mrs. elmy","friend_of","mr. wilkins"]]}
+{"id":"Novel-51410-168","entities":["ireland","ulster","glasgow","dr. d.","dr. t.","victoria","australia","aberdeen","george smith","gladstone"],"triples":[["dr. d.","born_in","aberdeen"],["dr. t.","born_in","victoria"],["victoria","part_of","australia"],["dr. d.","associated_with","george smith"]]}
+{"id":"Novel-51410-169","entities":["dr. d.","ireland","scotland","colonies","empire","labour party"],"triples":[["ireland","part_of","empire"],["scotland","part_of","empire"]]}
+{"id":"Novel-51410-170","entities":["mr. gladstone","mr. d."],"triples":[]}
+{"id":"Novel-51410-171","entities":["edinburgh"],"triples":[]}
+{"id":"Novel-51410-172","entities":["glasgow","lord salisbury","ulster","ireland","mr. gladstone","dublin","crown"],"triples":[["dublin","located_in","ireland"],["ulster","located_in","ireland"],["lord salisbury","associated_with","ulster"]]}
+{"id":"Novel-51410-173","entities":["mr. chamberlain","home rule bill","parliament","irish members"],"triples":[["mr. chamberlain","associated_with","home rule bill"],["irish members","member_of","parliament"]]}
+{"id":"Novel-51410-174","entities":["mr. balfour","irish party","mr. chamberlain","conservative party","bishop of chester","direct veto bill"],"triples":[["mr. balfour","member_of","conservative party"],["mr. chamberlain","member_of","conservative party"],["bishop of chester","associated_with","direct veto bill"]]}
+{"id":"Novel-51410-175","entities":["mr. gladstone","midlothian","dr. jessie macgregor","rothesay","dr. inglis"],"triples":[["mr. gladstone","associated_with","midlothian"],["dr. jessie macgregor","friend_of","dr. inglis"],["dr. jessie macgregor","lived_in","rothesay"]]}
+{"id":"Novel-51410-176","entities":["dr. inglis","elsie inglis","sanitary congress"],"triples":[["dr. inglis","known_as","elsie inglis"],["elsie inglis","associated_with","sanitary congress"]]}
+{"id":"Novel-51410-177","entities":["dr. elsie inglis","elsie inglis","miss bury","scotland","highlands"],"triples":[["dr. elsie inglis","known_as","elsie inglis"],["miss bury","traveled_to","scotland"],["highlands","located_in","scotland"]]}
+{"id":"Novel-51410-178","entities":[],"triples":[]}
+{"id":"Novel-51410-179","entities":["lazaravatz","highlands","highland railway","serbia","inverness","nairn"],"triples":[["highland railway","located_in","highlands"],["nairn","located_in","highlands"],["inverness","located_in","highlands"]]}
+{"id":"Novel-51410-180","entities":["ross-shire","moray firth","nairn","stepney","st. giles'"],"triples":[["nairn","located_in","ross-shire"],["moray firth","located_in","ross-shire"]]}
+{"id":"Novel-51410-181","entities":["st. giles'","edinburgh","scotland","sir henry campbell-bannerman","new jerusalem","liberals"],"triples":[["st. giles'","located_in","edinburgh"],["edinburgh","located_in","scotland"],["sir henry campbell-bannerman","member_of","liberals"]]}
+{"id":"Novel-51410-182","entities":["parliament","punch","liberal party","labour"],"triples":[["labour","part_of","liberal party"]]}
+{"id":"Novel-51410-183","entities":["ireland","parliament"],"triples":[]}
+{"id":"Novel-51410-184","entities":[],"triples":[]}
+{"id":"Novel-51410-185","entities":["scottish federation","dr. inglis","scottish suffrage societies","parliament"],"triples":[["dr. inglis","member_of","scottish federation"],["scottish federation","part_of","scottish suffrage societies"]]}
+{"id":"Novel-51410-186","entities":["dr. inglis"],"triples":[]}
+{"id":"Novel-51410-187","entities":["st. giles'"],"triples":[]}
+{"id":"Novel-51410-188","entities":["federation"],"triples":[]}
+{"id":"Novel-51410-189","entities":["elsie inglis","scotland","suffrage women"],"triples":[["suffrage women","located_in","scotland"],["elsie inglis","member_of","suffrage women"]]}
+{"id":"Novel-51410-190","entities":["elsie inglis","scottish suffrage societies","scottish women's hospitals","dr. inglis"],"triples":[["dr. inglis","known_as","elsie inglis"],["scottish suffrage societies","associated_with","scottish women's hospitals"],["dr. inglis","member_of","scottish women's hospitals"]]}
+{"id":"Novel-51410-191","entities":["dr. inglis","christian church","uncle tom's cabin","st. paul","old testament","new testament"],"triples":[["st. paul","associated_with","new testament"],["st. paul","associated_with","old testament"]]}
+{"id":"Novel-51410-192","entities":["st. paul","new testament","old testament","eden","christianity","general assembly"],"triples":[["st. paul","associated_with","new testament"],["st. paul","associated_with","old testament"]]}
+{"id":"Novel-51410-193","entities":["general assembly","church","moderator"],"triples":[["moderator","member_of","church"],["general assembly","part_of","church"]]}
+{"id":"Novel-51410-194","entities":["elsie inglis","st. margaret's","parliament","bishop gore","christ"],"triples":[["st. margaret's","located_in","parliament"],["bishop gore","associated_with","st. margaret's"],["elsie inglis","member_of","christ"]]}
+{"id":"Novel-51410-195","entities":["dr. inglis","miss wright"],"triples":[["miss wright","friend_of","dr. inglis"]]}
+{"id":"Novel-51410-196","entities":["annie wilson","elsie"],"triples":[["annie wilson","friend_of","elsie"]]}
+{"id":"Novel-51410-197","entities":["elsie"],"triples":[]}
+{"id":"Novel-51410-198","entities":["edinburgh","dr. jessie macgregor","scotland","america","university of edinburgh","dr. inglis","christ"],"triples":[["dr. jessie macgregor","traveled_to","america"],["dr. jessie macgregor","lived_in","scotland"],["university of edinburgh","located_in","edinburgh"],["dr. inglis","member_of","university of edinburgh"]]}
+{"id":"Novel-51410-199","entities":["dr. jessie macgregor","scotland","america","edinburgh","dr. inglis"],"triples":[["dr. jessie macgregor","traveled_to","america"],["dr. jessie macgregor","lived_in","scotland"],["dr. inglis","lived_in","edinburgh"]]}

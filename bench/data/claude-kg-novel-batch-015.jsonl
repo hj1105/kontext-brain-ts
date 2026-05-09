@@ -1,0 +1,100 @@
+{"id":"Novel-8559-284","entities":["rheinardius ocellatus","argus","phasianidae","borneo","pheasants"],"triples":[["rheinardius ocellatus","member_of","phasianidae"],["rheinardius ocellatus","related_to","argus"],["argus","located_in","borneo"],["rheinardius ocellatus","related_to","pheasants"]]}
+{"id":"Novel-8559-285","entities":["rheinardius ocellatus"],"triples":[]}
+{"id":"Novel-8559-286","entities":["rheinardius ocellatus","ocellated pheasant","gallinaceans"],"triples":[["ocellated pheasant","known_as","rheinardius ocellatus"],["ocellated pheasant","member_of","gallinaceans"]]}
+{"id":"Novel-8559-287","entities":["rheinardius ocellatus","ocellated pheasant","arguses","pheasants"],"triples":[["ocellated pheasant","known_as","rheinardius ocellatus"],["ocellated pheasant","related_to","arguses"],["ocellated pheasant","related_to","pheasants"]]}
+{"id":"Novel-8559-288","entities":["ocellated pheasant","tonkin","buih-dinh","hue","europeans","maidenhair tree","gingkgo biloba","conifer","yew"],"triples":[["ocellated pheasant","located_in","tonkin"],["buih-dinh","located_in","tonkin"],["buih-dinh","located_in","hue"],["maidenhair tree","known_as","gingkgo biloba"],["maidenhair tree","type_of","conifer"],["maidenhair tree","related_to","yew"]]}
+{"id":"Novel-8559-289","entities":["maidenhair tree","gingkgo biloba","japan","china","conifers","thibet"],"triples":[["maidenhair tree","known_as","gingkgo biloba"],["maidenhair tree","located_in","japan"],["maidenhair tree","located_in","china"],["maidenhair tree","type_of","conifers"]]}
+{"id":"Novel-8559-290","entities":["gingkgo","kaempfer","china","japan","thibet","heer"],"triples":[["gingkgo","located_in","china"],["gingkgo","located_in","japan"],["gingkgo","known_as","kaempfer"]]}
+{"id":"Novel-8559-291","entities":["loudon","england","france","japan"],"triples":[["loudon","lived_in","england"]]}
+{"id":"Novel-8559-292","entities":["loudon","andre thouin","jardin des plantes","auguste pyramus de candolle","geneva","france","europe","albion"],"triples":[["andre thouin","works_at","jardin des plantes"],["jardin des plantes","located_in","france"],["auguste pyramus de candolle","lived_in","geneva"],["geneva","located_in","europe"]]}
+{"id":"Novel-8559-293","entities":["gingkgo","meehan","philadelphia","broadlands","hants","purser's cross","loudon","bayswater"],"triples":[["meehan","lived_in","philadelphia"],["broadlands","located_in","hants"],["loudon","lived_in","bayswater"]]}
+{"id":"Novel-8559-294","entities":["gingkgo","larch","cedar","cycad"],"triples":[["gingkgo","related_to","larch"],["gingkgo","related_to","cedar"],["gingkgo","related_to","cycad"]]}
+{"id":"Novel-8559-295","entities":["gingkgo","cycads","conifers","endlicher","cryptogams","ferns","lycopods"],"triples":[["gingkgo","related_to","cycads"],["gingkgo","related_to","conifers"],["conifers","related_to","cryptogams"],["cryptogams","related_to","ferns"],["cryptogams","related_to","lycopods"]]}
+{"id":"Novel-8559-296","entities":["gingkgo","gardeners' chronicle","american museum of natural history","central park","arsenal"],"triples":[["arsenal","located_in","central park"],["american museum of natural history","associated_with","arsenal"]]}
+{"id":"Novel-8559-297","entities":["s. d. dill","central park","california"],"triples":[["s. d. dill","works_at","central park"]]}
+{"id":"Novel-8559-298","entities":["alaska","texas","maine","california","union"],"triples":[["alaska","part_of","union"],["texas","part_of","union"],["maine","part_of","union"],["california","part_of","union"]]}
+{"id":"Novel-8559-299","entities":["bickmore","museum"],"triples":[["bickmore","works_at","museum"]]}
+{"id":"Novel-8559-300","entities":["persimmon tree","bickmore","museum"],"triples":[["bickmore","works_at","museum"]]}
+{"id":"Novel-8559-301","entities":["persimmon tree"],"triples":[]}
+{"id":"Novel-8559-302","entities":["pride of india"],"triples":[]}
+{"id":"Novel-8559-303","entities":[],"triples":[]}
+{"id":"Novel-8559-304","entities":["bickmore","honey locust","missouri"],"triples":[["honey locust","located_in","missouri"]]}
+{"id":"Novel-8559-305","entities":["honey locust","missouri","yucca tree","lily family"],"triples":[["honey locust","located_in","missouri"],["yucca tree","member_of","lily family"]]}
+{"id":"Novel-8559-306","entities":["yucca","museum","douglass spruce","rocky mountains"],"triples":[["douglass spruce","located_in","rocky mountains"]]}
+{"id":"Novel-8559-307","entities":["picea engelmanni","spruce","rocky mountains","nut pine","indians","black spruce"],"triples":[["picea engelmanni","type_of","spruce"],["picea engelmanni","located_in","rocky mountains"],["picea engelmanni","related_to","black spruce"],["nut pine","associated_with","indians"]]}
+{"id":"Novel-8559-308","entities":["white ash","platanus occidentalis","sycamore","button-wood","plane tree","redwood tree","california","yosemite valley"],"triples":[["platanus occidentalis","known_as","sycamore"],["platanus occidentalis","known_as","button-wood"],["platanus occidentalis","known_as","plane tree"],["redwood tree","located_in","california"],["yosemite valley","located_in","california"]]}
+{"id":"Novel-8559-309","entities":["redwood tree","california","yosemite valley","morris k. jesup","museum"],"triples":[["redwood tree","located_in","california"],["yosemite valley","located_in","california"],["morris k. jesup","associated_with","museum"]]}
+{"id":"Novel-8559-310","entities":["long-leaved pine","england","france","germany"],"triples":[]}
+{"id":"Novel-8559-311","entities":["central park","united states"],"triples":[["central park","located_in","united states"]]}
+{"id":"Novel-8559-312","entities":["scientific american supplement","united states","canada"],"triples":[]}
+{"id":"Novel-8559-313","entities":["scientific american","scientific american supplement","munn & co.","new york","broadway"],"triples":[["munn & co.","located_in","new york"],["munn & co.","located_in","broadway"],["munn & co.","associated_with","scientific american"]]}
+{"id":"Novel-8559-314","entities":["scientific american","munn & co.","new york","broadway","washington","project gutenberg"],"triples":[["munn & co.","located_in","new york"],["munn & co.","associated_with","scientific american"]]}
+{"id":"Novel-47558-0","entities":["b. f. craig","kansas city","missouri","ohio","mississippi river"],"triples":[["b. f. craig","lived_in","kansas city"],["kansas city","located_in","missouri"],["b. f. craig","born_in","ohio"]]}
+{"id":"Novel-47558-1","entities":["vicksburg","natchez","crescent city","roman caesar"],"triples":[]}
+{"id":"Novel-47558-2","entities":["columbus","america"],"triples":[["columbus","traveled_to","america"]]}
+{"id":"Novel-47558-3","entities":["helena","arkansas","billy horner","henry mooney","silver heels","spotted buck","mississippi river"],"triples":[["helena","located_in","arkansas"],["billy horner","friend_of","henry mooney"],["billy horner","associated_with","silver heels"],["henry mooney","associated_with","spotted buck"]]}
+{"id":"Novel-47558-4","entities":["bush bayou","helena","arkansas","mississippi river","spotted buck","silver heels"],"triples":[["bush bayou","located_in","arkansas"],["bush bayou","located_in","helena"]]}
+{"id":"Novel-47558-5","entities":["mississippi"],"triples":[]}
+{"id":"Novel-47558-6","entities":["mississippi","arkansas"],"triples":[]}
+{"id":"Novel-47558-7","entities":["mississippi","arkansas","helena"],"triples":[["helena","located_in","arkansas"]]}
+{"id":"Novel-47558-8","entities":["helena"],"triples":[]}
+{"id":"Novel-47558-9","entities":["chickasaw frenchman","st. louis","mexico","mississippi river","first napoleon","richard the third","spotted buck","silver heels"],"triples":[["chickasaw frenchman","lived_in","st. louis"],["chickasaw frenchman","traveled_to","mexico"],["chickasaw frenchman","served_in","first napoleon"]]}
+{"id":"Novel-47558-10","entities":["vicksburg"],"triples":[]}
+{"id":"Novel-47558-11","entities":["alonzo phelps"],"triples":[]}
+{"id":"Novel-47558-12","entities":["alonzo phelps","europe","america"],"triples":[["alonzo phelps","born_in","europe"],["alonzo phelps","traveled_to","america"]]}
+{"id":"Novel-47558-13","entities":[],"triples":[]}
+{"id":"Novel-47558-14","entities":["alonzo phelps","europe","america"],"triples":[["alonzo phelps","traveled_to","america"]]}
+{"id":"Novel-47558-15","entities":["louisville","kentucky","pittsburg","new orleans","ohio","beargrass creek"],"triples":[["louisville","located_in","kentucky"],["beargrass creek","located_in","ohio"],["beargrass creek","located_in","louisville"]]}
+{"id":"Novel-47558-16","entities":["beargrass creek","louisville","daymon","daymon's wife"],"triples":[["beargrass creek","located_in","louisville"],["daymon","married_to","daymon's wife"]]}
+{"id":"Novel-47558-17","entities":["daymon","daymon's wife","beargrass creek"],"triples":[["daymon","married_to","daymon's wife"]]}
+{"id":"Novel-47558-18","entities":["daymon"],"triples":[]}
+{"id":"Novel-47558-19","entities":["daymon","daymon's wife","beargrass creek"],"triples":[["daymon","married_to","daymon's wife"]]}
+{"id":"Novel-47558-20","entities":["daymon","daymon's wife","louisville","enterprise","new orleans","don","dan"],"triples":[["daymon","married_to","daymon's wife"],["enterprise","traveled_to","louisville"],["enterprise","traveled_to","new orleans"]]}
+{"id":"Novel-47558-21","entities":["enterprise","louisville","new orleans","mississippi river","henry m. shreve","ohio"],"triples":[["enterprise","traveled_to","louisville"],["enterprise","traveled_to","new orleans"],["henry m. shreve","associated_with","enterprise"]]}
+{"id":"Novel-47558-22","entities":["washington","henry m. shreve","supreme court","united states"],"triples":[["washington","associated_with","henry m. shreve"],["supreme court","part_of","united states"]]}
+{"id":"Novel-47558-23","entities":["ohio","washington city"],"triples":[]}
+{"id":"Novel-47558-24","entities":["don carlo","dan carlo","arkansas","mississippi river","ohio"],"triples":[["don carlo","friend_of","dan carlo"],["dan carlo","friend_of","don carlo"]]}
+{"id":"Novel-47558-25","entities":["shirt-tail bend","mississippi","pittsburgh","new orleans"],"triples":[]}
+{"id":"Novel-47558-26","entities":["little rock","arkansas"],"triples":[["little rock","located_in","arkansas"]]}
+{"id":"Novel-47558-27","entities":["arkansas","mississippi","don carlo","brindle bill"],"triples":[]}
+{"id":"Novel-47558-28","entities":["brindle bill"],"triples":[]}
+{"id":"Novel-47558-29","entities":["brindle bill"],"triples":[]}
+{"id":"Novel-47558-30","entities":["brindle bill","s. s. simon","simon's wife"],"triples":[["s. s. simon","friend_of","brindle bill"],["s. s. simon","married_to","simon's wife"]]}
+{"id":"Novel-47558-31","entities":["don carlo","dan carlo","brindle bill"],"triples":[["don carlo","friend_of","dan carlo"],["dan carlo","friend_of","brindle bill"]]}
+{"id":"Novel-47558-32","entities":["s. s. simon","dan carlo","sundown hill","brindle bill","don carlo","simon's wife"],"triples":[["s. s. simon","married_to","simon's wife"],["dan carlo","friend_of","brindle bill"]]}
+{"id":"Novel-47558-33","entities":["don carlo","alonzo phelps","vicksburg","mississippi","brindle bill","simon's wife"],"triples":[["alonzo phelps","associated_with","vicksburg"]]}
+{"id":"Novel-47558-34","entities":["don carlo","s. s. simon","sundown hill","brindle bill","dan carlo"],"triples":[["s. s. simon","friend_of","brindle bill"]]}
+{"id":"Novel-47558-35","entities":["don carlo","brindle bill","s. s. simon","sundown hill","dan carlo"],"triples":[["sundown hill","friend_of","don carlo"],["dan carlo","friend_of","don carlo"]]}
+{"id":"Novel-47558-36","entities":["brindle bill","don carlo","simon's wife"],"triples":[]}
+{"id":"Novel-47558-37","entities":["brindle bill","don carlo","dan carlo","arkansas","shirt-tail bend"],"triples":[["don carlo","known_as","hero of shirt-tail bend"],["dan carlo","friend_of","don carlo"]]}
+{"id":"Novel-47558-38","entities":["red stone","louisville","kentucky","ohio"],"triples":[["red stone","traveled_to","louisville"],["red stone","traveled_to","kentucky"]]}
+{"id":"Novel-47558-39","entities":["don carlo","shirt-tail bend"],"triples":[["don carlo","known_as","hero of shirt-tail bend"]]}
+{"id":"Novel-47558-40","entities":["don carlo","shirt-tail bend","tom fairfield","virginia","kentucky","boone station"],"triples":[["don carlo","known_as","hero of shirt-tail bend"],["tom fairfield","born_in","virginia"],["tom fairfield","traveled_to","kentucky"],["boone station","located_in","kentucky"]]}
+{"id":"Novel-47558-41","entities":["tom fairfield","kentucky","wayne","union","indians"],"triples":[["kentucky","part_of","union"],["tom fairfield","lived_in","kentucky"]]}
+{"id":"Novel-47558-42","entities":["kentucky","england","america","indians"],"triples":[]}
+{"id":"Novel-47558-43","entities":["kentucky","ohio","indians"],"triples":[]}
+{"id":"Novel-47558-44","entities":["tom fairfield","kentucky","cumberland mountains","ohio"],"triples":[["tom fairfield","lived_in","kentucky"]]}
+{"id":"Novel-47558-45","entities":["tom fairfield","virginia","kentucky"],"triples":[["tom fairfield","born_in","virginia"],["tom fairfield","lived_in","kentucky"]]}
+{"id":"Novel-47558-46","entities":["kentucky"],"triples":[]}
+{"id":"Novel-47558-47","entities":["tom fairfield"],"triples":[]}
+{"id":"Novel-47558-48","entities":["tom fairfield"],"triples":[]}
+{"id":"Novel-47558-49","entities":["tom fairfield","henderson","cherokee indians","virginia","fort washington","cincinnati","kentucky","ohio"],"triples":[["tom fairfield","traveled_to","fort washington"],["fort washington","known_as","cincinnati"]]}
+{"id":"Novel-47558-50","entities":["tom fairfield","kentucky","ohio"],"triples":[]}
+{"id":"Novel-47558-51","entities":["tom fairfield","virginia"],"triples":[["tom fairfield","born_in","virginia"]]}
+{"id":"Novel-47558-52","entities":["tom fairfield"],"triples":[]}
+{"id":"Novel-47558-53","entities":["tom fairfield","kentucky"],"triples":[["tom fairfield","lived_in","kentucky"]]}
+{"id":"Novel-47558-54","entities":["tom fairfield","kentucky","moses"],"triples":[["tom fairfield","lived_in","kentucky"]]}
+{"id":"Novel-47558-55","entities":["tom fairfield"],"triples":[]}
+{"id":"Novel-47558-56","entities":["tom fairfield","new lights"],"triples":[["tom fairfield","member_of","new lights"]]}
+{"id":"Novel-47558-57","entities":["tom fairfield","ohio","port william","kentucky"],"triples":[["tom fairfield","traveled_to","ohio"],["port william","located_in","kentucky"]]}
+{"id":"Novel-47558-58","entities":["port william","louisville","kentucky","ohio","dave deminish","old bourbon"],"triples":[["port william","located_in","kentucky"],["dave deminish","works_at","port william"]]}
+{"id":"Novel-47558-59","entities":["port william","redhead sam sims","brother demitt","arch wheataker","dave deminish"],"triples":[["redhead sam sims","works_at","port william"],["brother demitt","lived_in","port william"]]}
+{"id":"Novel-47558-60","entities":["dave deminish","tom fairfield"],"triples":[]}
+{"id":"Novel-47558-61","entities":["tom fairfield","brother demitt","roxie","rose","suza"],"triples":[["roxie","child_of","tom fairfield"],["rose","child_of","tom fairfield"],["suza","child_of","tom fairfield"]]}
+{"id":"Novel-47558-62","entities":["roxie","rose","suza","tom fairfield","father tearful","aunt katy","roxie fairfield"],"triples":[["roxie","child_of","tom fairfield"],["rose","child_of","tom fairfield"],["suza","child_of","tom fairfield"],["roxie","known_as","roxie fairfield"]]}
+{"id":"Novel-47558-63","entities":["roxie","rose","aunt katy","father tearful"],"triples":[]}
+{"id":"Novel-47558-64","entities":["brother demitt","aunt katy","roxie fairfield"],"triples":[["aunt katy","lived_in","brother demitt"]]}
+{"id":"Novel-47558-65","entities":["roxie fairfield","aunt katy","tom fairfield"],"triples":[["roxie fairfield","child_of","tom fairfield"]]}
+{"id":"Novel-47558-66","entities":["aunt katy","tom fairfield","joe","dick","ned"],"triples":[["joe","works_at","aunt katy"],["dick","works_at","aunt katy"]]}
+{"id":"Novel-47558-67","entities":["roxie","aunt katy","joe","dick","ned"],"triples":[]}
+{"id":"Novel-47558-68","entities":["aunt katy","dick","tom fairfield","joe","suza","roxie","rose","ned"],"triples":[["suza","child_of","tom fairfield"],["roxie","child_of","tom fairfield"],["rose","child_of","tom fairfield"]]}

@@ -3,180 +3,180 @@
     "id": "Medical-73586ddc",
     "answer": "INSUFFICIENT_CONTEXT",
     "fromThinkingFallback": false,
-    "latencyMs": 898
+    "latencyMs": 68431
   },
   {
     "id": "Medical-1517e1c3",
     "answer": "INSUFFICIENT_CONTEXT",
     "fromThinkingFallback": false,
-    "latencyMs": 966
+    "latencyMs": 91149
   },
   {
     "id": "Medical-aed3f61c",
     "answer": "INSUFFICIENT_CONTEXT",
     "fromThinkingFallback": false,
-    "latencyMs": 961
+    "latencyMs": 84813
   },
   {
     "id": "Medical-85ed509e",
     "answer": "INSUFFICIENT_CONTEXT",
     "fromThinkingFallback": false,
-    "latencyMs": 971
+    "latencyMs": 71151
   },
   {
     "id": "Medical-9418792b",
-    "answer": "INSUFFICIENT_CONTEXT",
+    "answer": "Bone scan, MRI, CT, PET, and ultrasound.",
     "fromThinkingFallback": false,
-    "latencyMs": 974
+    "latencyMs": 92276
   },
   {
     "id": "Medical-2bbad791",
     "answer": "INSUFFICIENT_CONTEXT",
     "fromThinkingFallback": false,
-    "latencyMs": 982
+    "latencyMs": 83112
   },
   {
     "id": "Medical-9d5ac399",
     "answer": "INSUFFICIENT_CONTEXT",
     "fromThinkingFallback": false,
-    "latencyMs": 1147
+    "latencyMs": 69859
   },
   {
     "id": "Medical-2bd43819",
     "answer": "INSUFFICIENT_CONTEXT",
     "fromThinkingFallback": false,
-    "latencyMs": 1045
+    "latencyMs": 72729
   },
   {
     "id": "Medical-ebb0af4d",
-    "answer": "INSUFFICIENT_CONTEXT",
+    "answer": "People at high risk for lung cancer are recommended to undergo lung cancer screening.",
     "fromThinkingFallback": false,
-    "latencyMs": 1026
+    "latencyMs": 76552
   },
   {
     "id": "Medical-653c0da3",
-    "answer": "INSUFFICIENT_CONTEXT",
+    "answer": "Hodgkin lymphoma.",
     "fromThinkingFallback": false,
-    "latencyMs": 1051
+    "latencyMs": 70578
   },
   {
     "id": "Medical-8d545fa4",
     "answer": "INSUFFICIENT_CONTEXT",
     "fromThinkingFallback": false,
-    "latencyMs": 1020
+    "latencyMs": 80820
   },
   {
     "id": "Medical-a4dcffa3",
-    "answer": "INSUFFICIENT_CONTEXT",
+    "answer": "Other areas in the nervous system.",
     "fromThinkingFallback": false,
-    "latencyMs": 988
+    "latencyMs": 75911
   },
   {
     "id": "Medical-5dd8e62d",
-    "answer": "INSUFFICIENT_CONTEXT",
+    "answer": "Mediastinal gray zone lymphomas have overlapping features with primary mediastinal B-cell lymphoma (PMBL).",
     "fromThinkingFallback": false,
-    "latencyMs": 1074
+    "latencyMs": 85374
   },
   {
     "id": "Medical-8a166224",
-    "answer": "INSUFFICIENT_CONTEXT",
+    "answer": "The BCL2 protein.",
     "fromThinkingFallback": false,
-    "latencyMs": 1027
+    "latencyMs": 84639
   },
   {
     "id": "Medical-e875d9cd",
     "answer": "INSUFFICIENT_CONTEXT",
     "fromThinkingFallback": false,
-    "latencyMs": 979
+    "latencyMs": 73109
   },
   {
     "id": "Medical-deee1f4b",
     "answer": "INSUFFICIENT_CONTEXT",
     "fromThinkingFallback": false,
-    "latencyMs": 1041
+    "latencyMs": 78487
   },
   {
     "id": "Medical-d8a3772b",
     "answer": "INSUFFICIENT_CONTEXT",
     "fromThinkingFallback": false,
-    "latencyMs": 977
+    "latencyMs": 72150
   },
   {
     "id": "Medical-13fbbea3",
     "answer": "INSUFFICIENT_CONTEXT",
     "fromThinkingFallback": false,
-    "latencyMs": 1010
+    "latencyMs": 78130
   },
   {
     "id": "Medical-304b0354",
-    "answer": "INSUFFICIENT_CONTEXT",
+    "answer": "The eyes, cerebrospinal fluid (CSF), and/or the spinal cord.",
     "fromThinkingFallback": false,
-    "latencyMs": 1020
+    "latencyMs": 75567
   },
   {
     "id": "Medical-fca41ac7",
     "answer": "INSUFFICIENT_CONTEXT",
     "fromThinkingFallback": false,
-    "latencyMs": 1024
+    "latencyMs": 69100
   },
   {
     "id": "Medical-e773a3cf",
     "answer": "INSUFFICIENT_CONTEXT",
     "fromThinkingFallback": false,
-    "latencyMs": 1004
+    "latencyMs": 71828
   },
   {
     "id": "Medical-c99a29ae",
     "answer": "INSUFFICIENT_CONTEXT",
     "fromThinkingFallback": false,
-    "latencyMs": 1065
+    "latencyMs": 68395
   },
   {
     "id": "Medical-c89d3c38",
     "answer": "INSUFFICIENT_CONTEXT",
     "fromThinkingFallback": false,
-    "latencyMs": 1484
+    "latencyMs": 82757
   },
   {
     "id": "Medical-f5e27a80",
     "answer": "INSUFFICIENT_CONTEXT",
     "fromThinkingFallback": false,
-    "latencyMs": 1032
+    "latencyMs": 81266
   },
   {
     "id": "Medical-7caf80a1",
     "answer": "INSUFFICIENT_CONTEXT",
     "fromThinkingFallback": false,
-    "latencyMs": 933
+    "latencyMs": 70014
   },
   {
     "id": "Medical-06384900",
     "answer": "INSUFFICIENT_CONTEXT",
     "fromThinkingFallback": false,
-    "latencyMs": 949
+    "latencyMs": 75296
   },
   {
     "id": "Medical-d272b033",
-    "answer": "INSUFFICIENT_CONTEXT",
+    "answer": "Each type of glioma has its own biomarker or set of biomarkers.",
     "fromThinkingFallback": false,
-    "latencyMs": 958
+    "latencyMs": 79886
   },
   {
     "id": "Medical-bb899a92",
     "answer": "INSUFFICIENT_CONTEXT",
     "fromThinkingFallback": false,
-    "latencyMs": 995
+    "latencyMs": 81763
   },
   {
     "id": "Medical-a43ea44f",
     "answer": "INSUFFICIENT_CONTEXT",
     "fromThinkingFallback": false,
-    "latencyMs": 952
+    "latencyMs": 77173
   },
   {
     "id": "Medical-dfc549c9",
-    "answer": "INSUFFICIENT_CONTEXT",
+    "answer": "A clinical trial is the preferred treatment for these types of B-ALL.",
     "fromThinkingFallback": false,
-    "latencyMs": 975
+    "latencyMs": 73896
   }
 ]

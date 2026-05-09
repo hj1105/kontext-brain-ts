@@ -1,0 +1,100 @@
+{"id":"Novel-8559-84","entities":["old kent road","otto gas-engine","coke"],"triples":[["otto gas-engine","located_in","old kent road"]]}
+{"id":"Novel-8559-85","entities":[],"triples":[]}
+{"id":"Novel-8559-86","entities":["coke breaker"],"triples":[]}
+{"id":"Novel-8559-87","entities":["alfred godfrey","clapton","printing machinery"],"triples":[["alfred godfrey","lived_in","clapton"],["printing machinery","associated_with","alfred godfrey"]]}
+{"id":"Novel-8559-88","entities":["alfred godfrey","clapton","printing machinery"],"triples":[["alfred godfrey","lived_in","clapton"],["printing machinery","associated_with","alfred godfrey"]]}
+{"id":"Novel-8559-89","entities":["lake valley","new mexico","perche district","tribune","mimbres mountains"],"triples":[["lake valley","located_in","new mexico"],["perche district","located_in","new mexico"],["perche district","part_of","mimbres mountains"]]}
+{"id":"Novel-8559-90","entities":["perche district","mimbres mountains","rocky mountains","rio grande","black range","ivanhoe","colonel gillette","robert ingersoll","senator plumb","kansas"],"triples":[["mimbres mountains","part_of","rocky mountains"],["black range","part_of","mimbres mountains"],["ivanhoe","located_in","black range"],["colonel gillette","works_at","ivanhoe"],["senator plumb","member_of","kansas"],["robert ingersoll","associated_with","ivanhoe"]]}
+{"id":"Novel-8559-91","entities":["colonel ingersoll","ivanhoe","black range","perche district","lake valley","hillsboro","perche river"],"triples":[["colonel ingersoll","works_at","ivanhoe"],["ivanhoe","located_in","black range"],["hillsboro","located_in","perche district"],["perche river","located_in","perche district"],["perche district","located_in","lake valley"]]}
+{"id":"Novel-8559-92","entities":["jack shedd","robinson mine","colorado","perche river","perche district"],"triples":[["jack shedd","associated_with","robinson mine"],["robinson mine","located_in","colorado"],["perche river","located_in","perche district"]]}
+{"id":"Novel-8559-93","entities":["lake valley","sierra mines","perche district"],"triples":[["sierra mines","located_in","lake valley"]]}
+{"id":"Novel-8559-94","entities":["perche district","new york","shedd","solitaire","governor tabor","wurtzbach"],"triples":[["solitaire","located_in","perche district"],["shedd","associated_with","solitaire"],["governor tabor","associated_with","solitaire"],["wurtzbach","associated_with","solitaire"]]}
+{"id":"Novel-8559-95","entities":["governor tabor","solitaire"],"triples":[["governor tabor","associated_with","solitaire"]]}
+{"id":"Novel-8559-96","entities":["solitaire","perche district","bullion","iron king","andy johnson","perche river"],"triples":[["solitaire","located_in","perche district"],["bullion","located_in","perche district"],["iron king","located_in","perche river"],["andy johnson","located_in","perche river"]]}
+{"id":"Novel-8559-97","entities":["perche district","british medical journal","agricultural students gazette","e. kinch","soy bean","china","japan","italy","france","british association","southampton","w.h. preece"],"triples":[["e. kinch","works_at","agricultural students gazette"],["soy bean","located_in","china"],["soy bean","located_in","japan"],["w.h. preece","member_of","british association"]]}
+{"id":"Novel-8559-98","entities":["w.h. preece","british association","siemens","brush","jablochkoff candle","soleil"],"triples":[["w.h. preece","member_of","british association"]]}
+{"id":"Novel-8559-99","entities":["brockie","abdank"],"triples":[["abdank","associated_with","brockie"]]}
+{"id":"Novel-8559-100","entities":[],"triples":[]}
+{"id":"Novel-8559-101","entities":[],"triples":[]}
+{"id":"Novel-8559-102","entities":[],"triples":[]}
+{"id":"Novel-8559-103","entities":[],"triples":[]}
+{"id":"Novel-8559-104","entities":[],"triples":[]}
+{"id":"Novel-8559-105","entities":[],"triples":[]}
+{"id":"Novel-8559-106","entities":[],"triples":[]}
+{"id":"Novel-8559-107","entities":[],"triples":[]}
+{"id":"Novel-8559-108","entities":[],"triples":[]}
+{"id":"Novel-8559-109","entities":[],"triples":[]}
+{"id":"Novel-8559-110","entities":[],"triples":[]}
+{"id":"Novel-8559-111","entities":[],"triples":[]}
+{"id":"Novel-8559-112","entities":["london"],"triples":[]}
+{"id":"Novel-8559-113","entities":["engineering","newcastle","millwright"],"triples":[["millwright","lived_in","newcastle"]]}
+{"id":"Novel-8559-114","entities":["newcastle"],"triples":[]}
+{"id":"Novel-8559-115","entities":[],"triples":[]}
+{"id":"Novel-8559-116","entities":[],"triples":[]}
+{"id":"Novel-8559-117","entities":[],"triples":[]}
+{"id":"Novel-8559-118","entities":["photographic news","bunsen burner","p. thenard"],"triples":[]}
+{"id":"Novel-8559-119","entities":["p. thenard","academy","comptes rendus","m. c. leeuw"],"triples":[["p. thenard","member_of","academy"]]}
+{"id":"Novel-8559-120","entities":["m. c. leeuw","schreiber"],"triples":[]}
+{"id":"Novel-8559-121","entities":["schreiber"],"triples":[]}
+{"id":"Novel-8559-122","entities":[],"triples":[]}
+{"id":"Novel-8559-123","entities":[],"triples":[]}
+{"id":"Novel-8559-124","entities":["schreiber"],"triples":[]}
+{"id":"Novel-8559-125","entities":[],"triples":[]}
+{"id":"Novel-8559-126","entities":["schreiber"],"triples":[]}
+{"id":"Novel-8559-127","entities":[],"triples":[]}
+{"id":"Novel-8559-128","entities":[],"triples":[]}
+{"id":"Novel-8559-129","entities":["annales industrielles"],"triples":[]}
+{"id":"Novel-8559-130","entities":[],"triples":[]}
+{"id":"Novel-8559-131","entities":[],"triples":[]}
+{"id":"Novel-8559-132","entities":[],"triples":[]}
+{"id":"Novel-8559-133","entities":[],"triples":[]}
+{"id":"Novel-8559-134","entities":[],"triples":[]}
+{"id":"Novel-8559-135","entities":["greenbank alkali co","st. helens"],"triples":[["greenbank alkali co","located_in","st. helens"]]}
+{"id":"Novel-8559-136","entities":[],"triples":[]}
+{"id":"Novel-8559-137","entities":[],"triples":[]}
+{"id":"Novel-8559-138","entities":["s.s. bradford"],"triples":[]}
+{"id":"Novel-8559-139","entities":["pharmacopoeia"],"triples":[]}
+{"id":"Novel-8559-140","entities":[],"triples":[]}
+{"id":"Novel-8559-141","entities":["american journal of pharmacy"],"triples":[]}
+{"id":"Novel-8559-142","entities":["sanitary congress","newcastle-on-tyne","de chaumont","royal society"],"triples":[["sanitary congress","located_in","newcastle-on-tyne"],["de chaumont","member_of","royal society"]]}
+{"id":"Novel-8559-143","entities":[],"triples":[]}
+{"id":"Novel-8559-144","entities":[],"triples":[]}
+{"id":"Novel-8559-145","entities":[],"triples":[]}
+{"id":"Novel-8559-146","entities":[],"triples":[]}
+{"id":"Novel-8559-147","entities":[],"triples":[]}
+{"id":"Novel-8559-148","entities":[],"triples":[]}
+{"id":"Novel-8559-149","entities":[],"triples":[]}
+{"id":"Novel-8559-150","entities":["joule","lyon playfair","clausius","tyndall","helmholtz"],"triples":[]}
+{"id":"Novel-8559-151","entities":[],"triples":[]}
+{"id":"Novel-8559-152","entities":[],"triples":[]}
+{"id":"Novel-8559-153","entities":["dr. parkes"],"triples":[]}
+{"id":"Novel-8559-154","entities":["dr. parkes","netley"],"triples":[["dr. parkes","works_at","netley"]]}
+{"id":"Novel-8559-155","entities":["liebig"],"triples":[]}
+{"id":"Novel-8559-156","entities":["thomas gray","board of trade"],"triples":[["thomas gray","works_at","board of trade"]]}
+{"id":"Novel-8559-157","entities":["thomas gray","board of trade"],"triples":[["thomas gray","works_at","board of trade"]]}
+{"id":"Novel-8559-158","entities":["henry h. croft"],"triples":[]}
+{"id":"Novel-8559-159","entities":["pedler","texas","mexicans","agave virginica"],"triples":[["agave virginica","located_in","texas"]]}
+{"id":"Novel-8559-160","entities":["agave virginica"],"triples":[]}
+{"id":"Novel-8559-161","entities":["mexicans"],"triples":[]}
+{"id":"Novel-8559-162","entities":[],"triples":[]}
+{"id":"Novel-8559-163","entities":["dr. richards","pedler"],"triples":[]}
+{"id":"Novel-8559-164","entities":["chemical news","hermanitas ranch","texas","d. j. macgowan","china"],"triples":[["hermanitas ranch","located_in","texas"],["d. j. macgowan","lived_in","china"]]}
+{"id":"Novel-8559-165","entities":["nature","china","henry faulds","tzukiyi hospital","tokio","japan","w. j. herschel","oxford","england","india"],"triples":[["henry faulds","works_at","tzukiyi hospital"],["tzukiyi hospital","located_in","tokio"],["tokio","located_in","japan"],["w. j. herschel","lived_in","oxford"],["oxford","located_in","england"],["w. j. herschel","works_at","india"]]}
+{"id":"Novel-8559-166","entities":["doolittle","china","han period","egypt"],"triples":[["doolittle","associated_with","china"]]}
+{"id":"Novel-8559-167","entities":["china"],"triples":[]}
+{"id":"Novel-8559-168","entities":["wenchow"],"triples":[]}
+{"id":"Novel-8559-169","entities":[],"triples":[]}
+{"id":"Novel-8559-170","entities":["china","matthew arnold","liverpool university college","school of medicine"],"triples":[["matthew arnold","works_at","liverpool university college"],["school of medicine","part_of","liverpool university college"]]}
+{"id":"Novel-8559-171","entities":["france","germany","europe"],"triples":[["france","located_in","europe"],["germany","located_in","europe"]]}
+{"id":"Novel-8559-172","entities":[],"triples":[]}
+{"id":"Novel-8559-173","entities":["france","voltaire","england"],"triples":[["voltaire","lived_in","france"]]}
+{"id":"Novel-8559-174","entities":["voltaire","france","england","luther"],"triples":[["voltaire","lived_in","france"]]}
+{"id":"Novel-8559-175","entities":["luther","voltaire","europe"],"triples":[]}
+{"id":"Novel-8559-176","entities":["voltaire","michelet","vico","england","france"],"triples":[]}
+{"id":"Novel-8559-177","entities":["voltaire"],"triples":[]}
+{"id":"Novel-8559-178","entities":["voltaire","locke","france","england","john stuart mill","salvation army"],"triples":[]}
+{"id":"Novel-8559-179","entities":["dr. pusey","mr. mozley"],"triples":[]}
+{"id":"Novel-8559-180","entities":["dr. pusey","ritualism"],"triples":[["ritualism","associated_with","dr. pusey"]]}
+{"id":"Novel-8559-181","entities":["france","england"],"triples":[]}
+{"id":"Novel-8559-182","entities":[],"triples":[]}
+{"id":"Novel-8559-183","entities":["brewster","walter scott","england"],"triples":[["brewster","friend_of","walter scott"]]}

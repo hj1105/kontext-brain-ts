@@ -1,0 +1,100 @@
+{"id":"Novel-41603-117","entities":["bruin","toto","grandmother","platter","pie","bear"],"triples":[["bruin","is_a","bear"],["bruin","associated_with","toto"],["bruin","associated_with","grandmother"],["pie","associated_with","platter"]]}
+{"id":"Novel-41603-118","entities":["toto","raccoon","squirrel","woodmouse","cottage","moon","cat"],"triples":[["toto","associated_with","raccoon"],["toto","associated_with","squirrel"],["raccoon","associated_with","squirrel"],["toto","traveled_to","woodmouse"]]}
+{"id":"Novel-41603-119","entities":["raccoon","toto","squirrel","cat","red cravat"],"triples":[["toto","associated_with","raccoon"],["toto","associated_with","squirrel"],["red cravat","associated_with","raccoon"]]}
+{"id":"Novel-41603-120","entities":["toto","cracker","raccoon","cow","bell","cottage"],"triples":[["toto","associated_with","cracker"],["toto","associated_with","raccoon"],["cracker","friend_of","cow"],["bell","associated_with","cow"]]}
+{"id":"Novel-41603-121","entities":["toto","raccoon","cow","granny","mrs. cow","barn"],"triples":[["toto","associated_with","granny"],["raccoon","associated_with","toto"],["mrs. cow","is_a","cow"],["mrs. cow","located_in","barn"]]}
+{"id":"Novel-41603-122","entities":["toto","squirrel","cave","forest"],"triples":[["toto","associated_with","squirrel"],["cave","located_in","forest"]]}
+{"id":"Novel-41603-123","entities":["toto","squirrel","raccoon","cave"],"triples":[["toto","associated_with","raccoon"],["toto","associated_with","squirrel"],["toto","traveled_to","cave"]]}
+{"id":"Novel-41603-124","entities":["woodmice","field-mice","kangaroo-mice","moles","bride","bridegroom"],"triples":[["field-mice","type_of","woodmice"],["kangaroo-mice","type_of","woodmice"],["bride","associated_with","bridegroom"]]}
+{"id":"Novel-41603-125","entities":["squirrels","grays","reds","chipmunks","mr. titmouse","mrs. titmouse","mrs. shrew","raccoon","boy"],"triples":[["grays","type_of","squirrels"],["reds","type_of","squirrels"],["chipmunks","type_of","squirrels"],["mr. titmouse","married_to","mrs. titmouse"]]}
+{"id":"Novel-41603-126","entities":["raccoon","boy","bride","bridegroom","mr. woodmouse","toto","cracker"],"triples":[["bride","married_to","bridegroom"],["mr. woodmouse","parent_of","bride"],["toto","associated_with","raccoon"],["toto","associated_with","cracker"]]}
+{"id":"Novel-41603-127","entities":["raccoon","mr. woodmouse","toto","cracker"],"triples":[["raccoon","friend_of","mr. woodmouse"],["toto","associated_with","cracker"],["toto","associated_with","raccoon"]]}
+{"id":"Novel-41603-128","entities":["raccoon","prick-ear","woodmouse","bride"],"triples":[["prick-ear","child_of","woodmouse"],["prick-ear","is_a","woodmouse"],["raccoon","friend_of","prick-ear"],["prick-ear","married_to","bride"]]}
+{"id":"Novel-41603-129","entities":["raccoon","toto","prick-ear","mr. woodmouse","forest","checkerberries"],"triples":[["toto","friend_of","mr. woodmouse"],["raccoon","associated_with","prick-ear"],["prick-ear","child_of","mr. woodmouse"]]}
+{"id":"Novel-41603-130","entities":["raccoon","prick-ear","toto","forest","mole","woodmouse"],"triples":[["prick-ear","child_of","woodmouse"],["raccoon","associated_with","prick-ear"],["mole","located_in","forest"]]}
+{"id":"Novel-41603-131","entities":["toto","woodmouse","raccoon","bride","star-nosed mole"],"triples":[["toto","friend_of","woodmouse"],["raccoon","friend_of","woodmouse"],["bride","associated_with","woodmouse"]]}
+{"id":"Novel-41603-132","entities":["star-nosed mole","bride","bridegroom","raccoon","wintergreen"],"triples":[["bride","married_to","bridegroom"],["raccoon","friend_of","bridegroom"]]}
+{"id":"Novel-41603-133","entities":["raccoon","cracker","bruin","toto","uncle munkle","cottage","chipmunk"],"triples":[["uncle munkle","is_a","chipmunk"],["uncle munkle","related_to","cracker"],["cracker","associated_with","bruin"],["cracker","associated_with","toto"]]}
+{"id":"Novel-41603-134","entities":["cracker","uncle munkle","toto","grandmother","mrs. cow","chipmunk"],"triples":[["uncle munkle","related_to","cracker"],["uncle munkle","is_a","chipmunk"],["toto","associated_with","grandmother"]]}
+{"id":"Novel-41603-135","entities":["cracker","uncle munkle","toto","barn","almonds"],"triples":[["uncle munkle","related_to","cracker"],["almonds","located_in","barn"]]}
+{"id":"Novel-41603-136","entities":["uncle munkle","cracker","toto","raccoon","red squirrel","kitchen"],"triples":[["uncle munkle","related_to","cracker"],["cracker","friend_of","red squirrel"],["toto","associated_with","raccoon"]]}
+{"id":"Novel-41603-137","entities":["toto","raccoon","mole","woodmouse","kangaroo-mice","moles"],"triples":[["toto","associated_with","raccoon"],["mole","is_a","moles"],["mole","friend_of","woodmouse"]]}
+{"id":"Novel-41603-138","entities":["mole","woodmouse","host","supper-room","hazel-nuts"],"triples":[["mole","associated_with","woodmouse"],["hazel-nuts","located_in","supper-room"]]}
+{"id":"Novel-41603-139","entities":["mole","supper","forest"],"triples":[["mole","located_in","forest"]]}
+{"id":"Novel-41603-140","entities":["bride","groom","star-nosed moles","elder-bush","fieldmouse","forest"],"triples":[["bride","married_to","groom"],["star-nosed moles","type_of","moles"]]}
+{"id":"Novel-41603-141","entities":["toto","raccoon","woodmice","forest"],"triples":[["toto","associated_with","raccoon"],["woodmice","located_in","forest"]]}
+{"id":"Novel-41603-142","entities":["toto","raccoon","squirrel","bruin","comet","cracker"],"triples":[["toto","associated_with","raccoon"],["toto","associated_with","squirrel"],["toto","associated_with","bruin"]]}
+{"id":"Novel-41603-143","entities":["toto","raccoon","cracker","comet"],"triples":[["toto","associated_with","raccoon"],["toto","associated_with","cracker"]]}
+{"id":"Novel-41603-144","entities":["toto","raccoon","cracker","comet","milky way"],"triples":[["toto","associated_with","raccoon"],["toto","associated_with","cracker"]]}
+{"id":"Novel-41603-145","entities":["toto","raccoon","comet","comet house","tinker","tailor"],"triples":[["comet","located_in","comet house"]]}
+{"id":"Novel-41603-146","entities":["comet master","old comet","young comet","court-yard"],"triples":[["comet master","located_in","court-yard"],["old comet","located_in","court-yard"],["young comet","located_in","court-yard"]]}
+{"id":"Novel-41603-147","entities":["young comet","old comet","comet master","sun"],"triples":[["young comet","associated_with","old comet"],["comet master","associated_with","sun"]]}
+{"id":"Novel-41603-148","entities":["comet master","sun","young comet","earth","planet bungo","short-tailed comet no. 73"],"triples":[["short-tailed comet no. 73","is_a","young comet"],["short-tailed comet no. 73","associated_with","comet master"]]}
+{"id":"Novel-41603-149","entities":["comet","sun","earth","planet bungo","long-tail no. 45"],"triples":[["long-tail no. 45","is_a","comet"]]}
+{"id":"Novel-41603-150","entities":["comet","planet bungo","sun","long-tail no. 45","short-tail no. 73"],"triples":[["long-tail no. 45","is_a","comet"],["short-tail no. 73","is_a","comet"]]}
+{"id":"Novel-41603-151","entities":["short-tail no. 73","long-tail no. 45","comet master"],"triples":[["short-tail no. 73","associated_with","long-tail no. 45"],["long-tail no. 45","associated_with","comet master"]]}
+{"id":"Novel-41603-152","entities":["long-tail no. 45","little comet","meteor"],"triples":[["long-tail no. 45","associated_with","little comet"],["little comet","associated_with","meteor"]]}
+{"id":"Novel-41603-153","entities":["meteor","little comet","comet master","short-tail no. 73"],"triples":[["short-tail no. 73","is_a","little comet"],["little comet","associated_with","meteor"],["little comet","associated_with","comet master"]]}
+{"id":"Novel-41603-154","entities":["meteor","comet","comet master","earth","planet bungo"],"triples":[["meteor","associated_with","comet"],["meteor","associated_with","comet master"]]}
+{"id":"Novel-41603-155","entities":["meteor","comet","planet bungo","reform school","sun","comet master"],"triples":[["reform school","located_in","planet bungo"],["meteor","associated_with","comet"]]}
+{"id":"Novel-41603-156","entities":["meteor","comet","sun","short-tail no. 73"],"triples":[["short-tail no. 73","is_a","comet"],["comet","associated_with","meteor"],["comet","associated_with","sun"]]}
+{"id":"Novel-41603-157","entities":["comet","meteor","sun","reform school","short-tail no. 73"],"triples":[["short-tail no. 73","is_a","comet"],["comet","associated_with","meteor"],["meteor","associated_with","reform school"]]}
+{"id":"Novel-41603-158","entities":["sun","comet master","comet house","short-tail no. 73","comet","no. 1 express"],"triples":[["no. 1 express","is_a","comet"],["comet master","located_in","comet house"],["short-tail no. 73","is_a","comet"]]}
+{"id":"Novel-41603-159","entities":["comet master","meteor","planet bungo","reform school","meteor keeper","bruin","cracker","squirrel","bear"],"triples":[["cracker","is_a","squirrel"],["bruin","is_a","bear"],["reform school","located_in","planet bungo"],["meteor keeper","works_at","reform school"]]}
+{"id":"Novel-41603-160","entities":["bruin","cracker","bear","squirrel"],"triples":[["bruin","is_a","bear"],["cracker","is_a","squirrel"],["bruin","friend_of","cracker"]]}
+{"id":"Novel-41603-161","entities":["bruin","cracker","chipper","squirrel","baldhead","wood"],"triples":[["chipper","related_to","cracker"],["chipper","located_in","wood"],["bruin","friend_of","cracker"]]}
+{"id":"Novel-41603-162","entities":["bruin","cracker","chipper","raccoon","toto","grandmother","hermit","kitchen"],"triples":[["bruin","friend_of","cracker"],["chipper","related_to","cracker"],["toto","associated_with","grandmother"]]}
+{"id":"Novel-41603-163","entities":["grandmother","toto","bruin","hermit","cracker"],"triples":[["toto","associated_with","grandmother"],["bruin","associated_with","toto"],["toto","child_of","grandmother"]]}
+{"id":"Novel-41603-164","entities":["toto","bruin","granny","hermit"],"triples":[["toto","associated_with","bruin"],["toto","associated_with","granny"],["toto","child_of","granny"]]}
+{"id":"Novel-41603-165","entities":["toto","bruin","bear"],"triples":[["bruin","is_a","bear"],["toto","friend_of","bruin"]]}
+{"id":"Novel-41603-166","entities":["toto","bruin","hermit","bear"],"triples":[["bruin","is_a","bear"],["toto","friend_of","bruin"],["bruin","associated_with","hermit"]]}
+{"id":"Novel-41603-167","entities":["toto","bruin","hermit","madam","forest","cave"],"triples":[["bruin","friend_of","toto"],["hermit","located_in","cave"],["cave","located_in","forest"]]}
+{"id":"Novel-41603-168","entities":["toto","bruin","forest","crow","bear"],"triples":[["bruin","is_a","bear"],["toto","friend_of","bruin"],["crow","located_in","forest"]]}
+{"id":"Novel-41603-169","entities":["toto","crow","bear","stump"],"triples":[["crow","located_in","stump"]]}
+{"id":"Novel-41603-170","entities":["toto","bear","crow","hermit","cave","bruin"],"triples":[["bruin","is_a","bear"],["hermit","located_in","cave"],["crow","associated_with","hermit"]]}
+{"id":"Novel-41603-171","entities":["toto","bruin","crow","chicken","bear"],"triples":[["bruin","is_a","bear"],["toto","friend_of","bruin"],["crow","associated_with","toto"]]}
+{"id":"Novel-41603-172","entities":["toto","crow","master","cave"],"triples":[["crow","associated_with","master"],["master","located_in","cave"]]}
+{"id":"Novel-41603-173","entities":["toto","bruin","crow","cavern","old man","bear"],"triples":[["bruin","is_a","bear"],["old man","located_in","cavern"],["toto","associated_with","bruin"]]}
+{"id":"Novel-41603-174","entities":["toto","old man","cave","bruin"],"triples":[["old man","located_in","cave"],["toto","associated_with","bruin"]]}
+{"id":"Novel-41603-175","entities":["toto","old man","bruin","cavern","bear"],"triples":[["bruin","is_a","bear"],["old man","located_in","cavern"],["toto","associated_with","old man"]]}
+{"id":"Novel-41603-176","entities":["toto","bear","hermit","bruin"],"triples":[["bruin","is_a","bear"],["toto","associated_with","bruin"],["bruin","associated_with","hermit"]]}
+{"id":"Novel-41603-177","entities":["hermit","toto","crow"],"triples":[["crow","friend_of","hermit"],["crow","associated_with","toto"]]}
+{"id":"Novel-41603-178","entities":["toto","hermit","bruin","caesar","pompey"],"triples":[["toto","associated_with","bruin"],["toto","associated_with","hermit"]]}
+{"id":"Novel-41603-179","entities":["toto","hermit","bruin","baldhead","mr. hermit"],"triples":[["mr. hermit","known_as","baldhead"],["mr. hermit","is_a","hermit"],["toto","associated_with","bruin"]]}
+{"id":"Novel-41603-180","entities":["bruin","toto","crow","pigeon pretty","cave"],"triples":[["pigeon pretty","friend_of","toto"],["pigeon pretty","friend_of","bruin"],["crow","located_in","cave"]]}
+{"id":"Novel-41603-181","entities":["pigeon pretty","old man","barn","toto","bruin"],"triples":[["pigeon pretty","associated_with","old man"],["pigeon pretty","friend_of","toto"],["pigeon pretty","friend_of","bruin"]]}
+{"id":"Novel-41603-182","entities":["bruin","toto","wood-pigeon","sick man","bear"],"triples":[["bruin","is_a","bear"],["wood-pigeon","known_as","pigeon pretty"],["toto","associated_with","bruin"]]}
+{"id":"Novel-41603-183","entities":["wood-pigeon","bruin","toto","mr. hermit","bear","cave"],"triples":[["bruin","is_a","bear"],["mr. hermit","is_a","hermit"],["toto","friend_of","bruin"],["mr. hermit","located_in","cave"]]}
+{"id":"Novel-41603-184","entities":["mr. bruin","toto","pigeon pretty","jim crow","hermit","bear","forest"],"triples":[["mr. bruin","is_a","bear"],["jim crow","is_a","crow"],["toto","friend_of","mr. bruin"],["mr. bruin","associated_with","hermit"]]}
+{"id":"Novel-41603-185","entities":["grandmother","squirrel","bruin","kettle","fire","kitchen","cottage","parrot","raccoon"],"triples":[["squirrel","associated_with","grandmother"],["kettle","located_in","kitchen"],["fire","located_in","kitchen"]]}
+{"id":"Novel-41603-186","entities":["kettle","fire","parrot","raccoon"],"triples":[["fire","associated_with","kettle"]]}
+{"id":"Novel-41603-187","entities":["parrot","fire","kettle","wood-pigeon","miss mary","pigeon pretty","raccoon","kitchen","cottage"],"triples":[["miss mary","is_a","parrot"],["wood-pigeon","known_as","pigeon pretty"],["miss mary","friend_of","pigeon pretty"]]}
+{"id":"Novel-41603-188","entities":["miss mary","cottage","raccoon","parrot","kitchen"],"triples":[["miss mary","is_a","parrot"],["raccoon","located_in","kitchen"],["miss mary","located_in","kitchen"]]}
+{"id":"Novel-41603-189","entities":["miss mary","cottage","parrot","raccoon","mutton-bone","bruin","cupboard"],"triples":[["miss mary","is_a","parrot"]]}
+{"id":"Novel-41603-190","entities":["parrot","raccoon","kettle","fire","wall"],"triples":[["raccoon","located_in","wall"]]}
+{"id":"Novel-41603-191","entities":["parrot","madam","toto","miss mary","porringer","cottage"],"triples":[["miss mary","is_a","parrot"],["porringer","associated_with","toto"]]}
+{"id":"Novel-41603-192","entities":["parrot","robber","cottage"],"triples":[["robber","located_in","cottage"]]}
+{"id":"Novel-41603-193","entities":["parrot","robber","kettle","cottage"],"triples":[["robber","located_in","cottage"]]}
+{"id":"Novel-41603-194","entities":["robber","cottage","grandmother","raccoon","mary","parrot","miss mary"],"triples":[["miss mary","is_a","parrot"],["miss mary","known_as","mary"],["raccoon","associated_with","miss mary"]]}
+{"id":"Novel-41603-195","entities":["grandmother","toto","miss mary","squirrel","parrot","raccoon"],"triples":[["miss mary","is_a","parrot"],["toto","child_of","grandmother"],["miss mary","friend_of","raccoon"]]}
+{"id":"Novel-41603-196","entities":["raccoon","miss mary","parrot","madam","cracker"],"triples":[["miss mary","is_a","parrot"],["raccoon","friend_of","miss mary"],["raccoon","associated_with","cracker"]]}
+{"id":"Novel-41603-197","entities":["raccoon","miss mary","parrot"],"triples":[["miss mary","is_a","parrot"],["raccoon","friend_of","miss mary"]]}
+{"id":"Novel-41603-198","entities":["squirrel","raccoon","kettle","madam","cracker"],"triples":[["cracker","is_a","squirrel"],["raccoon","associated_with","cracker"]]}
+{"id":"Novel-41603-199","entities":["raccoon","cracker","kettle","toto","squirrel"],"triples":[["cracker","is_a","squirrel"],["raccoon","associated_with","cracker"]]}
+{"id":"Novel-41603-200","entities":["raccoon","cracker","toto","squirrel","kettle","robber"],"triples":[["cracker","is_a","squirrel"],["raccoon","associated_with","cracker"]]}
+{"id":"Novel-41603-201","entities":["raccoon","cracker","kettle","toto"],"triples":[["raccoon","associated_with","cracker"],["raccoon","associated_with","toto"]]}
+{"id":"Novel-41603-202","entities":["toto","raccoon","cracker","miss mary","granny","cottage","parrot","squirrel"],"triples":[["miss mary","is_a","parrot"],["cracker","is_a","squirrel"],["toto","child_of","granny"],["toto","associated_with","raccoon"]]}
+{"id":"Novel-41603-203","entities":["toto","parrot","kettle","jim crow","princess","crow"],"triples":[["jim crow","is_a","crow"],["princess","associated_with","parrot"]]}
+{"id":"Novel-41603-204","entities":["jim crow","raccoon","squirrel","parrot","princess of central africa","miss mary","crow"],"triples":[["jim crow","is_a","crow"],["miss mary","is_a","parrot"],["princess of central africa","located_in","central africa"],["miss mary","served_in","princess of central africa"]]}
+{"id":"Novel-41603-205","entities":["miss mary","lady parrot","toto","bruin","hermit","grandmother","cave","crow"],"triples":[["miss mary","known_as","lady parrot"],["miss mary","is_a","parrot"],["hermit","located_in","cave"],["toto","associated_with","bruin"]]}
+{"id":"Novel-41603-206","entities":["cracker","mrs. cow","toto","cow","squirrel","moon"],"triples":[["cracker","is_a","squirrel"],["mrs. cow","is_a","cow"],["cracker","associated_with","mrs. cow"]]}
+{"id":"Novel-41603-207","entities":["toto","squirrel","crackey","cracker","cow","calf"],"triples":[["cracker","is_a","squirrel"],["cracker","known_as","crackey"],["cow","parent_of","calf"]]}
+{"id":"Novel-41603-208","entities":["toto","cracker","grandmother","raccoon","cow","squirrel"],"triples":[["cracker","is_a","squirrel"],["toto","associated_with","grandmother"]]}
+{"id":"Novel-41603-209","entities":["toto","raccoon","squirrel","madam","cracker","cow","calf"],"triples":[["cracker","is_a","squirrel"],["cow","parent_of","calf"]]}
+{"id":"Novel-41603-210","entities":["cow","calf","maid","molly","young man","moon-calves"],"triples":[["cow","parent_of","calf"],["maid","known_as","molly"]]}
+{"id":"Novel-41603-211","entities":["cow","maid","oldest ox","moon","moon-calf","calf"],"triples":[["moon-calf","located_in","moon"],["moon-calf","is_a","calf"]]}
+{"id":"Novel-41603-212","entities":["oldest ox","cow","moon","calf"],"triples":[["oldest ox","is_a","ox"],["calf","located_in","moon"]]}
+{"id":"Novel-41603-213","entities":["cow","oldest ox","moon","farmer's boy","old brindle","barn"],"triples":[["oldest ox","is_a","ox"],["calf","located_in","moon"]]}
+{"id":"Novel-41603-214","entities":["cow","mother brindle","calf","bossy","moon","oak-tree","red cow"],"triples":[["red cow","is_a","cow"],["bossy","is_a","calf"],["bossy","child_of","red cow"],["bossy","located_in","moon"]]}
+{"id":"Novel-41603-215","entities":["cow","bossy","moon","mother brindle","black cow","calf","moon-calf"],"triples":[["bossy","is_a","calf"],["bossy","known_as","moon-calf"],["bossy","located_in","moon"],["black cow","is_a","cow"]]}
+{"id":"Novel-41603-216","entities":["cow","bossy","moon","mother brindle","black cow","calf","red cow","herd"],"triples":[["bossy","is_a","calf"],["bossy","child_of","red cow"],["bossy","located_in","moon"],["red cow","member_of","herd"]]}

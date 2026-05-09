@@ -1,0 +1,100 @@
+{"id":"Novel-51410-300","entities":["dr. inglis","german command","british prisoners","scottish women's unit","serbia","serbs","serbian red cross","british forces"],"triples":[["dr. inglis","member_of","scottish women's unit"],["scottish women's unit","associated_with","serbian red cross"],["british prisoners","located_in","serbia"],["scottish women's unit","related_to","british forces"]]}
+{"id":"Novel-51410-301","entities":["dr. inglis","scottish women's unit","serbia","serbs","serbian red cross","british forces"],"triples":[["dr. inglis","member_of","scottish women's unit"],["scottish women's unit","located_in","serbia"],["serbian red cross","located_in","serbia"],["serbs","located_in","serbia"]]}
+{"id":"Novel-51410-302","entities":["dr. inglis","german command","scottish women's unit"],"triples":[["dr. inglis","member_of","scottish women's unit"]]}
+{"id":"Novel-51410-303","entities":["dr. inglis","scottish women's unit"],"triples":[["dr. inglis","member_of","scottish women's unit"]]}
+{"id":"Novel-51410-304","entities":["dr. inglis"],"triples":[]}
+{"id":"Novel-51410-305","entities":["belgrade","serbia"],"triples":[["belgrade","located_in","serbia"]]}
+{"id":"Novel-51410-306","entities":["dr. inglis","vienna","american consul","bludenz","switzerland","zurich","british consul-general","british colony"],"triples":[["bludenz","located_in","switzerland"],["zurich","located_in","switzerland"],["dr. inglis","traveled_to","vienna"],["dr. inglis","traveled_to","zurich"]]}
+{"id":"Novel-51410-307","entities":["dr. inglis","zurich","british consul-general","british colony","scottish women's unit","switzerland"],"triples":[["dr. inglis","traveled_to","zurich"],["dr. inglis","member_of","scottish women's unit"],["zurich","located_in","switzerland"]]}
+{"id":"Novel-51410-308","entities":["brindisi","serbia","naples","italy","mediterranean","n.u.w.s.s."],"triples":[["brindisi","located_in","italy"],["naples","located_in","italy"]]}
+{"id":"Novel-51410-309","entities":["italy","rome","cardiff","spain","royaumont","dr. ivens","bersaglieri","italian government"],"triples":[["rome","located_in","italy"],["dr. ivens","works_at","royaumont"]]}
+{"id":"Novel-51410-310","entities":["royaumont","dr. ivens","kragujevatz","s.w.h.","madame milanovitz","serbian women's league","serbians","serbia"],"triples":[["dr. ivens","works_at","royaumont"],["kragujevatz","located_in","serbia"],["madame milanovitz","member_of","serbian women's league"],["serbians","located_in","serbia"]]}
+{"id":"Novel-51410-311","entities":["sister bozket","major protitch","reserve no. 3"],"triples":[["major protitch","works_at","reserve no. 3"]]}
+{"id":"Novel-51410-312","entities":["dr. chesney","major protitch","serbia","reserve no. 3","austrian prisoners"],"triples":[["reserve no. 3","located_in","serbia"],["major protitch","works_at","reserve no. 3"]]}
+{"id":"Novel-51410-313","entities":["austrian prisoners","colonel grustitch","mladanovatz","medical service"],"triples":[["colonel grustitch","member_of","medical service"],["colonel grustitch","traveled_to","mladanovatz"]]}
+{"id":"Novel-51410-314","entities":["mladanovatz","alice hutchison","posheravatz","salonika","malta","mrs. haverfield","mr. smith","colonel g.","serbia"],"triples":[["alice hutchison","traveled_to","posheravatz"],["alice hutchison","traveled_to","salonika"],["mr. smith","traveled_to","posheravatz"],["mladanovatz","located_in","serbia"]]}
+{"id":"Novel-51410-315","entities":["serbia","mladanovatz","serbian government","dr. soltau","patsy hunter","amy m'laren","valjevo"],"triples":[["mladanovatz","located_in","serbia"],["valjevo","located_in","serbia"],["dr. soltau","associated_with","serbian government"],["amy m'laren","child_of","dr. inglis"]]}
+{"id":"Novel-51410-316","entities":["dr. alice hutchison","kragujevatz","valjevo","serbia"],"triples":[["dr. alice hutchison","works_at","valjevo"],["valjevo","located_in","serbia"],["kragujevatz","located_in","serbia"]]}
+{"id":"Novel-51410-317","entities":["serbia","amy","aunt elsie","austro-german forces","serbian minister","scottish women","valjevo"],"triples":[["valjevo","located_in","serbia"],["scottish women","located_in","serbia"]]}
+{"id":"Novel-51410-318","entities":["valjevo","england","lazarevatz","serbian army","austrians","germans","magyars","bulgarians","scottish women"],"triples":[["valjevo","part_of","serbia"],["lazarevatz","located_in","serbia"],["scottish women","associated_with","serbian army"]]}
+{"id":"Novel-51410-319","entities":["scottish women","krushieevatz","mrs. simson","morava valley","germans","austrians","bulgars","serbian army"],"triples":[["krushieevatz","located_in","serbia"],["scottish women","associated_with","serbian army"]]}
+{"id":"Novel-51410-320","entities":["morava valley","craijuvo","dr. macgregor","mr. smith","sir ralph","scottish unit","novi bazaar","montenegro"],"triples":[["dr. macgregor","traveled_to","novi bazaar"],["mr. smith","member_of","scottish unit"],["novi bazaar","part_of","montenegro"]]}
+{"id":"Novel-51410-321","entities":["mr. smith","dr. macgregor","novi bazaar","montenegro","salonika","british troops","turks","germans"],"triples":[["dr. macgregor","traveled_to","novi bazaar"],["novi bazaar","part_of","montenegro"],["british troops","located_in","salonika"]]}
+{"id":"Novel-51410-322","entities":["dr. holloway","montenegro","french","skopiro","salonika","turks","germans","amy"],"triples":[["dr. holloway","works_at","military hospital"],["skopiro","located_in","serbia"]]}
+{"id":"Novel-51410-323","entities":["serbia","krushieevatz","serbian military hospital"],"triples":[["serbian military hospital","located_in","krushieevatz"],["krushieevatz","located_in","serbia"]]}
+{"id":"Novel-51410-324","entities":["serbia","salonika","sir ralph paget","montenegro","british unit"],"triples":[["sir ralph paget","member_of","british unit"]]}
+{"id":"Novel-51410-325","entities":["sir ralph paget","montenegro","krushieevatz","dr. inglis","austro-german officers","british unit","serbs"],"triples":[["dr. inglis","works_at","krushieevatz"],["krushieevatz","located_in","serbia"]]}
+{"id":"Novel-51410-326","entities":["dr. holloway","dr. inglis","serbs","sisters"],"triples":[["dr. holloway","works_at","magazine"]]}
+{"id":"Novel-51410-327","entities":["dr. inglis","english girl orderlies","scottish women's unit"],"triples":[["dr. inglis","member_of","scottish women's unit"]]}
+{"id":"Novel-51410-328","entities":["dr. inglis","serbian prisoners","austrians","allies"],"triples":[["serbian prisoners","related_to","austrians"]]}
+{"id":"Novel-51410-329","entities":[],"triples":[]}
+{"id":"Novel-51410-330","entities":["major nicolitch","dr. inglis","serbia"],"triples":[["major nicolitch","works_at","serbia"]]}
+{"id":"Novel-51410-331","entities":["serbia","dr. inglis","english","french","metz","belgium","austrian guard","vienna","zurich"],"triples":[["dr. inglis","traveled_to","vienna"],["dr. inglis","traveled_to","zurich"]]}
+{"id":"Novel-51410-332","entities":["dr. inglis","serbian people","suffrage societies","balkans","allies"],"triples":[["dr. inglis","associated_with","suffrage societies"],["dr. inglis","associated_with","serbian people"]]}
+{"id":"Novel-51410-333","entities":["dr. inglis","serbs"],"triples":[["dr. inglis","associated_with","serbs"]]}
+{"id":"Novel-51410-334","entities":["serbia"],"triples":[]}
+{"id":"Novel-51410-335","entities":["dr. elsie","oliver cromwell","waldensians","london","edinburgh","church of scotland","st. columba's","alps"],"triples":[["dr. elsie","traveled_to","london"],["dr. elsie","traveled_to","edinburgh"],["st. columba's","located_in","london"]]}
+{"id":"Novel-51410-336","entities":["dr. inglis","s.w.h.","england","russia"],"triples":[["dr. inglis","traveled_to","england"]]}
+{"id":"Novel-51410-337","entities":["dr. inglis","s.w.h."],"triples":[["dr. inglis","member_of","s.w.h."]]}
+{"id":"Novel-51410-338","entities":["dr. inglis","s.w.h.","london","kossovo day","great britain","serbia"],"triples":[["dr. inglis","member_of","s.w.h."],["kossovo day","associated_with","serbia"]]}
+{"id":"Novel-51410-339","entities":["kossovo day","dr. inglis","s.w.h.","serbian volunteers","mesopotamia","basra","war office","foreign office"],"triples":[["dr. inglis","member_of","s.w.h."],["basra","located_in","mesopotamia"]]}
+{"id":"Novel-51410-340","entities":["dr. inglis","mrs. fawcett","war office","m. curcin","serbia","russia","austria","jugoslavs","the englishwoman"],"triples":[["jugoslavs","part_of","austria"],["dr. inglis","traveled_to","serbia"]]}
+{"id":"Novel-51410-341","entities":["dr. inglis","scottish women's hospitals","archangel","russia","odessa","dobrudja","austria","jugoslavs"],"triples":[["dr. inglis","member_of","scottish women's hospitals"],["dr. inglis","traveled_to","odessa"],["odessa","located_in","russia"],["jugoslavs","part_of","austria"]]}
+{"id":"Novel-51410-342","entities":["serbian army","s.w.h.","edinburgh committee","london","n.u.w.s.s.","dr. inglis","russian revolution","rumanian"],"triples":[["dr. inglis","member_of","s.w.h."],["dr. inglis","associated_with","serbian army"]]}
+{"id":"Novel-51410-343","entities":["serbian army","scottish women","dr. inglis","london committee","british government","foreign office"],"triples":[["scottish women","associated_with","serbian army"],["dr. inglis","associated_with","london committee"]]}
+{"id":"Novel-51410-344","entities":["serbian division","odessa","yvonne fitzroy","with the scottish nurses in rumania"],"triples":[["with the scottish nurses in rumania","written_by","yvonne fitzroy"]]}
+{"id":"Novel-51410-345","entities":["yvonne fitzroy","mrs. haverfield","galatz","rumania","mrs. milne","dr. scott","with the scottish nurses in rumania"],"triples":[["with the scottish nurses in rumania","written_by","yvonne fitzroy"],["galatz","located_in","rumania"]]}
+{"id":"Novel-51410-346","entities":["miss onslow","russia","newcastle","london"],"triples":[["miss onslow","traveled_to","newcastle"]]}
+{"id":"Novel-51410-347","entities":["amy","glasgow","mediterranean","austrian lloyd"],"triples":[["austrian lloyd","type_of","ship"]]}
+{"id":"Novel-51410-348","entities":["glasgow","anchor line","bombay","serbian officers"],"triples":[]}
+{"id":"Novel-51410-349","entities":[],"triples":[]}
+{"id":"Novel-51410-350","entities":["british empire"],"triples":[]}
+{"id":"Novel-51410-351","entities":["british unit","serbia"],"triples":[["british unit","located_in","serbia"]]}
+{"id":"Novel-51410-352","entities":["serb officer"],"triples":[]}
+{"id":"Novel-51410-353","entities":["napoleon","tweedledum","tweedledee","serbs"],"triples":[]}
+{"id":"Novel-51410-354","entities":["archbishop of canterbury","russian government","union jack","elsie maud inglis","moscow","amy","archangel","russians"],"triples":[["elsie maud inglis","traveled_to","moscow"],["elsie maud inglis","traveled_to","archangel"]]}
+{"id":"Novel-51410-355","entities":["amy","moscow","archangel","russians","russian admiral","nyamdonia"],"triples":[]}
+{"id":"Novel-51410-356","entities":["miss little","nyamdonia"],"triples":[]}
+{"id":"Novel-51410-357","entities":["miss little","nyamdonia","vorega","russian government"],"triples":[]}
+{"id":"Novel-51410-358","entities":["nyamdonia","vologda","serbian officers"],"triples":[]}
+{"id":"Novel-51410-359","entities":["archangel","russian soldiers","serbian officers","british consul","british empire"],"triples":[]}
+{"id":"Novel-51410-360","entities":["captain bevan","mrs. young","mrs. kerr","russians","british colony"],"triples":[["mrs. kerr","known_as","russians"]]}
+{"id":"Novel-51410-361","entities":["mrs. young","mrs. kerr","british mess","russian admiral","odessa","eve"],"triples":[]}
+{"id":"Novel-51410-362","entities":["odessa","russian","archangel","montenegrin","m. malinina","mme. malinina","moscow","kremlin","duma","red cross"],"triples":[["kremlin","located_in","moscow"],["m. malinina","member_of","duma"],["m. malinina","works_at","red cross"]]}
+{"id":"Novel-51410-363","entities":["kremlin","moscow","m. malinina","mme. malinina","duma","red cross"],"triples":[["kremlin","located_in","moscow"],["m. malinina","member_of","duma"]]}
+{"id":"Novel-51410-364","entities":["miss h.","russian soldiers","elsie","reni","amy","general haditch","mackensen","krushinjevatz"],"triples":[["general haditch","works_at","1st division"]]}
+{"id":"Novel-51410-365","entities":["general mackensen","krushinjevatz","odessa","british red cross","2nd division","russians","serbs"],"triples":[["general mackensen","works_at","krushinjevatz"]]}
+{"id":"Novel-51410-366","entities":["odessa","russian officials","british consul","serbian officers","serbian mess","russian"],"triples":[["serbian mess","located_in","odessa"]]}
+{"id":"Novel-51410-367","entities":["serbian mess","reni","amy","medgidia","kragujevatz"],"triples":[["dr. inglis","traveled_to","medgidia"]]}
+{"id":"Novel-51410-368","entities":["kragujevatz","medgidia","harshova","braila","reni","danube","tulcea","ismail","admiral vesolskin","amy"],"triples":[["admiral vesolskin","traveled_to","braila"]]}
+{"id":"Novel-51410-369","entities":["medgidia","bulbulmic","tulcea","ismail","danube","braila"],"triples":[["bulbulmic","located_in","rumania"],["medgidia","located_in","rumania"]]}
+{"id":"Novel-51410-370","entities":["medgidia","galatz","russians","serbs","rumanians","bulgars"],"triples":[]}
+{"id":"Novel-51410-371","entities":["caromacat","hershova","galatz","braila","bulgars"],"triples":[]}
+{"id":"Novel-51410-372","entities":["galatz","braila","ismail","odessa","serbian h. 2"],"triples":[]}
+{"id":"Novel-51410-373","entities":["serbs","general genlikoffsky","austrian serbs","miss borrowman","miss brown","galatz","ludgate","medgidia","1st division"],"triples":[["austrian serbs","part_of","austria"],["general genlikoffsky","associated_with","1st division"]]}
+{"id":"Novel-51410-374","entities":["miss borrowman","miss brown","galatz","ludgate","reni","odessa","eve"],"triples":[]}
+{"id":"Novel-51410-375","entities":["odessa","reni","crewe"],"triples":[]}
+{"id":"Novel-51410-376","entities":["reni","russians","austrian prisoners","s.w.h.","russian red cross","petrograd"],"triples":[]}
+{"id":"Novel-51410-377","entities":["odessa","dr. chesney","serb patients"],"triples":[]}
+{"id":"Novel-51410-378","entities":["odessa","braila","rumanian","england"],"triples":[]}
+{"id":"Novel-51410-379","entities":["amy m'laren","odessa","serbs","medgidia","braila","galatz","reni","rumanian"],"triples":[]}
+{"id":"Novel-51410-380","entities":["dobrudja","scotland"],"triples":[]}
+{"id":"Novel-51410-381","entities":["punch","english","elsie"],"triples":[]}
+{"id":"Novel-51410-382","entities":["s.w.h.","reni","mary","cossack regiment","danube","russian"],"triples":[]}
+{"id":"Novel-51410-383","entities":["dr. laird","sun"],"triples":[]}
+{"id":"Novel-51410-384","entities":["dr. laird","eve","elsie","petrograd","russian"],"triples":[]}
+{"id":"Novel-51410-385","entities":["england","french revolution","russia","milton","st. george medal","prince dolgourokoff","general kropensky","red cross"],"triples":[["prince dolgourokoff","works_at","red cross"],["general kropensky","member_of","red cross"],["st. george medal","associated_with","prince dolgourokoff"]]}
+{"id":"Novel-51410-386","entities":["prince dolgourokoff","general kropensky","red cross","st. george medal","dr. laird"],"triples":[["general kropensky","member_of","red cross"],["prince dolgourokoff","associated_with","st. george medal"]]}
+{"id":"Novel-51410-387","entities":["c.m.o.","greek priest","russians"],"triples":[]}
+{"id":"Novel-51410-388","entities":["greek priest","icons","russian prisoners","serbia"],"triples":[["russian prisoners","located_in","serbia"]]}
+{"id":"Novel-51410-389","entities":["vera holme","odessa","british red cross","armoured car"],"triples":[["vera holme","works_at","s.w.h."]]}
+{"id":"Novel-51410-390","entities":["b.r.c.","scottish sisters","galatz","reni","russia"],"triples":[]}
+{"id":"Novel-51410-391","entities":["russian sister","vera v. de kolesnikoff","reni"],"triples":[["vera v. de kolesnikoff","known_as","russian sister"]]}
+{"id":"Novel-51410-392","entities":["reni","eve","archbishop","cossacks","serbia"],"triples":[]}
+{"id":"Novel-51410-393","entities":["danube","cossacks","medgidia","miss pleister","austrian orderly"],"triples":[["miss pleister","works_at","medgidia"]]}
+{"id":"Novel-51410-394","entities":["miss pleister","general kropensky","galatz","england","russia"],"triples":[["general kropensky","traveled_to","galatz"]]}
+{"id":"Novel-51410-395","entities":["russia","england","6th army"],"triples":[]}
+{"id":"Novel-51410-396","entities":["6th army","england","galatz","belgrade","russian"],"triples":[]}
+{"id":"Novel-51410-397","entities":["galatz","belgrade","russian"],"triples":[]}
+{"id":"Novel-51410-398","entities":["mrs. flinders petrie","scottish women's hospitals","miss henderson","reni","egyptologists"],"triples":[["mrs. flinders petrie","member_of","scottish women's hospitals"]]}
+{"id":"Novel-51410-399","entities":["reni","russian soldiers","scottish hospital"],"triples":[["scottish hospital","located_in","reni"]]}

@@ -1,0 +1,100 @@
+{"id":"Novel-5956-72","entities":["gallegher","luke mcgovern","cronin","cronin's son","bachman's livery stable","mcgovern"],"triples":[["gallegher","child_of","cronin"],["gallegher","known_as","cronin's son"],["luke mcgovern","associated_with","bachman's livery stable"],["mcgovern","known_as","luke mcgovern"]]}
+{"id":"Novel-5956-73","entities":["gallegher","reeder","bachman's"],"triples":[["gallegher","traveled_to","bachman's"],["reeder","type_of","officer"]]}
+{"id":"Novel-5956-74","entities":["gallegher","police force"],"triples":[["gallegher","related_to","police force"]]}
+{"id":"Novel-5956-75","entities":["gallegher","city hall","railroad station","broad street","chestnut"],"triples":[["gallegher","traveled_to","city hall"],["gallegher","traveled_to","railroad station"],["broad street","located_in","chestnut"]]}
+{"id":"Novel-5956-76","entities":["gallegher","mcgovern"],"triples":[["gallegher","related_to","mcgovern"]]}
+{"id":"Novel-5956-77","entities":["gallegher","press office","press"],"triples":[["gallegher","traveled_to","press office"],["press office","part_of","press"]]}
+{"id":"Novel-5956-78","entities":["gallegher","press office","press"],"triples":[["gallegher","traveled_to","press office"],["press office","part_of","press"]]}
+{"id":"Novel-5956-79","entities":["gallegher","press office"],"triples":[["gallegher","traveled_to","press office"]]}
+{"id":"Novel-5956-80","entities":["press","managing editor","night editor","city editor","hade","dwyer"],"triples":[["managing editor","works_at","press"],["night editor","works_at","press"],["city editor","works_at","press"],["managing editor","associated_with","night editor"]]}
+{"id":"Novel-5956-81","entities":["press","managing editor","night editor","hade","dwyer","foreman"],"triples":[["managing editor","works_at","press"],["night editor","works_at","press"],["foreman","works_at","press"],["dwyer","associated_with","press"]]}
+{"id":"Novel-5956-82","entities":["managing editor","night editor","city editor","foreman","madden's"],"triples":[["managing editor","associated_with","night editor"],["foreman","works_at","press"],["city editor","associated_with","madden's"]]}
+{"id":"Novel-5956-83","entities":["gallegher","city editor","night editor"],"triples":[["gallegher","known_as","gallegher"],["city editor","associated_with","gallegher"]]}
+{"id":"Novel-5956-84","entities":["gallegher","dwyer","hade","managing editor","foreman"],"triples":[["dwyer","associated_with","gallegher"],["hade","related_to","dwyer"],["managing editor","associated_with","foreman"]]}
+{"id":"Novel-5956-85","entities":["gallegher","managing editor"],"triples":[["managing editor","associated_with","gallegher"]]}
+{"id":"Novel-5956-86","entities":["gallegher","managing editor"],"triples":[["managing editor","child_of","gallegher"],["managing editor","parent_of","gallegher"]]}
+{"id":"Novel-5956-87","entities":[],"triples":[]}
+{"id":"Novel-5956-88","entities":[],"triples":[]}
+{"id":"Novel-5956-89","entities":["thirtieth street"],"triples":[]}
+{"id":"Novel-5956-90","entities":["thirty-second street","avenue"],"triples":[["thirty-second street","part_of","avenue"]]}
+{"id":"Novel-5956-91","entities":[],"triples":[]}
+{"id":"Novel-5956-92","entities":["forty-second street","cairo","africa"],"triples":[["cairo","located_in","africa"]]}
+{"id":"Novel-5956-93","entities":["forty-fifth street","louvre"],"triples":[]}
+{"id":"Novel-5956-94","entities":["fifty-fifth street","louvre"],"triples":[]}
+{"id":"Novel-5956-95","entities":["twenty-seventh street"],"triples":[]}
+{"id":"Novel-5956-96","entities":["park"],"triples":[]}
+{"id":"Novel-5956-97","entities":["park"],"triples":[]}
+{"id":"Novel-5956-98","entities":["park"],"triples":[]}
+{"id":"Novel-5956-99","entities":["avenue"],"triples":[]}
+{"id":"Novel-5956-100","entities":[],"triples":[]}
+{"id":"Novel-5956-101","entities":["wallis"],"triples":[]}
+{"id":"Novel-5956-102","entities":["van bibber","park","rags raegen","east river","raegen"],"triples":[["rags raegen","known_as","raegen"],["rags raegen","associated_with","east river"],["van bibber","traveled_to","park"]]}
+{"id":"Novel-5956-103","entities":["raegen","wakeman's slip","east thirty-third street"],"triples":[["wakeman's slip","located_in","east thirty-third street"],["raegen","traveled_to","wakeman's slip"]]}
+{"id":"Novel-5956-104","entities":["raegen","wakeman's slip"],"triples":[["raegen","traveled_to","wakeman's slip"]]}
+{"id":"Novel-5956-105","entities":["mcgonegal","rags","cherry street","thirty-third street","pike mcgonegal"],"triples":[["pike mcgonegal","known_as","mcgonegal"],["mcgonegal","associated_with","thirty-third street"],["rags","associated_with","cherry street"]]}
+{"id":"Novel-5956-106","entities":["rags","case's","thirty-third street"],"triples":[["case's","located_in","thirty-third street"],["rags","traveled_to","case's"]]}
+{"id":"Novel-5956-107","entities":["rags"],"triples":[]}
+{"id":"Novel-5956-108","entities":["rags"],"triples":[]}
+{"id":"Novel-5956-109","entities":["raegen"],"triples":[]}
+{"id":"Novel-5956-110","entities":["raegen"],"triples":[]}
+{"id":"Novel-5956-111","entities":["raegen"],"triples":[]}
+{"id":"Novel-5956-112","entities":["raegen","schaffer","eighteenth precinct"],"triples":[["schaffer","member_of","eighteenth precinct"]]}
+{"id":"Novel-5956-113","entities":["raegen","eighteenth precinct"],"triples":[]}
+{"id":"Novel-5956-114","entities":["raegen"],"triples":[]}
+{"id":"Novel-5956-115","entities":["raegen"],"triples":[]}
+{"id":"Novel-5956-116","entities":["raegen"],"triples":[]}
+{"id":"Novel-5956-117","entities":["raegen","rags"],"triples":[["raegen","known_as","rags"]]}
+{"id":"Novel-5956-118","entities":["rags"],"triples":[]}
+{"id":"Novel-5956-119","entities":["rags"],"triples":[]}
+{"id":"Novel-5956-120","entities":["rags","raegen","margaret","marg'ret"],"triples":[["rags","known_as","raegen"],["margaret","known_as","marg'ret"]]}
+{"id":"Novel-5956-121","entities":["raegen","margaret","island"],"triples":[["margaret","child_of","raegen"]]}
+{"id":"Novel-5956-122","entities":["rags"],"triples":[]}
+{"id":"Novel-5956-123","entities":["rags","blackwell's island"],"triples":[]}
+{"id":"Novel-5956-124","entities":[],"triples":[]}
+{"id":"Novel-5956-125","entities":["rags"],"triples":[]}
+{"id":"Novel-5956-126","entities":["rags"],"triples":[]}
+{"id":"Novel-5956-127","entities":["rags"],"triples":[]}
+{"id":"Novel-5956-128","entities":["rags"],"triples":[]}
+{"id":"Novel-5956-129","entities":["rags","east river"],"triples":[]}
+{"id":"Novel-5956-130","entities":["rags","health board"],"triples":[]}
+{"id":"Novel-5956-131","entities":["rags"],"triples":[]}
+{"id":"Novel-5956-132","entities":["rags"],"triples":[]}
+{"id":"Novel-5956-133","entities":["rags","island"],"triples":[]}
+{"id":"Novel-5956-134","entities":["rags"],"triples":[]}
+{"id":"Novel-5956-135","entities":["raegen","mcgonegal"],"triples":[["raegen","related_to","mcgonegal"]]}
+{"id":"Novel-5956-136","entities":["rags"],"triples":[]}
+{"id":"Novel-5956-137","entities":["rags","margaret"],"triples":[["margaret","associated_with","rags"]]}
+{"id":"Novel-5956-138","entities":["rags","island"],"triples":[]}
+{"id":"Novel-5956-139","entities":["rags","raegen","pike mcgonegal","ragsey raegen","mcgonegal"],"triples":[["raegen","known_as","ragsey raegen"],["raegen","known_as","rags"],["pike mcgonegal","known_as","mcgonegal"]]}
+{"id":"Novel-5956-140","entities":[],"triples":[]}
+{"id":"Novel-5956-141","entities":[],"triples":[]}
+{"id":"Novel-5956-142","entities":["east river","astoria","jersey shore"],"triples":[["astoria","located_in","east river"]]}
+{"id":"Novel-5956-143","entities":[],"triples":[]}
+{"id":"Novel-5956-144","entities":["pike mcgonegal"],"triples":[]}
+{"id":"Novel-5956-145","entities":[],"triples":[]}
+{"id":"Novel-5956-146","entities":["twenty-first precinct"],"triples":[]}
+{"id":"Novel-5956-147","entities":["rags"],"triples":[]}
+{"id":"Novel-5956-148","entities":["rags"],"triples":[]}
+{"id":"Novel-5956-149","entities":["raegen","conners","moore"],"triples":[]}
+{"id":"Novel-5956-150","entities":["raegen","wade","heffner"],"triples":[["wade","associated_with","heffner"]]}
+{"id":"Novel-5956-151","entities":["raegen","wade"],"triples":[]}
+{"id":"Novel-5956-152","entities":["raegen","society"],"triples":[]}
+{"id":"Novel-5956-153","entities":["mcgonegal","tombs"],"triples":[]}
+{"id":"Novel-5956-154","entities":["latimer"],"triples":[]}
+{"id":"Novel-5956-155","entities":["bishop"],"triples":[["bishop","type_of","bishop"]]}
+{"id":"Novel-5956-156","entities":[],"triples":[]}
+{"id":"Novel-5956-157","entities":[],"triples":[]}
+{"id":"Novel-5956-158","entities":["bishop"],"triples":[]}
+{"id":"Novel-5956-159","entities":["bishop"],"triples":[]}
+{"id":"Novel-5956-160","entities":["bishop","latimer","east side"],"triples":[]}
+{"id":"Novel-5956-161","entities":["bishop","latimer"],"triples":[]}
+{"id":"Novel-5956-162","entities":["latimer","new york","ellen","bishop"],"triples":[["latimer","lived_in","new york"],["ellen","child_of","bishop"]]}
+{"id":"Novel-5956-163","entities":["latimer","ellen"],"triples":[["latimer","married_to","ellen"]]}
+{"id":"Novel-5956-164","entities":["bishop","ellen","latimer"],"triples":[["ellen","child_of","bishop"]]}
+{"id":"Novel-5956-165","entities":["bishop"],"triples":[]}
+{"id":"Novel-5956-166","entities":["bishop"],"triples":[]}
+{"id":"Novel-5956-167","entities":["bishop","latimer"],"triples":[]}
+{"id":"Novel-5956-168","entities":["bishop","latimer"],"triples":[]}
+{"id":"Novel-5956-169","entities":["bishop","latimer"],"triples":[]}
+{"id":"Novel-5956-170","entities":["bishop","ellen"],"triples":[["ellen","child_of","bishop"]]}
+{"id":"Novel-5956-171","entities":["bishop","ellen"],"triples":[["ellen","child_of","bishop"]]}

@@ -1,0 +1,100 @@
+{"id":"Novel-47676-394","entities":["jove","jupiter","curetes","crete","jasius","iasion","electra","ceres","plutus","minos","apollodorus","cybele"],"triples":[["curetes","located_in","crete"],["iasion","child_of","jupiter"],["iasion","child_of","electra"],["plutus","child_of","ceres"],["plutus","child_of","iasion"],["iasion","associated_with","ceres"],["iasion","married_to","cybele"],["jasius","known_as","iasion"],["iasion","child_of","minos"]]}
+{"id":"Novel-47676-395","entities":["ovid","ceres","tristia","minos","cretans","nisard"],"triples":[["tristia","written_by","ovid"],["minos","associated_with","cretans"],["ovid","related_to","ceres"]]}
+{"id":"Novel-47676-396","entities":["rome","roman lovers","porticos of rome"],"triples":[["porticos of rome","located_in","rome"],["roman lovers","located_in","rome"]]}
+{"id":"Novel-47676-397","entities":["corinna","amores","heinsius","roman youths","rome"],"triples":[["corinna","associated_with","amores"],["roman youths","located_in","rome"]]}
+{"id":"Novel-47676-398","entities":["romans","praeco","magister auctionum","cicero","thebes"],"triples":[["praeco","part_of","romans"],["magister auctionum","part_of","romans"],["cicero","member_of","romans"]]}
+{"id":"Novel-47676-399","entities":["thebes","trojan war","caesar","corinna","statius","theban war"],"triples":[["theban war","related_to","thebes"],["statius","associated_with","theban war"],["caesar","related_to","trojan war"]]}
+{"id":"Novel-47676-400","entities":["scylla","nisus","circe","glaucus","abas","andromeda","perseus","pegasus","bellerophon","ovid","metamorphoses"],"triples":[["scylla","child_of","nisus"],["circe","related_to","glaucus"],["andromeda","related_to","perseus"],["perseus","child_of","abas"],["metamorphoses","written_by","ovid"],["pegasus","associated_with","perseus"]]}
+{"id":"Novel-47676-401","entities":["ovid","tityus","jupiter","elara","latona","apollo","enceladus","titan","terra","mount aetna"],"triples":[["tityus","child_of","jupiter"],["tityus","child_of","elara"],["enceladus","child_of","titan"],["enceladus","child_of","terra"],["enceladus","located_in","mount aetna"]]}
+{"id":"Novel-47676-402","entities":["aeolus","ulysses","ithaca","metamorphoses","philomela","pandion","athens","cecrops","jupiter","leda","danae","europa"],"triples":[["aeolus","friend_of","ulysses"],["ulysses","traveled_to","ithaca"],["philomela","child_of","pandion"],["pandion","member_of","athens"],["cecrops","member_of","athens"],["jupiter","related_to","leda"],["jupiter","related_to","danae"],["jupiter","related_to","europa"]]}
+{"id":"Novel-47676-403","entities":["phaeton","metamorphoses","aeneas","turnus","atreus","thyestes","amphion","thebes","camillus","falisci","rome"],"triples":[["aeneas","related_to","turnus"],["atreus","related_to","thyestes"],["amphion","associated_with","thebes"],["camillus","associated_with","falisci"],["camillus","member_of","rome"]]}
+{"id":"Novel-47676-404","entities":["pliny the elder","clitumnus","falisci","juno","jupiter","egypt","libya"],"triples":[["clitumnus","located_in","falisci"],["juno","married_to","jupiter"],["juno","traveled_to","egypt"],["juno","traveled_to","libya"]]}
+{"id":"Novel-47676-405","entities":["saxons","norman oppressors","falisci","grecian colony"],"triples":[["saxons","related_to","norman oppressors"],["falisci","is_a","grecian colony"]]}
+{"id":"Novel-47676-406","entities":["halesus","agamemnon","aegisthus","clytemnestra","italy","phalesus","falisci","metamorphoses"],"triples":[["halesus","child_of","agamemnon"],["aegisthus","related_to","clytemnestra"],["halesus","traveled_to","italy"],["phalesus","known_as","falisci"]]}
+{"id":"Novel-47676-407","entities":["ovid","tristia","marsi","peligni","picentes","romans","social war"],"triples":[["tristia","written_by","ovid"],["marsi","member_of","social war"],["peligni","member_of","social war"],["picentes","member_of","social war"],["social war","related_to","romans"]]}
+{"id":"Novel-47676-408","entities":["romans","jupiter","venus","amathus","cyprus","ovid","metamorphoses","bacchus"],"triples":[["amathus","located_in","cyprus"],["venus","associated_with","amathus"],["metamorphoses","written_by","ovid"],["romans","associated_with","jupiter"]]}
+{"id":"Novel-47676-409","entities":["lyaeus","metamorphoses","genii","bacchus","ovid","amores"],"triples":[["lyaeus","known_as","bacchus"],["amores","written_by","ovid"],["metamorphoses","written_by","ovid"]]}
+{"id":"Novel-8559-0","entities":["olaf voss","don kretz","juliet sutherland","charles franks","online distributed proofreading team","scientific american supplement","new york","john gjers","william barnet le van","mississippi river","st. louis"],"triples":[["scientific american supplement","located_in","new york"],["mississippi river","located_in","st. louis"],["olaf voss","member_of","online distributed proofreading team"],["don kretz","member_of","online distributed proofreading team"],["juliet sutherland","member_of","online distributed proofreading team"],["charles franks","member_of","online distributed proofreading team"]]}
+{"id":"Novel-8559-1","entities":["p thenard","s. s. bradford","chevalier aldini","brewster"],"triples":[["chevalier aldini","associated_with","brewster"]]}
+{"id":"Novel-8559-2","entities":["w. h. preece","broadlands","hants","england","american museum of natural history","central park","jessup collection"],"triples":[["broadlands","located_in","hants"],["hants","located_in","england"],["american museum of natural history","located_in","central park"],["jessup collection","part_of","american museum of natural history"]]}
+{"id":"Novel-8559-3","entities":["southern new mexico","de chaumont","h. h. croft"],"triples":[]}
+{"id":"Novel-8559-4","entities":["matthew arnold","liverpool university college","school of medicine","john gjers","middlesbrough","iron and steel institute","vienna","henry bessemer"],"triples":[["liverpool university college","associated_with","school of medicine"],["matthew arnold","works_at","liverpool university college"],["john gjers","lived_in","middlesbrough"],["iron and steel institute","located_in","vienna"]]}
+{"id":"Novel-8559-5","entities":[],"triples":[]}
+{"id":"Novel-8559-6","entities":[],"triples":[]}
+{"id":"Novel-8559-7","entities":[],"triples":[]}
+{"id":"Novel-8559-8","entities":["darlington steel and iron company","darlington"],"triples":[["darlington steel and iron company","located_in","darlington"]]}
+{"id":"Novel-8559-9","entities":["darlington","england"],"triples":[["darlington","located_in","england"]]}
+{"id":"Novel-8559-10","entities":[],"triples":[]}
+{"id":"Novel-8559-11","entities":[],"triples":[]}
+{"id":"Novel-8559-12","entities":[],"triples":[]}
+{"id":"Novel-8559-13","entities":[],"triples":[]}
+{"id":"Novel-8559-14","entities":[],"triples":[]}
+{"id":"Novel-8559-15","entities":["gjers"],"triples":[]}
+{"id":"Novel-8559-16","entities":[],"triples":[]}
+{"id":"Novel-8559-17","entities":[],"triples":[]}
+{"id":"Novel-8559-18","entities":[],"triples":[]}
+{"id":"Novel-8559-19","entities":[],"triples":[]}
+{"id":"Novel-8559-20","entities":[],"triples":[]}
+{"id":"Novel-8559-21","entities":["l. clemandot"],"triples":[]}
+{"id":"Novel-8559-22","entities":[],"triples":[]}
+{"id":"Novel-8559-23","entities":["william barnet le van","franklin institute"],"triples":[["william barnet le van","member_of","franklin institute"]]}
+{"id":"Novel-8559-24","entities":[],"triples":[]}
+{"id":"Novel-8559-25","entities":[],"triples":[]}
+{"id":"Novel-8559-26","entities":[],"triples":[]}
+{"id":"Novel-8559-27","entities":[],"triples":[]}
+{"id":"Novel-8559-28","entities":[],"triples":[]}
+{"id":"Novel-8559-29","entities":[],"triples":[]}
+{"id":"Novel-8559-30","entities":[],"triples":[]}
+{"id":"Novel-8559-31","entities":[],"triples":[]}
+{"id":"Novel-8559-32","entities":[],"triples":[]}
+{"id":"Novel-8559-33","entities":[],"triples":[]}
+{"id":"Novel-8559-34","entities":[],"triples":[]}
+{"id":"Novel-8559-35","entities":[],"triples":[]}
+{"id":"Novel-8559-36","entities":[],"triples":[]}
+{"id":"Novel-8559-37","entities":["philadelphia"],"triples":[]}
+{"id":"Novel-8559-38","entities":[],"triples":[]}
+{"id":"Novel-8559-39","entities":[],"triples":[]}
+{"id":"Novel-8559-40","entities":["philadelphia","mississippi river","st. louis"],"triples":[["mississippi river","located_in","st. louis"]]}
+{"id":"Novel-8559-41","entities":["mississippi river","st. louis","twin hollow","horse-tail bar","carroll's island"],"triples":[["mississippi river","located_in","st. louis"],["twin hollow","located_in","st. louis"],["horse-tail bar","located_in","st. louis"],["carroll's island","located_in","mississippi river"]]}
+{"id":"Novel-8559-42","entities":["beard's island","w. f. fries","e. m. currie","a. a. humphreys","bunte","orsat"],"triples":[["w. f. fries","works_at","beard's island"],["e. m. currie","works_at","beard's island"]]}
+{"id":"Novel-8559-43","entities":["orsat","buente"],"triples":[]}
+{"id":"Novel-8559-44","entities":[],"triples":[]}
+{"id":"Novel-8559-45","entities":[],"triples":[]}
+{"id":"Novel-8559-46","entities":[],"triples":[]}
+{"id":"Novel-8559-47","entities":[],"triples":[]}
+{"id":"Novel-8559-48","entities":[],"triples":[]}
+{"id":"Novel-8559-49","entities":[],"triples":[]}
+{"id":"Novel-8559-50","entities":[],"triples":[]}
+{"id":"Novel-8559-51","entities":["bunsen"],"triples":[]}
+{"id":"Novel-8559-52","entities":["buente"],"triples":[]}
+{"id":"Novel-8559-53","entities":["j. a. ewins","h. newman","t. b. barker","scholefield-street","bloomsbury","birmingham"],"triples":[["t. b. barker","works_at","scholefield-street"],["scholefield-street","located_in","bloomsbury"],["bloomsbury","located_in","birmingham"],["j. a. ewins","associated_with","h. newman"]]}
+{"id":"Novel-8559-54","entities":[],"triples":[]}
+{"id":"Novel-8559-55","entities":[],"triples":[]}
+{"id":"Novel-8559-56","entities":[],"triples":[]}
+{"id":"Novel-8559-57","entities":[],"triples":[]}
+{"id":"Novel-8559-58","entities":[],"triples":[]}
+{"id":"Novel-8559-59","entities":[],"triples":[]}
+{"id":"Novel-8559-60","entities":[],"triples":[]}
+{"id":"Novel-8559-61","entities":[],"triples":[]}
+{"id":"Novel-8559-62","entities":[],"triples":[]}
+{"id":"Novel-8559-63","entities":[],"triples":[]}
+{"id":"Novel-8559-64","entities":[],"triples":[]}
+{"id":"Novel-8559-65","entities":[],"triples":[]}
+{"id":"Novel-8559-66","entities":[],"triples":[]}
+{"id":"Novel-8559-67","entities":[],"triples":[]}
+{"id":"Novel-8559-68","entities":[],"triples":[]}
+{"id":"Novel-8559-69","entities":[],"triples":[]}
+{"id":"Novel-8559-70","entities":[],"triples":[]}
+{"id":"Novel-8559-71","entities":["buckle"],"triples":[]}
+{"id":"Novel-8559-72","entities":[],"triples":[]}
+{"id":"Novel-8559-73","entities":[],"triples":[]}
+{"id":"Novel-8559-74","entities":[],"triples":[]}
+{"id":"Novel-8559-75","entities":[],"triples":[]}
+{"id":"Novel-8559-76","entities":[],"triples":[]}
+{"id":"Novel-8559-77","entities":["bilan"],"triples":[]}
+{"id":"Novel-8559-78","entities":[],"triples":[]}
+{"id":"Novel-8559-79","entities":["heywood & spencer","radcliffe","manchester"],"triples":[["heywood & spencer","located_in","radcliffe"],["radcliffe","located_in","manchester"]]}
+{"id":"Novel-8559-80","entities":[],"triples":[]}
+{"id":"Novel-8559-81","entities":[],"triples":[]}
+{"id":"Novel-8559-82","entities":["south metropolitan gas company"],"triples":[]}
+{"id":"Novel-8559-83","entities":["south metropolitan gas company","old kent road","otto"],"triples":[["south metropolitan gas company","located_in","old kent road"]]}

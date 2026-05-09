@@ -1,0 +1,100 @@
+{"id":"Novel-41603-17","entities":["bruin","squirrel","grandmother","toto"],"triples":[["bruin","is_a","bear"],["squirrel","friend_of","bruin"]]}
+{"id":"Novel-41603-18","entities":["chop-chin","ly-chee","pekin","chinese empire","emperor","grandmother"],"triples":[["chop-chin","child_of","ly-chee"],["chop-chin","born_in","pekin"],["pekin","part_of","chinese empire"],["ly-chee","works_at","chinese empire"]]}
+{"id":"Novel-41603-19","entities":["chop-chin","ly-chee","emperor","court-yard"],"triples":[["chop-chin","child_of","ly-chee"],["ly-chee","works_at","court-yard"],["chop-chin","related_to","ly-chee"]]}
+{"id":"Novel-41603-20","entities":["chop-chin","ly-chee","yow-lay","sweepers"],"triples":[["chop-chin","child_of","ly-chee"],["ly-chee","member_of","sweepers"],["yow-lay","member_of","sweepers"]]}
+{"id":"Novel-41603-21","entities":["chop-chin","ly-chee","yow-lay","toto","grandmother","sweepers"],"triples":[["yow-lay","is_a","sweepers"],["ly-chee","member_of","sweepers"],["chop-chin","child_of","ly-chee"]]}
+{"id":"Novel-41603-22","entities":["toto","grandmother","raccoon","ly-chee","emperor","sweepers"],"triples":[["ly-chee","member_of","sweepers"],["raccoon","friend_of","toto"]]}
+{"id":"Novel-41603-23","entities":["ly-chee","emperor","chop-chin","princely parasol-holder","unique umbrella-opener"],"triples":[["ly-chee","works_at","emperor"],["princely parasol-holder","associated_with","emperor"],["unique umbrella-opener","associated_with","emperor"]]}
+{"id":"Novel-41603-24","entities":["emperor","ly-chee","princely parasol-holder","unique umbrella-opener"],"triples":[["princely parasol-holder","associated_with","emperor"],["unique umbrella-opener","associated_with","emperor"]]}
+{"id":"Novel-41603-25","entities":["ly-chee","emperor","golden dragon","unique umbrella-holder"],"triples":[["ly-chee","associated_with","emperor"],["unique umbrella-holder","associated_with","emperor"],["golden dragon","associated_with","emperor"]]}
+{"id":"Novel-41603-26","entities":["chop-chin","ly-chee","golden dragon","emperor"],"triples":[["chop-chin","child_of","ly-chee"],["ly-chee","associated_with","golden dragon"]]}
+{"id":"Novel-41603-27","entities":["chop-chin","ly-chee","golden dragon","temple"],"triples":[["chop-chin","child_of","ly-chee"],["golden dragon","located_in","temple"]]}
+{"id":"Novel-41603-28","entities":["chop-chin","golden dragon","temple"],"triples":[["golden dragon","located_in","temple"],["chop-chin","traveled_to","temple"]]}
+{"id":"Novel-41603-29","entities":["chop-chin","tong-ki-tcheng","holy dragon","empire"],"triples":[["tong-ki-tcheng","member_of","empire"],["chop-chin","associated_with","tong-ki-tcheng"]]}
+{"id":"Novel-41603-30","entities":["chop-chin","tong-ki-tcheng","holy dragon"],"triples":[["chop-chin","associated_with","tong-ki-tcheng"],["tong-ki-tcheng","associated_with","holy dragon"]]}
+{"id":"Novel-41603-31","entities":["chop-chin","tong-ki-tcheng","holy dragon","temple","china"],"triples":[["holy dragon","located_in","temple"],["temple","located_in","china"],["chop-chin","traveled_to","temple"]]}
+{"id":"Novel-41603-32","entities":["chop-chin","tong-ki-tcheng","holy dragon","temple"],"triples":[["holy dragon","located_in","temple"],["chop-chin","associated_with","tong-ki-tcheng"]]}
+{"id":"Novel-41603-33","entities":["chop-chin","tong-ki-tcheng","holy dragon","saki-pan"],"triples":[["chop-chin","associated_with","tong-ki-tcheng"],["holy dragon","associated_with","saki-pan"]]}
+{"id":"Novel-41603-34","entities":["chop-chin","saki-pan","holy dragon","golden dragon","temple"],"triples":[["holy dragon","located_in","temple"],["saki-pan","part_of","temple"],["chop-chin","traveled_to","temple"]]}
+{"id":"Novel-41603-35","entities":["chop-chin","temple"],"triples":[["chop-chin","located_in","temple"]]}
+{"id":"Novel-41603-36","entities":["chop-chin","golden dragon"],"triples":[["chop-chin","associated_with","golden dragon"]]}
+{"id":"Novel-41603-37","entities":["golden dragon"],"triples":[]}
+{"id":"Novel-41603-38","entities":["chop-chin","holy dragon"],"triples":[["chop-chin","associated_with","holy dragon"]]}
+{"id":"Novel-41603-39","entities":["chop-chin"],"triples":[]}
+{"id":"Novel-41603-40","entities":["chop-chin","golden dragon","temple"],"triples":[["golden dragon","located_in","temple"],["chop-chin","associated_with","golden dragon"]]}
+{"id":"Novel-41603-41","entities":["chop-chin"],"triples":[]}
+{"id":"Novel-41603-42","entities":["chop-chin","nai-ping","saki-pan","temple"],"triples":[["nai-ping","member_of","saki-pan"],["saki-pan","part_of","temple"]]}
+{"id":"Novel-41603-43","entities":["royal palace"],"triples":[]}
+{"id":"Novel-41603-44","entities":["chop-chin"],"triples":[]}
+{"id":"Novel-41603-45","entities":["chop-chin","emperor","holy dragon","putter-on-of-slippers"],"triples":[["putter-on-of-slippers","associated_with","emperor"]]}
+{"id":"Novel-41603-46","entities":["chop-chin","wah-song","china","emperor"],"triples":[["wah-song","is_a","emperor"],["wah-song","born_in","china"],["wah-song","located_in","china"]]}
+{"id":"Novel-41603-47","entities":["wah-song","emperor","chief pillow-thumper","tyer-of-the-strings-of-the-nightcap","principal pourer","finishing toucher"],"triples":[["wah-song","is_a","emperor"],["chief pillow-thumper","works_at","wah-song"],["finishing toucher","works_at","wah-song"]]}
+{"id":"Novel-41603-48","entities":["emperor","golden dragon","golden temple"],"triples":[["golden dragon","located_in","golden temple"]]}
+{"id":"Novel-41603-49","entities":["wah-song","emperor","golden dragon"],"triples":[["wah-song","is_a","emperor"],["golden dragon","associated_with","wah-song"]]}
+{"id":"Novel-41603-50","entities":["wah-song","golden dragon","ly-chee","emperor"],"triples":[["wah-song","is_a","emperor"],["ly-chee","works_at","golden dragon"],["golden dragon","associated_with","wah-song"]]}
+{"id":"Novel-41603-51","entities":["wah-song","golden dragon","emperor"],"triples":[["wah-song","is_a","emperor"],["golden dragon","associated_with","wah-song"]]}
+{"id":"Novel-41603-52","entities":["ly-chee","chop-chin","emperor","dragon"],"triples":[["chop-chin","child_of","ly-chee"],["ly-chee","parent_of","chop-chin"],["dragon","associated_with","emperor"]]}
+{"id":"Novel-41603-53","entities":["dragon","emperor","chop-chin"],"triples":[["dragon","associated_with","emperor"]]}
+{"id":"Novel-41603-54","entities":["chop-chin","emperor"],"triples":[["chop-chin","associated_with","emperor"]]}
+{"id":"Novel-41603-55","entities":["chop-chin","saki-pan","golden dragon"],"triples":[["golden dragon","associated_with","saki-pan"]]}
+{"id":"Novel-41603-56","entities":["saki-pan","golden dragon"],"triples":[["golden dragon","associated_with","saki-pan"]]}
+{"id":"Novel-41603-57","entities":["saki-pan","temple"],"triples":[["saki-pan","located_in","temple"]]}
+{"id":"Novel-41603-58","entities":["saki-pan","golden dragon","temple"],"triples":[["golden dragon","located_in","temple"],["saki-pan","part_of","temple"]]}
+{"id":"Novel-41603-59","entities":["ly-chee","holy dragon"],"triples":[["ly-chee","associated_with","holy dragon"]]}
+{"id":"Novel-41603-60","entities":["ly-chee"],"triples":[]}
+{"id":"Novel-41603-61","entities":["wah-song","emperor","toto","raccoon","grandmother"],"triples":[["wah-song","is_a","emperor"]]}
+{"id":"Novel-41603-62","entities":["bear","grandmother","bruin","toto","china"],"triples":[["bruin","is_a","bear"]]}
+{"id":"Novel-41603-63","entities":["miss mary","squirrel","china","africa","central africa","gabblio","polacko"],"triples":[["miss mary","is_a","parrot"],["polacko","parent_of","miss mary"],["polacko","lived_in","central africa"],["central africa","part_of","africa"]]}
+{"id":"Novel-41603-64","entities":["polacko","toto","miss mary","china","africa"],"triples":[["polacko","parent_of","miss mary"],["polacko","traveled_to","china"],["polacko","traveled_to","africa"],["polacko","lived_in","africa"]]}
+{"id":"Novel-41603-65","entities":["bruin","grandmother","toto","cracker","squirrel","miss mary"],"triples":[["bruin","is_a","bear"],["cracker","is_a","squirrel"]]}
+{"id":"Novel-41603-66","entities":["toto","raccoon","bruin"],"triples":[["bruin","is_a","bear"],["raccoon","friend_of","toto"]]}
+{"id":"Novel-41603-67","entities":["bruin","bridget","cottage","squeak","scrabble"],"triples":[["bridget","is_a","cow"],["squeak","friend_of","scrabble"]]}
+{"id":"Novel-41603-68","entities":["squeak","scrabble","kitchen"],"triples":[["squeak","friend_of","scrabble"],["squeak","located_in","kitchen"],["scrabble","located_in","kitchen"]]}
+{"id":"Novel-41603-69","entities":["scrabble","squeak"],"triples":[["squeak","friend_of","scrabble"]]}
+{"id":"Novel-41603-70","entities":[],"triples":[]}
+{"id":"Novel-41603-71","entities":[],"triples":[]}
+{"id":"Novel-41603-72","entities":["squeak","scrabble"],"triples":[["squeak","friend_of","scrabble"]]}
+{"id":"Novel-41603-73","entities":["squeak","scrabble"],"triples":[["squeak","friend_of","scrabble"]]}
+{"id":"Novel-41603-74","entities":["mother mouse"],"triples":[]}
+{"id":"Novel-41603-75","entities":["bruin","raccoon","wood-pigeon"],"triples":[["bruin","is_a","bear"]]}
+{"id":"Novel-41603-76","entities":["raccoon","toto","bear"],"triples":[["raccoon","friend_of","toto"]]}
+{"id":"Novel-41603-77","entities":["raccoon","squirrel","grandmother"],"triples":[]}
+{"id":"Novel-41603-78","entities":["cracker","raccoon","grandmother","squirrel","bruin"],"triples":[["cracker","is_a","squirrel"]]}
+{"id":"Novel-41603-79","entities":["bear","miss mary","raccoon","cracker","toto"],"triples":[["miss mary","is_a","parrot"],["cracker","is_a","squirrel"]]}
+{"id":"Novel-41603-80","entities":["miss mary","bruin","squeak","scrabble","raccoon"],"triples":[["miss mary","is_a","parrot"],["squeak","friend_of","scrabble"]]}
+{"id":"Novel-41603-81","entities":["miss mary","raccoon","toto"],"triples":[["miss mary","is_a","parrot"],["raccoon","friend_of","toto"]]}
+{"id":"Novel-41603-82","entities":["toto","raccoon","forest"],"triples":[["raccoon","friend_of","toto"],["toto","traveled_to","forest"]]}
+{"id":"Novel-41603-83","entities":["raccoon","toto","forest","chucky"],"triples":[["raccoon","friend_of","toto"],["toto","traveled_to","forest"]]}
+{"id":"Novel-41603-84","entities":["raccoon","toto","wild-cat"],"triples":[["raccoon","friend_of","toto"]]}
+{"id":"Novel-41603-85","entities":["toto","raccoon","bruin","forest"],"triples":[["raccoon","friend_of","toto"],["bruin","is_a","bear"]]}
+{"id":"Novel-41603-86","entities":["klawtobitz","cat","toto"],"triples":[["klawtobitz","is_a","cat"]]}
+{"id":"Novel-41603-87","entities":["bruin","raccoon","toto","klawtobitz"],"triples":[["bruin","is_a","bear"],["raccoon","friend_of","toto"]]}
+{"id":"Novel-41603-88","entities":["bruin","wildcat","raccoon","wood-pigeon","forest","farmhouse"],"triples":[["bruin","is_a","bear"],["wildcat","located_in","forest"]]}
+{"id":"Novel-41603-89","entities":["bruin","raccoon","toto"],"triples":[["bruin","is_a","bear"],["raccoon","friend_of","toto"]]}
+{"id":"Novel-41603-90","entities":["bruin","toto","raccoon","forest","woodmouse"],"triples":[["bruin","friend_of","toto"],["raccoon","friend_of","toto"],["woodmouse","located_in","forest"]]}
+{"id":"Novel-41603-91","entities":["woodmouse","raccoon","toto"],"triples":[["raccoon","friend_of","toto"]]}
+{"id":"Novel-41603-92","entities":["woodmouse","raccoon","bruin","toto"],"triples":[["bruin","is_a","bear"],["raccoon","friend_of","toto"]]}
+{"id":"Novel-41603-93","entities":["woodmouse","raccoon","forest"],"triples":[["woodmouse","lived_in","forest"]]}
+{"id":"Novel-41603-94","entities":["woodmouse","prick-ear","raccoon"],"triples":[["prick-ear","child_of","woodmouse"],["woodmouse","parent_of","prick-ear"]]}
+{"id":"Novel-41603-95","entities":["woodmouse","raccoon","toto","cracker","cave"],"triples":[["raccoon","friend_of","toto"],["cracker","is_a","squirrel"]]}
+{"id":"Novel-41603-96","entities":["bruin","woodmouse","raccoon","toto","squirrel","cracker"],"triples":[["bruin","is_a","bear"],["cracker","is_a","squirrel"]]}
+{"id":"Novel-41603-97","entities":["raccoon","squirrel"],"triples":[]}
+{"id":"Novel-41603-98","entities":["sligo","king"],"triples":[["sligo","is_a","king"]]}
+{"id":"Novel-41603-99","entities":["sligo","king","high cellarer"],"triples":[["sligo","is_a","king"],["high cellarer","works_at","sligo"]]}
+{"id":"Novel-41603-100","entities":["sligo","king","high cellarer"],"triples":[["sligo","is_a","king"],["high cellarer","works_at","sligo"]]}
+{"id":"Novel-41603-101","entities":["sligo","king","high cellarer"],"triples":[["sligo","is_a","king"],["high cellarer","works_at","sligo"]]}
+{"id":"Novel-41603-102","entities":["sligo","king"],"triples":[["sligo","is_a","king"]]}
+{"id":"Novel-41603-103","entities":["sligo","king"],"triples":[["sligo","is_a","king"]]}
+{"id":"Novel-41603-104","entities":["sligo","king","high cellarer"],"triples":[["sligo","is_a","king"],["high cellarer","works_at","sligo"]]}
+{"id":"Novel-41603-105","entities":["king","high cellarer"],"triples":[["high cellarer","works_at","king"]]}
+{"id":"Novel-41603-106","entities":["king","high cellarer"],"triples":[["high cellarer","works_at","king"]]}
+{"id":"Novel-41603-107","entities":["raccoon","cracker","toto","bruin","grandmother","pigeon pretty"],"triples":[["bruin","is_a","bear"],["cracker","is_a","squirrel"]]}
+{"id":"Novel-41603-108","entities":["toto","cracker","bruin","raccoon","miss mary"],"triples":[["bruin","is_a","bear"],["cracker","is_a","squirrel"],["miss mary","is_a","parrot"]]}
+{"id":"Novel-41603-109","entities":["bruin","grandmother","toto"],"triples":[["bruin","is_a","bear"]]}
+{"id":"Novel-41603-110","entities":["toto","bruin","raccoon"],"triples":[["bruin","is_a","bear"],["raccoon","friend_of","toto"]]}
+{"id":"Novel-41603-111","entities":["squirrel","toto"],"triples":[]}
+{"id":"Novel-41603-112","entities":["bruin","cracker","toto","raccoon"],"triples":[["bruin","is_a","bear"],["cracker","is_a","squirrel"]]}
+{"id":"Novel-41603-113","entities":["squirrel","raccoon","toto","bruin","woodmouse"],"triples":[["raccoon","friend_of","toto"]]}
+{"id":"Novel-41603-114","entities":["bruin","pigeon pretty","grandmother","toto","raccoon","cracker"],"triples":[["bruin","is_a","bear"],["pigeon pretty","friend_of","bruin"]]}
+{"id":"Novel-41603-115","entities":["cracker","miss mary","toto","raccoon"],"triples":[["miss mary","is_a","parrot"],["cracker","is_a","squirrel"]]}
+{"id":"Novel-41603-116","entities":["bruin","toto","grandmother","squirrel","miss mary"],"triples":[["bruin","is_a","bear"],["miss mary","is_a","parrot"]]}

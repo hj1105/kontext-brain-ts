@@ -1,0 +1,100 @@
+{"id":"Novel-5956-272","entities":["miss catherwaight","van bibber","mrs. catherwaight"],"triples":[["miss catherwaight","related_to","mrs. catherwaight"],["van bibber","associated_with","miss catherwaight"]]}
+{"id":"Novel-5956-273","entities":["mrs. catherwaight","mr. catherwaight","miss catherwaight"],"triples":[["mrs. catherwaight","married_to","mr. catherwaight"],["miss catherwaight","child_of","mrs. catherwaight"],["miss catherwaight","child_of","mr. catherwaight"]]}
+{"id":"Novel-5956-274","entities":["miss catherwaight","mr. catherwaight","catherwaights","africa"],"triples":[["miss catherwaight","child_of","mr. catherwaight"],["miss catherwaight","member_of","catherwaights"]]}
+{"id":"Novel-5956-275","entities":["miss catherwaight"],"triples":[]}
+{"id":"Novel-5956-276","entities":["miss catherwaight","legion of honor"],"triples":[["miss catherwaight","associated_with","legion of honor"]]}
+{"id":"Novel-5956-277","entities":["new york","paris","wardour street","london","bowery","england","victoria cross"],"triples":[["wardour street","located_in","london"],["bowery","located_in","new york"],["victoria cross","associated_with","england"]]}
+{"id":"Novel-5956-278","entities":["victoria cross","order of the garter","tower","queen","england"],"triples":[["order of the garter","located_in","tower"],["victoria cross","associated_with","england"],["queen","associated_with","england"]]}
+{"id":"Novel-5956-279","entities":["hiram j. stillman","annie barker","olivia","baxter street","united states","congress","miss catherwaight"],"triples":[["hiram j. stillman","member_of","annie barker"],["annie barker","type_of","sloop"],["olivia","type_of","steamship"],["baxter street","located_in","united states"]]}
+{"id":"Novel-5956-280","entities":["miss catherwaight","colonel james f. placer","richmond","bowery","park row"],"triples":[["miss catherwaight","known_as","cynical"],["colonel james f. placer","associated_with","richmond"],["bowery","located_in","new york"]]}
+{"id":"Novel-5956-281","entities":["miss catherwaight","bowery","park row"],"triples":[["miss catherwaight","associated_with","bowery"],["miss catherwaight","associated_with","park row"]]}
+{"id":"Novel-5956-282","entities":["henry burgoyne","lewis l. lockwood","miss catherwaight","lewis lockwood"],"triples":[["henry burgoyne","friend_of","lewis l. lockwood"],["lewis l. lockwood","known_as","lewis lockwood"]]}
+{"id":"Novel-5956-283","entities":["miss catherwaight","lewis lyman lockwood","broadway","liberty","mr. lockwood","mr. latimer"],"triples":[["lewis lyman lockwood","known_as","mr. lockwood"],["mr. lockwood","works_at","broadway"],["mr. latimer","works_at","broadway"]]}
+{"id":"Novel-5956-284","entities":["miss catherwaight","mr. lockwood","mr. latimer"],"triples":[["mr. latimer","associated_with","mr. lockwood"],["miss catherwaight","associated_with","mr. latimer"]]}
+{"id":"Novel-5956-285","entities":["mr. lockwood","miss catherwaight","mr. latimer"],"triples":[["miss catherwaight","associated_with","mr. latimer"]]}
+{"id":"Novel-5956-286","entities":["miss catherwaight","mr. lockwood","henry burgoyne","mr. latimer","bowery"],"triples":[["henry burgoyne","friend_of","mr. lockwood"],["miss catherwaight","associated_with","bowery"]]}
+{"id":"Novel-5956-287","entities":["mr. latimer","mr. lockwood","miss catherwaight","bowery"],"triples":[["mr. latimer","associated_with","mr. lockwood"]]}
+{"id":"Novel-5956-288","entities":["mr. lockwood","henry burgoyne","judge burgoyne","westchester county","damon","pythias","tuckahoe","new york","fuller mowbray"],"triples":[["henry burgoyne","known_as","judge burgoyne"],["mr. lockwood","friend_of","henry burgoyne"],["mr. lockwood","lived_in","westchester county"],["henry burgoyne","lived_in","westchester county"],["mr. lockwood","worked_at","tuckahoe"],["henry burgoyne","worked_at","tuckahoe"],["tuckahoe","located_in","new york"]]}
+{"id":"Novel-5956-289","entities":["mr. lockwood","henry burgoyne","new york","fuller mowbray","chesapeake bay"],"triples":[["mr. lockwood","friend_of","henry burgoyne"],["mr. lockwood","lived_in","new york"],["henry burgoyne","lived_in","new york"]]}
+{"id":"Novel-5956-290","entities":["mr. lockwood","henry burgoyne","new york","maryland","chesapeake bay"],"triples":[["chesapeake bay","located_in","maryland"],["mr. lockwood","friend_of","henry burgoyne"]]}
+{"id":"Novel-5956-291","entities":["mr. lockwood","mr. latimer","miss catherwaight","henry burgoyne"],"triples":[["mr. lockwood","friend_of","henry burgoyne"]]}
+{"id":"Novel-5956-292","entities":["miss catherwaight","mr. latimer","mr. lockwood"],"triples":[["mr. latimer","associated_with","mr. lockwood"]]}
+{"id":"Novel-5956-293","entities":["miss catherwaight","mr. catherwaight","mr. lockwood"],"triples":[["miss catherwaight","child_of","mr. catherwaight"]]}
+{"id":"Novel-5956-294","entities":["mr. catherwaight","miss catherwaight","mr. lockwood","lewis l. lockwood","morris"],"triples":[["mr. lockwood","known_as","lewis l. lockwood"],["miss catherwaight","child_of","mr. catherwaight"]]}
+{"id":"Novel-5956-295","entities":["mr. catherwaight","miss catherwaight","lewis lockwood"],"triples":[["miss catherwaight","child_of","mr. catherwaight"],["lewis lockwood","associated_with","mr. catherwaight"]]}
+{"id":"Novel-5956-296","entities":["miss catherwaight","mr. catherwaight","lockwood","mother"],"triples":[["miss catherwaight","child_of","mr. catherwaight"]]}
+{"id":"Novel-5956-297","entities":["miss catherwaight","mr. latimer","mother"],"triples":[["miss catherwaight","child_of","mother"]]}
+{"id":"Novel-5956-298","entities":["mr. latimer","mr. lockwood","miss catherwaight"],"triples":[["mr. latimer","associated_with","mr. lockwood"]]}
+{"id":"Novel-5956-299","entities":["lawyer","miss catherwaight","mr. lockwood"],"triples":[["mr. lockwood","type_of","lawyer"]]}
+{"id":"Novel-5956-300","entities":["mr. lockwood","mr. latimer","miss catherwaight","mother"],"triples":[["mr. latimer","associated_with","mr. lockwood"],["miss catherwaight","child_of","mother"]]}
+{"id":"Novel-5956-301","entities":["mr. lockwood","miss catherwaight","mother"],"triples":[["miss catherwaight","child_of","mother"]]}
+{"id":"Novel-5956-302","entities":["henry burgoyne","mr. lockwood","miss catherwaight"],"triples":[["henry burgoyne","friend_of","mr. lockwood"]]}
+{"id":"Novel-5956-303","entities":["miss catherwaight","henry burgoyne","mr. lockwood"],"triples":[["henry burgoyne","friend_of","mr. lockwood"]]}
+{"id":"Novel-5956-304","entities":["miss catherwaight","mr. latimer","mr. lockwood"],"triples":[["mr. latimer","associated_with","mr. lockwood"]]}
+{"id":"Novel-5956-305","entities":["mr. lockwood","henry","mr. latimer","miss catherwaight"],"triples":[["mr. latimer","child_of","mr. lockwood"]]}
+{"id":"Novel-5956-306","entities":["miss catherwaight","mr. latimer","mr. lockwood","lawyer"],"triples":[["mr. lockwood","type_of","lawyer"]]}
+{"id":"Novel-5956-307","entities":["mr. lockwood","judge burgoyne","maryland","van bibber","park"],"triples":[["mr. lockwood","friend_of","judge burgoyne"],["mr. lockwood","traveled_to","maryland"],["judge burgoyne","traveled_to","maryland"]]}
+{"id":"Novel-5956-308","entities":["van bibber","fifty-ninth street","east side","park"],"triples":[["fifty-ninth street","located_in","park"]]}
+{"id":"Novel-5956-309","entities":["van bibber","east side","eddie case"],"triples":[]}
+{"id":"Novel-5956-310","entities":["van bibber","mame"],"triples":[]}
+{"id":"Novel-5956-311","entities":["van bibber"],"triples":[]}
+{"id":"Novel-5956-312","entities":["van bibber","east side"],"triples":[]}
+{"id":"Novel-5956-313","entities":["van bibber","east side"],"triples":[]}
+{"id":"Novel-5956-314","entities":["van bibber"],"triples":[]}
+{"id":"Novel-5956-315","entities":["van bibber"],"triples":[]}
+{"id":"Novel-5956-316","entities":["van bibber","hester street"],"triples":[]}
+{"id":"Novel-5956-317","entities":["van bibber","hester street"],"triples":[]}
+{"id":"Novel-5956-318","entities":["van bibber","travers","jersey city","dutchy mack","black diamond","alf alpin"],"triples":[["van bibber","traveled_to","jersey city"],["alf alpin","associated_with","dutchy mack"]]}
+{"id":"Novel-5956-319","entities":["van bibber","black diamond","hester street jackson","andy spielman","track and ring","dutchy mack"],"triples":[["andy spielman","works_at","track and ring"],["black diamond","associated_with","hester street jackson"]]}
+{"id":"Novel-5956-320","entities":["dutchy mack","van bibber","spielman","gus mcgowan","owls nest","third avenue"],"triples":[["owls nest","located_in","third avenue"],["gus mcgowan","works_at","owls nest"]]}
+{"id":"Novel-5956-321","entities":["van bibber"],"triples":[]}
+{"id":"Novel-5956-322","entities":["van bibber","stevenson","dickens","james payn","london"],"triples":[["dickens","friend_of","james payn"]]}
+{"id":"Novel-5956-323","entities":["balzac","de musset","stevenson","north river","mcgowan"],"triples":[]}
+{"id":"Novel-5956-324","entities":["mcgowan","reporter"],"triples":[]}
+{"id":"Novel-5956-325","entities":["van bibber","travers","reporter","east river","jersey city"],"triples":[]}
+{"id":"Novel-5956-326","entities":["van bibber"],"triples":[]}
+{"id":"Novel-5956-327","entities":["van bibber"],"triples":[]}
+{"id":"Novel-5956-328","entities":["van bibber"],"triples":[]}
+{"id":"Novel-5956-329","entities":["van bibber","burglar"],"triples":[]}
+{"id":"Novel-5956-330","entities":["van bibber","burglar","humpty dumpty"],"triples":[]}
+{"id":"Novel-5956-331","entities":["van bibber","burglar"],"triples":[]}
+{"id":"Novel-5956-332","entities":["van bibber","burglar"],"triples":[]}
+{"id":"Novel-5956-333","entities":["van bibber","burglar","west","wife","daughter"],"triples":[["burglar","married_to","wife"],["daughter","child_of","burglar"],["wife","traveled_to","west"]]}
+{"id":"Novel-5956-334","entities":["van bibber","burglar","wife","daughter"],"triples":[["burglar","married_to","wife"],["daughter","child_of","burglar"],["daughter","child_of","wife"]]}
+{"id":"Novel-5956-335","entities":["van bibber","burglar","wife"],"triples":[["burglar","married_to","wife"]]}
+{"id":"Novel-5956-336","entities":["van bibber","burglar","grand central station"],"triples":[["burglar","traveled_to","grand central station"]]}
+{"id":"Novel-5956-337","entities":["van bibber","burglar","helena","montana","west"],"triples":[["helena","located_in","montana"],["burglar","traveled_to","helena"]]}
+{"id":"Novel-5956-338","entities":["van bibber","delmonicos","dutchy mack","black diamond","abe hubbard","jimmie the gent","new jersey","new york"],"triples":[["abe hubbard","known_as","jimmie the gent"],["abe hubbard","type_of","burglar"]]}
+{"id":"Novel-5956-339","entities":["van bibber"],"triples":[]}
+{"id":"Novel-5956-340","entities":["van bibber","newport","washington square"],"triples":[["van bibber","traveled_to","newport"]]}
+{"id":"Novel-5956-341","entities":["van bibber","frenchman"],"triples":[]}
+{"id":"Novel-5956-342","entities":["van bibber"],"triples":[]}
+{"id":"Novel-5956-343","entities":["fall river","boston","narragansett"],"triples":[]}
+{"id":"Novel-5956-344","entities":["van bibber","ted","boston","standish"],"triples":[["ted","member_of","standish"],["standish","located_in","boston"]]}
+{"id":"Novel-5956-345","entities":["van bibber","standish","new yorker"],"triples":[["van bibber","known_as","new yorker"]]}
+{"id":"Novel-5956-346","entities":["standish","mrs. standish","jersey city","chicago","van bibber"],"triples":[["mrs. standish","married_to","standish"],["standish","traveled_to","chicago"],["mrs. standish","traveled_to","chicago"]]}
+{"id":"Novel-5956-347","entities":["standish","jersey city","chicago","palmer house","van bibber"],"triples":[["palmer house","located_in","chicago"],["standish","traveled_to","chicago"]]}
+{"id":"Novel-5956-348","entities":["van bibber","standish","miss cambridge","cortlandt van bibber"],"triples":[["van bibber","known_as","cortlandt van bibber"],["miss cambridge","associated_with","standish"]]}
+{"id":"Novel-5956-349","entities":["van bibber"],"triples":[]}
+{"id":"Novel-5956-350","entities":["van bibber","little church around the corner","delmonicos"],"triples":[["van bibber","traveled_to","little church around the corner"]]}
+{"id":"Novel-5956-351","entities":["mrs. regy van arnt","mrs. jack peabody","misses brookline","minerva","boston yacht club","van bibber"],"triples":[["minerva","member_of","boston yacht club"],["misses brookline","traveled_to","minerva"]]}
+{"id":"Novel-5956-352","entities":["mrs. regy van arnt","miss cambridge","van bibber","fall river"],"triples":[]}
+{"id":"Novel-5956-353","entities":["van bibber","mrs. regy"],"triples":[]}
+{"id":"Novel-5956-354","entities":["van bibber","standish","chicago","jersey city"],"triples":[["standish","traveled_to","chicago"]]}
+{"id":"Novel-41603-0","entities":["toto","laura e. richards","perkins institution","boston","roberts brothers","cambridge","john wilson and son"],"triples":[["toto","written_by","laura e. richards"],["roberts brothers","located_in","boston"],["john wilson and son","located_in","cambridge"]]}
+{"id":"Novel-41603-1","entities":["snow","cottage","kitchen"],"triples":[["kitchen","part_of","cottage"]]}
+{"id":"Novel-41603-2","entities":["kitchen","kettle","tea-kettle","fire"],"triples":[["kettle","part_of","kitchen"],["tea-kettle","part_of","kitchen"]]}
+{"id":"Novel-41603-3","entities":["tea-kettle","raccoon"],"triples":[]}
+{"id":"Novel-41603-4","entities":["raccoon","toto","tea-kettle"],"triples":[]}
+{"id":"Novel-41603-5","entities":["toto","raccoon","kettle"],"triples":[]}
+{"id":"Novel-41603-6","entities":["toto","bruin","raccoon","kettle"],"triples":[["bruin","friend_of","toto"]]}
+{"id":"Novel-41603-7","entities":["bruin","raccoon","toto"],"triples":[["bruin","friend_of","toto"],["raccoon","friend_of","toto"]]}
+{"id":"Novel-41603-8","entities":["toto","bruin","pig"],"triples":[["bruin","associated_with","pig"]]}
+{"id":"Novel-41603-9","entities":["bear","toto","raccoon"],"triples":[["bear","friend_of","toto"]]}
+{"id":"Novel-41603-10","entities":["toto","grandmother","cracker","squirrel"],"triples":[["grandmother","parent_of","toto"],["cracker","known_as","squirrel"]]}
+{"id":"Novel-41603-11","entities":["bear","raccoon","grandmother","toto"],"triples":[["bear","friend_of","toto"],["raccoon","friend_of","toto"]]}
+{"id":"Novel-41603-12","entities":["squirrel","grandmother","madam","wood-pigeon","parrot","toto"],"triples":[["grandmother","known_as","madam"],["grandmother","parent_of","toto"]]}
+{"id":"Novel-41603-13","entities":["toto","woodchuck"],"triples":[["woodchuck","friend_of","toto"]]}
+{"id":"Novel-41603-14","entities":["chucky","woodchuck","bear","raccoon","toto"],"triples":[["chucky","known_as","woodchuck"]]}
+{"id":"Novel-41603-15","entities":["woodchuck","chucky","grandmother"],"triples":[["chucky","known_as","woodchuck"]]}
+{"id":"Novel-41603-16","entities":["grandmother","toto","bear","raccoon","squirrel","parrot","wood-pigeon","bruin"],"triples":[["bruin","known_as","bear"],["squirrel","friend_of","toto"],["bear","friend_of","toto"]]}

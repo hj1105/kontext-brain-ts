@@ -1,0 +1,100 @@
+{"id":"Novel-51410-400","entities":["russian sisters","english sisters","kingsley","danube","reni","steppe"],"triples":[["english sisters","related_to","russian sisters"],["reni","located_in","danube"],["steppe","located_in","reni"]]}
+{"id":"Novel-51410-401","entities":["miss henderson","mrs. petrie","steppe"],"triples":[["miss henderson","associated_with","mrs. petrie"]]}
+{"id":"Novel-51410-402","entities":["mrs. petrie","professor flinders petrie","elsie maud inglis","miss henderson","mr. french","petrograd","jassy","dr. laird","reni"],"triples":[["mrs. petrie","married_to","professor flinders petrie"],["elsie maud inglis","friend_of","mrs. petrie"],["mr. french","located_in","petrograd"],["miss henderson","traveled_to","jassy"]]}
+{"id":"Novel-51410-403","entities":["serbs","russians","reni"],"triples":[["serbs","related_to","russians"]]}
+{"id":"Novel-51410-404","entities":["reni","nicolai","english sisters"],"triples":[["nicolai","located_in","reni"],["english sisters","associated_with","nicolai"]]}
+{"id":"Novel-51410-405","entities":["nicolai","serbia"],"triples":[["nicolai","born_in","serbia"]]}
+{"id":"Novel-51410-406","entities":["nicolai","scottish women's hospital","dr. laird","st. george's cross"],"triples":[["nicolai","member_of","scottish women's hospital"],["nicolai","known_as","st. george's cross"],["dr. laird","works_at","scottish women's hospital"]]}
+{"id":"Novel-51410-407","entities":["odessa","cossack"],"triples":[["cossack","traveled_to","odessa"]]}
+{"id":"Novel-51410-408","entities":["cossacks","steppe"],"triples":[["cossacks","located_in","steppe"]]}
+{"id":"Novel-51410-409","entities":["reni","russian soldiers","s.w.h.","commandant"],"triples":[["russian soldiers","located_in","reni"],["s.w.h.","located_in","reni"]]}
+{"id":"Novel-51410-410","entities":["odessa","serbs","rumanians","poles","europe","germany"],"triples":[["serbs","located_in","europe"],["rumanians","located_in","europe"],["poles","located_in","europe"],["germany","part_of","europe"]]}
+{"id":"Novel-51410-411","entities":["serbian division","reni","russians","serbs"],"triples":[["serbian division","traveled_to","reni"],["serbs","member_of","serbian division"]]}
+{"id":"Novel-51410-412","entities":["red cross","petrograd","russians"],"triples":[["red cross","located_in","petrograd"]]}
+{"id":"Novel-51410-413","entities":["miss g.","reni","odessa"],"triples":[["miss g.","located_in","reni"]]}
+{"id":"Novel-51410-414","entities":["reni","odessa","galatz","british unit"],"triples":[["british unit","located_in","reni"]]}
+{"id":"Novel-51410-415","entities":["russia","hadji abdul","turkey","rumania","elsie"],"triples":[["hadji abdul","located_in","russia"],["elsie","traveled_to","hadji abdul"]]}
+{"id":"Novel-51410-416","entities":["elsie","mrs. simson","archangel","london","inglis","dr. laird"],"triples":[["mrs. simson","friend_of","elsie"],["inglis","traveled_to","archangel"],["inglis","traveled_to","london"]]}
+{"id":"Novel-51410-417","entities":["dr. laird","mesopotamia","russia"],"triples":[["dr. laird","traveled_to","mesopotamia"]]}
+{"id":"Novel-51410-418","entities":["russia","miss borrowman","miss brown","general popovitch","galatz","dr. inglis"],"triples":[["miss borrowman","friend_of","miss brown"],["miss borrowman","traveled_to","galatz"],["miss brown","traveled_to","galatz"]]}
+{"id":"Novel-51410-419","entities":["dr. inglis","galatz","rumanian officer"],"triples":[["dr. inglis","traveled_to","galatz"]]}
+{"id":"Novel-51410-420","entities":["dr. inglis","glasgow","england","britain","rumanian officer"],"triples":[["rumanian officer","traveled_to","glasgow"],["england","part_of","britain"]]}
+{"id":"Novel-51410-421","entities":["dr. inglis","serbian division","rumanians","russians","russia"],"triples":[["serbian division","related_to","rumanians"],["serbian division","related_to","russians"],["dr. inglis","served_in","russia"]]}
+{"id":"Novel-51410-422","entities":["foreign office","miss onslow"],"triples":[["miss onslow","works_at","foreign office"]]}
+{"id":"Novel-51410-423","entities":["sir william muir","john inglis","dr. inglis","miss arbuthnot","hadji abdul","galatz","serbian army"],"triples":[["miss arbuthnot","child_of","sir william muir"],["sir william muir","friend_of","john inglis"],["miss arbuthnot","friend_of","dr. inglis"],["dr. inglis","served_in","serbian army"],["hadji abdul","located_in","galatz"]]}
+{"id":"Novel-51410-424","entities":["dr. inglis","hadji abdul","england","joe"],"triples":[["dr. inglis","located_in","hadji abdul"],["joe","friend_of","dr. inglis"]]}
+{"id":"Novel-51410-425","entities":["dr. inglis","serbs"],"triples":[["dr. inglis","friend_of","serbs"]]}
+{"id":"Novel-51410-426","entities":["dr. inglis","david"],"triples":[["dr. inglis","known_as","david"]]}
+{"id":"Novel-51410-427","entities":["dr. inglis","serbs","england"],"triples":[["dr. inglis","traveled_to","england"],["serbs","traveled_to","england"]]}
+{"id":"Novel-51410-428","entities":["dr. inglis","england","serbs","archangel"],"triples":[["dr. inglis","traveled_to","archangel"],["serbs","traveled_to","archangel"]]}
+{"id":"Novel-51410-429","entities":["dr. inglis","archangel"],"triples":[["dr. inglis","located_in","archangel"]]}
+{"id":"Novel-51410-430","entities":["dr. inglis","england","newcastle","salonika","serbs"],"triples":[["dr. inglis","traveled_to","newcastle"],["serbs","located_in","salonika"]]}
+{"id":"Novel-51410-431","entities":["dr. inglis","serbian staff","london"],"triples":[["dr. inglis","friend_of","serbian staff"]]}
+{"id":"Novel-51410-432","entities":["dr. inglis","london","st. francis","livingstone","africa"],"triples":[["livingstone","located_in","africa"],["dr. inglis","traveled_to","london"]]}
+{"id":"Novel-51410-433","entities":["dr. inglis","serbia","miss arbuthnot","arctic circle"],"triples":[["dr. inglis","traveled_to","serbia"]]}
+{"id":"Novel-51410-434","entities":["dr. elsie","tyne","orkney"],"triples":[["dr. elsie","traveled_to","tyne"],["dr. elsie","traveled_to","orkney"]]}
+{"id":"Novel-51410-435","entities":["evelyn simson","aunt elsie","newcastle","s.w.h.","station hotel"],"triples":[["evelyn simson","child_of","aunt elsie"],["aunt elsie","traveled_to","newcastle"],["s.w.h.","located_in","station hotel"]]}
+{"id":"Novel-51410-436","entities":["aunt elsie","dr. ward","dr. ethel williams","edinburgh","eve"],"triples":[["aunt elsie","friend_of","dr. ward"],["dr. ethel williams","friend_of","aunt elsie"]]}
+{"id":"Novel-51410-437","entities":["dr. williams","aunt elsie","aunt eva"],"triples":[["dr. williams","friend_of","aunt elsie"]]}
+{"id":"Novel-51410-438","entities":["serbs","odessa","war office","mrs. m'laren"],"triples":[["mrs. m'laren","friend_of","serbs"]]}
+{"id":"Novel-51410-439","entities":["mrs. simson","mrs. m'laren","newcastle"],"triples":[["mrs. simson","traveled_to","newcastle"],["mrs. m'laren","traveled_to","newcastle"]]}
+{"id":"Novel-51410-440","entities":[],"triples":[]}
+{"id":"Novel-51410-441","entities":[],"triples":[]}
+{"id":"Novel-51410-442","entities":["dr. inglis","edinburgh","london"],"triples":[["dr. inglis","traveled_to","london"]]}
+{"id":"Novel-51410-443","entities":[],"triples":[]}
+{"id":"Novel-51410-444","entities":["france","scotland","st. giles","great britain","serbia","russia"],"triples":[["scotland","part_of","great britain"]]}
+{"id":"Novel-51410-445","entities":["serbia","scottish command","red cross","st. giles"],"triples":[["scottish command","located_in","scotland"]]}
+{"id":"Novel-51410-446","entities":["order of the thistle","elsie inglis"],"triples":[["elsie inglis","member_of","order of the thistle"]]}
+{"id":"Novel-51410-447","entities":["serbia","scotland","royal scots"],"triples":[["royal scots","part_of","scotland"]]}
+{"id":"Novel-51410-448","entities":["dr. inglis","london","s.w.h.","colonel miliantinovitch","colonel tcholah antitch","winchester","miss palliser","serbs"],"triples":[["dr. inglis","member_of","s.w.h."],["colonel miliantinovitch","friend_of","colonel tcholah antitch"],["miss palliser","member_of","s.w.h."]]}
+{"id":"Novel-51410-449","entities":["elsie inglis","evelyn simson","edinburgh"],"triples":[["evelyn simson","friend_of","elsie inglis"],["elsie inglis","located_in","edinburgh"]]}
+{"id":"Novel-51410-450","entities":["serbian nation","scotland","constable","edinburgh university press"],"triples":[["constable","works_at","edinburgh university press"]]}
+{"id":"Novel-51410-451","entities":["constable","edinburgh university press"],"triples":[["constable","works_at","edinburgh university press"]]}
+{"id":"Novel-58553-0","entities":["angeline hall","angelo hall","peggy","baltimore","nunn & company","lord baltimore press"],"triples":[["angeline hall","parent_of","angelo hall"],["angelo hall","parent_of","peggy"],["nunn & company","located_in","baltimore"],["lord baltimore press","located_in","baltimore"]]}
+{"id":"Novel-58553-1","entities":["asaph hall","ann arbor","shalersville","washington","gay street home","augusta larned"],"triples":[["asaph hall","type_of","carpenter"]]}
+{"id":"Novel-58553-2","entities":["peggy"],"triples":[]}
+{"id":"Novel-58553-3","entities":["peggy","harvard college","european nobility","american nobility"],"triples":[]}
+{"id":"Novel-58553-4","entities":["angelo hall","annapolis","anne arundel county","maryland","halls of goshen","mars"],"triples":[["annapolis","located_in","anne arundel county"],["anne arundel county","located_in","maryland"]]}
+{"id":"Novel-58553-5","entities":["connecticut","ellington","elisha cook"],"triples":[["ellington","located_in","connecticut"],["elisha cook","lived_in","ellington"]]}
+{"id":"Novel-58553-6","entities":["elisha cook","huldah","ellington","tolland county","connecticut","new england","new york state","lake ontario","black river country"],"triples":[["elisha cook","married_to","huldah"],["ellington","located_in","tolland county"],["tolland county","located_in","connecticut"],["connecticut","part_of","new england"],["lake ontario","located_in","new york state"]]}
+{"id":"Novel-58553-7","entities":["fort stanwix","huldah cook","huldah pratt","albany","burgoyne","mohawk valley","electa cook","arnold","morgan"],"triples":[["huldah cook","known_as","huldah pratt"],["huldah cook","traveled_to","albany"],["electa cook","child_of","huldah cook"]]}
+{"id":"Novel-58553-8","entities":["arnold","daniel morgan","washington","gates","moses stickney","vermont","new hampshire","mt. monadnock","connecticut river"],"triples":[["mt. monadnock","located_in","new hampshire"],["moses stickney","served_in","washington"]]}
+{"id":"Novel-58553-9","entities":["jaffrey","moses stickney","mary hastings","angeline stickney","elisha cook","huldah pratt"],"triples":[["moses stickney","married_to","mary hastings"],["moses stickney","parent_of","angeline stickney"],["jaffrey","located_in","new hampshire"],["mary hastings","known_as","english earl"]]}
+{"id":"Novel-58553-10","entities":["moses stickney","gill","jaffrey","perry","bunker hill","mary","daniel gilman"],"triples":[["moses stickney","served_in","bunker hill"],["mary","child_of","moses stickney"],["mary","married_to","daniel gilman"],["perry","lived_in","jaffrey"]]}
+{"id":"Novel-58553-11","entities":["lois","charlotte","susan","gilman","theophilus stickney","mary","black river country","elisha cook","new hampshire","electa"],"triples":[["theophilus stickney","child_of","moses stickney"],["theophilus stickney","married_to","electa"],["electa","child_of","elisha cook"],["lois","child_of","moses stickney"],["charlotte","child_of","moses stickney"],["susan","child_of","moses stickney"]]}
+{"id":"Novel-58553-12","entities":["theophilus stickney","washington","old hickory","new orleans","francis scott key","baltimore","england"],"triples":[["francis scott key","lived_in","baltimore"]]}
+{"id":"Novel-58553-13","entities":["theophilus stickney","new england","old england","great lakes"],"triples":[]}
+{"id":"Novel-58553-14","entities":["theophilus stickney","america","england"],"triples":[]}
+{"id":"Novel-58553-15","entities":["polly","east indies"],"triples":[]}
+{"id":"Novel-58553-16","entities":["theophilus stickney","genesee country","black river country","rodman","jefferson county","chloe angeline stickney","cook"],"triples":[["chloe angeline stickney","child_of","theophilus stickney"],["chloe angeline stickney","born_in","rodman"],["rodman","located_in","jefferson county"],["theophilus stickney","traveled_to","genesee country"]]}
+{"id":"Novel-58553-17","entities":["rodman","theophilus stickney","angeline","rochester"],"triples":[["theophilus stickney","parent_of","angeline"],["theophilus stickney","lived_in","rochester"]]}
+{"id":"Novel-58553-18","entities":["chloe angeline stickney","cook","stickney","all saints' day"],"triples":[["chloe angeline stickney","born_in","all saints' day"],["chloe angeline stickney","member_of","stickney"]]}
+{"id":"Novel-58553-19","entities":["charlotte","mary","angeline","elmina","new hampshire"],"triples":[["charlotte","child_of","theophilus stickney"],["mary","child_of","theophilus stickney"],["elmina","child_of","theophilus stickney"]]}
+{"id":"Novel-58553-20","entities":["aunt clary downs","elisha cook","elmina stickney","david cooley","rodman","israel"],"triples":[["aunt clary downs","child_of","elisha cook"],["elmina stickney","married_to","david cooley"],["david cooley","lived_in","rodman"]]}
+{"id":"Novel-58553-21","entities":["elisha","angeline","charlotte","grandfather cook"],"triples":[["charlotte","child_of","stickney"]]}
+{"id":"Novel-58553-22","entities":["angeline","orville gilman","daniel","elisha cook","new england","connecticut"],"triples":[["orville gilman","child_of","daniel"]]}
+{"id":"Novel-58553-23","entities":["angeline","charlotte"],"triples":[["charlotte","parent_of","angeline"]]}
+{"id":"Novel-58553-24","entities":["angeline","ruth","rodman","lake ontario","jefferson county","italy"],"triples":[["ruth","child_of","stickney"],["ruth","friend_of","angeline"]]}
+{"id":"Novel-58553-25","entities":["angeline"],"triples":[]}
+{"id":"Novel-58553-26","entities":["elisha cook","theophilus stickney","rochester","rodman","wilna","stickney","charlotte","angeline","elmina","edwin ingalls"],"triples":[["theophilus stickney","lived_in","rochester"],["angeline","traveled_to","wilna"],["charlotte","married_to","edwin ingalls"]]}
+{"id":"Novel-58553-27","entities":["angeline","edwin ingalls","charlotte","wilna","wisconsin","charlotte ingalls"],"triples":[["edwin ingalls","married_to","charlotte ingalls"],["edwin ingalls","traveled_to","wisconsin"]]}
+{"id":"Novel-58553-28","entities":["angeline","milton woodward","charlotte","electa cook","stickney"],"triples":[["electa cook","married_to","milton woodward"],["angeline","child_of","electa cook"]]}
+{"id":"Novel-58553-29","entities":["milton woodward","mrs. stickney","angeline","woodward"],"triples":[["mrs. stickney","married_to","milton woodward"]]}
+{"id":"Novel-58553-30","entities":["angeline","woodward","dry hill"],"triples":[["angeline","lived_in","dry hill"],["woodward","lived_in","dry hill"]]}
+{"id":"Novel-58553-31","entities":["angeline","george waldo","rodman","sugar maple"],"triples":[["george waldo","friend_of","angeline"],["sugar maple","type_of","tree"]]}
+{"id":"Novel-58553-32","entities":["angeline stickney","sugar maple"],"triples":[]}
+{"id":"Novel-58553-33","entities":["rodman","washington","angeline stickney"],"triples":[]}
+{"id":"Novel-58553-34","entities":["angeline stickney"],"triples":[]}
+{"id":"Novel-58553-35","entities":["angeline stickney","angeline","washington"],"triples":[["angeline","lived_in","washington"]]}
+{"id":"Novel-58553-36","entities":["harriette downs","pittsfield","massachusetts","rodman union seminary","aunt clary downs","angeline"],"triples":[["harriette downs","friend_of","angeline"],["pittsfield","located_in","massachusetts"],["rodman union seminary","located_in","rodman"],["aunt clary downs","friend_of","angeline"]]}
+{"id":"Novel-58553-37","entities":["rodman","mr. wood","henderson","jefferson county","e. a. bulfinch","angeline"],"triples":[["e. a. bulfinch","friend_of","angeline"],["henderson","located_in","jefferson county"]]}
+{"id":"Novel-58553-38","entities":["angeline"],"triples":[]}
+{"id":"Novel-58553-39","entities":["angeline stickney","heath hollow","rodman","pleasant valley","cape vincent","edwin ingalls","wisconsin","elder bright"],"triples":[["angeline stickney","works_at","heath hollow"],["edwin ingalls","traveled_to","cape vincent"],["heath hollow","located_in","rodman"],["elder bright","lived_in","wisconsin"]]}
+{"id":"Novel-58553-40","entities":["rodman","ruth","mcgrawville","stickney","angeline"],"triples":[["ruth","friend_of","angeline"]]}
+{"id":"Novel-58553-41","entities":["watertown","ruth","mcgrawville"],"triples":[]}
+{"id":"Novel-58553-42","entities":["ruth","mcgrawville"],"triples":[]}
+{"id":"Novel-58553-43","entities":["david","uncle cook","mr. moffatts","mr. spear"],"triples":[]}
+{"id":"Novel-58553-44","entities":[],"triples":[]}
+{"id":"Novel-58553-45","entities":["angeline stickney"],"triples":[]}
+{"id":"Novel-58553-46","entities":["angeline stickney","albany","oberlin","mcgrawville","ruth"],"triples":[]}
+{"id":"Novel-58553-47","entities":["ruth"],"triples":[]}
