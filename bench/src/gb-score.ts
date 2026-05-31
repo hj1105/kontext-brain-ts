@@ -24,13 +24,21 @@ function tokenize(s: string): string[] {
   return s.toLowerCase().split(/[^a-z0-9]+/).filter((t) => t.length >= 3 && !STOP.has(t));
 }
 
-/** Token-level recall: fraction of gold-answer content tokens present in generated answer. */
+/**
+ * Token-level recall: fraction of distinct gold-answer content tokens present
+ * in the generated answer.
+ *
+ * Matching is exact token-set membership (word boundaries), NOT substring —
+ * otherwise "cat" would match "category"/"concatenate" and inflate recall.
+ * Gold tokens are de-duplicated so a repeated token can't skew the weight.
+ */
 function tokenAcc(answer: string, gold: string): number {
-  const goldTokens = tokenize(gold);
-  if (goldTokens.length === 0) return 0;
-  const ans = answer.toLowerCase();
-  const hits = goldTokens.filter((t) => ans.includes(t)).length;
-  return hits / goldTokens.length;
+  const goldTokens = new Set(tokenize(gold));
+  if (goldTokens.size === 0) return 0;
+  const ansTokens = new Set(tokenize(answer));
+  let hits = 0;
+  for (const t of goldTokens) if (ansTokens.has(t)) hits++;
+  return hits / goldTokens.size;
 }
 
 /** ROUGE-L F1 between answer and reference, using LCS over word sequences. */
@@ -79,7 +87,7 @@ function score(domain: string, retriever: string, dataDir: string, prefix = "cla
   }
   const N = ctx.length;
   console.log(
-    `  ${domain.padEnd(8)} ${retriever.padEnd(10)} ${prefix.padEnd(7)} N=${N}  ACC=${(accSum / N * 100).toFixed(2)}%  ROUGE-L=${(rougeSum / N * 100).toFixed(2)}%  (≥0.7 ACC: ${accFull}/${N})`,
+    `  ${domain.padEnd(8)} ${retriever.padEnd(10)} ${prefix.padEnd(7)} N=${N}  tok-recall=${(accSum / N * 100).toFixed(2)}%  ROUGE-L=${(rougeSum / N * 100).toFixed(2)}%  (≥0.7 tok-recall: ${accFull}/${N})`,
   );
 }
 
@@ -100,6 +108,10 @@ function main(): void {
     console.log();
   }
 
+  console.log(
+    "\n[주의] 위 tok-recall은 생성 답변의 '문자열 토큰 recall'이고, 아래 리더보드 Fact_ACC는 " +
+      "'LLM-judged correctness'라 측정 방식이 다릅니다. 같은 컬럼처럼 직접 비교하지 마세요.",
+  );
   console.log("\n=== Published GraphRAG-Bench Leaderboard (Fact_ACC / Fact_ROUGE-L) ===\n");
   console.log("Medical:");
   console.log("  G-reasoner          68.84 / 44.73");
