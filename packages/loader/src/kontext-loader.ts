@@ -5,6 +5,7 @@ import {
   DefaultTokenEstimator,
   DepthType,
   IngestPipeline,
+  KeywordMappingStrategy,
   KoreanTokenEstimator,
   LLMMetaDocumentSelector,
   type MetaDocumentSelector,
@@ -186,9 +187,7 @@ export class KontextLoader {
     // Mapping strategy
     const mappingStrategy = vectorStore
       ? new VectorMappingStrategy(vectorStore)
-      : (await import("@kontext-brain/core")).KeywordMappingStrategy.prototype.constructor
-        ? new (await import("@kontext-brain/core")).KeywordMappingStrategy()
-        : new (await import("@kontext-brain/core")).KeywordMappingStrategy();
+      : new KeywordMappingStrategy();
 
     // Meta selector
     const metaSelector: MetaDocumentSelector =
