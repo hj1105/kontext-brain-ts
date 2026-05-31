@@ -218,7 +218,7 @@ export class KontextAgent {
       const buildResult = await builder.build(docSources);
       newNodes = buildResult.nodes;
       newEdges = buildResult.edges;
-      this.expandGraph(newNodes, newEdges);
+      await this.expandGraph(newNodes, newEdges);
 
       // Classify documents into the newly-created nodes
       const classifier = new DocumentClassifier(this.router.traversalAdapter, this.templates);
@@ -226,7 +226,7 @@ export class KontextAgent {
       mappings = classification.mappings;
       unmapped = classification.unmapped;
       if (classification.newNodes.length > 0) {
-        this.expandGraph(classification.newNodes, []);
+        await this.expandGraph(classification.newNodes, []);
         newNodes = [...newNodes, ...classification.newNodes];
       }
     } else {
@@ -235,7 +235,7 @@ export class KontextAgent {
       newNodes = classification.newNodes;
       mappings = classification.mappings;
       unmapped = classification.unmapped;
-      this.expandGraph(newNodes, []);
+      await this.expandGraph(newNodes, []);
     }
 
     const classified = await this.indexClassifiedDocuments(mappings);
@@ -286,7 +286,10 @@ export class KontextAgent {
     return adapter?.dataSource ?? ("CUSTOM" as DataSource);
   }
 
-  private expandGraph(newNodes: readonly OntologyNode[], newEdges: readonly Edge[]): void {
+  private async expandGraph(
+    newNodes: readonly OntologyNode[],
+    newEdges: readonly Edge[],
+  ): Promise<void> {
     if (newNodes.length === 0 && newEdges.length === 0) return;
     const mergedNodes = new Map(this.graph.nodes);
     for (const node of newNodes) {
@@ -296,11 +299,12 @@ export class KontextAgent {
     this.graph = new OntologyGraph(mergedNodes, mergedEdges, this.graph.config);
     this.queryPipeline = this.buildQueryPipeline();
 
-    // embed new nodes async (fire-and-forget is fine here, but we await to keep tests deterministic)
+    // Embed new nodes and await before returning: the caller (autoSetup)
+    // proceeds to vector-based mapping/search right after, so the upserts
+    // must complete first to avoid a race on missing embeddings.
     if (this.vectorStore) {
       const vs = this.vectorStore;
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      Promise.all(
+      await Promise.all(
         newNodes.map(async (node) => {
           try {
             const emb = await vs.embed(node.description);
