@@ -35,8 +35,7 @@ export class IngestPipeline {
   ) {}
 
   async ingest(userId: string, data: unknown, source = "manual"): Promise<void> {
-    const text = String(data);
-    const extracted = await this.extractEntities(text, source);
+    const extracted = await this.extract(data, source);
     const existing = await this.store.load(userId);
     const merged = merge(existing, extracted);
 
@@ -49,6 +48,16 @@ export class IngestPipeline {
     }
 
     await this.store.save(userId, merged);
+  }
+
+  /**
+   * Extract a graph delta without mutating storage.
+   *
+   * KontextAgent uses this method so it can apply the same delta to its
+   * runtime graph, indexes, and persisted snapshot as one coordinated write.
+   */
+  async extract(data: unknown, source = "manual"): Promise<ExtractionResult> {
+    return this.extractEntities(String(data), source);
   }
 
   async ingestFromSource(userId: string, source: OntologyNodeSource): Promise<void> {
@@ -73,7 +82,11 @@ export class IngestPipeline {
 
 function parseExtraction(response: string): ExtractionResult {
   try {
-    const clean = response.trim().replace(/^```json/, "").replace(/```$/, "").trim();
+    const clean = response
+      .trim()
+      .replace(/^```json/, "")
+      .replace(/```$/, "")
+      .trim();
     const json = JSON.parse(clean) as {
       nodes?: Array<Record<string, unknown>>;
       edges?: Array<Record<string, unknown>>;

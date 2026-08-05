@@ -4,43 +4,46 @@ import {
   DefaultPromptTemplates,
   DefaultTokenEstimator,
   DepthType,
+  InMemoryMetaIndexStore,
   IngestPipeline,
   KoreanTokenEstimator,
   LLMMetaDocumentSelector,
   type MetaDocumentSelector,
   NodeMappingRegistry,
+  OntologyGraph,
+  OntologyStoreRegistry,
   type PipelineStep,
   type PromptTemplates,
-  type RouterLLMAdapter as _Router,
   RouterLLMAdapter,
   ScoreBasedSelector,
   type TokenEstimator,
+  TraversalStrategy,
   VectorMappingStrategy,
   VectorMetaIndexStore,
+  type RouterLLMAdapter as _Router,
+  deserializeMetaDocument,
+  toEdges,
+  toOntologyNodes,
 } from "@kontext-brain/core";
 import {
+  type LLMProviderConfig,
+  LLMProviderRegistry,
   LangChainLLMAdapter,
   LangChainVectorStore,
-  LLMProviderRegistry,
-  type LLMProviderConfig,
 } from "@kontext-brain/llm";
 import {
+  type MCPConnector,
   MCPContentFetcherBridge,
+  type MCPLayerAdapter,
   MCPLayerAdapterFactory,
   SseMCPConnector,
   StdioMCPConnector,
-  type MCPConnector,
-  type MCPLayerAdapter,
 } from "@kontext-brain/mcp";
 import { parse as parseYaml } from "yaml";
-import {
-  InMemoryOntologyStore,
-  OntologyStoreRegistry,
-} from "@kontext-brain/core";
 import { KontextAgent } from "./kontext-agent.js";
 import {
-  KontextConfigSchema,
   type KontextConfig,
+  KontextConfigSchema,
   type LLMProviderConfigDto,
   type MCPConfigDto,
 } from "./kontext-config.js";
@@ -65,10 +68,7 @@ function toLLMConfig(dto: LLMProviderConfigDto): LLMProviderConfig {
 
 function toPipelineStep(dto: NonNullable<KontextConfig["pipeline"]>[number]): PipelineStep {
   const typeStr = dto.type.toUpperCase();
-  const type =
-    typeStr in DepthType
-      ? (DepthType as Record<string, DepthType>)[typeStr]!
-      : DepthType.CONTENT;
+  const type = (DepthType as Record<string, DepthType | undefined>)[typeStr] ?? DepthType.CONTENT;
   return {
     depth: dto.depth,
     type,
@@ -146,7 +146,7 @@ export class KontextLoader {
 
   async from(config: KontextConfig): Promise<KontextAgent> {
     const templates = resolvePromptTemplates(config.language);
-    const _tokenEstimator = resolveTokenEstimator(config.language);
+    const tokenEstimator = resolveTokenEstimator(config.language);
 
     // LLM
     const traversalModel = this.llmRegistry.createChat(toLLMConfig(config.llm.traversal));
@@ -166,18 +166,27 @@ export class KontextLoader {
     }
 
     // Store
-    const _ontologyStore = this.storeRegistry.create(config.storage);
+    const stateId = "default";
+    const ontologyStore = this.storeRegistry.create(config.storage);
+    const persistedState = await ontologyStore.load(stateId);
 
     // Meta index + fetchers
     const metaIndexStore = vectorStore
       ? new VectorMetaIndexStore(vectorStore)
-      : new (await import("@kontext-brain/core")).InMemoryMetaIndexStore();
+      : new InMemoryMetaIndexStore();
     const fetcherRegistry = new ContentFetcherRegistry();
+
+    for (const [nodeId, documents] of Object.entries(persistedState.metaDocuments ?? {})) {
+      await metaIndexStore.index(nodeId, documents.map(deserializeMetaDocument));
+    }
 
     // MCP connectors + layer adapters
     const mcpConnectors: MCPConnector[] = config.mcp.map(createConnector);
     const mcpLayerAdapters: MCPLayerAdapter[] = config.mcp.map((dto, i) => {
-      const connector = mcpConnectors[i]!;
+      const connector = mcpConnectors[i];
+      if (!connector) {
+        throw new Error(`MCP connector at index ${i} was not created`);
+      }
       const adapter = createLayerAdapter(dto, connector);
       fetcherRegistry.register(new MCPContentFetcherBridge(adapter));
       return adapter;
@@ -186,9 +195,7 @@ export class KontextLoader {
     // Mapping strategy
     const mappingStrategy = vectorStore
       ? new VectorMappingStrategy(vectorStore)
-      : (await import("@kontext-brain/core")).KeywordMappingStrategy.prototype.constructor
-        ? new (await import("@kontext-brain/core")).KeywordMappingStrategy()
-        : new (await import("@kontext-brain/core")).KeywordMappingStrategy();
+      : this.mappingRegistry.resolve("keyword");
 
     // Meta selector
     const metaSelector: MetaDocumentSelector =
@@ -211,15 +218,32 @@ export class KontextLoader {
             return [];
           },
         });
-    const graph = await new OntologyGraphBuilder(embedder).build(
-      config.ontology,
-      config.graph,
-    );
+    const hasPersistedGraph = Object.keys(persistedState.nodes).length > 0;
+    let graph: OntologyGraph;
+    if (hasPersistedGraph) {
+      graph = new OntologyGraph(
+        toOntologyNodes(persistedState),
+        toEdges(persistedState),
+        persistedState.graphConfig ?? {
+          maxDepth: config.graph.maxDepth,
+          maxTokens: config.graph.maxTokens,
+          strategy:
+            config.graph.strategy.toUpperCase() === "BFS"
+              ? TraversalStrategy.BFS
+              : config.graph.strategy.toUpperCase() === "DFS"
+                ? TraversalStrategy.DFS
+                : TraversalStrategy.WEIGHTED_DFS,
+        },
+      );
+      await embedder.embed(graph.nodes.values());
+    } else {
+      graph = await new OntologyGraphBuilder(embedder).build(config.ontology, config.graph);
+    }
 
     // Ingest pipeline
     const ingestPipeline = new IngestPipeline(
       traversalAdapter,
-      new InMemoryOntologyStore(),
+      ontologyStore,
       vectorStore ?? {
         async embed() {
           return new Float32Array(0);
@@ -238,7 +262,7 @@ export class KontextLoader {
     // Pipeline config
     const pipeline = config.pipeline?.map(toPipelineStep);
 
-    return new KontextAgent({
+    const agent = new KontextAgent({
       graph,
       router,
       mcpConnectors,
@@ -251,6 +275,12 @@ export class KontextLoader {
       ingestPipeline,
       pipeline,
       templates,
+      tokenEstimator,
+      ontologyStore,
+      stateId,
+      resourceRecords: persistedState.resources ?? [],
     });
+    await agent.initialize();
+    return agent;
   }
 }

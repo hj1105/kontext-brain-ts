@@ -1,18 +1,19 @@
+import { GraphTraverser } from "../graph/graph-traverser.js";
 import {
   DEFAULT_PIPELINE,
   type LayeredQueryResult,
+  type LayeredRetrievalResult,
   type PipelineStep,
 } from "../graph/layered-models.js";
-import { GraphTraverser } from "../graph/graph-traverser.js";
 import type { OntologyGraph } from "../graph/ontology-graph.js";
 import type { ContentFetcherRegistry, MetaDocumentSelector } from "./content-fetcher.js";
 import { ScoreBasedSelector } from "./content-fetcher.js";
 import { LayeredContextCollector } from "./layered-context-collector.js";
+import { LLMRole, type RouterLLMAdapter } from "./llm-adapter.js";
 import type { MetaIndexStore } from "./meta-index-store.js";
 import { KeywordMappingStrategy, type NodeMappingStrategy } from "./node-mapping-strategy.js";
 import type { PromptTemplates } from "./prompt-templates.js";
 import { DefaultPromptTemplates } from "./prompt-templates.js";
-import { LLMRole, type RouterLLMAdapter } from "./llm-adapter.js";
 import type { TokenEstimator } from "./token-estimator.js";
 import { DefaultTokenEstimator } from "./token-estimator.js";
 import type { VectorStore } from "./vector-store.js";
@@ -57,26 +58,40 @@ export class LayeredQueryPipeline {
     );
   }
 
-  async execute(userQuery: string): Promise<LayeredQueryResult> {
+  async retrieve(userQuery: string): Promise<LayeredRetrievalResult> {
     const startNodes = await this.mappingStrategy.findStartNodes(userQuery, this.graph.nodes);
     const traversalResult = this.traverser.traverse(startNodes);
     const context = await this.collector.collect(traversalResult, userQuery);
 
-    const answer = await this.router.complete(
-      LLMRole.REASONING,
-      this.templates.layeredReasoning,
-      context.text,
-      userQuery,
-    );
-
     return {
-      answer,
+      context: context.text,
       usedOntologyNodes: context.usedOntologyNodes,
       selectedMetaDocs: context.selectedMetaDocs,
       fetchedContents: context.fetchedContents,
       contextTokensUsed: context.tokensUsed,
       traversalPath: traversalResult.path,
       pipelineSteps: this.activePipeline,
+      pipelineTraces: context.traces,
     };
+  }
+
+  async answer(userQuery: string, retrieval?: LayeredRetrievalResult): Promise<LayeredQueryResult> {
+    const retrieved = retrieval ?? (await this.retrieve(userQuery));
+    const answer = await this.router.complete(
+      LLMRole.REASONING,
+      this.templates.layeredReasoning,
+      retrieved.context,
+      userQuery,
+    );
+
+    return {
+      ...retrieved,
+      answer,
+    };
+  }
+
+  /** Backward-compatible alias for `answer()`. */
+  async execute(userQuery: string): Promise<LayeredQueryResult> {
+    return this.answer(userQuery);
   }
 }

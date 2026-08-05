@@ -21,8 +21,11 @@ export interface MCPLayerAdapter {
 /** Bridges MCPLayerAdapter to ContentFetcher interface. */
 export class MCPContentFetcherBridge implements ContentFetcher {
   readonly source: DataSource;
+  readonly connectorName: string;
+
   constructor(private readonly adapter: MCPLayerAdapter) {
     this.source = adapter.dataSource;
+    this.connectorName = adapter.connectorName;
   }
 
   async fetch(metaDoc: MetaDocument): Promise<DocumentContent> {
@@ -83,9 +86,7 @@ export class GenericMCPLayerAdapter implements MCPLayerAdapter {
       );
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      console.warn(
-        `Warning: MCPLayerAdapter '${this.connectorName}' listMeta failed: ${msg}`,
-      );
+      console.warn(`Warning: MCPLayerAdapter '${this.connectorName}' listMeta failed: ${msg}`);
       return [];
     }
   }

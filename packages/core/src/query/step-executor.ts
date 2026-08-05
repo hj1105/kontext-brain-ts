@@ -1,13 +1,10 @@
-import type {
-  DocumentContent,
-  MetaDocument,
-  PipelineStep,
-} from "../graph/layered-models.js";
+import type { DocumentContent, MetaDocument, PipelineStep } from "../graph/layered-models.js";
 import { DepthType } from "../graph/layered-models.js";
 import type { OntologyNode } from "../graph/ontology-node.js";
+import { RecursiveChunkingStrategy } from "./chunking-strategy.js";
 import { BM25BodyExtractor, type ContentFetcherRegistry } from "./content-fetcher.js";
 import type { MetaDocumentSelector } from "./content-fetcher.js";
-import type { MetaIndexStore } from "./meta-index-store.js";
+import { type MetaIndexStore, metaDocumentIdentity } from "./meta-index-store.js";
 import type { VectorStore } from "./vector-store.js";
 
 export interface StepContext {
@@ -56,11 +53,7 @@ export class MetaStepExecutor implements StepExecutor {
   readonly supportedType = DepthType.META;
 
   async execute(ctx: StepContext, step: PipelineStep): Promise<StepResult> {
-    const candidates = await ctx.metaIndexStore.search(
-      ctx.node.id,
-      ctx.query,
-      step.maxSelect * 3,
-    );
+    const candidates = await ctx.metaIndexStore.search(ctx.node.id, ctx.query, step.maxSelect * 3);
     if (candidates.length === 0) return EMPTY_RESULT;
 
     const selected = step.fetchFull
@@ -93,7 +86,12 @@ export class VectorStepExecutor implements StepExecutor {
 
     // Resolve keys -> MetaDocuments from meta index
     const docs = await ctx.metaIndexStore.search(ctx.node.id, ctx.query, step.maxSelect * 3);
-    const byId = new Map(docs.map((d) => [d.id, d]));
+    const byId = new Map<string, MetaDocument>();
+    for (const document of docs) {
+      byId.set(metaDocumentIdentity(document), document);
+      // Keep custom VectorStore integrations that index plain resource IDs working.
+      if (!document.metadata.connector) byId.set(document.id, document);
+    }
     const selected: MetaDocument[] = [];
     for (const k of keys) {
       const doc = byId.get(k);
@@ -115,9 +113,7 @@ export class ContentStepExecutor implements StepExecutor {
     // Prefer docs that came from the current node (avoids re-fetching across
     // depths and keeps context topically aligned). Fall back to all
     // accumulated docs if none were tagged for this node.
-    const forThisNode = ctx.accumulatedDocs.filter(
-      (d) => d.ontologyNodeId === ctx.node.id,
-    );
+    const forThisNode = ctx.accumulatedDocs.filter((d) => d.ontologyNodeId === ctx.node.id);
     const toFetch = (forThisNode.length > 0 ? forThisNode : ctx.accumulatedDocs).slice(
       0,
       step.maxSelect,
@@ -172,6 +168,66 @@ export class SectionStepExecutor implements StepExecutor {
   }
 }
 
+// ── CHUNK ────────────────────────────────────────────────────
+
+export class ChunkStepExecutor implements StepExecutor {
+  readonly supportedType = DepthType.CHUNK;
+
+  constructor(private readonly chunker = new RecursiveChunkingStrategy()) {}
+
+  async execute(ctx: StepContext, step: PipelineStep): Promise<StepResult> {
+    const forThisNode = ctx.accumulatedDocs.filter(
+      (document) => document.ontologyNodeId === ctx.node.id,
+    );
+    const documents = forThisNode.length > 0 ? forThisNode : ctx.accumulatedDocs;
+    if (documents.length === 0) return EMPTY_RESULT;
+
+    const queryTerms = new Set(
+      ctx.query
+        .toLowerCase()
+        .split(/[\s\p{P}]+/u)
+        .filter((term) => term.length > 1),
+    );
+    const candidates: Array<{
+      content: DocumentContent;
+      score: number;
+    }> = [];
+
+    for (const document of documents) {
+      const content = await ctx.fetcherRegistry.fetch(document);
+      for (const [index, chunk] of this.chunker.split(content.body).entries()) {
+        const text = `${chunk.title}\n${chunk.fullText}`;
+        const lower = text.toLowerCase();
+        let overlap = 0;
+        for (const term of queryTerms) {
+          if (lower.includes(term)) overlap++;
+        }
+        candidates.push({
+          content: {
+            ...content,
+            title: `${content.title} — ${chunk.title}`,
+            body: chunk.fullText,
+            sectionContent: chunk.fullText,
+          },
+          score: overlap / Math.max(queryTerms.size, 1) + 1 / Math.max(index + 10, 10),
+        });
+      }
+    }
+
+    const selected = candidates
+      .sort((a, b) => b.score - a.score)
+      .slice(0, step.maxSelect)
+      .map((candidate) => candidate.content);
+    return {
+      contextSection: selected
+        .map((content) => `### ${content.title}\n${content.body}`)
+        .join("\n\n"),
+      selectedDocs: documents,
+      fetchedContents: selected,
+    };
+  }
+}
+
 // ── Registry ──────────────────────────────────────────────────
 
 export class StepExecutorRegistry {
@@ -183,6 +239,7 @@ export class StepExecutorRegistry {
     this.register(new VectorStepExecutor());
     this.register(new ContentStepExecutor());
     this.register(new SectionStepExecutor());
+    this.register(new ChunkStepExecutor());
   }
 
   register(executor: StepExecutor): void {

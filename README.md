@@ -139,7 +139,10 @@ import { KontextLoader } from "@kontext-brain/loader";
 
 const agent = await KontextLoader.fromFile("kontext.yaml");
 await agent.autoSetup();   // first time only — builds ontology + indexes docs
-const result = await agent.query("How should I version my REST API?");
+const retrieval = await agent.retrieve("How should I version my REST API?");
+console.log(retrieval.context);          // no final reasoning LLM call
+
+const result = await agent.answer("How should I version my REST API?");
 
 console.log(result.answer);
 console.log(result.selectedMetaDocs);  // sourced documents
@@ -163,7 +166,8 @@ ontology:
   - { id: frontend, description: React UI components,           weight: 0.9 }
 
 storage:
-  type: memory     # or "file", path: ./.kontext-store
+  type: file
+  path: ./.kontext-store  # graph + meta index + MCP assignments
 
 graph:
   maxDepth: 2
@@ -267,7 +271,7 @@ The server exposes 6 tools to the host agent:
 | `kontext_query_context` | `{ question }` | retrieved context only (no LLM reasoning) |
 | `kontext_ingest` | `{ data, source? }` | extracts entities into the graph |
 | `kontext_describe` | `{}` | dumps ontology / pipeline / MCP adapters |
-| `kontext_sync` | `{ connectorName? }` | refresh meta index from MCP sources |
+| `kontext_sync` | `{ connectorName? }` | incrementally classify additions/changes and remove deleted resources |
 | `kontext_auto_setup` | `{ targetNodeCount? }` | LLM builds/expands ontology + classifies docs |
 
 ---
@@ -285,7 +289,7 @@ can register your own without touching upstream:
 | `ContentFetcher` | `MCPContentFetcherBridge` | HTTP, S3, filesystem, custom APIs |
 | `NodeMappingStrategy` | `Keyword`, `Vector`, `LLM`, `Hybrid` | per-corpus tuning |
 | `MetaDocumentSelector` | `ScoreBased`, `LLMMetaDocumentSelector` | reranker models |
-| `StepExecutor` | `Ontology`, `Meta`, `Vector`, `Content`, `Section` | new pipeline-step kinds |
+| `StepExecutor` | `Ontology`, `Meta`, `Vector`, `Content`, `Section`, `Chunk` | new pipeline-step kinds |
 | `Tokenizer` | `Whitespace`, `CharNGram`, `Composite`, `MultiLanguage` | language-specific |
 | `ChunkingStrategy` | `RegexHeader`, `Paragraph`, `Recursive` | domain-specific splitters |
 | `TokenEstimator` | `Default` (English), `Korean` | tiktoken, claude-tokenizer, etc. |
@@ -294,7 +298,30 @@ can register your own without touching upstream:
 
 Pipeline composition uses preset constants (`DEFAULT_PIPELINE`,
 `VECTOR_PIPELINE`, `N_LAYER_PIPELINE`, `PERNODE_PIPELINE`) or user-defined
-arrays of `PipelineStep` objects.
+arrays of `PipelineStep` objects. Pipeline steps are ordered stages and run
+for every traversed ontology node; graph depth is independent from retrieval
+stage order, so a leaf node still executes META → CONTENT.
+
+### State and persistence
+
+`KontextAgent` is the single writer for the runtime ontology graph, meta
+index, MCP resource assignments, and their persisted snapshot. With
+`storage.type: file`, the loader restores all three from
+`<storage.path>/default.json`; runtime-only embeddings are rebuilt from that
+snapshot. `ingest()`, `autoSetup()`, and `syncMCP()` update runtime state and
+the snapshot together.
+
+MCP resources are stored as documents classified under ontology nodes, not
+as graph nodes themselves:
+
+```
+OntologyNode → MetaDocument(resource id + connector) → MCP resource body
+```
+
+`syncMCP()` keeps prior assignments for unchanged resources, classifies only
+new or changed resources, and removes deleted resources from the meta/vector
+indexes. A failed connector is skipped rather than interpreted as deleting
+all of its documents.
 
 ---
 
@@ -388,10 +415,10 @@ Tracked honestly so you don't repeat the same experiments:
   `LLMMapping` outperformed it.
 - **Vector-only mapping** (v3): bare similarity on tiny node descriptions had
   recall 0.625 — worse than keyword.
-- **Original `DEFAULT_PIPELINE`** (v1): had a structural bug — depth-based
-  step dispatch ignored META/CONTENT when L1 mapping resolved to a leaf node.
-  **Fixed in this version**: collector now runs every step at a depth, and
-  the new `PERNODE_PIPELINE` chains META + CONTENT at the same depth.
+- **Original `DEFAULT_PIPELINE`** (v1): had a structural bug — graph depth
+  was confused with retrieval-stage order, so a leaf match never reached
+  META/CONTENT. **Fixed in this version**: the collector runs the same
+  N-layer stage sequence for each traversed node.
 
 ### Real research dataset: SQuAD 2.0 (Round 7-8, Claude-Code-judged)
 
@@ -1240,14 +1267,15 @@ in the repo. Everything runs on a stock Node 20 install plus pnpm.
 **Honest current state:**
 
 - ✅ Core, llm, mcp, loader, tool-server packages: typecheck + build clean
-- ✅ 8 unit + integration tests passing (vitest)
+- ✅ Unit + integration coverage for retrieval, persistence, incremental MCP
+  synchronization, graph traversal, entities, and the tool server
 - ✅ Real Ollama benchmarked end-to-end on 14 retrieval variants
 - ✅ Ralph-loop iterative optimization completed, exceeded 10x efficiency
   target by ~40,000x
 - ✅ `DEFAULT_PIPELINE` leaf-node bug fixed; original Kotlin codebase had
   the same issue
 - ⚠️ Real Notion / GitHub / Slack MCP servers not yet smoke-tested end-to-end
-  (only mock servers in tests + bench)
+  (incremental synchronization is covered with mock connectors)
 - ⚠️ Larger-corpus benchmarking pending (12 docs is small)
 - ⚠️ LLM-as-judge quality scoring not implemented yet (currently using
   keyword-fragment matching as a weak proxy)

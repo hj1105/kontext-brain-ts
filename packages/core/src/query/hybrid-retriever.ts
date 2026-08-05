@@ -1,5 +1,5 @@
-import type { Entity } from "../graph/entity.js";
 import type { EntityIndex } from "../graph/entity-index.js";
+import type { Entity } from "../graph/entity.js";
 import type { MetaDocument } from "../graph/layered-models.js";
 import type { VectorStore } from "./vector-store.js";
 
@@ -78,8 +78,7 @@ export class HybridRetriever {
       this.docPrefix,
       this.vectorTopK,
     );
-    // similaritySearchWithPrefix returns the substring after the last ':',
-    // which equals docId under our key scheme.
+    // similaritySearchWithPrefix returns the complete suffix after docPrefix.
     const vectorScores = new Map<string, number>();
     vectorHits.forEach((docId, idx) => {
       vectorScores.set(docId, 1 - idx / this.vectorTopK);

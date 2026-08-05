@@ -1,6 +1,6 @@
+import type { KontextAgent } from "@kontext-brain/loader";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import type { KontextAgent } from "@kontext-brain/loader";
 import { z } from "zod";
 
 /**
@@ -44,12 +44,20 @@ export class KontextToolServer {
       "Retrieve relevant context from the knowledge base WITHOUT final LLM reasoning. Use when the calling agent wants to do its own reasoning.",
       { question: z.string().describe("The question to retrieve context for") },
       async ({ question }) => {
-        const result = await this.agent.query(question);
+        const result = await this.agent.retrieve(question);
         const nodes = result.usedOntologyNodes
           .map((n) => `## ${n.id}\n${n.description}`)
           .join("\n\n");
         const docs = result.selectedMetaDocs.map((d) => `- [${d.source}] ${d.title}`).join("\n");
-        const text = `=== Retrieved Context ===\n\n${nodes}\n\n${docs}\n\nTokens used: ${result.contextTokensUsed}`;
+        const text = [
+          "=== Retrieved Context ===",
+          nodes,
+          "=== Documents ===",
+          docs,
+          "=== Evidence ===",
+          result.context,
+          `Tokens used: ${result.contextTokensUsed}`,
+        ].join("\n\n");
         return { content: [{ type: "text", text }] };
       },
     );
@@ -87,10 +95,16 @@ export class KontextToolServer {
         connectorName: z.string().optional().describe("Optional: sync only this connector"),
       },
       async ({ connectorName }) => {
-        await this.agent.syncMCP(connectorName);
-        const text = connectorName
-          ? `Synced connector: ${connectorName}`
-          : "Synced all MCP connectors";
+        const result = await this.agent.syncMCP(connectorName);
+        const text = [
+          connectorName ? `Synced connector: ${connectorName}` : "Synced all MCP connectors",
+          `Connectors: ${result.connectorsSynced}`,
+          `Added: ${result.resourcesAdded}`,
+          `Updated: ${result.resourcesUpdated}`,
+          `Removed: ${result.resourcesRemoved}`,
+          `Classified: ${result.resourcesClassified}`,
+          `Unmapped: ${result.resourcesUnmapped}`,
+        ].join("\n");
         return { content: [{ type: "text", text }] };
       },
     );
