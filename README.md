@@ -281,7 +281,7 @@ const graph = new OntologyGraph(nodes, [], {
 });
 
 const agent = new KontextAgent({
-  graph, router,
+  ontologySchemaGraph: graph, router,
   mcpConnectors: [], mcpLayerAdapters: [],
   metaIndexStore: new InMemoryMetaIndexStore(),
   fetcherRegistry: new ContentFetcherRegistry(),
@@ -374,12 +374,19 @@ stage order, so a leaf node still executes META → CONTENT.
 ### State and persistence
 
 `KontextAgent` remains the orchestration boundary. The lightweight file store
-keeps the legacy graph/meta snapshot for local development. In production,
+keeps only the legacy ontology-schema/meta-index/MCP-sync snapshot for local
+development. It never contains production Resource, Chunk, Entity, Fact, or
+Evidence rows. In production,
 `@kontext-brain/postgres` is the canonical structured store and
 `@kontext-brain/object-storage` holds normalized current bodies. The loader
 compares a SHA-256 hash of configured ontology YAML with the active snapshot;
 a changed candidate is validated before an atomic activation, while invalid
 relations or parent cycles leave the old graph active.
+
+The Agent keeps the small YAML-derived `ontologySchemaGraph` in memory. During
+retrieval, the production search adapter loads only the accessible neighboring
+KG rows needed by the bounded frontier; it does not hydrate the instance KG
+into process memory. Resource content is fetched only after SQL ACL checks.
 
 MCP resources are stored as documents classified under ontology nodes, not
 as graph nodes themselves:

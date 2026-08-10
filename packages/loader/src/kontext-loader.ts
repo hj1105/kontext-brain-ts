@@ -24,7 +24,7 @@ import {
   VectorMappingStrategy,
   VectorMetaIndexStore,
   type RouterLLMAdapter as _Router,
-  createPersistedGraphState,
+  createOrchestrationSnapshot,
   deserializeMetaDocument,
   toEdges,
   toOntologyNodes,
@@ -246,7 +246,8 @@ export class KontextLoader {
         ? new LLMMetaDocumentSelector(traversalAdapter, templates)
         : new ScoreBasedSelector();
 
-    // Graph
+    // Small YAML-derived ontology schema cache. Instance KG data is owned by
+    // the production knowledge runtime and is never loaded here.
     const embedder = vectorStore
       ? new OntologyEmbedder(vectorStore)
       : new OntologyEmbedder({
@@ -267,10 +268,10 @@ export class KontextLoader {
     const yamlChanged =
       configuredOntologyHash !== undefined &&
       persistedState.ontologyContentHash !== configuredOntologyHash;
-    let graph: OntologyGraph;
+    let ontologySchemaGraph: OntologyGraph;
     let candidatePersistedState: typeof persistedState | undefined;
     if (hasPersistedGraph && !yamlChanged) {
-      graph = new OntologyGraph(
+      ontologySchemaGraph = new OntologyGraph(
         toOntologyNodes(persistedState),
         toEdges(persistedState),
         persistedState.graphConfig ?? {
@@ -284,23 +285,26 @@ export class KontextLoader {
                 : TraversalStrategy.WEIGHTED_DFS,
         },
       );
-      await embedder.embed(graph.nodes.values());
+      await embedder.embed(ontologySchemaGraph.nodes.values());
     } else {
       validateOntologyConfiguration(config.ontology);
-      graph = await new OntologyGraphBuilder(embedder).build(config.ontology, config.graph);
+      ontologySchemaGraph = await new OntologyGraphBuilder(embedder).build(
+        config.ontology,
+        config.graph,
+      );
       if (configuredOntologyHash) {
         const candidateMeta = new Map(
           Object.entries(persistedState.metaDocuments ?? {})
-            .filter(([nodeId]) => graph.nodes.has(nodeId))
+            .filter(([nodeId]) => ontologySchemaGraph.nodes.has(nodeId))
             .map(([nodeId, documents]) => [nodeId, documents.map(deserializeMetaDocument)]),
         );
         const candidateResources = (persistedState.resources ?? []).map((resource) => ({
           ...resource,
-          nodeIds: resource.nodeIds.filter((nodeId) => graph.nodes.has(nodeId)),
+          nodeIds: resource.nodeIds.filter((nodeId) => ontologySchemaGraph.nodes.has(nodeId)),
         }));
-        candidatePersistedState = createPersistedGraphState(
+        candidatePersistedState = createOrchestrationSnapshot(
           stateId,
-          graph,
+          ontologySchemaGraph,
           candidateMeta,
           candidateResources,
           configuredOntologyHash,
@@ -313,12 +317,12 @@ export class KontextLoader {
         organizationId: this.knowledgeRuntime.organizationId,
         yaml: JSON.stringify(config.ontology),
         graph: {
-          nodes: Array.from(graph.nodes.values()).map((node) => ({
+          nodes: Array.from(ontologySchemaGraph.nodes.values()).map((node) => ({
             id: node.id,
             description: node.description,
             parentId: node.parentId,
           })),
-          edges: graph.edges.map((edge) => ({
+          edges: ontologySchemaGraph.edges.map((edge) => ({
             from: edge.from,
             to: edge.to,
             weight: edge.weight,
@@ -355,7 +359,7 @@ export class KontextLoader {
     const pipeline = config.pipeline?.map(toPipelineStep);
 
     const agent = new KontextAgent({
-      graph,
+      ontologySchemaGraph,
       router,
       mcpConnectors,
       mcpLayerAdapters,
@@ -368,9 +372,9 @@ export class KontextLoader {
       pipeline,
       templates,
       tokenEstimator,
-      ontologyStore,
+      legacySnapshotStore: ontologyStore,
       stateId,
-      resourceRecords: persistedState.resources ?? [],
+      mcpResourceCacheEntries: persistedState.resources ?? [],
       ontologyContentHash: configuredOntologyHash ?? persistedState.ontologyContentHash,
       organizationId: this.knowledgeRuntime?.organizationId ?? stateId,
       knowledgeRetriever: this.knowledgeRuntime?.knowledgeRetriever,

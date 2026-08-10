@@ -11,9 +11,9 @@
 
 import {
   type ContentFetcherRegistry,
-  ContentFetcherRegistry as FetcherRegistry,
-  DataSource,
   DEFAULT_PIPELINE,
+  DataSource,
+  ContentFetcherRegistry as FetcherRegistry,
   InMemoryMetaIndexStore,
   InMemoryOntologyStore,
   InMemoryVectorStore,
@@ -28,10 +28,10 @@ import {
 import { KontextAgent } from "@kontext-brain/loader";
 import {
   type MCPConnector,
-  type MCPData,
-  type MCPResource,
   MCPContentFetcherBridge,
+  type MCPData,
   MCPLayerAdapterFactory,
+  type MCPResource,
 } from "@kontext-brain/mcp";
 
 // ── Scripted LLM: returns JSON matching autoSetup prompts ─────
@@ -44,9 +44,27 @@ class ScriptedLLM implements LLMAdapter {
     if (query.toLowerCase().includes("design ontology nodes")) {
       return JSON.stringify({
         nodes: [
-          { id: "Engineering", description: "software dev api", weight: 1.0, level: 0, parentId: null },
-          { id: "Backend", description: "api server db", weight: 0.9, level: 1, parentId: "Engineering" },
-          { id: "Frontend", description: "ui react components", weight: 0.8, level: 1, parentId: "Engineering" },
+          {
+            id: "Engineering",
+            description: "software dev api",
+            weight: 1.0,
+            level: 0,
+            parentId: null,
+          },
+          {
+            id: "Backend",
+            description: "api server db",
+            weight: 0.9,
+            level: 1,
+            parentId: "Engineering",
+          },
+          {
+            id: "Frontend",
+            description: "ui react components",
+            weight: 0.8,
+            level: 1,
+            parentId: "Engineering",
+          },
         ],
       });
     }
@@ -146,7 +164,7 @@ async function main(): Promise<void> {
   const ingestPipeline = new IngestPipeline(llm, new InMemoryOntologyStore(), vectorStore);
 
   const agent = new KontextAgent({
-    graph,
+    ontologySchemaGraph: graph,
     router,
     mcpConnectors: connectors,
     mcpLayerAdapters: adapters,
@@ -167,7 +185,7 @@ async function main(): Promise<void> {
   console.log("  Docs classified: ", setup.documentsClassified);
   console.log("  Docs unmapped:   ", setup.documentsUnmapped);
   console.log("\nGraph now has:", agent.ontologyGraph.nodes.size, "nodes");
-  console.log("\nGenerated YAML:\n" + setup.ontologyYaml.slice(0, 400) + "...");
+  console.log(`\nGenerated YAML:\n${setup.ontologyYaml.slice(0, 400)}...`);
 
   console.log("\n--- Query ---");
   const answer = await agent.query("How should I design backend APIs?");

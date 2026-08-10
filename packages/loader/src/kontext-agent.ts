@@ -36,7 +36,7 @@ import {
   type TokenEstimator,
   type VectorStore,
   createMetaDocument,
-  createPersistedGraphState,
+  createOrchestrationSnapshot,
   resourceDocumentIdentity,
 } from "@kontext-brain/core";
 import {
@@ -65,7 +65,8 @@ export interface SyncMCPResult {
 }
 
 export interface KontextAgentDeps {
-  graph: OntologyGraph;
+  /** Small ontology schema cache only; never contains Resource/Chunk/Entity/Fact instances. */
+  ontologySchemaGraph: OntologyGraph;
   router: RouterLLMAdapter;
   mcpConnectors: readonly MCPConnector[];
   mcpLayerAdapters: readonly MCPLayerAdapter[];
@@ -78,9 +79,10 @@ export interface KontextAgentDeps {
   pipeline?: readonly PipelineStep[];
   templates?: PromptTemplates;
   tokenEstimator?: TokenEstimator;
-  ontologyStore?: OntologyStore;
+  /** Legacy schema/meta/sync-cache snapshot store; never the production KG repository. */
+  legacySnapshotStore?: OntologyStore;
   stateId?: string;
-  resourceRecords?: readonly SerializableResourceRecord[];
+  mcpResourceCacheEntries?: readonly SerializableResourceRecord[];
   ontologyContentHash?: string;
   organizationId?: string;
   ontologyProposalQueue?: OntologyProposalQueue;
@@ -90,12 +92,15 @@ export interface KontextAgentDeps {
 }
 
 /**
- * High-level owner of the runtime graph, indexes, MCP assignments, and their
- * persisted snapshot. All mutations flow through this class so query state
- * cannot drift from storage state.
+ * High-level orchestration boundary.
+ *
+ * `ontologySchemaGraph` is the small YAML-derived concept graph. Production
+ * Resource/Chunk/Entity/Fact/Evidence state stays behind the injected
+ * knowledge runtime and is never materialized in this class. The local maps
+ * below are legacy indexes and MCP synchronization caches, not the instance KG.
  */
 export class KontextAgent {
-  private graph: OntologyGraph;
+  private ontologySchemaGraph: OntologyGraph;
   private readonly router: RouterLLMAdapter;
   private readonly mcpConnectors: readonly MCPConnector[];
   private readonly mcpLayerAdapters: readonly MCPLayerAdapter[];
@@ -108,7 +113,7 @@ export class KontextAgent {
   private readonly pipeline: readonly PipelineStep[];
   private readonly templates: PromptTemplates;
   private readonly tokenEstimator: TokenEstimator;
-  private readonly ontologyStore: OntologyStore;
+  private readonly legacySnapshotStore: OntologyStore;
   private readonly stateId: string;
   private readonly organizationId: string;
   private readonly ontologyProposalQueue: OntologyProposalQueue;
@@ -116,12 +121,12 @@ export class KontextAgent {
   private readonly knowledgeRetriever?: BidirectionalNLayerRetriever;
   private readonly mcpKnowledgeSynchronizer?: MCPKnowledgeSynchronizer;
   private readonly answerValidator: AnswerGroundingValidator;
-  private readonly resourceRecords = new Map<string, SerializableResourceRecord>();
+  private readonly mcpResourceCache = new Map<string, SerializableResourceRecord>();
   private mutationQueue: Promise<void> = Promise.resolve();
   private queryPipeline: LayeredQueryPipeline;
 
   constructor(deps: KontextAgentDeps) {
-    this.graph = deps.graph;
+    this.ontologySchemaGraph = deps.ontologySchemaGraph;
     this.router = deps.router;
     this.mcpConnectors = deps.mcpConnectors;
     this.mcpLayerAdapters = deps.mcpLayerAdapters;
@@ -134,7 +139,7 @@ export class KontextAgent {
     this.pipeline = deps.pipeline ?? DEFAULT_PIPELINE;
     this.templates = deps.templates ?? DefaultPromptTemplates;
     this.tokenEstimator = deps.tokenEstimator ?? DefaultTokenEstimator;
-    this.ontologyStore = deps.ontologyStore ?? new InMemoryOntologyStore();
+    this.legacySnapshotStore = deps.legacySnapshotStore ?? new InMemoryOntologyStore();
     this.stateId = deps.stateId ?? "default";
     this.organizationId = deps.organizationId ?? this.stateId;
     this.ontologyProposalQueue = deps.ontologyProposalQueue ?? new InMemoryOntologyProposalQueue();
@@ -142,14 +147,14 @@ export class KontextAgent {
     this.knowledgeRetriever = deps.knowledgeRetriever;
     this.mcpKnowledgeSynchronizer = deps.mcpKnowledgeSynchronizer;
     this.answerValidator = deps.answerValidator ?? new CitationAnswerValidator();
-    for (const record of deps.resourceRecords ?? []) {
-      this.resourceRecords.set(resourceKey(record.connectorName, record.resourceId), record);
+    for (const record of deps.mcpResourceCacheEntries ?? []) {
+      this.mcpResourceCache.set(resourceKey(record.connectorName, record.resourceId), record);
     }
     this.queryPipeline = this.buildQueryPipeline();
   }
 
   get ontologyGraph(): OntologyGraph {
-    return this.graph;
+    return this.ontologySchemaGraph;
   }
 
   get activePipeline(): readonly PipelineStep[] {
@@ -158,7 +163,7 @@ export class KontextAgent {
 
   private buildQueryPipeline(): LayeredQueryPipeline {
     return new LayeredQueryPipeline(
-      this.graph,
+      this.ontologySchemaGraph,
       this.router,
       this.metaIndexStore,
       this.fetcherRegistry,
@@ -235,7 +240,7 @@ export class KontextAgent {
   async initialize(): Promise<void> {
     await this.rebuildMetaIndex();
     if (this.hasVectorStep()) {
-      await this.embedResourceContent(Array.from(this.resourceRecords.values()));
+      await this.embedResourceContent(Array.from(this.mcpResourceCache.values()));
     }
   }
 
@@ -243,7 +248,7 @@ export class KontextAgent {
     await this.runMutation(async () => {
       const extracted = await this.ingestPipeline.extract(data, source);
       await this.expandGraph(extracted.newNodes, extracted.newEdges);
-      await this.persistState();
+      await this.persistOrchestrationSnapshot();
     });
   }
 
@@ -266,7 +271,7 @@ export class KontextAgent {
     if (targets.length === 0) {
       return emptySyncResult;
     }
-    if (this.graph.nodes.size === 0) {
+    if (this.ontologySchemaGraph.nodes.size === 0) {
       const setup = await this.autoSetupUnlocked(10, targets);
       return {
         connectorsSynced: targets.length,
@@ -296,7 +301,7 @@ export class KontextAgent {
       connectorsSynced++;
       const source = this.resolveDataSource(connector);
       const currentIds = new Set(resources.map((resource) => resource.id));
-      const existing = Array.from(this.resourceRecords.values()).filter(
+      const existing = Array.from(this.mcpResourceCache.values()).filter(
         (record) => record.connectorName === connector.name,
       );
       const seenAt = new Date().toISOString();
@@ -304,13 +309,13 @@ export class KontextAgent {
       for (const record of existing) {
         if (!currentIds.has(record.resourceId)) {
           removed.push(record);
-          this.resourceRecords.delete(resourceKey(record.connectorName, record.resourceId));
+          this.mcpResourceCache.delete(resourceKey(record.connectorName, record.resourceId));
         }
       }
 
       for (const resource of resources) {
         const key = resourceKey(connector.name, resource.id);
-        const previous = this.resourceRecords.get(key);
+        const previous = this.mcpResourceCache.get(key);
         const nextSignature = resourceSignature(resource.name, resource.description, source);
         if (!previous) {
           resourcesAdded++;
@@ -318,7 +323,7 @@ export class KontextAgent {
           resourcesUpdated++;
           previousByResource.set(key, previous);
         } else {
-          this.resourceRecords.set(key, { ...previous, lastSeenAt: seenAt });
+          this.mcpResourceCache.set(key, { ...previous, lastSeenAt: seenAt });
           continue;
         }
         toClassify.push({
@@ -340,7 +345,7 @@ export class KontextAgent {
     const changedRecords: SerializableResourceRecord[] = [];
     if (toClassify.length > 0) {
       const classifier = new DocumentClassifier(this.router.traversalAdapter, this.templates);
-      const classification = await classifier.classify(toClassify, this.graph.nodes);
+      const classification = await classifier.classify(toClassify, this.ontologySchemaGraph.nodes);
       await this.ontologyProposalQueue.enqueue(this.organizationId, classification.proposals);
 
       const assignments = reverseMappings(classification.mappings);
@@ -364,7 +369,7 @@ export class KontextAgent {
           signature,
           lastSeenAt: now,
         };
-        this.resourceRecords.set(key, record);
+        this.mcpResourceCache.set(key, record);
         changedRecords.push(record);
         if (assignedNodeIds !== undefined) resourcesClassified++;
         else resourcesUnmapped++;
@@ -376,7 +381,7 @@ export class KontextAgent {
       await this.embedResourceContent(changedRecords);
     }
     await this.syncKnowledgeResources(changedRecords, removed);
-    await this.persistState();
+    await this.persistOrchestrationSnapshot();
 
     return {
       connectorsSynced,
@@ -390,11 +395,11 @@ export class KontextAgent {
 
   describeGraph(): string {
     const lines: string[] = ["=== KontextAgent Ontology Graph ==="];
-    for (const node of this.graph.nodes.values()) {
+    for (const node of this.ontologySchemaGraph.nodes.values()) {
       lines.push(`- ${node.id} (weight=${node.weight})`);
       if (node.mcpSource) lines.push(`  MCP: ${node.mcpSource}`);
       if (node.webSearch) lines.push("  Web Search enabled");
-      for (const edge of this.graph.edges.filter((item) => item.from === node.id)) {
+      for (const edge of this.ontologySchemaGraph.edges.filter((item) => item.from === node.id)) {
         lines.push(`  -> ${edge.to} (${edge.weight})`);
       }
     }
@@ -420,7 +425,7 @@ export class KontextAgent {
     lines.push("");
     lines.push("=== MCP Adapters ===");
     for (const adapter of this.mcpLayerAdapters) {
-      const count = Array.from(this.resourceRecords.values()).filter(
+      const count = Array.from(this.mcpResourceCache.values()).filter(
         (record) => record.connectorName === adapter.connectorName,
       ).length;
       lines.push(`- ${adapter.connectorName} (${adapter.dataSource}, resources=${count})`);
@@ -446,14 +451,14 @@ export class KontextAgent {
     if (resourceInfos.length === 0) {
       return {
         nodesCreated: 0,
-        nodesReused: this.graph.nodes.size,
+        nodesReused: this.ontologySchemaGraph.nodes.size,
         documentsClassified: 0,
         documentsUnmapped: 0,
         ontologyYaml: "",
       };
     }
 
-    const initialNodeCount = this.graph.nodes.size;
+    const initialNodeCount = this.ontologySchemaGraph.nodes.size;
     let newNodes: readonly OntologyNode[] = [];
 
     if (initialNodeCount === 0) {
@@ -470,14 +475,14 @@ export class KontextAgent {
     }
 
     const classifier = new DocumentClassifier(this.router.traversalAdapter, this.templates);
-    const classification = await classifier.classify(resourceInfos, this.graph.nodes);
+    const classification = await classifier.classify(resourceInfos, this.ontologySchemaGraph.nodes);
     await this.ontologyProposalQueue.enqueue(this.organizationId, classification.proposals);
 
     const assignments = reverseMappings(classification.mappings);
     const now = new Date().toISOString();
     for (const resource of resourceInfos) {
       const key = resourceKey(resource.connectorName, resource.id);
-      this.resourceRecords.set(key, {
+      this.mcpResourceCache.set(key, {
         connectorName: resource.connectorName,
         resourceId: resource.id,
         title: resource.title,
@@ -491,7 +496,9 @@ export class KontextAgent {
 
     await this.rebuildMetaIndex();
     const classifiedRecords = resourceInfos
-      .map((resource) => this.resourceRecords.get(resourceKey(resource.connectorName, resource.id)))
+      .map((resource) =>
+        this.mcpResourceCache.get(resourceKey(resource.connectorName, resource.id)),
+      )
       .filter(
         (record): record is SerializableResourceRecord =>
           record !== undefined && record.nodeIds.length > 0,
@@ -502,15 +509,18 @@ export class KontextAgent {
     await this.syncKnowledgeResources(
       resourceInfos
         .map((resource) =>
-          this.resourceRecords.get(resourceKey(resource.connectorName, resource.id)),
+          this.mcpResourceCache.get(resourceKey(resource.connectorName, resource.id)),
         )
         .filter((record): record is SerializableResourceRecord => record !== undefined),
       [],
     );
-    await this.persistState();
+    await this.persistOrchestrationSnapshot();
 
     const { OntologyYamlWriter } = await import("./ontology-yaml-writer.js");
-    const yaml = OntologyYamlWriter.write(Array.from(this.graph.nodes.values()), this.graph.edges);
+    const yaml = OntologyYamlWriter.write(
+      Array.from(this.ontologySchemaGraph.nodes.values()),
+      this.ontologySchemaGraph.edges,
+    );
 
     return {
       nodesCreated: new Set(newNodes.map((node) => node.id)).size,
@@ -556,7 +566,7 @@ export class KontextAgent {
     newNodes: readonly OntologyNode[],
     newEdges: readonly Edge[],
   ): Promise<void> {
-    const mergedNodes = new Map(this.graph.nodes);
+    const mergedNodes = new Map(this.ontologySchemaGraph.nodes);
     const addedNodes: OntologyNode[] = [];
     for (const node of newNodes) {
       if (mergedNodes.has(node.id)) continue;
@@ -565,9 +575,11 @@ export class KontextAgent {
     }
 
     const edgeKeys = new Set(
-      this.graph.edges.map((edge) => `${edge.from}\u0000${edge.to}\u0000${edge.type ?? ""}`),
+      this.ontologySchemaGraph.edges.map(
+        (edge) => `${edge.from}\u0000${edge.to}\u0000${edge.type ?? ""}`,
+      ),
     );
-    const mergedEdges = [...this.graph.edges];
+    const mergedEdges = [...this.ontologySchemaGraph.edges];
     for (const edge of newEdges) {
       const key = `${edge.from}\u0000${edge.to}\u0000${edge.type ?? ""}`;
       if (edgeKeys.has(key)) continue;
@@ -575,10 +587,14 @@ export class KontextAgent {
       mergedEdges.push(edge);
     }
 
-    if (addedNodes.length === 0 && mergedEdges.length === this.graph.edges.length) {
+    if (addedNodes.length === 0 && mergedEdges.length === this.ontologySchemaGraph.edges.length) {
       return;
     }
-    this.graph = new OntologyGraph(mergedNodes, mergedEdges, this.graph.config);
+    this.ontologySchemaGraph = new OntologyGraph(
+      mergedNodes,
+      mergedEdges,
+      this.ontologySchemaGraph.config,
+    );
     this.queryPipeline = this.buildQueryPipeline();
 
     if (this.vectorStore) {
@@ -605,9 +621,9 @@ export class KontextAgent {
       );
     }
 
-    for (const record of this.resourceRecords.values()) {
+    for (const record of this.mcpResourceCache.values()) {
       for (const nodeId of record.nodeIds) {
-        if (!this.graph.nodes.has(nodeId)) continue;
+        if (!this.ontologySchemaGraph.nodes.has(nodeId)) continue;
         const documents = byNode.get(nodeId) ?? [];
         documents.push(
           createMetaDocument({
@@ -625,7 +641,7 @@ export class KontextAgent {
       }
     }
 
-    const nodeIds = new Set([...existing.keys(), ...this.graph.nodes.keys()]);
+    const nodeIds = new Set([...existing.keys(), ...this.ontologySchemaGraph.nodes.keys()]);
     for (const nodeId of nodeIds) {
       await this.metaIndexStore.replace(nodeId, byNode.get(nodeId) ?? []);
     }
@@ -719,16 +735,21 @@ export class KontextAgent {
     return this.pipeline.some((pipelineStep) => pipelineStep.type === DepthType.VECTOR);
   }
 
-  private async persistState(): Promise<void> {
+  /**
+   * Persists only the small ontology schema and legacy orchestration caches.
+   * Production KG instances live behind `mcpKnowledgeSynchronizer` and are not
+   * serialized into this snapshot.
+   */
+  private async persistOrchestrationSnapshot(): Promise<void> {
     const metaDocuments = await this.metaIndexStore.all();
-    const snapshot = createPersistedGraphState(
+    const snapshot = createOrchestrationSnapshot(
       this.stateId,
-      this.graph,
+      this.ontologySchemaGraph,
       metaDocuments,
-      Array.from(this.resourceRecords.values()),
+      Array.from(this.mcpResourceCache.values()),
       this.ontologyContentHash,
     );
-    await this.ontologyStore.save(this.stateId, snapshot);
+    await this.legacySnapshotStore.save(this.stateId, snapshot);
   }
 
   private async runMutation<T>(operation: () => Promise<T>): Promise<T> {

@@ -125,7 +125,7 @@ function buildGraph(): OntologyGraph {
   );
 }
 
-describe("KontextAgent unified state", () => {
+describe("KontextAgent state boundaries", () => {
   it("classifies incremental MCP resources once and removes deleted resources", async () => {
     const connector = new MutableConnector();
     connector.resources = [
@@ -149,7 +149,7 @@ describe("KontextAgent unified state", () => {
       [new GenericMCPResourceSnapshotAdapter("notion", "notion", { organizationWide: true })],
     );
     const agent = new KontextAgent({
-      graph: buildGraph(),
+      ontologySchemaGraph: buildGraph(),
       router: new RouterLLMAdapter(llm, llm),
       mcpConnectors: [connector],
       mcpLayerAdapters: [adapter],
@@ -159,7 +159,7 @@ describe("KontextAgent unified state", () => {
       mappingStrategy: new KeywordMappingStrategy(),
       metaSelector: new ScoreBasedSelector(),
       ingestPipeline: new IngestPipeline(llm, store, vectorStore),
-      ontologyStore: store,
+      legacySnapshotStore: store,
       stateId: "test-agent",
       organizationId: "acme",
       mcpKnowledgeSynchronizer: knowledgeSync,
@@ -189,6 +189,10 @@ describe("KontextAgent unified state", () => {
     const persisted = await store.load("test-agent");
     expect(persisted.resources).toHaveLength(1);
     expect(persisted.metaDocuments?.backend).toHaveLength(1);
+    expect(persisted).not.toHaveProperty("chunks");
+    expect(persisted).not.toHaveProperty("entities");
+    expect(persisted).not.toHaveProperty("facts");
+    expect(persisted).not.toHaveProperty("evidence");
 
     connector.shouldFail = true;
     const unavailable = await agent.syncMCP();
@@ -225,12 +229,12 @@ describe("KontextAgent unified state", () => {
     ).toBe("stale");
   });
 
-  it("applies manual ingest to both the runtime graph and persisted snapshot", async () => {
+  it("applies manual ingest to the ontology schema cache and its legacy snapshot", async () => {
     const llm = new StateTestLLM();
     const store = new InMemoryOntologyStore();
     const vectorStore = new InMemoryVectorStore(async () => new Float32Array([1, 0]));
     const agent = new KontextAgent({
-      graph: buildGraph(),
+      ontologySchemaGraph: buildGraph(),
       router: new RouterLLMAdapter(llm, llm),
       mcpConnectors: [],
       mcpLayerAdapters: [],
@@ -240,7 +244,7 @@ describe("KontextAgent unified state", () => {
       mappingStrategy: new KeywordMappingStrategy(),
       metaSelector: new ScoreBasedSelector(),
       ingestPipeline: new IngestPipeline(llm, store, vectorStore),
-      ontologyStore: store,
+      legacySnapshotStore: store,
       stateId: "test-agent",
     });
 
@@ -279,7 +283,7 @@ describe("KontextAgent unified state", () => {
       },
     };
     const agent = new KontextAgent({
-      graph: buildGraph(),
+      ontologySchemaGraph: buildGraph(),
       router: new RouterLLMAdapter(llm, citedLlm),
       mcpConnectors: [],
       mcpLayerAdapters: [],
@@ -289,7 +293,7 @@ describe("KontextAgent unified state", () => {
       mappingStrategy: new KeywordMappingStrategy(),
       metaSelector: new ScoreBasedSelector(),
       ingestPipeline: new IngestPipeline(llm, store, vectorStore),
-      ontologyStore: store,
+      legacySnapshotStore: store,
       stateId: "test-agent",
       organizationId: "acme",
       knowledgeRetriever,

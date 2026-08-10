@@ -42,10 +42,11 @@ export interface SerializableMetaDocument {
 }
 
 /**
- * Persisted MCP resource assignment.
+ * Persisted MCP synchronization cache entry for the legacy orchestration path.
  *
- * Resources are not ontology nodes. `nodeIds` records the classification
- * relationship and is the source of truth used to rebuild the meta index.
+ * This is not a production KG Resource. `nodeIds` only rebuilds the local
+ * meta index; PostgreSQL remains canonical for Resource/Chunk/Entity/Fact/
+ * Evidence records when a production knowledge runtime is configured.
  */
 export interface SerializableResourceRecord {
   readonly connectorName: string;
@@ -58,6 +59,13 @@ export interface SerializableResourceRecord {
   readonly lastSeenAt: string;
 }
 
+/**
+ * Legacy/local orchestration snapshot.
+ *
+ * It contains the small ontology schema plus rebuildable meta-index and MCP
+ * synchronization caches. It deliberately has no production KG instance
+ * records such as Chunks, Entities, Facts, or Evidence.
+ */
 export interface UserOntologyGraph {
   readonly userId: string;
   readonly nodes: Readonly<Record<string, SerializableNode>>;
@@ -126,7 +134,7 @@ export function deserializeMetaDocument(document: SerializableMetaDocument): Met
   };
 }
 
-export function createPersistedGraphState(
+export function createOrchestrationSnapshot(
   userId: string,
   graph: OntologyGraph,
   metaDocuments: ReadonlyMap<string, readonly MetaDocument[]>,
@@ -171,6 +179,9 @@ export function createPersistedGraphState(
     ontologyContentHash,
   };
 }
+
+/** @deprecated Use `createOrchestrationSnapshot`; this never contains the production instance KG. */
+export const createPersistedGraphState = createOrchestrationSnapshot;
 
 // ── OntologyStore port ────────────────────────────────────────
 
