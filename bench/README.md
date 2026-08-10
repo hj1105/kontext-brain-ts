@@ -4,6 +4,11 @@ Compares 14 retrieval strategies against a vector-RAG baseline on a 12-doc
 tech-docs corpus with 8 factual queries. All systems share the same local
 Ollama models, so only the retrieval/reasoning strategy differs.
 
+> Historical-results note: rows labeled `v1-default` below were recorded
+> before graph traversal depth and retrieval-stage order were separated.
+> The current `DEFAULT_PIPELINE` runs the full N-layer stage sequence for
+> every traversed node, including a leaf selected at depth 0.
+
 ## Setup
 
 - LLM: `qwen2.5:1.5b` via Ollama (CPU-only, `numGpu: 0`)

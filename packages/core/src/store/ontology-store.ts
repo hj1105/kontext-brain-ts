@@ -1,7 +1,14 @@
+import { randomUUID } from "node:crypto";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import type { Edge, OntologyNode } from "../graph/ontology-node.js";
-import { OntologyNodeType } from "../graph/ontology-node.js";
+import type { DataSource, MetaDocument } from "../graph/layered-models.js";
+import type { OntologyGraph } from "../graph/ontology-graph.js";
+import type { Edge, GraphConfig, OntologyNode } from "../graph/ontology-node.js";
+import {
+  DEFAULT_GRAPH_CONFIG,
+  OntologyNodeType,
+  TraversalStrategy,
+} from "../graph/ontology-node.js";
 
 export interface SerializableNode {
   readonly id: string;
@@ -9,20 +16,66 @@ export interface SerializableNode {
   readonly weight: number;
   readonly mcpSource?: string | null;
   readonly webSearch: boolean;
+  readonly parentId?: string | null;
+  readonly level?: number;
+  readonly nodeType?: OntologyNodeType;
+  readonly keywords?: readonly string[];
+  readonly attributeSchema?: Readonly<Record<string, "string" | "number" | "boolean" | "string[]">>;
 }
 
 export interface SerializableEdge {
   readonly from: string;
   readonly to: string;
   readonly weight: number;
+  readonly type?: string;
 }
 
+export interface SerializableMetaDocument {
+  readonly id: string;
+  readonly title: string;
+  readonly source: DataSource;
+  readonly ontologyNodeId: string;
+  readonly url?: string | null;
+  readonly score: number;
+  readonly metadata: Readonly<Record<string, string>>;
+  readonly fetchedAt: string;
+}
+
+/**
+ * Persisted MCP synchronization cache entry for the legacy orchestration path.
+ *
+ * This is not a production KG Resource. `nodeIds` only rebuilds the local
+ * meta index; PostgreSQL remains canonical for Resource/Chunk/Entity/Fact/
+ * Evidence records when a production knowledge runtime is configured.
+ */
+export interface SerializableResourceRecord {
+  readonly connectorName: string;
+  readonly resourceId: string;
+  readonly title: string;
+  readonly description: string;
+  readonly source: DataSource;
+  readonly nodeIds: readonly string[];
+  readonly signature: string;
+  readonly lastSeenAt: string;
+}
+
+/**
+ * Legacy/local orchestration snapshot.
+ *
+ * It contains the small ontology schema plus rebuildable meta-index and MCP
+ * synchronization caches. It deliberately has no production KG instance
+ * records such as Chunks, Entities, Facts, or Evidence.
+ */
 export interface UserOntologyGraph {
   readonly userId: string;
   readonly nodes: Readonly<Record<string, SerializableNode>>;
   readonly edges: readonly SerializableEdge[];
+  readonly graphConfig?: GraphConfig;
+  readonly metaDocuments?: Readonly<Record<string, readonly SerializableMetaDocument[]>>;
+  readonly resources?: readonly SerializableResourceRecord[];
   readonly mcpSources?: readonly string[];
   readonly lastUpdated?: string;
+  readonly ontologyContentHash?: string;
 }
 
 export function toOntologyNodes(graph: UserOntologyGraph): Map<string, OntologyNode> {
@@ -35,18 +88,100 @@ export function toOntologyNodes(graph: UserOntologyGraph): Map<string, OntologyN
       mcpSource: n.mcpSource ?? null,
       webSearch: n.webSearch,
       refBlock: null,
-      parentId: null,
-      level: 0,
-      nodeType: OntologyNodeType.DOMAIN,
-      keywords: [],
+      parentId: n.parentId ?? null,
+      level: n.level ?? 0,
+      nodeType: n.nodeType ?? OntologyNodeType.DOMAIN,
+      keywords: n.keywords ?? [],
+      attributeSchema: n.attributeSchema,
     });
   }
   return out;
 }
 
 export function toEdges(graph: UserOntologyGraph): Edge[] {
-  return graph.edges.map((e) => ({ from: e.from, to: e.to, weight: e.weight }));
+  return graph.edges.map((e) => ({
+    from: e.from,
+    to: e.to,
+    weight: e.weight,
+    type: e.type,
+  }));
 }
+
+export function toGraphConfig(graph: UserOntologyGraph): GraphConfig {
+  const config = graph.graphConfig;
+  if (!config) return DEFAULT_GRAPH_CONFIG;
+  const strategy = Object.values(TraversalStrategy).includes(config.strategy)
+    ? config.strategy
+    : TraversalStrategy.WEIGHTED_DFS;
+  return {
+    maxDepth: config.maxDepth,
+    maxTokens: config.maxTokens,
+    strategy,
+  };
+}
+
+export function serializeMetaDocument(document: MetaDocument): SerializableMetaDocument {
+  return {
+    ...document,
+    fetchedAt: document.fetchedAt.toISOString(),
+  };
+}
+
+export function deserializeMetaDocument(document: SerializableMetaDocument): MetaDocument {
+  return {
+    ...document,
+    fetchedAt: new Date(document.fetchedAt),
+  };
+}
+
+export function createOrchestrationSnapshot(
+  userId: string,
+  graph: OntologyGraph,
+  metaDocuments: ReadonlyMap<string, readonly MetaDocument[]>,
+  resources: readonly SerializableResourceRecord[],
+  ontologyContentHash?: string,
+): UserOntologyGraph {
+  const nodes: Record<string, SerializableNode> = {};
+  for (const [id, node] of graph.nodes) {
+    nodes[id] = {
+      id: node.id,
+      description: node.description,
+      weight: node.weight,
+      mcpSource: node.mcpSource ?? null,
+      webSearch: node.webSearch,
+      parentId: node.parentId ?? null,
+      level: node.level,
+      nodeType: node.nodeType,
+      keywords: node.keywords ?? [],
+      attributeSchema: node.attributeSchema,
+    };
+  }
+
+  const serializedMeta: Record<string, SerializableMetaDocument[]> = {};
+  for (const [nodeId, documents] of metaDocuments) {
+    serializedMeta[nodeId] = documents.map(serializeMetaDocument);
+  }
+
+  return {
+    userId,
+    nodes,
+    edges: graph.edges.map((edge) => ({
+      from: edge.from,
+      to: edge.to,
+      weight: edge.weight,
+      type: edge.type,
+    })),
+    graphConfig: graph.config,
+    metaDocuments: serializedMeta,
+    resources: [...resources],
+    mcpSources: Array.from(new Set(resources.map((resource) => resource.connectorName))),
+    lastUpdated: new Date().toISOString(),
+    ontologyContentHash,
+  };
+}
+
+/** @deprecated Use `createOrchestrationSnapshot`; this never contains the production instance KG. */
+export const createPersistedGraphState = createOrchestrationSnapshot;
 
 // ── OntologyStore port ────────────────────────────────────────
 
@@ -105,24 +240,40 @@ export class FileOntologyStore implements OntologyStore {
       const file = path.join(this.dir, `${userId}.json`);
       const data = await fs.readFile(file, "utf-8");
       return JSON.parse(data) as UserOntologyGraph;
-    } catch {
-      return { userId, nodes: {}, edges: [] };
+    } catch (error) {
+      if (isFileNotFound(error)) return { userId, nodes: {}, edges: [] };
+      throw error;
     }
   }
 
   async save(userId: string, graph: UserOntologyGraph): Promise<void> {
     await this.ensureDir();
     const file = path.join(this.dir, `${userId}.json`);
-    await fs.writeFile(file, JSON.stringify(graph, null, 2), "utf-8");
+    const temporaryFile = path.join(this.dir, `.${userId}.${process.pid}.${randomUUID()}.tmp`);
+    try {
+      await fs.writeFile(temporaryFile, JSON.stringify(graph, null, 2), "utf-8");
+      await fs.rename(temporaryFile, file);
+    } finally {
+      await fs.unlink(temporaryFile).catch(() => undefined);
+    }
   }
 
   async delete(userId: string): Promise<void> {
     try {
       await fs.unlink(path.join(this.dir, `${userId}.json`));
-    } catch {
-      // ignore
+    } catch (error) {
+      if (!isFileNotFound(error)) throw error;
     }
   }
+}
+
+function isFileNotFound(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "ENOENT"
+  );
 }
 
 // ── Factories ─────────────────────────────────────────────────

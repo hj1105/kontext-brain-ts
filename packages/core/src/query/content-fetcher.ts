@@ -8,7 +8,11 @@ import { DefaultPromptTemplates } from "./prompt-templates.js";
  * Given a list of candidate titles, picks which documents to actually fetch.
  */
 export interface MetaDocumentSelector {
-  select(query: string, candidates: readonly MetaDocument[], maxSelect: number): Promise<MetaDocument[]>;
+  select(
+    query: string,
+    candidates: readonly MetaDocument[],
+    maxSelect: number,
+  ): Promise<MetaDocument[]>;
 }
 
 /** Score-based selector — no LLM needed. */
@@ -73,7 +77,11 @@ export class LLMMetaDocumentSelector implements MetaDocumentSelector {
 }
 
 function parseCompactIndices(response: string, size: number): Set<number> {
-  const clean = response.trim().replace(/^```json/, "").replace(/```$/, "").trim();
+  const clean = response
+    .trim()
+    .replace(/^```json/, "")
+    .replace(/```$/, "")
+    .trim();
   try {
     const parsed = JSON.parse(clean);
     if (Array.isArray(parsed)) {
@@ -178,30 +186,55 @@ function bm25Scores(
 
 export interface ContentFetcher {
   readonly source: DataSource;
+  readonly connectorName?: string;
   fetch(metaDoc: MetaDocument): Promise<DocumentContent>;
 }
 
 export class ContentFetcherRegistry {
-  private readonly fetchers = new Map<DataSource, ContentFetcher>();
+  private readonly fetchers = new Map<DataSource, ContentFetcher[]>();
 
   register(fetcher: ContentFetcher): void {
-    this.fetchers.set(fetcher.source, fetcher);
+    const registered = this.fetchers.get(fetcher.source) ?? [];
+    const withoutSameConnector = registered.filter(
+      (candidate) => candidate.connectorName !== fetcher.connectorName,
+    );
+    withoutSameConnector.push(fetcher);
+    this.fetchers.set(fetcher.source, withoutSameConnector);
   }
 
   async fetch(metaDoc: MetaDocument): Promise<DocumentContent> {
-    const fetcher = this.fetchers.get(metaDoc.source);
-    if (fetcher) return fetcher.fetch(metaDoc);
+    const registered = this.fetchers.get(metaDoc.source) ?? [];
+    const connectorName = metaDoc.metadata.connector;
+    const fetcher =
+      registered.find((candidate) => connectorName && candidate.connectorName === connectorName) ??
+      registered.find((candidate) => !candidate.connectorName) ??
+      registered[0];
+    if (fetcher) {
+      const content = await fetcher.fetch(metaDoc);
+      return {
+        ...content,
+        metadata: {
+          ...content.metadata,
+          ...(connectorName ? { connector: connectorName } : {}),
+        },
+      };
+    }
     return {
       metaDocumentId: metaDoc.id,
       title: metaDoc.title,
       body: `[fetcher not registered for ${metaDoc.source}]`,
       source: metaDoc.source,
+      metadata: connectorName ? { connector: connectorName } : {},
       sectionContent: null,
       fetchedAt: new Date(),
     };
   }
 
-  supports(source: DataSource): boolean {
-    return this.fetchers.has(source);
+  supports(source: DataSource, connectorName?: string): boolean {
+    const registered = this.fetchers.get(source) ?? [];
+    if (!connectorName) return registered.length > 0;
+    return registered.some(
+      (fetcher) => !fetcher.connectorName || fetcher.connectorName === connectorName,
+    );
   }
 }

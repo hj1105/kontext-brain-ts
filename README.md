@@ -27,7 +27,7 @@ rewriting the whole pipeline.
 
 ## What this project is
 
-A modular monorepo with five published packages and a benchmark harness:
+A modular monorepo with eight published packages and a benchmark harness:
 
 | package | purpose |
 |---------|---------|
@@ -36,6 +36,9 @@ A modular monorepo with five published packages and a benchmark harness:
 | `@kontext-brain/mcp` | client connectors using the official `@modelcontextprotocol/sdk` (stdio + SSE), plus layer adapters for Notion / Jira / GitHub PR / Slack |
 | `@kontext-brain/loader` | YAML/zod config loader + `KontextAgent` (the high-level entry point) including `autoSetup()` |
 | `@kontext-brain/tool-server` | MCP server exposing kontext as 6 tools to any MCP client (Claude Desktop, Claude Code, Cursor, etc.) |
+| `@kontext-brain/postgres` | PostgreSQL/pgvector KG, RLS-aware retrieval, ontology deployments, proposal queue, and extraction jobs |
+| `@kontext-brain/object-storage` | S3-compatible compressed Resource content storage |
+| `@kontext-brain/github` | accumulated ontology-proposal draft PR publisher |
 
 There is no Python in the project — it is end-to-end TypeScript / Node.js.
 
@@ -70,6 +73,12 @@ Every layer is a port (TypeScript interface) with default implementations and
 a registry pattern, so you can plug in any embedding model, vector store, MCP
 server, chunker, or LLM without modifying core code.
 
+The diagram above is the backward-compatible staged pipeline. The production
+KG path uses a typed bidirectional graph instead: multi-source seeds can start
+at an Ontology Node, Resource, Chunk, Entity, or Fact; bounded best-first
+search then performs adaptive **Lift → Expand → Ground** until it has ranked,
+ACL-accessible Evidence. It does not assume a DAG or a fixed number of lifts.
+
 ---
 
 ## Why use it
@@ -83,8 +92,9 @@ server, chunker, or LLM without modifying core code.
   200–1700 char context) per query.
 - **MCP-native**: built on the official Model Context Protocol SDK both as
   client (consume MCP servers) and as server (expose to AI agent hosts).
-- **Auto-setup**: connect MCP sources, call `autoSetup()`, and an LLM builds
-  the ontology + classifies documents into nodes for you.
+- **Governed auto-setup**: the first setup session can build a small ontology.
+  Later unmatched documents enter a deduplicated proposal queue and draft PR;
+  they never mutate the active ontology directly.
 
 ---
 
@@ -116,7 +126,7 @@ git clone <repo>
 cd kontext-brain-ts
 pnpm install
 pnpm -r build
-pnpm test            # 8 tests across core + integration
+pnpm test            # unit, contract, and integration tests
 ```
 
 ### Run the example
@@ -139,12 +149,74 @@ import { KontextLoader } from "@kontext-brain/loader";
 
 const agent = await KontextLoader.fromFile("kontext.yaml");
 await agent.autoSetup();   // first time only — builds ontology + indexes docs
-const result = await agent.query("How should I version my REST API?");
+const retrieval = await agent.retrieve("How should I version my REST API?");
+console.log(retrieval.context);          // no final reasoning LLM call
+
+const result = await agent.answer("How should I version my REST API?");
 
 console.log(result.answer);
 console.log(result.selectedMetaDocs);  // sourced documents
 console.log(result.contextTokensUsed);
 ```
+
+### Production Evidence KG
+
+The production path keeps structured state in PostgreSQL/pgvector and one
+compressed current object per Resource in S3-compatible storage. External MCP
+systems remain the source of truth. Source changes stale old derived Evidence
+and atomically activate the replacement; stable Facts record lifecycle events
+instead of accumulating versions.
+
+```typescript
+import { Pool } from "pg";
+import { S3Client } from "@aws-sdk/client-s3";
+import { S3ResourceContentStore } from "@kontext-brain/object-storage";
+import { createPostgresKnowledgeRuntime, migratePostgres } from "@kontext-brain/postgres";
+import { GenericMCPResourceSnapshotAdapter } from "@kontext-brain/mcp";
+import { KontextLoader } from "@kontext-brain/loader";
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+await migratePostgres(pool);
+
+const contentStore = new S3ResourceContentStore(new S3Client({}), {
+  bucket: process.env.KONTEXT_CONTENT_BUCKET!,
+});
+const candidateReindexer = {
+  // Build and regression-check the candidate KG; resolve only when it is safe to activate.
+  async prepare(candidate) { await rebuildCandidateKnowledgeGraph(candidate); },
+};
+const runtime = createPostgresKnowledgeRuntime(pool, contentStore, [
+  // Use source-native adapters for Slack messages, Notion block subtrees, etc.
+  // This generic adapter is the recursive-chunk fallback.
+  new GenericMCPResourceSnapshotAdapter("notion", "notion", {
+    groupIds: ["knowledge-users"],
+  }),
+], candidateReindexer);
+
+const agent = await new KontextLoader({
+  knowledgeRuntime: {
+    organizationId: "acme",
+    knowledgeRetriever: runtime.knowledgeRetriever,
+    mcpKnowledgeSynchronizer: runtime.mcpKnowledgeSynchronizer,
+    ontologyProposalQueue: runtime.ontologyProposalQueue,
+    ontologyActivation: runtime.ontologyActivation,
+  },
+}).fromFile("kontext.yaml");
+
+const principal = {
+  organizationId: "acme",
+  subjectId: "user-123",
+  groupIds: ["knowledge-users"],
+};
+const evidence = await agent.retrieve("Was order 42 paid?", principal);
+const answer = await agent.answer("Was order 42 paid?", principal);
+```
+
+The database migration enables organization RLS, normalized many-to-many
+Resource/Chunk–Ontology links, Facts, Evidence, Fact events, pgvector columns,
+idempotent extraction jobs, ontology deployments, proposals, and structured
+audit rows. `answer()` fails closed when no accessible active Evidence exists
+or the generated answer does not cite an Evidence ID.
 
 `kontext.yaml` for an Ollama-only setup:
 
@@ -163,7 +235,8 @@ ontology:
   - { id: frontend, description: React UI components,           weight: 0.9 }
 
 storage:
-  type: memory     # or "file", path: ./.kontext-store
+  type: file
+  path: ./.kontext-store  # graph + meta index + MCP assignments
 
 graph:
   maxDepth: 2
@@ -208,7 +281,7 @@ const graph = new OntologyGraph(nodes, [], {
 });
 
 const agent = new KontextAgent({
-  graph, router,
+  ontologySchemaGraph: graph, router,
   mcpConnectors: [], mcpLayerAdapters: [],
   metaIndexStore: new InMemoryMetaIndexStore(),
   fetcherRegistry: new ContentFetcherRegistry(),
@@ -267,7 +340,7 @@ The server exposes 6 tools to the host agent:
 | `kontext_query_context` | `{ question }` | retrieved context only (no LLM reasoning) |
 | `kontext_ingest` | `{ data, source? }` | extracts entities into the graph |
 | `kontext_describe` | `{}` | dumps ontology / pipeline / MCP adapters |
-| `kontext_sync` | `{ connectorName? }` | refresh meta index from MCP sources |
+| `kontext_sync` | `{ connectorName? }` | incrementally classify additions/changes and remove deleted resources |
 | `kontext_auto_setup` | `{ targetNodeCount? }` | LLM builds/expands ontology + classifies docs |
 
 ---
@@ -285,7 +358,7 @@ can register your own without touching upstream:
 | `ContentFetcher` | `MCPContentFetcherBridge` | HTTP, S3, filesystem, custom APIs |
 | `NodeMappingStrategy` | `Keyword`, `Vector`, `LLM`, `Hybrid` | per-corpus tuning |
 | `MetaDocumentSelector` | `ScoreBased`, `LLMMetaDocumentSelector` | reranker models |
-| `StepExecutor` | `Ontology`, `Meta`, `Vector`, `Content`, `Section` | new pipeline-step kinds |
+| `StepExecutor` | `Ontology`, `Meta`, `Vector`, `Content`, `Section`, `Chunk` | new pipeline-step kinds |
 | `Tokenizer` | `Whitespace`, `CharNGram`, `Composite`, `MultiLanguage` | language-specific |
 | `ChunkingStrategy` | `RegexHeader`, `Paragraph`, `Recursive` | domain-specific splitters |
 | `TokenEstimator` | `Default` (English), `Korean` | tiktoken, claude-tokenizer, etc. |
@@ -294,7 +367,39 @@ can register your own without touching upstream:
 
 Pipeline composition uses preset constants (`DEFAULT_PIPELINE`,
 `VECTOR_PIPELINE`, `N_LAYER_PIPELINE`, `PERNODE_PIPELINE`) or user-defined
-arrays of `PipelineStep` objects.
+arrays of `PipelineStep` objects. Pipeline steps are ordered stages and run
+for every traversed ontology node; graph depth is independent from retrieval
+stage order, so a leaf node still executes META → CONTENT.
+
+### State and persistence
+
+`KontextAgent` remains the orchestration boundary. The lightweight file store
+keeps only the legacy ontology-schema/meta-index/MCP-sync snapshot for local
+development. It never contains production Resource, Chunk, Entity, Fact, or
+Evidence rows. In production,
+`@kontext-brain/postgres` is the canonical structured store and
+`@kontext-brain/object-storage` holds normalized current bodies. The loader
+compares a SHA-256 hash of configured ontology YAML with the active snapshot;
+a changed candidate is validated before an atomic activation, while invalid
+relations or parent cycles leave the old graph active.
+
+The Agent keeps the small YAML-derived `ontologySchemaGraph` in memory. During
+retrieval, the production search adapter loads only the accessible neighboring
+KG rows needed by the bounded frontier; it does not hydrate the instance KG
+into process memory. Resource content is fetched only after SQL ACL checks.
+
+MCP resources are stored as documents classified under ontology nodes, not
+as graph nodes themselves:
+
+```
+OntologyNode → MetaDocument(resource id + connector) → MCP resource body
+```
+
+`syncMCP()` keeps prior assignments for unchanged resources, classifies only
+new or changed resources, and soft-removes deleted Resources. With an
+`MCPKnowledgeSynchronizer`, it also persists Resource bodies, source-native or
+fallback Chunks, many-to-many ontology links, and source Evidence. A failed
+connector is skipped rather than interpreted as deleting all of its documents.
 
 ---
 
@@ -388,10 +493,10 @@ Tracked honestly so you don't repeat the same experiments:
   `LLMMapping` outperformed it.
 - **Vector-only mapping** (v3): bare similarity on tiny node descriptions had
   recall 0.625 — worse than keyword.
-- **Original `DEFAULT_PIPELINE`** (v1): had a structural bug — depth-based
-  step dispatch ignored META/CONTENT when L1 mapping resolved to a leaf node.
-  **Fixed in this version**: collector now runs every step at a depth, and
-  the new `PERNODE_PIPELINE` chains META + CONTENT at the same depth.
+- **Original `DEFAULT_PIPELINE`** (v1): had a structural bug — graph depth
+  was confused with retrieval-stage order, so a leaf match never reached
+  META/CONTENT. **Fixed in this version**: the collector runs the same
+  N-layer stage sequence for each traversed node.
 
 ### Real research dataset: SQuAD 2.0 (Round 7-8, Claude-Code-judged)
 
@@ -1240,14 +1345,15 @@ in the repo. Everything runs on a stock Node 20 install plus pnpm.
 **Honest current state:**
 
 - ✅ Core, llm, mcp, loader, tool-server packages: typecheck + build clean
-- ✅ 8 unit + integration tests passing (vitest)
+- ✅ Unit + integration coverage for retrieval, persistence, incremental MCP
+  synchronization, graph traversal, entities, and the tool server
 - ✅ Real Ollama benchmarked end-to-end on 14 retrieval variants
 - ✅ Ralph-loop iterative optimization completed, exceeded 10x efficiency
   target by ~40,000x
 - ✅ `DEFAULT_PIPELINE` leaf-node bug fixed; original Kotlin codebase had
   the same issue
 - ⚠️ Real Notion / GitHub / Slack MCP servers not yet smoke-tested end-to-end
-  (only mock servers in tests + bench)
+  (incremental synchronization is covered with mock connectors)
 - ⚠️ Larger-corpus benchmarking pending (12 docs is small)
 - ⚠️ LLM-as-judge quality scoring not implemented yet (currently using
   keyword-fragment matching as a weak proxy)

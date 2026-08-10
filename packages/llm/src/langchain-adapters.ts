@@ -1,6 +1,3 @@
-import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
-import type { Embeddings } from "@langchain/core/embeddings";
-import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import {
   DefaultPromptTemplates,
   type LLMAdapter,
@@ -8,6 +5,9 @@ import {
   type VectorStore,
   cosineSimilarity,
 } from "@kontext-brain/core";
+import type { Embeddings } from "@langchain/core/embeddings";
+import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
+import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 
 /** Adapter that wraps a LangChain.js BaseChatModel as an LLMAdapter. */
 export class LangChainLLMAdapter implements LLMAdapter {
@@ -73,9 +73,16 @@ export class LangChainVectorStore implements VectorStore {
       scored.push({ key, score });
     }
     scored.sort((a, b) => b.score - a.score);
-    return scored.slice(0, topK).map((s) => {
-      const idx = s.key.lastIndexOf(":");
-      return idx >= 0 ? s.key.slice(idx + 1) : s.key;
-    });
+    return scored.slice(0, topK).map(({ key }) => (prefix ? key.slice(prefix.length) : key));
+  }
+
+  async delete(key: string): Promise<void> {
+    this.index.delete(key);
+  }
+
+  async deleteByPrefix(prefix: string): Promise<void> {
+    for (const key of this.index.keys()) {
+      if (key.startsWith(prefix)) this.index.delete(key);
+    }
   }
 }

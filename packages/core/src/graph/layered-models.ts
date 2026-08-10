@@ -1,3 +1,4 @@
+import type { RankedEvidenceHit, SearchTrace } from "../query/bidirectional-retriever.js";
 import type { Edge, OntologyNode } from "./ontology-node.js";
 
 // ── Pipeline Steps ────────────────────────────────────────────
@@ -48,7 +49,7 @@ export const VECTOR_PIPELINE: readonly PipelineStep[] = [
 
 export const N_LAYER_PIPELINE: readonly PipelineStep[] = [
   step({ depth: 0, type: DepthType.ONTOLOGY, maxSelect: 3 }),
-  step({ depth: 1, type: DepthType.ONTOLOGY, maxSelect: 5 }),
+  step({ depth: 1, type: DepthType.META, maxSelect: 5 }),
   step({ depth: 2, type: DepthType.CHUNK, maxSelect: 3 }),
 ];
 
@@ -111,6 +112,7 @@ export interface DocumentContent {
   readonly title: string;
   readonly body: string;
   readonly source: DataSource;
+  readonly metadata?: Readonly<Record<string, string>>;
   readonly sectionContent?: string | null;
   readonly fetchedAt: Date;
 }
@@ -130,12 +132,27 @@ export interface TraversalResult {
 
 // ── Query Result ──────────────────────────────────────────────
 
-export interface LayeredQueryResult {
-  readonly answer: string;
+export interface QueryPipelineTrace {
+  readonly layer: string;
+  readonly receivedCount: number;
+  readonly producedCount: number;
+  readonly elapsedMs: number;
+}
+
+export interface LayeredRetrievalResult {
+  readonly context: string;
   readonly usedOntologyNodes: readonly OntologyNode[];
   readonly selectedMetaDocs: readonly MetaDocument[];
   readonly fetchedContents: readonly DocumentContent[];
   readonly contextTokensUsed: number;
   readonly traversalPath: readonly Edge[];
   readonly pipelineSteps: readonly PipelineStep[];
+  readonly pipelineTraces: readonly QueryPipelineTrace[];
+  readonly retrievalMode?: "legacy" | "bidirectional";
+  readonly evidence?: readonly RankedEvidenceHit[];
+  readonly searchTrace?: SearchTrace;
+}
+
+export interface LayeredQueryResult extends LayeredRetrievalResult {
+  readonly answer: string;
 }

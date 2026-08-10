@@ -1,23 +1,27 @@
-import { describe, expect, it } from "vitest";
 import {
   type ContentFetcherRegistry,
-  ContentFetcherRegistry as FetcherRegistry,
   DEFAULT_PIPELINE,
+  DataSource,
+  DepthType,
+  ContentFetcherRegistry as FetcherRegistry,
   GraphTraverser,
   InMemoryMetaIndexStore,
   InMemoryVectorStore,
   KeywordMappingStrategy,
+  type LLMAdapter,
   LayeredContextCollector,
   LayeredQueryPipeline,
-  type LLMAdapter,
   OntologyGraph,
   RouterLLMAdapter,
   ScoreBasedSelector,
   TraversalStrategy,
-  createNode,
+  VectorStepExecutor,
   createMetaDocument,
-  DataSource,
+  createNode,
+  resourceDocumentIdentity,
+  step,
 } from "@kontext-brain/core";
+import { describe, expect, it } from "vitest";
 
 class MockLLMAdapter implements LLMAdapter {
   async complete(_system: string, _context: string, _query: string): Promise<string> {
@@ -28,8 +32,18 @@ class MockLLMAdapter implements LLMAdapter {
 describe("End-to-end LayeredQueryPipeline", () => {
   it("executes default 3-layer pipeline and returns an answer", async () => {
     const nodes = new Map([
-      ["engineering", createNode({ id: "engineering", description: "software engineering development api", weight: 1.0 })],
-      ["operations", createNode({ id: "operations", description: "deploy infra monitoring", weight: 0.9 })],
+      [
+        "engineering",
+        createNode({
+          id: "engineering",
+          description: "software engineering development api",
+          weight: 1.0,
+        }),
+      ],
+      [
+        "operations",
+        createNode({ id: "operations", description: "deploy infra monitoring", weight: 0.9 }),
+      ],
     ]);
     const graph = new OntologyGraph(nodes, [], {
       maxDepth: 2,
@@ -74,6 +88,76 @@ describe("End-to-end LayeredQueryPipeline", () => {
     expect(result.usedOntologyNodes.map((n) => n.id)).toContain("engineering");
   });
 
+  it("retrieves documents for a leaf node without calling the reasoning LLM", async () => {
+    const graph = new OntologyGraph(
+      new Map([
+        [
+          "authentication",
+          createNode({
+            id: "authentication",
+            description: "JWT authentication",
+          }),
+        ],
+      ]),
+      [],
+      {
+        maxDepth: 2,
+        maxTokens: 2000,
+        strategy: TraversalStrategy.WEIGHTED_DFS,
+      },
+    );
+    const metaIndex = new InMemoryMetaIndexStore();
+    await metaIndex.index("authentication", [
+      createMetaDocument({
+        id: "notion://jwt",
+        title: "JWT key rotation",
+        source: DataSource.NOTION,
+        ontologyNodeId: "authentication",
+      }),
+    ]);
+    const fetcherRegistry: ContentFetcherRegistry = new FetcherRegistry();
+    fetcherRegistry.register({
+      source: DataSource.NOTION,
+      async fetch(document) {
+        return {
+          metaDocumentId: document.id,
+          title: document.title,
+          body: "Rotate JWT signing keys regularly.",
+          source: document.source,
+          fetchedAt: new Date(),
+        };
+      },
+    });
+
+    let reasoningCalls = 0;
+    const traversal = new MockLLMAdapter();
+    const reasoning: LLMAdapter = {
+      async complete() {
+        reasoningCalls++;
+        return "Reasoned answer";
+      },
+    };
+    const pipeline = new LayeredQueryPipeline(
+      graph,
+      new RouterLLMAdapter(traversal, reasoning),
+      metaIndex,
+      fetcherRegistry,
+      {
+        mappingStrategy: new KeywordMappingStrategy(),
+        metaSelector: new ScoreBasedSelector(),
+      },
+    );
+
+    const retrieval = await pipeline.retrieve("JWT authentication");
+    expect(reasoningCalls).toBe(0);
+    expect(retrieval.selectedMetaDocs.map((document) => document.id)).toEqual(["notion://jwt"]);
+    expect(retrieval.fetchedContents).toHaveLength(1);
+    expect(retrieval.context).toContain("Rotate JWT signing keys");
+
+    await pipeline.answer("JWT authentication", retrieval);
+    expect(reasoningCalls).toBe(1);
+  });
+
   it("InMemoryVectorStore basic cosine similarity", async () => {
     // Deterministic tiny embedder for testing
     const embedder = async (text: string): Promise<Float32Array> => {
@@ -92,11 +176,84 @@ describe("End-to-end LayeredQueryPipeline", () => {
     expect(results.length).toBeGreaterThan(0);
   });
 
+  it("routes content fetches to the connector recorded on the document", async () => {
+    const fetchers = new FetcherRegistry();
+    for (const connectorName of ["team-a", "team-b"]) {
+      fetchers.register({
+        source: DataSource.NOTION,
+        connectorName,
+        async fetch(document) {
+          return {
+            metaDocumentId: document.id,
+            title: document.title,
+            body: `fetched-from:${connectorName}`,
+            source: document.source,
+            fetchedAt: new Date(),
+          };
+        },
+      });
+    }
+
+    const content = await fetchers.fetch(
+      createMetaDocument({
+        id: "notion://shared-id",
+        title: "Shared document",
+        source: DataSource.NOTION,
+        ontologyNodeId: "engineering",
+        metadata: { connector: "team-b" },
+      }),
+    );
+    expect(content.body).toBe("fetched-from:team-b");
+  });
+
+  it("keeps connector identity and URI resource IDs intact in vector retrieval", async () => {
+    const vectorStore = new InMemoryVectorStore(async () => new Float32Array([1, 0]));
+    const metaIndex = new InMemoryMetaIndexStore();
+    const sharedDocuments = ["team-a", "team-b"].map((connector) =>
+      createMetaDocument({
+        id: "notion://shared/page",
+        title: `Shared document from ${connector}`,
+        source: DataSource.NOTION,
+        ontologyNodeId: "engineering",
+        metadata: { connector },
+      }),
+    );
+    await metaIndex.index("engineering", sharedDocuments);
+    expect(await metaIndex.list("engineering")).toHaveLength(2);
+
+    await vectorStore.upsert(
+      `content:engineering:${resourceDocumentIdentity("team-b", "notion://shared/page")}`,
+      new Float32Array([1, 0]),
+    );
+    const result = await new VectorStepExecutor().execute(
+      {
+        node: createNode({ id: "engineering", description: "Engineering" }),
+        query: "shared document",
+        accumulatedDocs: [],
+        metaIndexStore: metaIndex,
+        metaSelector: new ScoreBasedSelector(),
+        fetcherRegistry: new FetcherRegistry(),
+        vectorStore,
+      },
+      step({ depth: 1, type: DepthType.VECTOR, maxSelect: 5 }),
+    );
+
+    expect(result.selectedDocs).toHaveLength(1);
+    expect(result.selectedDocs[0]?.metadata.connector).toBe("team-b");
+    expect(result.selectedDocs[0]?.id).toBe("notion://shared/page");
+  });
+
   it("GraphTraverser hierarchical expansion", () => {
     const nodes = new Map([
       ["root", createNode({ id: "root", description: "", weight: 1.0 })],
-      ["child1", createNode({ id: "child1", description: "", weight: 0.9, parentId: "root", level: 1 })],
-      ["child2", createNode({ id: "child2", description: "", weight: 0.8, parentId: "root", level: 1 })],
+      [
+        "child1",
+        createNode({ id: "child1", description: "", weight: 0.9, parentId: "root", level: 1 }),
+      ],
+      [
+        "child2",
+        createNode({ id: "child2", description: "", weight: 0.8, parentId: "root", level: 1 }),
+      ],
     ]);
     const graph = new OntologyGraph(nodes, [], {
       maxDepth: 3,

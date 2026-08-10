@@ -28,6 +28,8 @@ export * from "./query/step-executor.js";
 export * from "./query/layered-context-collector.js";
 export * from "./query/layered-query-pipeline.js";
 export * from "./query/n-layer.js";
+export * from "./query/bidirectional-retriever.js";
+export * from "./query/answer-validator.js";
 
 // Ingest
 export * from "./ingest/ontology-auto-builder.js";
@@ -37,3 +39,15 @@ export * from "./ingest/entity-extractor.js";
 
 // Store
 export * from "./store/ontology-store.js";
+
+// Evidence-backed knowledge graph
+export * from "./knowledge/domain.js";
+export * from "./knowledge/ports.js";
+export * from "./knowledge/in-memory-adapters.js";
+export * from "./knowledge/sync-resource.js";
+export * from "./knowledge/ontology-deployment.js";
+export * from "./knowledge/access-policy.js";
+export * from "./knowledge/retrieve-facts.js";
+export * from "./knowledge/file-resource-content-store.js";
+export * from "./knowledge/extraction-jobs.js";
+export * from "./knowledge/ontology-proposals.js";

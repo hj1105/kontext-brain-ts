@@ -2,7 +2,9 @@
  * VectorStore port.
  *
  * `similaritySearchWithPrefix` is used by the VECTOR pipeline step:
- * it scopes the search to keys matching a prefix (e.g., "content:nodeId:").
+ * it scopes the search to keys matching a prefix (e.g., "content:nodeId:")
+ * and returns the complete suffix after that prefix. Keeping the full suffix
+ * is important for URI document IDs such as `notion://page`.
  */
 export interface VectorStore {
   embed(text: string): Promise<Float32Array>;
@@ -14,6 +16,8 @@ export interface VectorStore {
     topK: number,
     threshold?: number,
   ): Promise<string[]>;
+  delete?(key: string): Promise<void>;
+  deleteByPrefix?(prefix: string): Promise<void>;
 }
 
 /**
@@ -21,7 +25,10 @@ export interface VectorStore {
  * Requires an external embedder function.
  */
 export class InMemoryVectorStore implements VectorStore {
-  private readonly index = new Map<string, { embedding: Float32Array; metadata: Record<string, string> }>();
+  private readonly index = new Map<
+    string,
+    { embedding: Float32Array; metadata: Record<string, string> }
+  >();
 
   constructor(private readonly embedder: (text: string) => Promise<Float32Array>) {}
 
@@ -58,11 +65,17 @@ export class InMemoryVectorStore implements VectorStore {
     }
 
     scored.sort((a, b) => b.score - a.score);
-    // Return substring after last ':' for backward compat with Kotlin
-    return scored.slice(0, topK).map((s) => {
-      const idx = s.key.lastIndexOf(":");
-      return idx >= 0 ? s.key.slice(idx + 1) : s.key;
-    });
+    return scored.slice(0, topK).map(({ key }) => (prefix ? key.slice(prefix.length) : key));
+  }
+
+  async delete(key: string): Promise<void> {
+    this.index.delete(key);
+  }
+
+  async deleteByPrefix(prefix: string): Promise<void> {
+    for (const key of this.index.keys()) {
+      if (key.startsWith(prefix)) this.index.delete(key);
+    }
   }
 }
 

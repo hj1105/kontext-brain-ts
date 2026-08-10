@@ -7,8 +7,21 @@ import type { VectorStore } from "./vector-store.js";
  */
 export interface MetaIndexStore {
   index(nodeId: string, documents: readonly MetaDocument[]): Promise<void>;
+  replace(nodeId: string, documents: readonly MetaDocument[]): Promise<void>;
+  remove(nodeId: string): Promise<void>;
   search(nodeId: string, query: string, topK: number): Promise<MetaDocument[]>;
   listBySource(nodeId: string, source: DataSource): Promise<MetaDocument[]>;
+  list(nodeId: string): Promise<MetaDocument[]>;
+  all(): Promise<ReadonlyMap<string, readonly MetaDocument[]>>;
+}
+
+/** Stable identity for a document across connectors that may reuse resource IDs. */
+export function resourceDocumentIdentity(connectorName: string, resourceId: string): string {
+  return `${connectorName}\u0000${resourceId}`;
+}
+
+export function metaDocumentIdentity(document: MetaDocument): string {
+  return resourceDocumentIdentity(document.metadata.connector ?? "", document.id);
 }
 
 /** In-memory store with simple keyword scoring. */
@@ -18,9 +31,17 @@ export class InMemoryMetaIndexStore implements MetaIndexStore {
   async index(nodeId: string, documents: readonly MetaDocument[]): Promise<void> {
     const existing = this.byNode.get(nodeId) ?? [];
     const merged = new Map<string, MetaDocument>();
-    for (const d of existing) merged.set(d.id, d);
-    for (const d of documents) merged.set(d.id, d);
+    for (const d of existing) merged.set(metaDocumentIdentity(d), d);
+    for (const d of documents) merged.set(metaDocumentIdentity(d), d);
     this.byNode.set(nodeId, Array.from(merged.values()));
+  }
+
+  async replace(nodeId: string, documents: readonly MetaDocument[]): Promise<void> {
+    this.byNode.set(nodeId, [...documents]);
+  }
+
+  async remove(nodeId: string): Promise<void> {
+    this.byNode.delete(nodeId);
   }
 
   async search(nodeId: string, query: string, topK: number): Promise<MetaDocument[]> {
@@ -47,6 +68,14 @@ export class InMemoryMetaIndexStore implements MetaIndexStore {
     const docs = this.byNode.get(nodeId) ?? [];
     return docs.filter((d) => d.source === source);
   }
+
+  async list(nodeId: string): Promise<MetaDocument[]> {
+    return [...(this.byNode.get(nodeId) ?? [])];
+  }
+
+  async all(): Promise<ReadonlyMap<string, readonly MetaDocument[]>> {
+    return new Map(Array.from(this.byNode, ([nodeId, documents]) => [nodeId, [...documents]]));
+  }
 }
 
 /** Vector-based store — uses VectorStore embeddings for ranking. */
@@ -58,19 +87,30 @@ export class VectorMetaIndexStore implements MetaIndexStore {
   async index(nodeId: string, documents: readonly MetaDocument[]): Promise<void> {
     const existing = this.byNode.get(nodeId) ?? [];
     const merged = new Map<string, MetaDocument>();
-    for (const d of existing) merged.set(d.id, d);
-    for (const d of documents) merged.set(d.id, d);
+    for (const d of existing) merged.set(metaDocumentIdentity(d), d);
+    for (const d of documents) merged.set(metaDocumentIdentity(d), d);
     this.byNode.set(nodeId, Array.from(merged.values()));
 
     // Embed titles for vector search
     for (const doc of documents) {
       const embedding = await this.vectorStore.embed(doc.title);
-      await this.vectorStore.upsert(`meta:${nodeId}:${doc.id}`, embedding, {
+      await this.vectorStore.upsert(`meta:${nodeId}:${metaDocumentIdentity(doc)}`, embedding, {
         nodeId,
         docId: doc.id,
         title: doc.title,
       });
     }
+  }
+
+  async replace(nodeId: string, documents: readonly MetaDocument[]): Promise<void> {
+    await this.vectorStore.deleteByPrefix?.(`meta:${nodeId}:`);
+    this.byNode.set(nodeId, []);
+    await this.index(nodeId, documents);
+  }
+
+  async remove(nodeId: string): Promise<void> {
+    this.byNode.delete(nodeId);
+    await this.vectorStore.deleteByPrefix?.(`meta:${nodeId}:`);
   }
 
   async search(nodeId: string, query: string, topK: number): Promise<MetaDocument[]> {
@@ -82,8 +122,7 @@ export class VectorMetaIndexStore implements MetaIndexStore {
       `meta:${nodeId}:`,
       topK,
     );
-    // matches return the trimmed key (after last ':') = docId
-    const byId = new Map(docs.map((d) => [d.id, d]));
+    const byId = new Map(docs.map((d) => [metaDocumentIdentity(d), d]));
     const ordered: MetaDocument[] = [];
     for (const docId of matches) {
       const doc = byId.get(docId);
@@ -102,5 +141,13 @@ export class VectorMetaIndexStore implements MetaIndexStore {
   async listBySource(nodeId: string, source: DataSource): Promise<MetaDocument[]> {
     const docs = this.byNode.get(nodeId) ?? [];
     return docs.filter((d) => d.source === source);
+  }
+
+  async list(nodeId: string): Promise<MetaDocument[]> {
+    return [...(this.byNode.get(nodeId) ?? [])];
+  }
+
+  async all(): Promise<ReadonlyMap<string, readonly MetaDocument[]>> {
+    return new Map(Array.from(this.byNode, ([nodeId, documents]) => [nodeId, [...documents]]));
   }
 }

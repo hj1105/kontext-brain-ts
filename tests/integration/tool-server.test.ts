@@ -1,10 +1,12 @@
-import { describe, expect, it } from "vitest";
 import {
-  DEFAULT_PIPELINE,
   type ContentFetcherRegistry,
-  ContentFetcherRegistry as FetcherRegistry,
+  DEFAULT_PIPELINE,
   DataSource,
+  ContentFetcherRegistry as FetcherRegistry,
   InMemoryMetaIndexStore,
+  InMemoryOntologyStore,
+  InMemoryVectorStore,
+  IngestPipeline,
   KeywordMappingStrategy,
   type LLMAdapter,
   OntologyGraph,
@@ -12,12 +14,10 @@ import {
   ScoreBasedSelector,
   TraversalStrategy,
   createNode,
-  IngestPipeline,
-  InMemoryOntologyStore,
-  InMemoryVectorStore,
 } from "@kontext-brain/core";
 import { KontextAgent } from "@kontext-brain/loader";
 import { KontextToolServer } from "@kontext-brain/tool-server";
+import { describe, expect, it } from "vitest";
 
 class StubLLM implements LLMAdapter {
   async complete(): Promise<string> {
@@ -39,7 +39,7 @@ function buildAgent(): KontextAgent {
   const fetcherRegistry: ContentFetcherRegistry = new FetcherRegistry();
   const vectorStore = new InMemoryVectorStore(async () => new Float32Array(4));
   return new KontextAgent({
-    graph,
+    ontologySchemaGraph: graph,
     router,
     mcpConnectors: [],
     mcpLayerAdapters: [],

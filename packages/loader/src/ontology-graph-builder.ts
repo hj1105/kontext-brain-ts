@@ -1,7 +1,12 @@
 import type { Edge, OntologyNode, VectorStore } from "@kontext-brain/core";
-import { OntologyGraph, OntologyNodeType, TraversalStrategy, createNode } from "@kontext-brain/core";
-import type { GraphConfigDtoSchema, OntologyNodeConfig } from "./kontext-config.js";
+import {
+  OntologyGraph,
+  OntologyNodeType,
+  TraversalStrategy,
+  createNode,
+} from "@kontext-brain/core";
 import type { z } from "zod";
+import type { GraphConfigDtoSchema, OntologyNodeConfig } from "./kontext-config.js";
 
 type GraphConfigDto = z.infer<typeof GraphConfigDtoSchema>;
 
@@ -25,9 +30,8 @@ export class YamlNodeParser {
     for (const cfg of configs) {
       const nodeTypeStr = (cfg.nodeType ?? "DOMAIN").toUpperCase();
       const nodeType =
-        nodeTypeStr in OntologyNodeType
-          ? (OntologyNodeType as Record<string, OntologyNodeType>)[nodeTypeStr]!
-          : OntologyNodeType.DOMAIN;
+        (OntologyNodeType as Record<string, OntologyNodeType | undefined>)[nodeTypeStr] ??
+        OntologyNodeType.DOMAIN;
 
       nodes.set(
         cfg.id,
@@ -45,11 +49,51 @@ export class YamlNodeParser {
       );
 
       for (const rel of cfg.relates ?? []) {
-        edges.push({ from: cfg.id, to: rel.to, weight: rel.weight ?? 1.0 });
+        edges.push({
+          from: cfg.id,
+          to: rel.to,
+          weight: rel.weight ?? 1.0,
+          type: rel.type,
+        });
       }
       if (cfg.children && cfg.children.length > 0) {
         this.parseRecursive(cfg.children, cfg.id, nodes, edges);
       }
+    }
+  }
+}
+
+export function validateOntologyConfiguration(configs: readonly OntologyNodeConfig[]): void {
+  const all = new Map<string, { node: OntologyNodeConfig; parentId: string | null }>();
+  const collect = (nodes: readonly OntologyNodeConfig[], implicitParent: string | null) => {
+    for (const node of nodes) {
+      if (all.has(node.id)) throw new Error(`Duplicate ontology node "${node.id}"`);
+      all.set(node.id, { node, parentId: implicitParent ?? node.parentId ?? null });
+      collect(node.children ?? [], node.id);
+    }
+  };
+  collect(configs, null);
+
+  for (const [nodeId, entry] of all) {
+    if (entry.parentId && !all.has(entry.parentId)) {
+      throw new Error(`Ontology node "${nodeId}" references unknown parent "${entry.parentId}"`);
+    }
+    for (const relation of entry.node.relates ?? []) {
+      if (!all.has(relation.to)) {
+        throw new Error(
+          `Ontology node "${nodeId}" relates to unknown ontology node "${relation.to}"`,
+        );
+      }
+    }
+  }
+
+  for (const nodeId of all.keys()) {
+    const seen = new Set<string>();
+    let current: string | null = nodeId;
+    while (current) {
+      if (seen.has(current)) throw new Error(`Ontology parent cycle contains "${current}"`);
+      seen.add(current);
+      current = all.get(current)?.parentId ?? null;
     }
   }
 }
@@ -82,9 +126,8 @@ export class OntologyGraphBuilder {
     await this.embedder.embed(nodes.values());
     const strategyStr = graphConfig.strategy.toUpperCase();
     const strategy =
-      strategyStr in TraversalStrategy
-        ? (TraversalStrategy as Record<string, TraversalStrategy>)[strategyStr]!
-        : TraversalStrategy.WEIGHTED_DFS;
+      (TraversalStrategy as Record<string, TraversalStrategy | undefined>)[strategyStr] ??
+      TraversalStrategy.WEIGHTED_DFS;
     return new OntologyGraph(nodes, edges, {
       maxDepth: graphConfig.maxDepth,
       maxTokens: graphConfig.maxTokens,
