@@ -67,6 +67,7 @@ export interface UserOntologyGraph {
   readonly resources?: readonly SerializableResourceRecord[];
   readonly mcpSources?: readonly string[];
   readonly lastUpdated?: string;
+  readonly ontologyContentHash?: string;
 }
 
 export function toOntologyNodes(graph: UserOntologyGraph): Map<string, OntologyNode> {
@@ -130,6 +131,7 @@ export function createPersistedGraphState(
   graph: OntologyGraph,
   metaDocuments: ReadonlyMap<string, readonly MetaDocument[]>,
   resources: readonly SerializableResourceRecord[],
+  ontologyContentHash?: string,
 ): UserOntologyGraph {
   const nodes: Record<string, SerializableNode> = {};
   for (const [id, node] of graph.nodes) {
@@ -166,6 +168,7 @@ export function createPersistedGraphState(
     resources: [...resources],
     mcpSources: Array.from(new Set(resources.map((resource) => resource.connectorName))),
     lastUpdated: new Date().toISOString(),
+    ontologyContentHash,
   };
 }
 

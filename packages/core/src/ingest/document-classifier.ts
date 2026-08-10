@@ -1,6 +1,6 @@
 import type { DataSource } from "../graph/layered-models.js";
 import type { OntologyNode } from "../graph/ontology-node.js";
-import { createNode } from "../graph/ontology-node.js";
+import type { OntologyProposalDraft } from "../knowledge/ontology-proposals.js";
 import type { LLMAdapter } from "../query/llm-adapter.js";
 import type { PromptTemplates } from "../query/prompt-templates.js";
 import { DefaultPromptTemplates } from "../query/prompt-templates.js";
@@ -17,17 +17,19 @@ export interface ClassificationResult {
   readonly mappings: ReadonlyMap<string, readonly MCPResourceInfo[]>;
   readonly newNodes: readonly OntologyNode[];
   readonly unmapped: readonly MCPResourceInfo[];
+  readonly proposals: readonly OntologyProposalDraft[];
 }
 
 export const emptyClassification: ClassificationResult = {
   mappings: new Map(),
   newNodes: [],
   unmapped: [],
+  proposals: [],
 };
 
 /**
  * Classifies documents into existing ontology nodes via LLM.
- * Documents that don't fit are grouped into newly auto-generated nodes.
+ * Documents that do not fit remain unmapped and produce reviewable proposals.
  */
 export class DocumentClassifier {
   constructor(
@@ -66,30 +68,25 @@ export class DocumentClassifier {
 
     const docMappings = new Map<string, MCPResourceInfo[]>();
     for (const [nodeId, indices] of indexMappings) {
-      docMappings.set(nodeId, indices.map((i) => documents[i]!).filter(Boolean));
+      docMappings.set(nodeId, indices.map((i) => documents[i]).filter(isDefined));
     }
 
-    const unmappedDocs = unmappedIndices.map((i) => documents[i]!).filter(Boolean);
-    let newNodes: OntologyNode[] = [];
+    const unmappedDocs = unmappedIndices.map((i) => documents[i]).filter(isDefined);
+    let proposals: OntologyProposalDraft[] = [];
     if (unmappedDocs.length > 0) {
-      const expansion = await this.expandWithNewNodes(unmappedDocs);
-      newNodes = expansion.newNodes;
-      for (const [nodeId, docs] of expansion.mappings) {
-        const existing = docMappings.get(nodeId) ?? [];
-        docMappings.set(nodeId, [...existing, ...docs]);
-      }
+      proposals = await this.proposeNewNodes(unmappedDocs);
     }
 
     const mappedDocs = new Set<MCPResourceInfo>();
     for (const list of docMappings.values()) for (const d of list) mappedDocs.add(d);
     const unmapped = unmappedDocs.filter((d) => !mappedDocs.has(d));
 
-    return { mappings: docMappings, newNodes, unmapped };
+    return { mappings: docMappings, newNodes: [], unmapped, proposals };
   }
 
-  private async expandWithNewNodes(
+  private async proposeNewNodes(
     unmappedDocs: readonly MCPResourceInfo[],
-  ): Promise<{ newNodes: OntologyNode[]; mappings: Map<string, MCPResourceInfo[]> }> {
+  ): Promise<OntologyProposalDraft[]> {
     const docList = unmappedDocs
       .map((d, i) => {
         const desc = d.description.trim() ? ` — ${d.description}` : "";
@@ -104,33 +101,34 @@ export class DocumentClassifier {
     );
 
     try {
-      const clean = response.trim().replace(/^```json/, "").replace(/```$/, "").trim();
+      const clean = response
+        .trim()
+        .replace(/^```json/, "")
+        .replace(/```$/, "")
+        .trim();
       const parsed = JSON.parse(clean) as {
         nodes?: Array<{ id: string; description?: string; weight?: number }>;
         mappings?: Record<string, number[]>;
       };
-      const newNodes = (parsed.nodes ?? []).map((n) =>
-        createNode({
-          id: n.id,
-          description: n.description ?? "",
-          weight: typeof n.weight === "number" ? n.weight : 0.7,
+      const mappings = parsed.mappings ?? {};
+      return (parsed.nodes ?? []).map((node) => ({
+        suggestedNodeId: node.id,
+        description: node.description ?? "",
+        resourceIds: (mappings[node.id] ?? []).flatMap((index) => {
+          const resource = unmappedDocs[index];
+          return resource
+            ? [`${encodeURIComponent(resource.connectorName)}:${encodeURIComponent(resource.id)}`]
+            : [];
         }),
-      );
-      const mappings = new Map<string, MCPResourceInfo[]>();
-      for (const [nodeId, indices] of Object.entries(parsed.mappings ?? {})) {
-        mappings.set(
-          nodeId,
-          indices
-            .filter((i) => i >= 0 && i < unmappedDocs.length)
-            .map((i) => unmappedDocs[i]!)
-            .filter(Boolean),
-        );
-      }
-      return { newNodes, mappings };
+      }));
     } catch {
-      return { newNodes: [], mappings: new Map() };
+      return [];
     }
   }
+}
+
+function isDefined<T>(value: T | undefined): value is T {
+  return value !== undefined;
 }
 
 function parseClassification(
@@ -139,7 +137,11 @@ function parseClassification(
   validNodeIds: ReadonlySet<string>,
 ): { indexMappings: Map<string, number[]>; unmappedIndices: number[] } {
   try {
-    const clean = response.trim().replace(/^```json/, "").replace(/```$/, "").trim();
+    const clean = response
+      .trim()
+      .replace(/^```json/, "")
+      .replace(/```$/, "")
+      .trim();
     const parsed = JSON.parse(clean) as {
       mappings?: Record<string, number[]>;
       unmapped?: number[];
@@ -166,7 +168,9 @@ function parseClassification(
 
     return {
       indexMappings: result,
-      unmappedIndices: Array.from(unmappedSet).filter((i) => i < docCount).sort((a, b) => a - b),
+      unmappedIndices: Array.from(unmappedSet)
+        .filter((i) => i < docCount)
+        .sort((a, b) => a - b),
     };
   } catch {
     return {

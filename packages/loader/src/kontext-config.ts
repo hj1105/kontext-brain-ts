@@ -30,6 +30,7 @@ export type MCPConfigDto = z.infer<typeof MCPConfigSchema>;
 export const RelationSchema = z.object({
   to: z.string(),
   weight: z.number().default(1.0),
+  type: z.string().optional(),
 });
 
 export const OntologyNodeConfigSchema: z.ZodType<OntologyNodeConfig> = z.lazy(() =>
@@ -54,7 +55,7 @@ export interface OntologyNodeConfig {
   weight?: number;
   mcpSource?: string | null;
   webSearch?: boolean;
-  relates?: Array<{ to: string; weight?: number }>;
+  relates?: Array<{ to: string; weight?: number; type?: string }>;
   parentId?: string | null;
   level?: number;
   nodeType?: string;

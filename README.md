@@ -27,7 +27,7 @@ rewriting the whole pipeline.
 
 ## What this project is
 
-A modular monorepo with five published packages and a benchmark harness:
+A modular monorepo with eight published packages and a benchmark harness:
 
 | package | purpose |
 |---------|---------|
@@ -36,6 +36,9 @@ A modular monorepo with five published packages and a benchmark harness:
 | `@kontext-brain/mcp` | client connectors using the official `@modelcontextprotocol/sdk` (stdio + SSE), plus layer adapters for Notion / Jira / GitHub PR / Slack |
 | `@kontext-brain/loader` | YAML/zod config loader + `KontextAgent` (the high-level entry point) including `autoSetup()` |
 | `@kontext-brain/tool-server` | MCP server exposing kontext as 6 tools to any MCP client (Claude Desktop, Claude Code, Cursor, etc.) |
+| `@kontext-brain/postgres` | PostgreSQL/pgvector KG, RLS-aware retrieval, ontology deployments, proposal queue, and extraction jobs |
+| `@kontext-brain/object-storage` | S3-compatible compressed Resource content storage |
+| `@kontext-brain/github` | accumulated ontology-proposal draft PR publisher |
 
 There is no Python in the project — it is end-to-end TypeScript / Node.js.
 
@@ -70,6 +73,12 @@ Every layer is a port (TypeScript interface) with default implementations and
 a registry pattern, so you can plug in any embedding model, vector store, MCP
 server, chunker, or LLM without modifying core code.
 
+The diagram above is the backward-compatible staged pipeline. The production
+KG path uses a typed bidirectional graph instead: multi-source seeds can start
+at an Ontology Node, Resource, Chunk, Entity, or Fact; bounded best-first
+search then performs adaptive **Lift → Expand → Ground** until it has ranked,
+ACL-accessible Evidence. It does not assume a DAG or a fixed number of lifts.
+
 ---
 
 ## Why use it
@@ -83,8 +92,9 @@ server, chunker, or LLM without modifying core code.
   200–1700 char context) per query.
 - **MCP-native**: built on the official Model Context Protocol SDK both as
   client (consume MCP servers) and as server (expose to AI agent hosts).
-- **Auto-setup**: connect MCP sources, call `autoSetup()`, and an LLM builds
-  the ontology + classifies documents into nodes for you.
+- **Governed auto-setup**: the first setup session can build a small ontology.
+  Later unmatched documents enter a deduplicated proposal queue and draft PR;
+  they never mutate the active ontology directly.
 
 ---
 
@@ -116,7 +126,7 @@ git clone <repo>
 cd kontext-brain-ts
 pnpm install
 pnpm -r build
-pnpm test            # 8 tests across core + integration
+pnpm test            # unit, contract, and integration tests
 ```
 
 ### Run the example
@@ -148,6 +158,65 @@ console.log(result.answer);
 console.log(result.selectedMetaDocs);  // sourced documents
 console.log(result.contextTokensUsed);
 ```
+
+### Production Evidence KG
+
+The production path keeps structured state in PostgreSQL/pgvector and one
+compressed current object per Resource in S3-compatible storage. External MCP
+systems remain the source of truth. Source changes stale old derived Evidence
+and atomically activate the replacement; stable Facts record lifecycle events
+instead of accumulating versions.
+
+```typescript
+import { Pool } from "pg";
+import { S3Client } from "@aws-sdk/client-s3";
+import { S3ResourceContentStore } from "@kontext-brain/object-storage";
+import { createPostgresKnowledgeRuntime, migratePostgres } from "@kontext-brain/postgres";
+import { GenericMCPResourceSnapshotAdapter } from "@kontext-brain/mcp";
+import { KontextLoader } from "@kontext-brain/loader";
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+await migratePostgres(pool);
+
+const contentStore = new S3ResourceContentStore(new S3Client({}), {
+  bucket: process.env.KONTEXT_CONTENT_BUCKET!,
+});
+const candidateReindexer = {
+  // Build and regression-check the candidate KG; resolve only when it is safe to activate.
+  async prepare(candidate) { await rebuildCandidateKnowledgeGraph(candidate); },
+};
+const runtime = createPostgresKnowledgeRuntime(pool, contentStore, [
+  // Use source-native adapters for Slack messages, Notion block subtrees, etc.
+  // This generic adapter is the recursive-chunk fallback.
+  new GenericMCPResourceSnapshotAdapter("notion", "notion", {
+    groupIds: ["knowledge-users"],
+  }),
+], candidateReindexer);
+
+const agent = await new KontextLoader({
+  knowledgeRuntime: {
+    organizationId: "acme",
+    knowledgeRetriever: runtime.knowledgeRetriever,
+    mcpKnowledgeSynchronizer: runtime.mcpKnowledgeSynchronizer,
+    ontologyProposalQueue: runtime.ontologyProposalQueue,
+    ontologyActivation: runtime.ontologyActivation,
+  },
+}).fromFile("kontext.yaml");
+
+const principal = {
+  organizationId: "acme",
+  subjectId: "user-123",
+  groupIds: ["knowledge-users"],
+};
+const evidence = await agent.retrieve("Was order 42 paid?", principal);
+const answer = await agent.answer("Was order 42 paid?", principal);
+```
+
+The database migration enables organization RLS, normalized many-to-many
+Resource/Chunk–Ontology links, Facts, Evidence, Fact events, pgvector columns,
+idempotent extraction jobs, ontology deployments, proposals, and structured
+audit rows. `answer()` fails closed when no accessible active Evidence exists
+or the generated answer does not cite an Evidence ID.
 
 `kontext.yaml` for an Ollama-only setup:
 
@@ -304,12 +373,13 @@ stage order, so a leaf node still executes META → CONTENT.
 
 ### State and persistence
 
-`KontextAgent` is the single writer for the runtime ontology graph, meta
-index, MCP resource assignments, and their persisted snapshot. With
-`storage.type: file`, the loader restores all three from
-`<storage.path>/default.json`; runtime-only embeddings are rebuilt from that
-snapshot. `ingest()`, `autoSetup()`, and `syncMCP()` update runtime state and
-the snapshot together.
+`KontextAgent` remains the orchestration boundary. The lightweight file store
+keeps the legacy graph/meta snapshot for local development. In production,
+`@kontext-brain/postgres` is the canonical structured store and
+`@kontext-brain/object-storage` holds normalized current bodies. The loader
+compares a SHA-256 hash of configured ontology YAML with the active snapshot;
+a changed candidate is validated before an atomic activation, while invalid
+relations or parent cycles leave the old graph active.
 
 MCP resources are stored as documents classified under ontology nodes, not
 as graph nodes themselves:
@@ -319,9 +389,10 @@ OntologyNode → MetaDocument(resource id + connector) → MCP resource body
 ```
 
 `syncMCP()` keeps prior assignments for unchanged resources, classifies only
-new or changed resources, and removes deleted resources from the meta/vector
-indexes. A failed connector is skipped rather than interpreted as deleting
-all of its documents.
+new or changed resources, and soft-removes deleted Resources. With an
+`MCPKnowledgeSynchronizer`, it also persists Resource bodies, source-native or
+fallback Chunks, many-to-many ontology links, and source Evidence. A failed
+connector is skipped rather than interpreted as deleting all of its documents.
 
 ---
 

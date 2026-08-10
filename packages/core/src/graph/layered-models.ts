@@ -1,3 +1,4 @@
+import type { RankedEvidenceHit, SearchTrace } from "../query/bidirectional-retriever.js";
 import type { Edge, OntologyNode } from "./ontology-node.js";
 
 // ── Pipeline Steps ────────────────────────────────────────────
@@ -147,6 +148,9 @@ export interface LayeredRetrievalResult {
   readonly traversalPath: readonly Edge[];
   readonly pipelineSteps: readonly PipelineStep[];
   readonly pipelineTraces: readonly QueryPipelineTrace[];
+  readonly retrievalMode?: "legacy" | "bidirectional";
+  readonly evidence?: readonly RankedEvidenceHit[];
+  readonly searchTrace?: SearchTrace;
 }
 
 export interface LayeredQueryResult extends LayeredRetrievalResult {

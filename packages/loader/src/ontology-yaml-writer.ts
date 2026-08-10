@@ -24,13 +24,11 @@ export const OntologyYamlWriter = {
       const nodeEdges = edgesByFrom.get(node.id) ?? [];
       if (nodeEdges.length > 0) {
         lines.push("    relates:");
-        nodeEdges
-          .slice()
-          .sort((a, b) => b.weight - a.weight)
-          .forEach((edge) => {
-            lines.push(`      - to: ${edge.to}`);
-            lines.push(`        weight: ${edge.weight}`);
-          });
+        for (const edge of nodeEdges.slice().sort((a, b) => b.weight - a.weight)) {
+          lines.push(`      - to: ${edge.to}`);
+          lines.push(`        weight: ${edge.weight}`);
+          if (edge.type) lines.push(`        type: ${edge.type}`);
+        }
       }
       lines.push("");
     }

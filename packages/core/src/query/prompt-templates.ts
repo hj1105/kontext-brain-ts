@@ -115,7 +115,8 @@ Return JSON only:
 
 - Each number is the document index from the list
 - "unmapped" contains documents that don't fit any node
-- A document should map to exactly one node (the best fit)
+- A document may map to every ontology node explicitly supported by its content
+- Do not force a mapping when there is no evidence for a node
 - No explanations, just JSON
   `.trim(),
 

@@ -1,4 +1,7 @@
 import {
+  type AnswerGroundingValidator,
+  type BidirectionalNLayerRetriever,
+  CitationAnswerValidator,
   type ContentFetcherRegistry,
   DEFAULT_PIPELINE,
   type DataSource,
@@ -7,6 +10,7 @@ import {
   DepthType,
   DocumentClassifier,
   type Edge,
+  InMemoryOntologyProposalQueue,
   InMemoryOntologyStore,
   type IngestPipeline,
   LayeredQueryPipeline,
@@ -16,12 +20,16 @@ import {
   type MetaDocument,
   type MetaDocumentSelector,
   type MetaIndexStore,
+  NoAccessibleEvidenceError,
   type NodeMappingStrategy,
   OntologyAutoBuilder,
   OntologyGraph,
   type OntologyNode,
+  type OntologyProposal,
+  type OntologyProposalQueue,
   type OntologyStore,
   type PipelineStep,
+  type Principal,
   type PromptTemplates,
   type RouterLLMAdapter,
   type SerializableResourceRecord,
@@ -34,6 +42,7 @@ import {
 import {
   type MCPConnector,
   MCPDocumentSource,
+  type MCPKnowledgeSynchronizer,
   type MCPLayerAdapter,
   type MCPResource,
 } from "@kontext-brain/mcp";
@@ -72,6 +81,12 @@ export interface KontextAgentDeps {
   ontologyStore?: OntologyStore;
   stateId?: string;
   resourceRecords?: readonly SerializableResourceRecord[];
+  ontologyContentHash?: string;
+  organizationId?: string;
+  ontologyProposalQueue?: OntologyProposalQueue;
+  knowledgeRetriever?: BidirectionalNLayerRetriever;
+  mcpKnowledgeSynchronizer?: MCPKnowledgeSynchronizer;
+  answerValidator?: AnswerGroundingValidator;
 }
 
 /**
@@ -95,6 +110,12 @@ export class KontextAgent {
   private readonly tokenEstimator: TokenEstimator;
   private readonly ontologyStore: OntologyStore;
   private readonly stateId: string;
+  private readonly organizationId: string;
+  private readonly ontologyProposalQueue: OntologyProposalQueue;
+  private readonly ontologyContentHash?: string;
+  private readonly knowledgeRetriever?: BidirectionalNLayerRetriever;
+  private readonly mcpKnowledgeSynchronizer?: MCPKnowledgeSynchronizer;
+  private readonly answerValidator: AnswerGroundingValidator;
   private readonly resourceRecords = new Map<string, SerializableResourceRecord>();
   private mutationQueue: Promise<void> = Promise.resolve();
   private queryPipeline: LayeredQueryPipeline;
@@ -115,6 +136,12 @@ export class KontextAgent {
     this.tokenEstimator = deps.tokenEstimator ?? DefaultTokenEstimator;
     this.ontologyStore = deps.ontologyStore ?? new InMemoryOntologyStore();
     this.stateId = deps.stateId ?? "default";
+    this.organizationId = deps.organizationId ?? this.stateId;
+    this.ontologyProposalQueue = deps.ontologyProposalQueue ?? new InMemoryOntologyProposalQueue();
+    this.ontologyContentHash = deps.ontologyContentHash;
+    this.knowledgeRetriever = deps.knowledgeRetriever;
+    this.mcpKnowledgeSynchronizer = deps.mcpKnowledgeSynchronizer;
+    this.answerValidator = deps.answerValidator ?? new CitationAnswerValidator();
     for (const record of deps.resourceRecords ?? []) {
       this.resourceRecords.set(resourceKey(record.connectorName, record.resourceId), record);
     }
@@ -147,20 +174,58 @@ export class KontextAgent {
   }
 
   /** Retrieve evidence without invoking the final reasoning model. */
-  async retrieve(question: string): Promise<LayeredRetrievalResult> {
+  async retrieve(question: string, principal?: Principal): Promise<LayeredRetrievalResult> {
     await this.mutationQueue;
+    if (this.knowledgeRetriever) {
+      if (!principal) {
+        throw new Error("A Principal is required for evidence-backed retrieval");
+      }
+      if (principal.organizationId !== this.organizationId) {
+        throw new Error(
+          `Organization mismatch: expected "${this.organizationId}", received "${principal.organizationId}"`,
+        );
+      }
+      const result = await this.knowledgeRetriever.retrieve({ question, principal });
+      const context = result.evidence
+        .map(
+          (evidence) =>
+            `[Evidence ${evidence.evidenceId}; Resource ${evidence.resourceId}; Chunk ${evidence.chunkId}]\n${evidence.text}`,
+        )
+        .join("\n\n---\n\n");
+      return {
+        context,
+        usedOntologyNodes: [],
+        selectedMetaDocs: [],
+        fetchedContents: [],
+        contextTokensUsed: this.tokenEstimator.estimate(context),
+        traversalPath: [],
+        pipelineSteps: [],
+        pipelineTraces: [],
+        retrievalMode: "bidirectional",
+        evidence: result.evidence,
+        searchTrace: result.trace,
+      };
+    }
     return this.queryPipeline.retrieve(question);
   }
 
   /** Retrieve evidence and invoke the final reasoning model. */
-  async answer(question: string): Promise<LayeredQueryResult> {
+  async answer(question: string, principal?: Principal): Promise<LayeredQueryResult> {
     await this.mutationQueue;
-    return this.queryPipeline.answer(question);
+    const retrieval = await this.retrieve(question, principal);
+    if (retrieval.retrievalMode === "bidirectional" && (retrieval.evidence?.length ?? 0) === 0) {
+      throw new NoAccessibleEvidenceError();
+    }
+    const result = await this.queryPipeline.answer(question, retrieval);
+    if (retrieval.retrievalMode === "bidirectional") {
+      await this.answerValidator.validate(result.answer, retrieval.evidence ?? []);
+    }
+    return result;
   }
 
   /** Backward-compatible alias for `answer()`. */
-  async query(question: string): Promise<LayeredQueryResult> {
-    return this.answer(question);
+  async query(question: string, principal?: Principal): Promise<LayeredQueryResult> {
+    return this.answer(question, principal);
   }
 
   /**
@@ -276,7 +341,7 @@ export class KontextAgent {
     if (toClassify.length > 0) {
       const classifier = new DocumentClassifier(this.router.traversalAdapter, this.templates);
       const classification = await classifier.classify(toClassify, this.graph.nodes);
-      await this.expandGraph(classification.newNodes, []);
+      await this.ontologyProposalQueue.enqueue(this.organizationId, classification.proposals);
 
       const assignments = reverseMappings(classification.mappings);
       const now = new Date().toISOString();
@@ -310,6 +375,7 @@ export class KontextAgent {
     if (this.hasVectorStep()) {
       await this.embedResourceContent(changedRecords);
     }
+    await this.syncKnowledgeResources(changedRecords, removed);
     await this.persistState();
 
     return {
@@ -362,6 +428,10 @@ export class KontextAgent {
     return lines.join("\n");
   }
 
+  async listOntologyProposals(): Promise<readonly OntologyProposal[]> {
+    return this.ontologyProposalQueue.listOpen(this.organizationId);
+  }
+
   // ── autoSetup ───────────────────────────────────────────────
 
   async autoSetup(targetNodeCount = 10): Promise<AutoSetupResult> {
@@ -401,10 +471,7 @@ export class KontextAgent {
 
     const classifier = new DocumentClassifier(this.router.traversalAdapter, this.templates);
     const classification = await classifier.classify(resourceInfos, this.graph.nodes);
-    if (classification.newNodes.length > 0) {
-      newNodes = [...newNodes, ...classification.newNodes];
-      await this.expandGraph(classification.newNodes, []);
-    }
+    await this.ontologyProposalQueue.enqueue(this.organizationId, classification.proposals);
 
     const assignments = reverseMappings(classification.mappings);
     const now = new Date().toISOString();
@@ -432,6 +499,14 @@ export class KontextAgent {
     if (this.hasVectorStep()) {
       await this.embedResourceContent(classifiedRecords);
     }
+    await this.syncKnowledgeResources(
+      resourceInfos
+        .map((resource) =>
+          this.resourceRecords.get(resourceKey(resource.connectorName, resource.id)),
+        )
+        .filter((record): record is SerializableResourceRecord => record !== undefined),
+      [],
+    );
     await this.persistState();
 
     const { OntologyYamlWriter } = await import("./ontology-yaml-writer.js");
@@ -613,6 +688,33 @@ export class KontextAgent {
     }
   }
 
+  private async syncKnowledgeResources(
+    changed: readonly SerializableResourceRecord[],
+    removed: readonly SerializableResourceRecord[],
+  ): Promise<void> {
+    const synchronizer = this.mcpKnowledgeSynchronizer;
+    if (!synchronizer) return;
+    for (const record of changed) {
+      const connector = this.mcpConnectors.find(
+        (candidate) => candidate.name === record.connectorName,
+      );
+      if (!connector) continue;
+      await synchronizer.sync(
+        this.organizationId,
+        connector,
+        {
+          id: record.resourceId,
+          name: record.title,
+          description: record.description,
+        },
+        record.nodeIds,
+      );
+    }
+    for (const record of removed) {
+      await synchronizer.remove(this.organizationId, record.connectorName, record.resourceId);
+    }
+  }
+
   private hasVectorStep(): boolean {
     return this.pipeline.some((pipelineStep) => pipelineStep.type === DepthType.VECTOR);
   }
@@ -624,6 +726,7 @@ export class KontextAgent {
       this.graph,
       metaDocuments,
       Array.from(this.resourceRecords.values()),
+      this.ontologyContentHash,
     );
     await this.ontologyStore.save(this.stateId, snapshot);
   }

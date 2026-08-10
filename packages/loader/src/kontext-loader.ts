@@ -1,5 +1,7 @@
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import {
+  type BidirectionalNLayerRetriever,
   ContentFetcherRegistry,
   DefaultPromptTemplates,
   DefaultTokenEstimator,
@@ -11,6 +13,7 @@ import {
   type MetaDocumentSelector,
   NodeMappingRegistry,
   OntologyGraph,
+  type OntologyProposalQueue,
   OntologyStoreRegistry,
   type PipelineStep,
   type PromptTemplates,
@@ -21,6 +24,7 @@ import {
   VectorMappingStrategy,
   VectorMetaIndexStore,
   type RouterLLMAdapter as _Router,
+  createPersistedGraphState,
   deserializeMetaDocument,
   toEdges,
   toOntologyNodes,
@@ -34,6 +38,7 @@ import {
 import {
   type MCPConnector,
   MCPContentFetcherBridge,
+  type MCPKnowledgeSynchronizer,
   type MCPLayerAdapter,
   MCPLayerAdapterFactory,
   SseMCPConnector,
@@ -47,7 +52,36 @@ import {
   type LLMProviderConfigDto,
   type MCPConfigDto,
 } from "./kontext-config.js";
-import { OntologyEmbedder, OntologyGraphBuilder } from "./ontology-graph-builder.js";
+import type { OntologyNodeConfig } from "./kontext-config.js";
+import {
+  OntologyEmbedder,
+  OntologyGraphBuilder,
+  validateOntologyConfiguration,
+} from "./ontology-graph-builder.js";
+
+export function computeOntologyContentHash(ontology: readonly OntologyNodeConfig[]): string {
+  return createHash("sha256").update(JSON.stringify(ontology)).digest("hex");
+}
+
+export interface KnowledgeOntologyActivationPort {
+  activate(input: {
+    readonly organizationId: string;
+    readonly yaml: string;
+    readonly graph: {
+      readonly nodes: ReadonlyArray<{
+        readonly id: string;
+        readonly description: string;
+        readonly parentId?: string | null;
+      }>;
+      readonly edges: ReadonlyArray<{
+        readonly from: string;
+        readonly to: string;
+        readonly weight: number;
+        readonly type?: string;
+      }>;
+    };
+  }): Promise<void>;
+}
 
 function resolvePromptTemplates(_language: string): PromptTemplates {
   return DefaultPromptTemplates;
@@ -109,6 +143,13 @@ export interface KontextLoaderOptions {
   llmRegistry?: LLMProviderRegistry;
   storeRegistry?: OntologyStoreRegistry;
   mappingRegistry?: NodeMappingRegistry;
+  knowledgeRuntime?: {
+    readonly organizationId: string;
+    readonly knowledgeRetriever: BidirectionalNLayerRetriever;
+    readonly mcpKnowledgeSynchronizer: MCPKnowledgeSynchronizer;
+    readonly ontologyProposalQueue: OntologyProposalQueue;
+    readonly ontologyActivation?: KnowledgeOntologyActivationPort;
+  };
 }
 
 /**
@@ -118,11 +159,13 @@ export class KontextLoader {
   private readonly llmRegistry: LLMProviderRegistry;
   private readonly storeRegistry: OntologyStoreRegistry;
   private readonly mappingRegistry: NodeMappingRegistry;
+  private readonly knowledgeRuntime?: KontextLoaderOptions["knowledgeRuntime"];
 
   constructor(options: KontextLoaderOptions = {}) {
     this.llmRegistry = options.llmRegistry ?? new LLMProviderRegistry();
     this.storeRegistry = options.storeRegistry ?? new OntologyStoreRegistry();
     this.mappingRegistry = options.mappingRegistry ?? new NodeMappingRegistry();
+    this.knowledgeRuntime = options.knowledgeRuntime;
   }
 
   static async fromFile(path: string, options: KontextLoaderOptions = {}): Promise<KontextAgent> {
@@ -168,7 +211,7 @@ export class KontextLoader {
     // Store
     const stateId = "default";
     const ontologyStore = this.storeRegistry.create(config.storage);
-    const persistedState = await ontologyStore.load(stateId);
+    let persistedState = await ontologyStore.load(stateId);
 
     // Meta index + fetchers
     const metaIndexStore = vectorStore
@@ -219,8 +262,14 @@ export class KontextLoader {
           },
         });
     const hasPersistedGraph = Object.keys(persistedState.nodes).length > 0;
+    const configuredOntologyHash =
+      config.ontology.length > 0 ? computeOntologyContentHash(config.ontology) : undefined;
+    const yamlChanged =
+      configuredOntologyHash !== undefined &&
+      persistedState.ontologyContentHash !== configuredOntologyHash;
     let graph: OntologyGraph;
-    if (hasPersistedGraph) {
+    let candidatePersistedState: typeof persistedState | undefined;
+    if (hasPersistedGraph && !yamlChanged) {
       graph = new OntologyGraph(
         toOntologyNodes(persistedState),
         toEdges(persistedState),
@@ -237,7 +286,50 @@ export class KontextLoader {
       );
       await embedder.embed(graph.nodes.values());
     } else {
+      validateOntologyConfiguration(config.ontology);
       graph = await new OntologyGraphBuilder(embedder).build(config.ontology, config.graph);
+      if (configuredOntologyHash) {
+        const candidateMeta = new Map(
+          Object.entries(persistedState.metaDocuments ?? {})
+            .filter(([nodeId]) => graph.nodes.has(nodeId))
+            .map(([nodeId, documents]) => [nodeId, documents.map(deserializeMetaDocument)]),
+        );
+        const candidateResources = (persistedState.resources ?? []).map((resource) => ({
+          ...resource,
+          nodeIds: resource.nodeIds.filter((nodeId) => graph.nodes.has(nodeId)),
+        }));
+        candidatePersistedState = createPersistedGraphState(
+          stateId,
+          graph,
+          candidateMeta,
+          candidateResources,
+          configuredOntologyHash,
+        );
+      }
+    }
+
+    if (configuredOntologyHash && this.knowledgeRuntime?.ontologyActivation) {
+      await this.knowledgeRuntime.ontologyActivation.activate({
+        organizationId: this.knowledgeRuntime.organizationId,
+        yaml: JSON.stringify(config.ontology),
+        graph: {
+          nodes: Array.from(graph.nodes.values()).map((node) => ({
+            id: node.id,
+            description: node.description,
+            parentId: node.parentId,
+          })),
+          edges: graph.edges.map((edge) => ({
+            from: edge.from,
+            to: edge.to,
+            weight: edge.weight,
+            type: edge.type,
+          })),
+        },
+      });
+    }
+    if (candidatePersistedState) {
+      await ontologyStore.save(stateId, candidatePersistedState);
+      persistedState = candidatePersistedState;
     }
 
     // Ingest pipeline
@@ -279,6 +371,11 @@ export class KontextLoader {
       ontologyStore,
       stateId,
       resourceRecords: persistedState.resources ?? [],
+      ontologyContentHash: configuredOntologyHash ?? persistedState.ontologyContentHash,
+      organizationId: this.knowledgeRuntime?.organizationId ?? stateId,
+      knowledgeRetriever: this.knowledgeRuntime?.knowledgeRetriever,
+      mcpKnowledgeSynchronizer: this.knowledgeRuntime?.mcpKnowledgeSynchronizer,
+      ontologyProposalQueue: this.knowledgeRuntime?.ontologyProposalQueue,
     });
     await agent.initialize();
     return agent;

@@ -2,11 +2,14 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  BidirectionalNLayerRetriever,
   ContentFetcherRegistry,
   DataSource,
   FileOntologyStore,
+  InMemoryKnowledgeGraphRepository,
   InMemoryMetaIndexStore,
   InMemoryOntologyStore,
+  InMemoryResourceContentStore,
   InMemoryVectorStore,
   IngestPipeline,
   KeywordMappingStrategy,
@@ -14,15 +17,23 @@ import {
   OntologyGraph,
   RouterLLMAdapter,
   ScoreBasedSelector,
+  SyncResourceUseCase,
   TraversalStrategy,
   createNode,
 } from "@kontext-brain/core";
 import type { LLMProviderRegistry } from "@kontext-brain/llm";
-import { KontextAgent, KontextConfigSchema, KontextLoader } from "@kontext-brain/loader";
 import {
+  KontextAgent,
+  KontextConfigSchema,
+  KontextLoader,
+  computeOntologyContentHash,
+} from "@kontext-brain/loader";
+import {
+  GenericMCPResourceSnapshotAdapter,
   type MCPConnector,
   MCPContentFetcherBridge,
   type MCPData,
+  MCPKnowledgeSynchronizer,
   MCPLayerAdapterFactory,
   type MCPResource,
 } from "@kontext-brain/mcp";
@@ -131,6 +142,12 @@ describe("KontextAgent unified state", () => {
     const store = new InMemoryOntologyStore();
     const metaIndex = new InMemoryMetaIndexStore();
     const vectorStore = new InMemoryVectorStore(async () => new Float32Array([1, 0]));
+    const knowledgeRepository = new InMemoryKnowledgeGraphRepository();
+    const knowledgeContent = new InMemoryResourceContentStore();
+    const knowledgeSync = new MCPKnowledgeSynchronizer(
+      new SyncResourceUseCase(knowledgeRepository, knowledgeContent),
+      [new GenericMCPResourceSnapshotAdapter("notion", "notion", { organizationWide: true })],
+    );
     const agent = new KontextAgent({
       graph: buildGraph(),
       router: new RouterLLMAdapter(llm, llm),
@@ -144,6 +161,8 @@ describe("KontextAgent unified state", () => {
       ingestPipeline: new IngestPipeline(llm, store, vectorStore),
       ontologyStore: store,
       stateId: "test-agent",
+      organizationId: "acme",
+      mcpKnowledgeSynchronizer: knowledgeSync,
     });
 
     const first = await agent.syncMCP();
@@ -152,6 +171,15 @@ describe("KontextAgent unified state", () => {
     expect(llm.classificationCalls).toBe(1);
     expect((await metaIndex.list("backend")).map((doc) => doc.id)).toEqual(["notion://api"]);
     expect(await metaIndex.list("frontend")).toEqual([]);
+    expect(
+      (
+        await knowledgeRepository.getResourceBySource("acme", {
+          connectorId: "notion",
+          externalId: "notion://api",
+          type: "notion",
+        })
+      )?.status,
+    ).toBe("active");
 
     const unchanged = await agent.syncMCP();
     expect(unchanged.resourcesAdded).toBe(0);
@@ -186,6 +214,15 @@ describe("KontextAgent unified state", () => {
     expect(removed.resourcesRemoved).toBe(1);
     expect(await metaIndex.list("backend")).toEqual([]);
     expect((await store.load("test-agent")).resources).toEqual([]);
+    expect(
+      (
+        await knowledgeRepository.getResourceBySource("acme", {
+          connectorId: "notion",
+          externalId: "notion://api",
+          type: "notion",
+        })
+      )?.status,
+    ).toBe("stale");
   });
 
   it("applies manual ingest to both the runtime graph and persisted snapshot", async () => {
@@ -211,6 +248,63 @@ describe("KontextAgent unified state", () => {
 
     expect(agent.ontologyGraph.nodes.has("manual-topic")).toBe(true);
     expect((await store.load("test-agent")).nodes["manual-topic"]).toBeDefined();
+  });
+
+  it("uses bounded bidirectional retrieval when a Knowledge search graph is configured", async () => {
+    const llm = new StateTestLLM();
+    const store = new InMemoryOntologyStore();
+    const vectorStore = new InMemoryVectorStore(async () => new Float32Array([1, 0]));
+    const knowledgeRetriever = new BidirectionalNLayerRetriever({
+      async seed() {
+        return [{ node: { kind: "chunk" as const, id: "slack:message-1" }, score: 1 }];
+      },
+      async neighbors() {
+        return [];
+      },
+      async evidence() {
+        return [
+          {
+            evidenceId: "evidence-1",
+            resourceId: "slack:thread-1",
+            chunkId: "slack:message-1",
+            text: "Order 42 was paid",
+            score: 1,
+          },
+        ];
+      },
+    });
+    const citedLlm: LLMAdapter = {
+      async complete() {
+        return "Order 42 was paid [Evidence evidence-1]";
+      },
+    };
+    const agent = new KontextAgent({
+      graph: buildGraph(),
+      router: new RouterLLMAdapter(llm, citedLlm),
+      mcpConnectors: [],
+      mcpLayerAdapters: [],
+      metaIndexStore: new InMemoryMetaIndexStore(),
+      fetcherRegistry: new ContentFetcherRegistry(),
+      vectorStore,
+      mappingStrategy: new KeywordMappingStrategy(),
+      metaSelector: new ScoreBasedSelector(),
+      ingestPipeline: new IngestPipeline(llm, store, vectorStore),
+      ontologyStore: store,
+      stateId: "test-agent",
+      organizationId: "acme",
+      knowledgeRetriever,
+    });
+    const principal = { organizationId: "acme", subjectId: "u1", groupIds: ["finance"] };
+
+    const retrieval = await agent.retrieve("Was order 42 paid?", principal);
+    const answered = await agent.answer("Was order 42 paid?", principal);
+
+    expect(retrieval.retrievalMode).toBe("bidirectional");
+    expect(retrieval.evidence?.[0]?.evidenceId).toBe("evidence-1");
+    expect(answered.answer).toContain("evidence-1");
+    await expect(
+      agent.retrieve("Was order 42 paid?", { ...principal, organizationId: "other" }),
+    ).rejects.toThrow("Organization mismatch");
   });
 
   it("round-trips the unified snapshot through FileOntologyStore", async () => {
@@ -340,5 +434,85 @@ describe("KontextAgent unified state", () => {
 
     expect(agent.ontologyGraph.nodes.has("backend")).toBe(true);
     expect(retrieval.selectedMetaDocs.map((document) => document.id)).toEqual(["custom://api"]);
+  });
+
+  it("activates changed YAML instead of silently keeping the persisted graph", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "kontext-yaml-change-"));
+    temporaryDirectories.push(directory);
+    const store = new FileOntologyStore(directory);
+    await store.save("default", {
+      userId: "default",
+      nodes: {
+        legacy: { id: "legacy", description: "Old", weight: 1, webSearch: false },
+      },
+      edges: [],
+      ontologyContentHash: computeOntologyContentHash([{ id: "legacy", description: "Old" }]),
+    });
+    const fakeRegistry = {
+      createChat() {
+        return {
+          async invoke() {
+            return { content: "[]" };
+          },
+        };
+      },
+      createEmbedding() {
+        throw new Error("No embeddings in this test");
+      },
+    } as unknown as LLMProviderRegistry;
+    const config = KontextConfigSchema.parse({
+      llm: {
+        traversal: { provider: "test", model: "test" },
+        reasoning: { provider: "test", model: "test" },
+      },
+      storage: { type: "file", path: directory },
+      ontology: [{ id: "order", description: "Customer orders" }],
+    });
+
+    const agent = await new KontextLoader({ llmRegistry: fakeRegistry }).from(config);
+
+    expect([...agent.ontologyGraph.nodes.keys()]).toEqual(["order"]);
+    expect((await store.load("default")).ontologyContentHash).toBe(
+      computeOntologyContentHash(config.ontology),
+    );
+  });
+
+  it("preserves the active graph when changed YAML has an invalid relation", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "kontext-yaml-invalid-"));
+    temporaryDirectories.push(directory);
+    const store = new FileOntologyStore(directory);
+    await store.save("default", {
+      userId: "default",
+      nodes: {
+        order: { id: "order", description: "Orders", weight: 1, webSearch: false },
+      },
+      edges: [],
+      ontologyContentHash: "active-hash",
+    });
+    const fakeRegistry = {
+      createChat() {
+        return {
+          async invoke() {
+            return { content: "[]" };
+          },
+        };
+      },
+      createEmbedding() {
+        throw new Error("No embeddings in this test");
+      },
+    } as unknown as LLMProviderRegistry;
+    const config = KontextConfigSchema.parse({
+      llm: {
+        traversal: { provider: "test", model: "test" },
+        reasoning: { provider: "test", model: "test" },
+      },
+      storage: { type: "file", path: directory },
+      ontology: [{ id: "order", description: "Orders", relates: [{ to: "missing" }] }],
+    });
+
+    await expect(new KontextLoader({ llmRegistry: fakeRegistry }).from(config)).rejects.toThrow(
+      "unknown ontology node",
+    );
+    expect((await store.load("default")).ontologyContentHash).toBe("active-hash");
   });
 });
