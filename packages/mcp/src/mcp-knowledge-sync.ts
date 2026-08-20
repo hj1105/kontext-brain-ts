@@ -4,6 +4,7 @@ import {
   type ChunkingStrategy,
   RecursiveChunkingStrategy,
   type ResourceSnapshot,
+  type ResourceSnapshotEnricher,
   type ResourceSyncUseCase,
 } from "@kontext-brain/core";
 import type { MCPConnector, MCPData, MCPResource } from "./mcp-connector.js";
@@ -72,6 +73,7 @@ export class MCPKnowledgeSynchronizer {
   constructor(
     private readonly resourceSync: ResourceSyncUseCase,
     adapters: readonly MCPResourceSnapshotAdapter[],
+    private readonly snapshotEnricher?: ResourceSnapshotEnricher,
   ) {
     this.adapters = new Map(adapters.map((adapter) => [adapter.connectorName, adapter]));
   }
@@ -85,13 +87,16 @@ export class MCPKnowledgeSynchronizer {
     const adapter = this.adapters.get(connector.name);
     if (!adapter) throw new Error(`No MCP ResourceSnapshot adapter for "${connector.name}"`);
     const data = await connector.fetchResource(resource.id);
-    const snapshot = await adapter.normalize({
+    const normalized = await adapter.normalize({
       organizationId,
       connectorName: connector.name,
       resource,
       data,
       ontologyNodeIds,
     });
+    const snapshot = this.snapshotEnricher
+      ? (await this.snapshotEnricher.enrich(normalized)).snapshot
+      : normalized;
     await this.resourceSync.execute(snapshot);
   }
 

@@ -20,6 +20,18 @@ One source-native unit such as a Notion page, Slack thread, GitHub issue, or pul
 
 A source-native addressable part of a Resource, such as a Notion block subtree, Slack message, or GitHub comment. Generic documents use recursive text splitting only as a fallback.
 
+## Mention
+
+A source-local occurrence that refers to an Entity. Names, aliases, titles, and pronouns may be Mentions of the same resource-scoped Entity.
+
+## Event
+
+An evidence-backed occurrence or state transition involving Entities. Temporal and causal relationships connect Events without turning unsupported inference into Fact.
+
+## Extraction Capability
+
+A content-driven kind of knowledge extraction such as identity resolution, event extraction, or temporal and causal linking. Capabilities are selected from source evidence rather than corpus names or domain-specific modes.
+
 ## Evidence
 
 An accessible Chunk that explicitly supports a Fact. A Fact is visible only when the requesting principal can access at least one active supporting Evidence item.
