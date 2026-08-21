@@ -302,3 +302,36 @@ Outcome: completed. Medical retrieval recall 0.89040, raw context precision
   LightRAG on Medical quality, and Novel recall remained behind Microsoft
   GraphRAG/vector, so no universal-best claim is permitted.
 ```
+
+## Coverage-aware LLM rerank experiment
+
+```text
+Experiment ID: kontext-coverage-aware-rerank-v10-2026-08-21
+Registered at (UTC): 2026-08-21T08:40:00Z, before implementation and before any
+  v10 retrieval exists
+Owner: benchmark operator / Codex
+Hypothesis: the v7 reranker optimizes each candidate's direct support in
+  isolation and can rank redundant passages above complementary evidence needed
+  by multi-hop questions. A source-only coverage instruction should make the
+  leading ranked anchors cover distinct entities, constraints, events, and
+  temporal or causal steps while retaining explicit answer-bearing passages.
+Dataset and development split digest: no score-driven parameter selection. Run
+  the one fixed policy on all 2,062 Medical queries; only if it improves the v7
+  retrieval gate, run the identical policy on all 2,010 Novel queries and the
+  frozen Medical 200-query answer/judge sample. Additional public datasets are
+  an external generalization gate once their canonical adapters are prepared.
+Eligible frameworks: kontext-brain only (product retrieval-policy experiment)
+Parameter family and allowed values: one fixed prompt policy. Candidate-k=50,
+  base GraphRAG-Bench KG, embedding model, vector/BM25/graph/context fusion,
+  graph fanout and budgets, 5,000-character source windows, 50,000-character
+  total context budget, local model, reasoning effort, and output contract all
+  remain identical to v7. Dataset ID, reference answer, gold evidence, and judge
+  output are unavailable to the reranker.
+Maximum trials per framework: one v10 policy
+Selection metric: Medical evidence recall@10 must exceed 0.890398 without lower
+  raw context precision than 0.575969. Novel must then avoid a material recall
+  or precision regression relative to v7 before answer/judge promotion.
+Held-out test run directory:
+  openai-small-kontext-v10-coverage-aware-rerank-2026-08-21
+Outcome: pending
+```

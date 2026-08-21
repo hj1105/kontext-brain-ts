@@ -49,4 +49,36 @@ describe("LlmEvidenceReranker", () => {
     );
     expect(attempts).toBe(3);
   });
+
+  it("uses the fixed coverage objective without exposing dataset metadata", async () => {
+    let systemPrompt = "";
+    const reranker = new LlmEvidenceReranker(
+      {
+        completeText: async (_model, system) => {
+          systemPrompt = system;
+          return {
+            value: JSON.stringify({ ranked_ids: ["a", "b"] }),
+            latencyMs: 1,
+            inputTokens: 1,
+            outputTokens: 1,
+          };
+        },
+      },
+      { model: "test", reasoningEffort: "low" },
+      { coverageAware: true },
+    );
+
+    await reranker.rerank(
+      "Which event caused the later outcome?",
+      [
+        { id: "a", text: "event evidence" },
+        { id: "b", text: "outcome evidence" },
+      ],
+      2,
+    );
+
+    expect(systemPrompt).toContain("collectively covers the distinct evidence needs");
+    expect(systemPrompt).toContain("complementary passages");
+    expect(systemPrompt).not.toMatch(/dataset|reference answer|gold evidence/i);
+  });
 });

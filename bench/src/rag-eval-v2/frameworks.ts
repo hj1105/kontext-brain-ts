@@ -510,6 +510,7 @@ function kontextRetrievalMode(
   | "source-hydrated-llm-stack"
   | "source-hydrated-llm-recall-safe-stack"
   | "source-hydrated-llm-candidate-safe-stack"
+  | "source-hydrated-llm-coverage-aware-stack"
   | "adaptive-eece-stack" {
   if (
     value === "bidirectional-kg" ||
@@ -518,6 +519,7 @@ function kontextRetrievalMode(
     value === "source-hydrated-llm-stack" ||
     value === "source-hydrated-llm-recall-safe-stack" ||
     value === "source-hydrated-llm-candidate-safe-stack" ||
+    value === "source-hydrated-llm-coverage-aware-stack" ||
     value === "adaptive-eece-stack"
   ) {
     return value;
