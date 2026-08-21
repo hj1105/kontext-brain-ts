@@ -53,6 +53,8 @@ export interface ResourceSnapshotEnrichment {
   readonly processedWindows: number;
   /** Inferred Claims withheld from the active Fact graph. */
   readonly hypothesisCount: number;
+  /** Windows withheld after exhausting validation repairs. */
+  readonly validationFailureCount: number;
 }
 
 export interface ResourceSnapshotEnricher {
@@ -65,6 +67,7 @@ export interface AdaptiveKnowledgeEnricherOptions {
   readonly maxWindowCharacters?: number;
   readonly concurrency?: number;
   readonly maxExtractionAttempts?: number;
+  readonly validationFailurePolicy?: "throw" | "empty-window";
 }
 
 interface ExtractionWindow {
@@ -101,6 +104,7 @@ interface WindowExtraction {
   readonly entities: readonly NormalizedEntity[];
   readonly facts: readonly NormalizedClaim[];
   readonly hypothesisCount: number;
+  readonly validationFailed: boolean;
 }
 
 const BASE_PREDICATES: readonly KnowledgeGraphPredicate[] = [
@@ -172,8 +176,9 @@ dataset label, file name, title, or domain-specific mode. Return JSON only:
  *
  * The implementation selects extraction capabilities from literal source text,
  * dispatches only those capabilities, validates exact source quotes, withholds
- * inferred Claims as Hypotheses, and commits nothing itself. Any invalid window
- * rejects the entire enrichment so callers cannot synchronize partial output.
+ * inferred Claims as Hypotheses, and commits nothing itself. Invalid windows
+ * reject the entire enrichment by default. Explicit empty-window policy keeps
+ * those windows out of the result and reports their count.
  */
 export class AdaptiveKnowledgeEnricher implements ResourceSnapshotEnricher {
   private readonly chunksPerWindow: number;
@@ -181,6 +186,7 @@ export class AdaptiveKnowledgeEnricher implements ResourceSnapshotEnricher {
   private readonly maxWindowCharacters: number;
   private readonly concurrency: number;
   private readonly maxExtractionAttempts: number;
+  private readonly validationFailurePolicy: "throw" | "empty-window";
 
   constructor(
     private readonly llm: LLMAdapter,
@@ -191,6 +197,7 @@ export class AdaptiveKnowledgeEnricher implements ResourceSnapshotEnricher {
     this.maxWindowCharacters = options.maxWindowCharacters ?? 12_000;
     this.concurrency = options.concurrency ?? 2;
     this.maxExtractionAttempts = options.maxExtractionAttempts ?? 3;
+    this.validationFailurePolicy = options.validationFailurePolicy ?? "throw";
     assertPositiveInteger(this.chunksPerWindow, "chunksPerWindow");
     assertNonNegativeInteger(this.overlapChunks, "overlapChunks");
     assertPositiveInteger(this.maxWindowCharacters, "maxWindowCharacters");
@@ -209,7 +216,13 @@ export class AdaptiveKnowledgeEnricher implements ResourceSnapshotEnricher {
       this.maxWindowCharacters,
     );
     if (windows.length === 0) {
-      return { snapshot, capabilities: [], processedWindows: 0, hypothesisCount: 0 };
+      return {
+        snapshot,
+        capabilities: [],
+        processedWindows: 0,
+        hypothesisCount: 0,
+        validationFailureCount: 0,
+      };
     }
 
     const extractions = await mapWithConcurrency(windows, this.concurrency, (window) =>
@@ -232,6 +245,15 @@ export class AdaptiveKnowledgeEnricher implements ResourceSnapshotEnricher {
           requiredCapabilities.add(capability);
         }
         if (attempt === this.maxExtractionAttempts) {
+          if (this.validationFailurePolicy === "empty-window") {
+            return {
+              capabilities: [],
+              entities: [],
+              facts: [],
+              hypothesisCount: 0,
+              validationFailed: true,
+            };
+          }
           throw new Error(
             `Adaptive knowledge extraction failed validation after ${attempt} attempt(s): ${validationError}`,
             { cause: error },
@@ -340,6 +362,7 @@ export class AdaptiveKnowledgeEnricher implements ResourceSnapshotEnricher {
       entities,
       facts: claims.filter((claim) => claim.support === "explicit"),
       hypothesisCount: claims.filter((claim) => claim.support === "inferred").length,
+      validationFailed: false,
     };
   }
 }
@@ -443,6 +466,7 @@ function assembleEnrichment(
     capabilities: unique(extractions.flatMap((item) => item.capabilities)).sort(),
     processedWindows: extractions.length,
     hypothesisCount: extractions.reduce((sum, item) => sum + item.hypothesisCount, 0),
+    validationFailureCount: extractions.filter((item) => item.validationFailed).length,
   };
 }
 

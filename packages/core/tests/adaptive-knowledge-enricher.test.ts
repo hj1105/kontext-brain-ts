@@ -57,6 +57,7 @@ describe("AdaptiveKnowledgeEnricher", () => {
     ]);
     expect(result.processedWindows).toBe(1);
     expect(result.hypothesisCount).toBe(0);
+    expect(result.validationFailureCount).toBe(0);
     expect(result.snapshot.entities).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -154,6 +155,26 @@ describe("AdaptiveKnowledgeEnricher", () => {
     expect(llm.queries[2]).toContain("add the referenced Entity with an exact source Mention");
     expect(llm.queries[4]).toContain("return empty entities and claims arrays");
     expect(llm.queries[2]).not.toBe(llm.queries[4]);
+  });
+
+  it("withholds an invalid window only when empty-window policy is explicit", async () => {
+    const llm = new RecordingLlm([
+      selection([]),
+      extraction({
+        entities: [entity("alex", "Alex", "person", [["chunk-0", "invented quote"]])],
+        claims: [],
+      }),
+    ]);
+
+    const result = await new AdaptiveKnowledgeEnricher(llm, {
+      maxExtractionAttempts: 1,
+      validationFailurePolicy: "empty-window",
+    }).enrich(snapshot("resource-a", [["chunk-0", "Alex returned."]]));
+
+    expect(result.snapshot.entities).toEqual([]);
+    expect(result.snapshot.facts).toEqual([]);
+    expect(result.processedWindows).toBe(1);
+    expect(result.validationFailureCount).toBe(1);
   });
 
   it("withholds inferred Claims as Hypotheses instead of activating Facts", async () => {
