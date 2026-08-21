@@ -349,8 +349,12 @@ function capabilitiesNamedIn(value: string): KnowledgeGraphCapability[] {
 }
 
 function retryQuery(base: string, validationError?: string, attempt = 1, maxAttempts = 1): string {
+  const finalAttemptGuidance =
+    attempt === maxAttempts
+      ? " This is the final repair attempt. If every remaining item cannot be supported by exact visible source text, return empty entities and claims arrays for this window."
+      : "";
   return validationError
-    ? `${base}\nRepair attempt ${attempt} of ${maxAttempts}. Previous extraction failed validation: ${validationError.slice(0, 500)}. ${repairGuidance(validationError)} Correct the structural error without weakening Evidence requirements.`
+    ? `${base}\nRepair attempt ${attempt} of ${maxAttempts}. Previous extraction failed validation: ${validationError.slice(0, 500)}. ${repairGuidance(validationError)} Correct the structural error without weakening Evidence requirements.${finalAttemptGuidance}`
     : base;
 }
 

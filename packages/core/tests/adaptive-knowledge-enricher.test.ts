@@ -152,6 +152,7 @@ describe("AdaptiveKnowledgeEnricher", () => {
     expect(llm.queries[2]).toContain("Repair attempt 2 of 3");
     expect(llm.queries[4]).toContain("Repair attempt 3 of 3");
     expect(llm.queries[2]).toContain("add the referenced Entity with an exact source Mention");
+    expect(llm.queries[4]).toContain("return empty entities and claims arrays");
     expect(llm.queries[2]).not.toBe(llm.queries[4]);
   });
 
