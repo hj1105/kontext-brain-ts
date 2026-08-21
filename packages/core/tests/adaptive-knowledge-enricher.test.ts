@@ -107,7 +107,7 @@ describe("AdaptiveKnowledgeEnricher", () => {
         entities: [entity("departure", "Departure", "event", [["chunk-0", "departed"]])],
         claims: [],
       }),
-      selection(["event-extraction"]),
+      selection([]),
       extraction({
         entities: [entity("departure", "Departure", "event", [["chunk-0", "departed"]])],
         claims: [],

@@ -220,12 +220,17 @@ export class AdaptiveKnowledgeEnricher implements ResourceSnapshotEnricher {
 
   private async extractWithRetries(window: ExtractionWindow): Promise<WindowExtraction> {
     let validationError: string | undefined;
+    const requiredCapabilities = new Set<KnowledgeGraphCapability>();
     for (let attempt = 1; attempt <= this.maxExtractionAttempts; attempt += 1) {
       try {
-        const capabilities = await this.selectCapabilities(window, validationError);
+        const selected = await this.selectCapabilities(window, validationError);
+        const capabilities = unique([...selected, ...requiredCapabilities]).sort();
         return await this.extractWindow(window, capabilities, validationError);
       } catch (error) {
         validationError = error instanceof Error ? error.message : String(error);
+        for (const capability of capabilitiesNamedIn(validationError)) {
+          requiredCapabilities.add(capability);
+        }
         if (attempt === this.maxExtractionAttempts) {
           throw new Error(
             `Adaptive knowledge extraction failed validation after ${attempt} attempt(s): ${validationError}`,
@@ -328,6 +333,10 @@ export class AdaptiveKnowledgeEnricher implements ResourceSnapshotEnricher {
       hypothesisCount: claims.filter((claim) => claim.support === "inferred").length,
     };
   }
+}
+
+function capabilitiesNamedIn(value: string): KnowledgeGraphCapability[] {
+  return KNOWLEDGE_GRAPH_CAPABILITIES.filter((capability) => value.includes(capability));
 }
 
 function retryQuery(base: string, validationError?: string): string {
