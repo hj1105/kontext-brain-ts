@@ -5,6 +5,8 @@ export type DatasetTrack = "static-kb" | "dynamic-api" | "large-corpus" | "multi
 export type DatasetId =
   | "graphrag-bench-medical"
   | "graphrag-bench-novel"
+  | "beir-scifact"
+  | "beir-nfcorpus"
   | "garage"
   | "frames"
   | "uaeval-kontext"

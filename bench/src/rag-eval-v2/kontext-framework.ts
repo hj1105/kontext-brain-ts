@@ -708,7 +708,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
                   ? SOURCE_HYDRATED_STACK_FRAMEWORK_VERSION
                   : MAX_EXISTING_STACK_FRAMEWORK_VERSION;
     const domain = graphRagDomain(bundle.id);
-    if (!domain) {
+    if (!domain && bundle.track !== "static-kb") {
       return bundle.queries.map((query) => ({
         datasetId: bundle.id,
         frameworkId: this.id,
@@ -717,7 +717,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
         evidence: [],
         latencyMs: 0,
         inputTokens: null,
-        error: `No evidence-backed KG artifact is registered for ${bundle.id}`,
+        error: `Max-stack retrieval requires a static KB or registered KG artifact for ${bundle.id}`,
         frameworkVersion,
         configDigest: maxExistingStackDigest(
           this.manifest,
@@ -733,15 +733,15 @@ export class KontextBrainAdapter implements FrameworkAdapter {
       }));
     }
 
-    const artifactPaths = {
-      chunks: join(this.benchmarkDataDirectory, `gb-${domain}-chunks.jsonl`),
-      graph: join(this.benchmarkDataDirectory, `gb-${domain}-kg.json`),
-    };
-    const docs = readJsonLines<{ readonly id: string; readonly body: string }>(
-      artifactPaths.chunks,
-    ).map<BenchDoc>((doc) => ({ ...doc, title: chunkTitle(doc.id) }));
+    const docs = domain
+      ? readJsonLines<{ readonly id: string; readonly body: string }>(
+          join(this.benchmarkDataDirectory, `gb-${domain}-chunks.jsonl`),
+        ).map<BenchDoc>((doc) => ({ ...doc, title: chunkTitle(doc.id) }))
+      : chunkCanonicalDocuments(bundle.documents);
     const docsById = new Map(docs.map((doc) => [doc.id, doc]));
-    const graph = readKnowledgeGraph(artifactPaths.graph);
+    const graph = domain
+      ? readKnowledgeGraph(join(this.benchmarkDataDirectory, `gb-${domain}-kg.json`))
+      : emptyKnowledgeGraph(docs);
     const indexDirectory = join(options.workDirectory, bundle.id, this.id, "index", retrievalMode);
     const indexDigest = kgDocumentDigest(docs);
     const documentEmbeddings = await embedWithCheckpoints(
@@ -916,7 +916,9 @@ export class KontextBrainAdapter implements FrameworkAdapter {
       ],
       graphProjection: adaptiveEece
         ? "source chunks -> AdaptiveKnowledgeEnricher -> augmented production SearchGraphPort"
-        : "GraphRAG-Bench KG -> production SearchGraphPort",
+        : domain
+          ? "GraphRAG-Bench KG -> production SearchGraphPort"
+          : "canonical static corpus -> source/chunk production SearchGraphPort",
       agentEntryPoint: "KontextAgent.retrieve(question, principal)",
       embedding: {
         provider: "openai",
@@ -1410,6 +1412,48 @@ function graphRagDomain(datasetId: DatasetBundle["id"]): "medical" | "novel" | n
 function chunkTitle(id: string): string {
   const match = /^(.*)-(\d+)$/.exec(id);
   return match ? `${match[1]} chunk ${match[2]}` : id;
+}
+
+function chunkCanonicalDocuments(
+  documents: readonly CorpusDocument[],
+  chunkCharacters = 5_000,
+  overlapCharacters = 400,
+): BenchDoc[] {
+  const chunks: BenchDoc[] = [];
+  for (const document of documents) {
+    const sourceId = document.sourceId || document.id;
+    let start = 0;
+    let index = 0;
+    while (start < document.text.length) {
+      const hardEnd = Math.min(document.text.length, start + chunkCharacters);
+      const boundary =
+        hardEnd < document.text.length ? document.text.lastIndexOf(" ", hardEnd) : -1;
+      const end = boundary > start + Math.floor(chunkCharacters * 0.7) ? boundary : hardEnd;
+      const sourceText = document.text.slice(start, end).trim();
+      if (sourceText) {
+        chunks.push({
+          id: `${document.id}-${index}`,
+          title: `${sourceId} chunk ${index}`,
+          body:
+            index === 0 && document.title.trim()
+              ? `${document.title.trim()}\n\n${sourceText}`
+              : sourceText,
+        });
+        index += 1;
+      }
+      if (end >= document.text.length) break;
+      start = Math.max(start + 1, end - overlapCharacters);
+    }
+  }
+  return chunks;
+}
+
+function emptyKnowledgeGraph(docs: readonly BenchDoc[]): KGStore {
+  return {
+    entities: new Map(),
+    edges: [],
+    chunkToEntities: new Map(docs.map((doc) => [doc.id, []])),
+  };
 }
 
 function sourceDocumentId(doc: BenchDoc): string {

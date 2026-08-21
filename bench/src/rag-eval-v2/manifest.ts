@@ -1,5 +1,11 @@
 import { createHash } from "node:crypto";
-import { RAG_EVAL_SCHEMA_VERSION, type DatasetId, type DatasetTrack, type FrameworkId, type MetricId } from "./contracts.js";
+import {
+  RAG_EVAL_SCHEMA_VERSION,
+  type DatasetId,
+  type DatasetTrack,
+  type FrameworkId,
+  type MetricId,
+} from "./contracts.js";
 
 export interface ModelManifest {
   readonly provider: "openai" | "codex-cli";
@@ -80,7 +86,12 @@ export const DEFAULT_RAG_EVAL_MANIFEST: RagEvalManifest = {
     checkpointEvery: 1,
   },
   models: {
-    embedding: { provider: "openai", model: "text-embedding-3-small", dimensions: 1536, execution: "api" },
+    embedding: {
+      provider: "openai",
+      model: "text-embedding-3-small",
+      dimensions: 1536,
+      execution: "api",
+    },
     answer: {
       provider: "codex-cli",
       model: "gpt-5.6-terra",
@@ -144,6 +155,20 @@ export const DEFAULT_RAG_EVAL_MANIFEST: RagEvalManifest = {
       displayName: "GraphRAG-Bench Novel",
       track: "static-kb",
       metrics: ["evidence-recall-at-k", "context-precision", ...RELIABILITY_METRICS],
+    },
+    {
+      id: "beir-scifact",
+      displayName: "BEIR SciFact",
+      track: "static-kb",
+      metrics: ["evidence-recall-at-k", "context-precision", "latency-p95", "input-tokens", "cost"],
+      requiredDataPath: "beir-scifact",
+    },
+    {
+      id: "beir-nfcorpus",
+      displayName: "BEIR NFCorpus",
+      track: "static-kb",
+      metrics: ["evidence-recall-at-k", "context-precision", "latency-p95", "input-tokens", "cost"],
+      requiredDataPath: "beir-nfcorpus",
     },
     {
       id: "garage",
@@ -210,7 +235,9 @@ function stableValue(value: unknown): unknown {
 }
 
 export function manifestDigest(manifest: RagEvalManifest): string {
-  return createHash("sha256").update(JSON.stringify(stableValue(manifest))).digest("hex");
+  return createHash("sha256")
+    .update(JSON.stringify(stableValue(manifest)))
+    .digest("hex");
 }
 
 export function assertValidManifest(manifest: RagEvalManifest): void {
@@ -223,23 +250,31 @@ export function assertValidManifest(manifest: RagEvalManifest): void {
   if (manifest.benchmarkPolicy.retrievalQueryScope !== "all") {
     throw new Error("Retrieval must run over every dataset query");
   }
-  if (!Number.isInteger(manifest.benchmarkPolicy.answerJudgeSamplePerDataset) ||
-      manifest.benchmarkPolicy.answerJudgeSamplePerDataset <= 0) {
+  if (
+    !Number.isInteger(manifest.benchmarkPolicy.answerJudgeSamplePerDataset) ||
+    manifest.benchmarkPolicy.answerJudgeSamplePerDataset <= 0
+  ) {
     throw new Error("answerJudgeSamplePerDataset must be a positive integer");
   }
   if (!Number.isInteger(manifest.benchmarkPolicy.answerJudgeSampleSeed)) {
     throw new Error("answerJudgeSampleSeed must be an integer");
   }
-  if (!Number.isInteger(manifest.benchmarkPolicy.answerCodexBatchSize) ||
-      manifest.benchmarkPolicy.answerCodexBatchSize <= 0) {
+  if (
+    !Number.isInteger(manifest.benchmarkPolicy.answerCodexBatchSize) ||
+    manifest.benchmarkPolicy.answerCodexBatchSize <= 0
+  ) {
     throw new Error("answerCodexBatchSize must be a positive integer");
   }
-  if (!Number.isInteger(manifest.benchmarkPolicy.judgeCodexBatchSize) ||
-      manifest.benchmarkPolicy.judgeCodexBatchSize <= 0) {
+  if (
+    !Number.isInteger(manifest.benchmarkPolicy.judgeCodexBatchSize) ||
+    manifest.benchmarkPolicy.judgeCodexBatchSize <= 0
+  ) {
     throw new Error("judgeCodexBatchSize must be a positive integer");
   }
-  if (!Number.isInteger(manifest.benchmarkPolicy.codexConcurrency) ||
-      manifest.benchmarkPolicy.codexConcurrency <= 0) {
+  if (
+    !Number.isInteger(manifest.benchmarkPolicy.codexConcurrency) ||
+    manifest.benchmarkPolicy.codexConcurrency <= 0
+  ) {
     throw new Error("codexConcurrency must be a positive integer");
   }
   if (manifest.models.embedding.provider !== "openai") {

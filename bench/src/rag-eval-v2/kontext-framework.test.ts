@@ -193,6 +193,61 @@ describe("KontextBrainAdapter bidirectional KG mode", () => {
       ),
     ).toContain('"windowCharacters": 5000');
   });
+
+  it("runs the same source/chunk stack on a canonical static corpus without dataset branches", async () => {
+    const root = mkdtempSync(join(tmpdir(), "kontext-rag-eval-canonical-"));
+    temporaryDirectories.push(root);
+    const adapter = new KontextBrainAdapter(DEFAULT_RAG_EVAL_MANIFEST, {
+      embeddingClient: new FakeEmbeddingClient(),
+      retrievalMode: "source-hydrated-stack",
+      benchmarkDataDirectory: join(root, "unused-data"),
+    });
+    const bundle: DatasetBundle = {
+      id: "beir-scifact",
+      track: "static-kb",
+      documents: [
+        {
+          id: "doc-1",
+          sourceId: "doc-1",
+          title: "Scientific claim",
+          text: "Alpha evidence establishes the requested scientific fact.",
+          metadata: {},
+        },
+      ],
+      queries: [
+        {
+          id: "query-1",
+          text: "What establishes the scientific fact?",
+          referenceAnswer: null,
+          goldEvidenceIds: ["doc-1"],
+          goldEvidenceText: [],
+          answerable: true,
+          category: "retrieval",
+          metadata: {},
+        },
+      ],
+      provenance: { source: "test", version: "1", license: "test" },
+    };
+
+    const results = await adapter.retrieve(bundle, {
+      workDirectory: join(root, "run"),
+      topK: 1,
+      candidateK: 1,
+    });
+
+    expect(results[0]).toMatchObject({
+      status: "ok",
+      evidence: [
+        {
+          sourceId: "doc-1",
+          metadata: {
+            retrievalMode: "v4-source-hydrated-stack",
+            sourceChunkIds: "doc-1-0",
+          },
+        },
+      ],
+    });
+  });
 });
 
 class FakeEmbeddingClient implements EmbeddingClient {

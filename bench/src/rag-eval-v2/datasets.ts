@@ -51,6 +51,8 @@ export interface DatasetPaths {
 const GRAPH_RAG_LICENSE = "Apache-2.0 (verify upstream dataset terms before redistribution)";
 
 const DATASET_PREPARATION_NOTES: Partial<Record<DatasetId, string>> = {
+  "beir-scifact": "The official BEIR SciFact archive must be converted with prepare-beir.ts",
+  "beir-nfcorpus": "The official BEIR NFCorpus archive must be converted with prepare-beir.ts",
   garage:
     "The published GaRAGe benchmark depends on private grounding sources; a rights-bearing complete corpus is required",
   "uaeval-kontext":
