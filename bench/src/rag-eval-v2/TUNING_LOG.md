@@ -333,7 +333,13 @@ Selection metric: Medical evidence recall@10 must exceed 0.890398 without lower
   or precision regression relative to v7 before answer/judge promotion.
 Held-out test run directory:
   openai-small-kontext-v10-coverage-aware-rerank-2026-08-21
-Outcome: pending
+Outcome: completed, not promoted. Medical retrieval completed 2,062/2,062
+  with 0 errors. Evidence recall@10 was 0.891368 (+0.000970 versus v7),
+  while raw context precision was 0.575153 (-0.000816 versus v7). The fixed
+  joint gate required both recall above 0.890398 and precision at least
+  0.575969, so coverage-aware reranking alone failed the precision condition.
+  It is retained as the single-query ablation and is not run on Novel or
+  answer/judge.
 ```
 
 ## Multi-query × evidence-selection factorial
@@ -370,5 +376,37 @@ Selection metric: the same joint Medical recall/raw-context-precision gate above
 Held-out test run directories:
   openai-small-kontext-v11a-multi-query-standard-2026-08-21
   openai-small-kontext-v11b-multi-query-coverage-2026-08-21
+Outcome: pending
+```
+
+## Query-plan-aware coverage selection
+
+```text
+Experiment ID: kontext-query-plan-aware-coverage-v12-2026-08-21
+Registered at (UTC): 2026-08-21T09:11:00Z, before any v11 score and before any
+  v12 retrieval exists
+Owner: benchmark operator / Codex
+Hypothesis: v11b generates complementary search perspectives but its final
+  selector sees only the original question, forcing it to infer the evidence
+  decomposition again. Supplying those same question-derived perspectives as
+  a non-factual coverage plan should improve complementary evidence selection
+  without exposing corpus, answer, or evaluation metadata.
+Dataset and development split digest: reuse the exact 2,062 Medical expansion
+  checkpoints, 5,893 expanded query strings, embeddings, candidate-k=50, and
+  retrieval/fusion policy from v11b. Only the coverage reranker context differs.
+  Promote only if the fixed Medical joint gate is passed, then apply unchanged
+  to Novel and BEIR SciFact/NFCorpus.
+Eligible frameworks: kontext-brain only
+Parameter family and allowed values: one fixed boolean, queryPlanAware=true.
+  The original question remains the actual answer request. Query-derived needs
+  are explicitly labeled as search cues, not facts or answers. Candidate texts
+  remain untrusted. All v11b model, reasoning, graph, hydration, budget, and
+  fusion settings remain fixed. No dataset ID, corpus metadata, reference
+  answer, gold evidence, or judge output is available.
+Maximum trials per framework: one v12 policy
+Selection metric: Medical evidence recall@10 > 0.890398 and raw context
+  precision >= 0.575969; then no material Novel/BEIR regression.
+Held-out test run directory:
+  openai-small-kontext-v12-multi-query-plan-aware-2026-08-21
 Outcome: pending
 ```

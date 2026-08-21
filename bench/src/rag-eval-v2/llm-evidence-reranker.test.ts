@@ -52,10 +52,12 @@ describe("LlmEvidenceReranker", () => {
 
   it("uses the fixed coverage objective without exposing dataset metadata", async () => {
     let systemPrompt = "";
+    let context = "";
     const reranker = new LlmEvidenceReranker(
       {
-        completeText: async (_model, system) => {
+        completeText: async (_model, system, suppliedContext) => {
           systemPrompt = system;
+          context = suppliedContext;
           return {
             value: JSON.stringify({ ranked_ids: ["a", "b"] }),
             latencyMs: 1,
@@ -75,10 +77,14 @@ describe("LlmEvidenceReranker", () => {
         { id: "b", text: "outcome evidence" },
       ],
       2,
+      ["event that precedes the outcome", "later outcome evidence"],
     );
 
     expect(systemPrompt).toContain("collectively covers the distinct evidence needs");
     expect(systemPrompt).toContain("complementary passages");
+    expect(systemPrompt).toContain("explicit coverage plan");
+    expect(context).toContain("<query_derived_evidence_need index=1>");
+    expect(context).toContain("later outcome evidence");
     expect(systemPrompt).not.toMatch(/dataset|reference answer|gold evidence/i);
   });
 });

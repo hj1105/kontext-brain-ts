@@ -70,6 +70,7 @@ export type KontextRetrievalMode =
   | "source-hydrated-llm-coverage-aware-stack"
   | "multi-query-standard-rerank-stack"
   | "multi-query-coverage-aware-stack"
+  | "multi-query-plan-aware-coverage-stack"
   | "adaptive-eece-stack";
 
 export interface KontextBrainAdapterOptions {
@@ -93,6 +94,8 @@ const MULTI_QUERY_COVERAGE_AWARE_STACK_FRAMEWORK_VERSION =
   "workspace-0.1.0+v11b-multi-query-coverage-aware-stack";
 const MULTI_QUERY_STANDARD_RERANK_STACK_FRAMEWORK_VERSION =
   "workspace-0.1.0+v11a-multi-query-standard-rerank-stack";
+const MULTI_QUERY_PLAN_AWARE_COVERAGE_STACK_FRAMEWORK_VERSION =
+  "workspace-0.1.0+v12-multi-query-plan-aware-coverage-stack";
 const ADAPTIVE_EECE_STACK_FRAMEWORK_VERSION = "workspace-0.1.0+adaptive-eece-stack-v9";
 const MAX_EXISTING_STACK_CANDIDATES = 20;
 const MAX_EXISTING_STACK_FUSION = {
@@ -260,9 +263,11 @@ export class KontextBrainAdapter implements FrameworkAdapter {
                             ? `local GPT multi-query retrieval + standard rerank + source-native provenance hydration; ${result.stdout.trim()}`
                             : this.retrievalMode === "multi-query-coverage-aware-stack"
                               ? `local GPT multi-query retrieval + coverage-aware rerank + source-native provenance hydration; ${result.stdout.trim()}`
-                              : this.retrievalMode === "adaptive-eece-stack"
-                                ? `adaptive Entity–Event–Claim–Evidence KG + v7 retrieval stack; ${result.stdout.trim()}`
-                                : `production BidirectionalNLayerRetriever + evidence items + OpenAI vector seeds; ${result.stdout.trim()}`,
+                              : this.retrievalMode === "multi-query-plan-aware-coverage-stack"
+                                ? `local GPT multi-query retrieval + plan-aware coverage rerank + source-native provenance hydration; ${result.stdout.trim()}`
+                                : this.retrievalMode === "adaptive-eece-stack"
+                                  ? `adaptive Entity–Event–Claim–Evidence KG + v7 retrieval stack; ${result.stdout.trim()}`
+                                  : `production BidirectionalNLayerRetriever + evidence items + OpenAI vector seeds; ${result.stdout.trim()}`,
         }
       : {
           frameworkId: this.id,
@@ -331,6 +336,20 @@ export class KontextBrainAdapter implements FrameworkAdapter {
         true,
         false,
         false,
+        true,
+      );
+    }
+    if (this.retrievalMode === "multi-query-plan-aware-coverage-stack") {
+      return this.retrieveMaxExistingStack(
+        bundle,
+        options,
+        true,
+        true,
+        true,
+        true,
+        false,
+        true,
+        true,
         true,
       );
     }
@@ -667,46 +686,51 @@ export class KontextBrainAdapter implements FrameworkAdapter {
     adaptiveEece = false,
     coverageAwareRerank = false,
     multiQuery = false,
+    planAwareCoverage = false,
   ): Promise<RetrievalResult[]> {
     const embeddingClient = this.embeddingClient;
     if (!embeddingClient) throw new Error("Max existing stack retrieval requires OPENAI_API_KEY");
     const candidateCount = honorDeclaredCandidateK
       ? options.candidateK
       : MAX_EXISTING_STACK_CANDIDATES;
-    const retrievalMode = multiQuery
-      ? coverageAwareRerank
-        ? "v11b-multi-query-coverage-aware-stack"
-        : "v11a-multi-query-standard-rerank-stack"
-      : coverageAwareRerank
-        ? "v10-source-hydrated-llm-coverage-aware-stack"
-        : adaptiveEece
-          ? "adaptive-eece-stack-v9"
-          : honorDeclaredCandidateK
-            ? "v7-source-hydrated-llm-candidate-safe-stack"
-            : recallSafeLlmRerank
-              ? "v6-source-hydrated-llm-recall-safe-stack"
-              : rerankWithLlm
-                ? "v5-source-hydrated-llm-stack"
-                : hydrateSourceContext
-                  ? "v4-source-hydrated-stack"
-                  : "v3-max-existing-stack";
-    const frameworkVersion = multiQuery
-      ? coverageAwareRerank
-        ? MULTI_QUERY_COVERAGE_AWARE_STACK_FRAMEWORK_VERSION
-        : MULTI_QUERY_STANDARD_RERANK_STACK_FRAMEWORK_VERSION
-      : coverageAwareRerank
-        ? SOURCE_HYDRATED_LLM_COVERAGE_AWARE_STACK_FRAMEWORK_VERSION
-        : adaptiveEece
-          ? ADAPTIVE_EECE_STACK_FRAMEWORK_VERSION
-          : honorDeclaredCandidateK
-            ? SOURCE_HYDRATED_LLM_CANDIDATE_SAFE_STACK_FRAMEWORK_VERSION
-            : recallSafeLlmRerank
-              ? SOURCE_HYDRATED_LLM_RECALL_SAFE_STACK_FRAMEWORK_VERSION
-              : rerankWithLlm
-                ? SOURCE_HYDRATED_LLM_STACK_FRAMEWORK_VERSION
-                : hydrateSourceContext
-                  ? SOURCE_HYDRATED_STACK_FRAMEWORK_VERSION
-                  : MAX_EXISTING_STACK_FRAMEWORK_VERSION;
+    const retrievalMode = planAwareCoverage
+      ? "v12-multi-query-plan-aware-coverage-stack"
+      : multiQuery
+        ? coverageAwareRerank
+          ? "v11b-multi-query-coverage-aware-stack"
+          : "v11a-multi-query-standard-rerank-stack"
+        : coverageAwareRerank
+          ? "v10-source-hydrated-llm-coverage-aware-stack"
+          : adaptiveEece
+            ? "adaptive-eece-stack-v9"
+            : honorDeclaredCandidateK
+              ? "v7-source-hydrated-llm-candidate-safe-stack"
+              : recallSafeLlmRerank
+                ? "v6-source-hydrated-llm-recall-safe-stack"
+                : rerankWithLlm
+                  ? "v5-source-hydrated-llm-stack"
+                  : hydrateSourceContext
+                    ? "v4-source-hydrated-stack"
+                    : "v3-max-existing-stack";
+    const frameworkVersion = planAwareCoverage
+      ? MULTI_QUERY_PLAN_AWARE_COVERAGE_STACK_FRAMEWORK_VERSION
+      : multiQuery
+        ? coverageAwareRerank
+          ? MULTI_QUERY_COVERAGE_AWARE_STACK_FRAMEWORK_VERSION
+          : MULTI_QUERY_STANDARD_RERANK_STACK_FRAMEWORK_VERSION
+        : coverageAwareRerank
+          ? SOURCE_HYDRATED_LLM_COVERAGE_AWARE_STACK_FRAMEWORK_VERSION
+          : adaptiveEece
+            ? ADAPTIVE_EECE_STACK_FRAMEWORK_VERSION
+            : honorDeclaredCandidateK
+              ? SOURCE_HYDRATED_LLM_CANDIDATE_SAFE_STACK_FRAMEWORK_VERSION
+              : recallSafeLlmRerank
+                ? SOURCE_HYDRATED_LLM_RECALL_SAFE_STACK_FRAMEWORK_VERSION
+                : rerankWithLlm
+                  ? SOURCE_HYDRATED_LLM_STACK_FRAMEWORK_VERSION
+                  : hydrateSourceContext
+                    ? SOURCE_HYDRATED_STACK_FRAMEWORK_VERSION
+                    : MAX_EXISTING_STACK_FRAMEWORK_VERSION;
     const domain = graphRagDomain(bundle.id);
     if (!domain && bundle.track !== "static-kb") {
       return bundle.queries.map((query) => ({
@@ -728,6 +752,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
           adaptiveEece,
           coverageAwareRerank,
           multiQuery,
+          planAwareCoverage,
           candidateCount,
         ),
       }));
@@ -897,6 +922,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
       adaptiveEece,
       coverageAwareRerank,
       multiQuery,
+      planAwareCoverage,
       candidateCount,
     );
     const retrievalQueryDigest = multiQuery ? expandedQueryDigest : baseQueryDigest;
@@ -964,6 +990,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
             outputCount: recallSafeLlmRerank ? candidateCount : options.topK,
             recallSafe: recallSafeLlmRerank,
             coverageAware: coverageAwareRerank,
+            queryPlanAware: planAwareCoverage,
             goldAccess: false,
             concurrency: LLM_RERANK_CONCURRENCY,
           }
@@ -1065,6 +1092,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
                   return doc ? [{ ...candidate, text: doc.body }] : [];
                 }),
                 recallSafeLlmRerank ? candidateCount : options.topK,
+                planAwareCoverage ? (expansion?.queries ?? []) : [],
               )
             : fusedCandidates;
           const chunkEvidence = fused.flatMap((candidate, rank) => {
@@ -1548,6 +1576,9 @@ function frameworkVersion(mode: KontextRetrievalMode): string {
   if (mode === "multi-query-standard-rerank-stack") {
     return MULTI_QUERY_STANDARD_RERANK_STACK_FRAMEWORK_VERSION;
   }
+  if (mode === "multi-query-plan-aware-coverage-stack") {
+    return MULTI_QUERY_PLAN_AWARE_COVERAGE_STACK_FRAMEWORK_VERSION;
+  }
   if (mode === "adaptive-eece-stack") return ADAPTIVE_EECE_STACK_FRAMEWORK_VERSION;
   return "workspace-0.1.0";
 }
@@ -1561,28 +1592,31 @@ function maxExistingStackDigest(
   adaptiveEece = false,
   coverageAwareRerank = false,
   multiQuery = false,
+  planAwareCoverage = false,
   candidateCount = MAX_EXISTING_STACK_CANDIDATES,
 ): string {
   const hash = createHash("sha256")
     .update(manifestDigest(manifest))
     .update(
-      multiQuery
-        ? coverageAwareRerank
-          ? `\0v11b-multi-query-coverage-aware-stack\0${MULTI_QUERY_POLICY_VERSION}\0`
-          : `\0v11a-multi-query-standard-rerank-stack\0${MULTI_QUERY_POLICY_VERSION}\0`
-        : coverageAwareRerank
-          ? "\0v10-source-hydrated-llm-coverage-aware-stack\0"
-          : adaptiveEece
-            ? "\0adaptive-eece-stack-v9\0"
-            : honorDeclaredCandidateK
-              ? "\0v7-source-hydrated-llm-candidate-safe-stack\0"
-              : recallSafeLlmRerank
-                ? "\0v6-source-hydrated-llm-recall-safe-stack\0"
-                : rerankWithLlm
-                  ? "\0v5-source-hydrated-llm-stack\0"
-                  : hydrateSourceContext
-                    ? "\0v4-source-hydrated-stack\0"
-                    : "\0v3-max-existing-stack\0",
+      planAwareCoverage
+        ? `\0v12-multi-query-plan-aware-coverage-stack\0${MULTI_QUERY_POLICY_VERSION}\0`
+        : multiQuery
+          ? coverageAwareRerank
+            ? `\0v11b-multi-query-coverage-aware-stack\0${MULTI_QUERY_POLICY_VERSION}\0`
+            : `\0v11a-multi-query-standard-rerank-stack\0${MULTI_QUERY_POLICY_VERSION}\0`
+          : coverageAwareRerank
+            ? "\0v10-source-hydrated-llm-coverage-aware-stack\0"
+            : adaptiveEece
+              ? "\0adaptive-eece-stack-v9\0"
+              : honorDeclaredCandidateK
+                ? "\0v7-source-hydrated-llm-candidate-safe-stack\0"
+                : recallSafeLlmRerank
+                  ? "\0v6-source-hydrated-llm-recall-safe-stack\0"
+                  : rerankWithLlm
+                    ? "\0v5-source-hydrated-llm-stack\0"
+                    : hydrateSourceContext
+                      ? "\0v4-source-hydrated-stack\0"
+                      : "\0v3-max-existing-stack\0",
     )
     .update(String(candidateCount))
     .update("\0")

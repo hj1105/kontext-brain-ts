@@ -25,10 +25,11 @@ export class LlmEvidenceReranker {
     query: string,
     candidates: readonly T[],
     limit: number,
+    evidenceNeeds: readonly string[] = [],
   ): Promise<T[]> {
     if (limit <= 0 || candidates.length === 0) return [];
     const byId = new Map(candidates.map((candidate) => [candidate.id, candidate]));
-    const parsed = await this.completeRanking(query, candidates);
+    const parsed = await this.completeRanking(query, candidates, evidenceNeeds);
     const ranked: T[] = [];
     const seen = new Set<string>();
     for (const id of parsed.ranked_ids) {
@@ -49,6 +50,7 @@ export class LlmEvidenceReranker {
   private async completeRanking(
     query: string,
     candidates: readonly EvidenceRerankCandidate[],
+    evidenceNeeds: readonly string[],
   ): Promise<RerankResponse> {
     let lastError: Error | null = null;
     for (let attempt = 1; attempt <= 3; attempt += 1) {
@@ -64,18 +66,27 @@ export class LlmEvidenceReranker {
             ...(this.options.coverageAware
               ? [
                   "Identify the entities, constraints, events, comparisons, and temporal or causal steps that must be supported, then place complementary passages for those needs before redundant passages about only one need.",
+                  ...(evidenceNeeds.length > 0
+                    ? [
+                        "Use the query-derived search perspectives in the context as an explicit coverage plan, but do not treat them as facts or answers.",
+                      ]
+                    : []),
                   "Do not reward diversity by itself: every leading passage must still provide literal evidence relevant to the question.",
                 ]
               : []),
             'Return JSON only in this exact shape: {"ranked_ids":["candidate-id", ...]}.',
             "Use only candidate IDs supplied in the context, with no duplicates.",
           ].join(" "),
-          candidates
-            .map(
+          [
+            ...evidenceNeeds.map(
+              (need, index) =>
+                `<query_derived_evidence_need index=${JSON.stringify(index + 1)}>\n${need}\n</query_derived_evidence_need>`,
+            ),
+            ...candidates.map(
               (candidate) =>
                 `<candidate id=${JSON.stringify(candidate.id)}>\n${candidate.text}\n</candidate>`,
-            )
-            .join("\n\n"),
+            ),
+          ].join("\n\n"),
           query,
         );
         return parseResponse(response.value);
