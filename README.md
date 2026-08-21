@@ -232,9 +232,13 @@ or the generated answer does not cite an Evidence ID.
 source chunks—not corpus or dataset names—to select and dispatch
 identity-resolution, event, temporal, causal, and cross-chunk extraction
 capabilities. It keeps entities resource-scoped by default, requires an exact
-source quote for every Mention and Claim, withholds inferred Claims as
-Hypotheses, and rejects invalid output before synchronization. A partial
-extraction therefore cannot replace the current evidence-backed graph.
+source quote for every Mention and Claim, independently verifies that an
+explicit Claim is directly supported, anchors Entity identity to stable source
+addresses rather than display names, and resolves identity across all windows
+of a Resource. On updates, `SyncResourceUseCase` supplies prior active identity
+records separately from the new snapshot, so IDs can be reused without
+reactivating disappeared Mentions. Inferred Claims remain Hypotheses and any
+invalid window rejects the whole enrichment before synchronization.
 
 `kontext.yaml` for an Ollama-only setup:
 

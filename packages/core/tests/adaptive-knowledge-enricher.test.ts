@@ -39,6 +39,7 @@ describe("AdaptiveKnowledgeEnricher", () => {
           ]),
         ],
       }),
+      verification(3),
     ]);
 
     const result = await new AdaptiveKnowledgeEnricher(llm).enrich(
@@ -57,7 +58,6 @@ describe("AdaptiveKnowledgeEnricher", () => {
     ]);
     expect(result.processedWindows).toBe(1);
     expect(result.hypothesisCount).toBe(0);
-    expect(result.validationFailureCount).toBe(0);
     expect(result.snapshot.entities).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -76,9 +76,10 @@ describe("AdaptiveKnowledgeEnricher", () => {
         }),
       ]),
     );
-    expect(llm.systemPrompts).toHaveLength(2);
+    expect(llm.systemPrompts).toHaveLength(3);
     expect(llm.systemPrompts[0]).toContain("Select extraction capabilities");
     expect(llm.systemPrompts[1]).toContain("causal-relations");
+    expect(llm.systemPrompts[2]).toContain("Independently verify");
     expect(llm.systemPrompts[0]).not.toMatch(/novel|medical/i);
     expect(llm.systemPrompts[1]).not.toMatch(/novel|medical/i);
   });
@@ -157,24 +158,30 @@ describe("AdaptiveKnowledgeEnricher", () => {
     expect(llm.queries[2]).not.toBe(llm.queries[4]);
   });
 
-  it("withholds an invalid window only when empty-window policy is explicit", async () => {
+  it("rejects the whole enrichment when any window stays invalid", async () => {
     const llm = new RecordingLlm([
       selection([]),
+      extraction({ entities: [], claims: [] }),
+      selection([]),
       extraction({
-        entities: [entity("alex", "Alex", "person", [["chunk-0", "invented quote"]])],
+        entities: [entity("alex", "Alex", "person", [["chunk-1", "invented quote"]])],
         claims: [],
       }),
     ]);
 
-    const result = await new AdaptiveKnowledgeEnricher(llm, {
-      maxExtractionAttempts: 1,
-      validationFailurePolicy: "empty-window",
-    }).enrich(snapshot("resource-a", [["chunk-0", "Alex returned."]]));
-
-    expect(result.snapshot.entities).toEqual([]);
-    expect(result.snapshot.facts).toEqual([]);
-    expect(result.processedWindows).toBe(1);
-    expect(result.validationFailureCount).toBe(1);
+    await expect(
+      new AdaptiveKnowledgeEnricher(llm, {
+        chunksPerWindow: 1,
+        overlapChunks: 0,
+        concurrency: 1,
+        maxExtractionAttempts: 1,
+      }).enrich(
+        snapshot("resource-a", [
+          ["chunk-0", "A valid empty window."],
+          ["chunk-1", "Alex returned."],
+        ]),
+      ),
+    ).rejects.toThrow("failed validation");
   });
 
   it("withholds inferred Claims as Hypotheses instead of activating Facts", async () => {
@@ -203,6 +210,62 @@ describe("AdaptiveKnowledgeEnricher", () => {
 
     expect(result.snapshot.facts).toEqual([]);
     expect(result.hypothesisCount).toBe(1);
+  });
+
+  it("rejects an explicit Claim that an independent verifier cannot support", async () => {
+    const llm = new RecordingLlm([
+      selection([]),
+      extraction({
+        entities: [entity("alex", "Alex", "person", [["chunk-0", "Alex"]])],
+        claims: [
+          claim("alex", "has_attribute", { kind: "literal", value: "owner" }, [
+            ["chunk-0", "The office is closed"],
+          ]),
+        ],
+      }),
+      verification(1, "unsupported"),
+    ]);
+
+    await expect(
+      new AdaptiveKnowledgeEnricher(llm, { maxExtractionAttempts: 1 }).enrich(
+        snapshot("resource-a", [["chunk-0", "Alex arrived. The office is closed."]]),
+      ),
+    ).rejects.toThrow("not independently verified as explicit");
+  });
+
+  it("resolves one Entity across overlapping extraction windows at Resource scope", async () => {
+    const llm = new RecordingLlm([
+      selection([]),
+      extraction({
+        entities: [entity("vale-a", "Captain Vale", "person", [["chunk-1", "Captain Vale"]])],
+        claims: [],
+      }),
+      selection([]),
+      extraction({
+        entities: [entity("vale-b", "Vale", "person", [["chunk-1", "Captain Vale"]])],
+        claims: [],
+      }),
+      selection([]),
+      extraction({ entities: [], claims: [] }),
+    ]);
+
+    const result = await new AdaptiveKnowledgeEnricher(llm, {
+      chunksPerWindow: 2,
+      overlapChunks: 1,
+      concurrency: 1,
+    }).enrich(
+      snapshot("resource-a", [
+        ["chunk-0", "The harbor was quiet."],
+        ["chunk-1", "Captain Vale arrived."],
+        ["chunk-2", "The crew assembled."],
+      ]),
+    );
+
+    expect(result.snapshot.entities).toHaveLength(1);
+    expect(result.snapshot.entities?.[0]).toMatchObject({
+      name: "Captain Vale",
+      mentionChunkIds: ["chunk-1"],
+    });
   });
 
   it("rejects normalized-empty identifiers instead of returning a partial graph", async () => {
@@ -288,37 +351,39 @@ describe("AdaptiveKnowledgeEnricher", () => {
     ).rejects.toThrow("quote is not present");
   });
 
-  it("generates stable semantic Fact keys despite changing model-local entity ids", async () => {
+  it("generates stable semantic Fact keys despite changing local ids and display names", async () => {
     const first = new AdaptiveKnowledgeEnricher(
       new RecordingLlm([
         selection([]),
         extraction({
-          entities: [entity("alex-1", "Alex", "person", [["chunk-0", "Alex"]])],
+          entities: [entity("vale-1", "Captain Vale", "person", [["chunk-0", "Captain Vale"]])],
           claims: [
-            claim("alex-1", "has_attribute", { kind: "literal", value: "Owner" }, [
-              ["chunk-0", "Alex is Owner"],
+            claim("vale-1", "has_attribute", { kind: "literal", value: "Owner" }, [
+              ["chunk-0", "Captain Vale is Owner"],
             ]),
           ],
         }),
+        verification(1),
       ]),
     );
+    const input = snapshot("resource-a", [["chunk-0", "Captain Vale is Owner."]]);
+    const left = await first.enrich(input);
     const second = new AdaptiveKnowledgeEnricher(
       new RecordingLlm([
         selection([]),
         extraction({
-          entities: [entity("person-a", "Alex", "person", [["chunk-0", "Alex"]])],
+          entities: [entity("person-a", "Vale", "person", [["chunk-0", "Vale"]])],
           claims: [
             claim("person-a", "has_attribute", { kind: "literal", value: "owner" }, [
-              ["chunk-0", "Alex is Owner"],
+              ["chunk-0", "Vale is Owner"],
             ]),
           ],
         }),
+        verification(1),
       ]),
     );
-    const input = snapshot("resource-a", [["chunk-0", "Alex is Owner."]]);
-
-    const left = await first.enrich(input);
-    const right = await second.enrich(input);
+    const changed = snapshot("resource-a", [["chunk-0", "Vale is Owner."]]);
+    const right = await second.enrich(changed, left.snapshot.entities);
 
     expect(left.snapshot.entities?.[0]?.entityId).toBe(right.snapshot.entities?.[0]?.entityId);
     expect(left.snapshot.facts?.[0]?.factKey).toBe(right.snapshot.facts?.[0]?.factKey);
@@ -335,6 +400,7 @@ describe("AdaptiveKnowledgeEnricher", () => {
           ]),
         ],
       }),
+      verification(1),
     ];
     const left = await new AdaptiveKnowledgeEnricher(new RecordingLlm(responses())).enrich(
       snapshot("resource-a", [["chunk-0", "Alex is owner."]]),
@@ -373,6 +439,15 @@ function extraction(value: {
   readonly claims: readonly unknown[];
 }): string {
   return JSON.stringify(value);
+}
+
+function verification(
+  count: number,
+  support: "explicit" | "inferred" | "unsupported" = "explicit",
+): string {
+  return JSON.stringify({
+    claims: Array.from({ length: count }, (_, index) => ({ index, support })),
+  });
 }
 
 function entity(

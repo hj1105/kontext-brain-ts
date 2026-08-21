@@ -2,12 +2,13 @@
 
 ## Scope and guardrails
 
-- Implementation: `996b8bb` on `codex/adaptive-knowledge-graph` (PR #3).
+- Evaluated implementation: `996b8bb` on `codex/adaptive-knowledge-graph` (PR #3).
 - Retrieval stack: v7 source hydration, declared candidate `k=50`, recall-safe local GPT rerank, plus the adaptive Entity–Event–Claim–Evidence graph.
 - Datasets: GraphRAG-Bench Medical and Novel. FRAMES was out of scope.
 - The builder read source chunks and the pre-existing KG only. It did not read questions, reference answers, gold evidence, or dataset names when selecting capabilities or extracting knowledge.
 - Capability selection remained source-driven and domain-independent.
-- Invalid citations and references never entered the graph. The evaluation-only policy retried five times and then withheld the whole invalid window. The product default remains three attempts and `throw`.
+- Invalid citations and references never entered the graph. The evaluation artifact builder retried five times and then withheld the whole invalid window.
+- Post-evaluation review removed tolerant failure handling from the product API. Current PR code fails the whole enrichment after three exhausted attempts, independently verifies explicit Claim support, resolves identity across all Resource windows, and reuses prior active IDs through a separate sync input without reviving stale Mentions. These safety changes were not used to recompute the v8 numbers below.
 - LLM work used the local Codex CLI. OpenAI API usage was limited to `text-embedding-3-small`.
 
 ## Fixed extraction policy
@@ -19,7 +20,8 @@
 | Maximum window characters | 12,000 |
 | Product default attempts | 3 |
 | Evaluation attempts | 5 |
-| Evaluation validation policy | `empty-window` |
+| Evaluation artifact failure handling | Withhold exhausted window |
+| Current product failure handling | Reject whole enrichment |
 | Extraction concurrency per Resource | 10 |
 | Resource concurrency | 2 |
 | Local model | `gpt-5.6-terra`, medium reasoning |
@@ -88,3 +90,5 @@ The next general improvement should not add more extraction volume. It should se
 ## Decision
 
 Keep PR #3's production enrichment seam and validation fixes. Do not promote adaptive EECE v8 as the new benchmark winner. Keep v7 as the Medical quality baseline until a source-only graph calibration policy beats it on Medical without losing the Novel guardrail.
+
+The post-evaluation safety hardening changes extraction semantics, so the current PR head requires a fresh score before any later promotion claim. The recorded v8 artifacts remain immutable evidence for the evaluated `996b8bb` implementation.

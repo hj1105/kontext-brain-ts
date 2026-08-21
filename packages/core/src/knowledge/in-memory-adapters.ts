@@ -90,6 +90,12 @@ class InMemoryUnitOfWork implements KnowledgeGraphUnitOfWork {
     this.state.entities.set(entity.entityId, entity);
   }
 
+  async listEntities(resourceId: string): Promise<readonly EntityRecord[]> {
+    return Array.from(this.state.entities.values()).filter(
+      (item) => item.resourceId === resourceId,
+    );
+  }
+
   async listEntityMentions(resourceId: string): Promise<readonly EntityMentionRecord[]> {
     return Array.from(this.state.mentions.values()).filter(
       (item) => item.resourceId === resourceId,
@@ -179,6 +185,20 @@ export class InMemoryKnowledgeGraphRepository implements KnowledgeGraphRepositor
     return Array.from(this.stateFor(organizationId).chunks.values())
       .filter((item) => item.resourceId === resourceId)
       .sort((left, right) => left.position - right.position);
+  }
+
+  async listEntitiesForResource(
+    organizationId: OrganizationId,
+    resourceId: string,
+  ): Promise<readonly EntityRecord[]> {
+    return new InMemoryUnitOfWork(this.stateFor(organizationId)).listEntities(resourceId);
+  }
+
+  async listEntityMentions(
+    organizationId: OrganizationId,
+    resourceId: string,
+  ): Promise<readonly EntityMentionRecord[]> {
+    return new InMemoryUnitOfWork(this.stateFor(organizationId)).listEntityMentions(resourceId);
   }
 
   async getFact(organizationId: OrganizationId, factKey: string): Promise<FactRecord | null> {

@@ -77,7 +77,6 @@ describe("MCPKnowledgeSynchronizer", () => {
           capabilities: [],
           processedWindows: 1,
           hypothesisCount: 0,
-          validationFailureCount: 0,
         };
       },
     };
