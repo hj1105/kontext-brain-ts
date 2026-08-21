@@ -94,10 +94,7 @@ export class MCPKnowledgeSynchronizer {
       data,
       ontologyNodeIds,
     });
-    const snapshot = this.snapshotEnricher
-      ? (await this.snapshotEnricher.enrich(normalized)).snapshot
-      : normalized;
-    await this.resourceSync.execute(snapshot);
+    await this.resourceSync.execute(normalized, this.snapshotEnricher);
   }
 
   async remove(
