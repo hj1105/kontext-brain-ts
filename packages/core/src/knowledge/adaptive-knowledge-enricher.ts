@@ -53,6 +53,8 @@ export interface ResourceSnapshotEnrichment {
   readonly processedWindows: number;
   /** Inferred Claims withheld from the active Fact graph. */
   readonly hypothesisCount: number;
+  /** Windows withheld after exhausting validation repairs. */
+  readonly validationFailureCount: number;
 }
 
 export interface ResourceSnapshotEnricher {
@@ -64,6 +66,8 @@ export interface AdaptiveKnowledgeEnricherOptions {
   readonly overlapChunks?: number;
   readonly maxWindowCharacters?: number;
   readonly concurrency?: number;
+  readonly maxExtractionAttempts?: number;
+  readonly validationFailurePolicy?: "throw" | "empty-window";
 }
 
 interface ExtractionWindow {
@@ -100,6 +104,7 @@ interface WindowExtraction {
   readonly entities: readonly NormalizedEntity[];
   readonly facts: readonly NormalizedClaim[];
   readonly hypothesisCount: number;
+  readonly validationFailed: boolean;
 }
 
 const BASE_PREDICATES: readonly KnowledgeGraphPredicate[] = [
@@ -171,14 +176,17 @@ dataset label, file name, title, or domain-specific mode. Return JSON only:
  *
  * The implementation selects extraction capabilities from literal source text,
  * dispatches only those capabilities, validates exact source quotes, withholds
- * inferred Claims as Hypotheses, and commits nothing itself. Any invalid window
- * rejects the entire enrichment so callers cannot synchronize partial output.
+ * inferred Claims as Hypotheses, and commits nothing itself. Invalid windows
+ * reject the entire enrichment by default. Explicit empty-window policy keeps
+ * those windows out of the result and reports their count.
  */
 export class AdaptiveKnowledgeEnricher implements ResourceSnapshotEnricher {
   private readonly chunksPerWindow: number;
   private readonly overlapChunks: number;
   private readonly maxWindowCharacters: number;
   private readonly concurrency: number;
+  private readonly maxExtractionAttempts: number;
+  private readonly validationFailurePolicy: "throw" | "empty-window";
 
   constructor(
     private readonly llm: LLMAdapter,
@@ -188,10 +196,13 @@ export class AdaptiveKnowledgeEnricher implements ResourceSnapshotEnricher {
     this.overlapChunks = options.overlapChunks ?? 1;
     this.maxWindowCharacters = options.maxWindowCharacters ?? 12_000;
     this.concurrency = options.concurrency ?? 2;
+    this.maxExtractionAttempts = options.maxExtractionAttempts ?? 3;
+    this.validationFailurePolicy = options.validationFailurePolicy ?? "throw";
     assertPositiveInteger(this.chunksPerWindow, "chunksPerWindow");
     assertNonNegativeInteger(this.overlapChunks, "overlapChunks");
     assertPositiveInteger(this.maxWindowCharacters, "maxWindowCharacters");
     assertPositiveInteger(this.concurrency, "concurrency");
+    assertPositiveInteger(this.maxExtractionAttempts, "maxExtractionAttempts");
     if (this.overlapChunks >= this.chunksPerWindow) {
       throw new Error("overlapChunks must be smaller than chunksPerWindow");
     }
@@ -205,23 +216,68 @@ export class AdaptiveKnowledgeEnricher implements ResourceSnapshotEnricher {
       this.maxWindowCharacters,
     );
     if (windows.length === 0) {
-      return { snapshot, capabilities: [], processedWindows: 0, hypothesisCount: 0 };
+      return {
+        snapshot,
+        capabilities: [],
+        processedWindows: 0,
+        hypothesisCount: 0,
+        validationFailureCount: 0,
+      };
     }
 
-    const extractions = await mapWithConcurrency(windows, this.concurrency, async (window) => {
-      const capabilities = await this.selectCapabilities(window);
-      return this.extractWindow(window, capabilities);
-    });
+    const extractions = await mapWithConcurrency(windows, this.concurrency, (window) =>
+      this.extractWithRetries(window),
+    );
     return assembleEnrichment(snapshot, extractions);
+  }
+
+  private async extractWithRetries(window: ExtractionWindow): Promise<WindowExtraction> {
+    let validationError: string | undefined;
+    const requiredCapabilities = new Set<KnowledgeGraphCapability>();
+    for (let attempt = 1; attempt <= this.maxExtractionAttempts; attempt += 1) {
+      try {
+        const selected = await this.selectCapabilities(window, validationError, attempt);
+        const capabilities = unique([...selected, ...requiredCapabilities]).sort();
+        return await this.extractWindow(window, capabilities, validationError, attempt);
+      } catch (error) {
+        validationError = error instanceof Error ? error.message : String(error);
+        for (const capability of capabilitiesNamedIn(validationError)) {
+          requiredCapabilities.add(capability);
+        }
+        if (attempt === this.maxExtractionAttempts) {
+          if (this.validationFailurePolicy === "empty-window") {
+            return {
+              capabilities: [],
+              entities: [],
+              facts: [],
+              hypothesisCount: 0,
+              validationFailed: true,
+            };
+          }
+          throw new Error(
+            `Adaptive knowledge extraction failed validation after ${attempt} attempt(s): ${validationError}`,
+            { cause: error },
+          );
+        }
+      }
+    }
+    throw new Error("Adaptive knowledge extraction exhausted its validation attempts");
   }
 
   private async selectCapabilities(
     window: ExtractionWindow,
+    validationError?: string,
+    attempt = 1,
   ): Promise<readonly KnowledgeGraphCapability[]> {
     const response = await this.llm.complete(
       CAPABILITY_SELECTION_PROMPT,
       window.context,
-      "Select only the necessary extraction capabilities.",
+      retryQuery(
+        "Select only the necessary extraction capabilities.",
+        validationError,
+        attempt,
+        this.maxExtractionAttempts,
+      ),
     );
     const parsed = capabilitySelectionSchema.parse(JSON.parse(jsonObject(response)));
     return unique(parsed.capabilities).sort();
@@ -230,11 +286,18 @@ export class AdaptiveKnowledgeEnricher implements ResourceSnapshotEnricher {
   private async extractWindow(
     window: ExtractionWindow,
     capabilities: readonly KnowledgeGraphCapability[],
+    validationError?: string,
+    attempt = 1,
   ): Promise<WindowExtraction> {
     const response = await this.llm.complete(
       extractionPrompt(capabilities),
       window.context,
-      "Extract Entities, Events, and Claims using only the selected capabilities.",
+      retryQuery(
+        "Extract Entities, Events, and Claims using only the selected capabilities.",
+        validationError,
+        attempt,
+        this.maxExtractionAttempts,
+      ),
     );
     const parsed = extractionSchema.parse(JSON.parse(jsonObject(response)));
     const chunksById = new Map(window.chunks.map((chunk) => [chunk.id, chunk]));
@@ -299,8 +362,36 @@ export class AdaptiveKnowledgeEnricher implements ResourceSnapshotEnricher {
       entities,
       facts: claims.filter((claim) => claim.support === "explicit"),
       hypothesisCount: claims.filter((claim) => claim.support === "inferred").length,
+      validationFailed: false,
     };
   }
+}
+
+function capabilitiesNamedIn(value: string): KnowledgeGraphCapability[] {
+  return KNOWLEDGE_GRAPH_CAPABILITIES.filter((capability) => value.includes(capability));
+}
+
+function retryQuery(base: string, validationError?: string, attempt = 1, maxAttempts = 1): string {
+  const finalAttemptGuidance =
+    attempt === maxAttempts
+      ? " This is the final repair attempt. If every remaining item cannot be supported by exact visible source text, return empty entities and claims arrays for this window."
+      : "";
+  return validationError
+    ? `${base}\nRepair attempt ${attempt} of ${maxAttempts}. Previous extraction failed validation: ${validationError.slice(0, 500)}. ${repairGuidance(validationError)} Correct the structural error without weakening Evidence requirements.${finalAttemptGuidance}`
+    : base;
+}
+
+function repairGuidance(validationError: string): string {
+  if (validationError.includes("quote is not present")) {
+    return "Copy every quote character-for-character from the visible chunk text. If no exact substring supports an item, omit that item and every Claim that depends on it.";
+  }
+  if (validationError.includes("has no extracted Entity")) {
+    return "Either add the referenced Entity with an exact source Mention, or omit the dependent Claim.";
+  }
+  if (validationError.includes("unknown chunks")) {
+    return "Use only chunk_id values visible in the supplied context, or omit the unsupported item.";
+  }
+  return "Return a smaller extraction when necessary; omitting unsupported items is valid.";
 }
 
 function extractionPrompt(capabilities: readonly KnowledgeGraphCapability[]): string {
@@ -375,6 +466,7 @@ function assembleEnrichment(
     capabilities: unique(extractions.flatMap((item) => item.capabilities)).sort(),
     processedWindows: extractions.length,
     hypothesisCount: extractions.reduce((sum, item) => sum + item.hypothesisCount, 0),
+    validationFailureCount: extractions.filter((item) => item.validationFailed).length,
   };
 }
 

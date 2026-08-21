@@ -57,6 +57,7 @@ describe("AdaptiveKnowledgeEnricher", () => {
     ]);
     expect(result.processedWindows).toBe(1);
     expect(result.hypothesisCount).toBe(0);
+    expect(result.validationFailureCount).toBe(0);
     expect(result.snapshot.entities).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -92,12 +93,88 @@ describe("AdaptiveKnowledgeEnricher", () => {
     ]);
 
     await expect(
-      new AdaptiveKnowledgeEnricher(llm).enrich(
+      new AdaptiveKnowledgeEnricher(llm, { maxExtractionAttempts: 1 }).enrich(
         snapshot("resource-a", [["chunk-0", "The train departed."]]),
       ),
     ).rejects.toThrow("event-extraction capability");
     expect(llm.systemPrompts[1]).not.toContain("temporal-relations");
     expect(llm.systemPrompts[1]).not.toContain("causal-relations");
+  });
+
+  it("reselects capabilities after a structurally invalid extraction", async () => {
+    const llm = new RecordingLlm([
+      selection([]),
+      extraction({
+        entities: [entity("departure", "Departure", "event", [["chunk-0", "departed"]])],
+        claims: [],
+      }),
+      selection([]),
+      extraction({
+        entities: [entity("departure", "Departure", "event", [["chunk-0", "departed"]])],
+        claims: [],
+      }),
+    ]);
+
+    const result = await new AdaptiveKnowledgeEnricher(llm, {
+      maxExtractionAttempts: 2,
+    }).enrich(snapshot("resource-a", [["chunk-0", "The train departed."]]));
+
+    expect(result.capabilities).toEqual(["event-extraction"]);
+    expect(result.snapshot.entities).toHaveLength(1);
+    expect(llm.systemPrompts).toHaveLength(4);
+    expect(llm.queries[2]).toContain("Previous extraction failed validation");
+  });
+
+  it("uses a distinct repair prompt when the same validation error repeats", async () => {
+    const invalid = extraction({
+      entities: [entity("alex", "Alex", "person", [["chunk-0", "Alex"]])],
+      claims: [
+        claim("alex", "related_to", { kind: "entity", entity_id: "missing" }, [
+          ["chunk-0", "Alex returned"],
+        ]),
+      ],
+    });
+    const llm = new RecordingLlm([
+      selection([]),
+      invalid,
+      selection([]),
+      invalid,
+      selection([]),
+      extraction({
+        entities: [entity("alex", "Alex", "person", [["chunk-0", "Alex"]])],
+        claims: [],
+      }),
+    ]);
+
+    await new AdaptiveKnowledgeEnricher(llm, { maxExtractionAttempts: 3 }).enrich(
+      snapshot("resource-a", [["chunk-0", "Alex returned."]]),
+    );
+
+    expect(llm.queries[2]).toContain("Repair attempt 2 of 3");
+    expect(llm.queries[4]).toContain("Repair attempt 3 of 3");
+    expect(llm.queries[2]).toContain("add the referenced Entity with an exact source Mention");
+    expect(llm.queries[4]).toContain("return empty entities and claims arrays");
+    expect(llm.queries[2]).not.toBe(llm.queries[4]);
+  });
+
+  it("withholds an invalid window only when empty-window policy is explicit", async () => {
+    const llm = new RecordingLlm([
+      selection([]),
+      extraction({
+        entities: [entity("alex", "Alex", "person", [["chunk-0", "invented quote"]])],
+        claims: [],
+      }),
+    ]);
+
+    const result = await new AdaptiveKnowledgeEnricher(llm, {
+      maxExtractionAttempts: 1,
+      validationFailurePolicy: "empty-window",
+    }).enrich(snapshot("resource-a", [["chunk-0", "Alex returned."]]));
+
+    expect(result.snapshot.entities).toEqual([]);
+    expect(result.snapshot.facts).toEqual([]);
+    expect(result.processedWindows).toBe(1);
+    expect(result.validationFailureCount).toBe(1);
   });
 
   it("withholds inferred Claims as Hypotheses instead of activating Facts", async () => {
@@ -138,7 +215,9 @@ describe("AdaptiveKnowledgeEnricher", () => {
     ]);
 
     await expect(
-      new AdaptiveKnowledgeEnricher(llm).enrich(snapshot("resource-a", [["chunk-0", "Alex."]])),
+      new AdaptiveKnowledgeEnricher(llm, { maxExtractionAttempts: 1 }).enrich(
+        snapshot("resource-a", [["chunk-0", "Alex."]]),
+      ),
     ).rejects.toThrow("normalizes to an empty identifier");
   });
 
@@ -154,6 +233,7 @@ describe("AdaptiveKnowledgeEnricher", () => {
       chunksPerWindow: 2,
       overlapChunks: 0,
       maxWindowCharacters: 75,
+      maxExtractionAttempts: 1,
     });
 
     await expect(
@@ -179,6 +259,7 @@ describe("AdaptiveKnowledgeEnricher", () => {
       chunksPerWindow: 1,
       overlapChunks: 0,
       maxWindowCharacters: 70,
+      maxExtractionAttempts: 1,
     });
 
     await expect(
@@ -201,7 +282,9 @@ describe("AdaptiveKnowledgeEnricher", () => {
     ]);
 
     await expect(
-      new AdaptiveKnowledgeEnricher(llm).enrich(snapshot("resource-a", [["chunk-0", "Alex."]])),
+      new AdaptiveKnowledgeEnricher(llm, { maxExtractionAttempts: 1 }).enrich(
+        snapshot("resource-a", [["chunk-0", "Alex."]]),
+      ),
     ).rejects.toThrow("quote is not present");
   });
 
@@ -267,12 +350,14 @@ describe("AdaptiveKnowledgeEnricher", () => {
 class RecordingLlm implements LLMAdapter {
   readonly systemPrompts: string[] = [];
   readonly contexts: string[] = [];
+  readonly queries: string[] = [];
 
   constructor(private readonly responses: readonly string[]) {}
 
-  async complete(systemPrompt: string, context: string): Promise<string> {
+  async complete(systemPrompt: string, context: string, query: string): Promise<string> {
     this.systemPrompts.push(systemPrompt);
     this.contexts.push(context);
+    this.queries.push(query);
     const response = this.responses[this.systemPrompts.length - 1];
     if (!response) throw new Error("Missing fake LLM response");
     return response;

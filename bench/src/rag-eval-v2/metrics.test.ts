@@ -1,0 +1,142 @@
+import { describe, expect, it } from "vitest";
+import type { AnswerResult, DatasetBundle, JudgeResult, RetrievalResult } from "./contracts.js";
+import {
+  bootstrapMean95Ci,
+  compareFrameworkPairs,
+  contextPrecisionForQuery,
+  evidenceRecallForQuery,
+  scoreDatasetFramework,
+} from "./metrics.js";
+
+const bundle: DatasetBundle = {
+  id: "graphrag-bench-medical",
+  track: "static-kb",
+  documents: [],
+  provenance: { source: "test", version: "1", license: "test" },
+  queries: [{
+    id: "q1",
+    text: "question",
+    referenceAnswer: "answer",
+    goldEvidenceIds: ["e1", "e2"],
+    goldEvidenceText: ["gold evidence"],
+    answerable: true,
+    category: "Fact",
+    metadata: {},
+  }],
+};
+
+const retrieval: RetrievalResult = {
+  datasetId: bundle.id,
+  frameworkId: "kontext-brain",
+  queryId: "q1",
+  status: "ok",
+  evidence: [
+    { id: "e1", sourceId: "s", text: "gold evidence", score: 1, rank: 1, metadata: {} },
+    { id: "noise", sourceId: "s", text: "noise", score: 0.5, rank: 2, metadata: {} },
+  ],
+  latencyMs: 10,
+  inputTokens: null,
+  error: null,
+  frameworkVersion: "test",
+  configDigest: "test",
+};
+
+const answer: AnswerResult = {
+  datasetId: bundle.id,
+  frameworkId: "kontext-brain",
+  queryId: "q1",
+  status: "ok",
+  output: { answer: "answer", citations: ["e1"], abstained: false, abstentionReason: null },
+  latencyMs: 20,
+  inputTokens: 10,
+  outputTokens: 2,
+  error: null,
+};
+
+const judgement: JudgeResult = {
+  datasetId: bundle.id,
+  frameworkId: "kontext-brain",
+  queryId: "q1",
+  status: "ok",
+  output: {
+    answerCorrectness: 1,
+    completeness: 0.8,
+    strictFaithfulness: 1,
+    citationPrecision: 1,
+    citationRecall: 0.5,
+    acceptableAbstention: false,
+    claims: [{ claim: "answer", supported: true, correct: true, citations: ["e1"], reason: "entailed" }],
+  },
+  latencyMs: 30,
+  inputTokens: 20,
+  outputTokens: 5,
+  error: null,
+};
+
+describe("rag eval metrics", () => {
+  it("separates evidence recall from context precision", () => {
+    expect(evidenceRecallForQuery(bundle.queries[0]!, retrieval.evidence)).toBe(1);
+    expect(contextPrecisionForQuery(bundle.queries[0]!, retrieval.evidence)).toBe(0.5);
+  });
+
+  it("reports per-dataset metrics without a combined score", () => {
+    const score = scoreDatasetFramework(bundle, "kontext-brain", [retrieval], [answer], [judgement]);
+    expect(score.answerCorrectness).toBe(1);
+    expect(score.retrievalQueries).toBe(1);
+    expect(score.retrievalCompleted).toBe(1);
+    expect(score.claimRecall).toBe(0.8);
+    expect(score.claimF1).toBeCloseTo(8 / 9);
+    expect(score.citationF1).toBeCloseTo(2 / 3);
+    expect(score.endToEndLatencyP95Ms).toBe(60);
+    expect(score).not.toHaveProperty("overallScore");
+  });
+
+  it("scores full retrieval separately from the answer/judge sample", () => {
+    const secondQuery = { ...bundle.queries[0]!, id: "q2" };
+    const sampledBundle = { ...bundle, queries: [bundle.queries[0]!, secondQuery] };
+    const secondRetrieval = { ...retrieval, queryId: "q2" };
+    const score = scoreDatasetFramework(
+      sampledBundle,
+      "kontext-brain",
+      [retrieval, secondRetrieval],
+      [answer],
+      [judgement],
+      [bundle.queries[0]!],
+    );
+
+    expect(score).toMatchObject({
+      retrievalQueries: 2,
+      retrievalCompleted: 2,
+      queries: 1,
+      completed: 1,
+      blocked: 0,
+    });
+  });
+
+  it("reports paired framework differences on shared completed queries", () => {
+    const otherRetrieval = { ...retrieval, frameworkId: "vector-rag-reranker" as const };
+    const otherJudgement = {
+      ...judgement,
+      frameworkId: "vector-rag-reranker" as const,
+      output: { ...judgement.output!, answerCorrectness: 0 },
+    };
+    const comparisons = compareFrameworkPairs(
+      bundle,
+      ["kontext-brain", "vector-rag-reranker"],
+      [retrieval, otherRetrieval],
+      [judgement, otherJudgement],
+    );
+    const correctness = comparisons.find((comparison) => comparison.metric === "answer-correctness");
+    expect(correctness).toMatchObject({
+      pairedQueries: 1,
+      meanDifferenceLeftMinusRight: 1,
+      difference95Ci: { low: 1, high: 1 },
+    });
+  });
+
+  it("bootstraps deterministically", () => {
+    expect(bootstrapMean95Ci([0, 1, 1], 100, 42)).toEqual(
+      bootstrapMean95Ci([0, 1, 1], 100, 42),
+    );
+  });
+});
