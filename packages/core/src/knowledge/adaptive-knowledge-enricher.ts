@@ -223,9 +223,9 @@ export class AdaptiveKnowledgeEnricher implements ResourceSnapshotEnricher {
     const requiredCapabilities = new Set<KnowledgeGraphCapability>();
     for (let attempt = 1; attempt <= this.maxExtractionAttempts; attempt += 1) {
       try {
-        const selected = await this.selectCapabilities(window, validationError);
+        const selected = await this.selectCapabilities(window, validationError, attempt);
         const capabilities = unique([...selected, ...requiredCapabilities]).sort();
-        return await this.extractWindow(window, capabilities, validationError);
+        return await this.extractWindow(window, capabilities, validationError, attempt);
       } catch (error) {
         validationError = error instanceof Error ? error.message : String(error);
         for (const capability of capabilitiesNamedIn(validationError)) {
@@ -245,11 +245,17 @@ export class AdaptiveKnowledgeEnricher implements ResourceSnapshotEnricher {
   private async selectCapabilities(
     window: ExtractionWindow,
     validationError?: string,
+    attempt = 1,
   ): Promise<readonly KnowledgeGraphCapability[]> {
     const response = await this.llm.complete(
       CAPABILITY_SELECTION_PROMPT,
       window.context,
-      retryQuery("Select only the necessary extraction capabilities.", validationError),
+      retryQuery(
+        "Select only the necessary extraction capabilities.",
+        validationError,
+        attempt,
+        this.maxExtractionAttempts,
+      ),
     );
     const parsed = capabilitySelectionSchema.parse(JSON.parse(jsonObject(response)));
     return unique(parsed.capabilities).sort();
@@ -259,6 +265,7 @@ export class AdaptiveKnowledgeEnricher implements ResourceSnapshotEnricher {
     window: ExtractionWindow,
     capabilities: readonly KnowledgeGraphCapability[],
     validationError?: string,
+    attempt = 1,
   ): Promise<WindowExtraction> {
     const response = await this.llm.complete(
       extractionPrompt(capabilities),
@@ -266,6 +273,8 @@ export class AdaptiveKnowledgeEnricher implements ResourceSnapshotEnricher {
       retryQuery(
         "Extract Entities, Events, and Claims using only the selected capabilities.",
         validationError,
+        attempt,
+        this.maxExtractionAttempts,
       ),
     );
     const parsed = extractionSchema.parse(JSON.parse(jsonObject(response)));
@@ -339,9 +348,9 @@ function capabilitiesNamedIn(value: string): KnowledgeGraphCapability[] {
   return KNOWLEDGE_GRAPH_CAPABILITIES.filter((capability) => value.includes(capability));
 }
 
-function retryQuery(base: string, validationError?: string): string {
+function retryQuery(base: string, validationError?: string, attempt = 1, maxAttempts = 1): string {
   return validationError
-    ? `${base}\nPrevious extraction failed validation: ${validationError.slice(0, 500)}. Correct the structural error without weakening Evidence requirements.`
+    ? `${base}\nRepair attempt ${attempt} of ${maxAttempts}. Previous extraction failed validation: ${validationError.slice(0, 500)}. Correct the structural error without weakening Evidence requirements.`
     : base;
 }
 

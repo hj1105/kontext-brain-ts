@@ -124,6 +124,36 @@ describe("AdaptiveKnowledgeEnricher", () => {
     expect(llm.queries[2]).toContain("Previous extraction failed validation");
   });
 
+  it("uses a distinct repair prompt when the same validation error repeats", async () => {
+    const invalid = extraction({
+      entities: [entity("alex", "Alex", "person", [["chunk-0", "Alex"]])],
+      claims: [
+        claim("alex", "related_to", { kind: "entity", entity_id: "missing" }, [
+          ["chunk-0", "Alex returned"],
+        ]),
+      ],
+    });
+    const llm = new RecordingLlm([
+      selection([]),
+      invalid,
+      selection([]),
+      invalid,
+      selection([]),
+      extraction({
+        entities: [entity("alex", "Alex", "person", [["chunk-0", "Alex"]])],
+        claims: [],
+      }),
+    ]);
+
+    await new AdaptiveKnowledgeEnricher(llm, { maxExtractionAttempts: 3 }).enrich(
+      snapshot("resource-a", [["chunk-0", "Alex returned."]]),
+    );
+
+    expect(llm.queries[2]).toContain("Repair attempt 2 of 3");
+    expect(llm.queries[4]).toContain("Repair attempt 3 of 3");
+    expect(llm.queries[2]).not.toBe(llm.queries[4]);
+  });
+
   it("withholds inferred Claims as Hypotheses instead of activating Facts", async () => {
     const llm = new RecordingLlm([
       selection(["causal-relations"]),
