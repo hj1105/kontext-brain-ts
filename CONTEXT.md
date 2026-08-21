@@ -28,6 +28,10 @@ A source-local occurrence that refers to an Entity. Names, aliases, titles, and 
 
 An evidence-backed occurrence or state transition involving Entities. Temporal and causal relationships connect Events without turning unsupported inference into Fact.
 
+## Claim
+
+A candidate proposition extracted from source text. A Claim becomes a Fact only after its Entity references, capability constraints, and exact quoted Evidence are validated. An inferred Claim remains a Hypothesis and is excluded from factual retrieval.
+
 ## Extraction Capability
 
 A content-driven kind of knowledge extraction such as identity resolution, event extraction, or temporal and causal linking. Capabilities are selected from source evidence rather than corpus names or domain-specific modes.

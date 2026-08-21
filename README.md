@@ -229,11 +229,12 @@ audit rows. `answer()` fails closed when no accessible active Evidence exists
 or the generated answer does not cite an Evidence ID.
 
 `AdaptiveKnowledgeEnricher` is optional. When enabled, it examines literal
-source chunks—not corpus or dataset names—to select identity-resolution,
-event, temporal, causal, and cross-chunk extraction capabilities. It keeps
-entities resource-scoped by default and rejects invalid or unsupported model
-output before synchronization, so a partial extraction cannot replace the
-current evidence-backed graph.
+source chunks—not corpus or dataset names—to select and dispatch
+identity-resolution, event, temporal, causal, and cross-chunk extraction
+capabilities. It keeps entities resource-scoped by default, requires an exact
+source quote for every Mention and Claim, withholds inferred Claims as
+Hypotheses, and rejects invalid output before synchronization. A partial
+extraction therefore cannot replace the current evidence-backed graph.
 
 `kontext.yaml` for an Ollama-only setup:
 
