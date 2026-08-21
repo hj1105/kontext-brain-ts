@@ -335,3 +335,40 @@ Held-out test run directory:
   openai-small-kontext-v10-coverage-aware-rerank-2026-08-21
 Outcome: pending
 ```
+
+## Multi-query × evidence-selection factorial
+
+```text
+Experiment ID: kontext-multi-query-factorial-v11-2026-08-21
+Registered at (UTC): 2026-08-21T08:43:00Z, before any v11 retrieval or score
+Owner: benchmark operator / Codex
+Hypothesis: complementary search perspectives can recover bridge evidence that
+  a single embedding/BM25 query misses, while coverage-aware selection can keep
+  those complementary passages ahead of redundant passages. Compare the fixed
+  2×2 cells without score-driven parameter search: existing v7 (single query,
+  standard rerank), v10 (single query, coverage-aware rerank), v11a (multi-query,
+  standard rerank), and v11b (multi-query, coverage-aware rerank).
+Dataset and development split digest: run all 2,062 Medical retrieval queries in
+  v11a and v11b. Promote only a predeclared winner that beats v7 recall 0.890398
+  without reducing raw context precision below 0.575969. Then run the identical
+  configuration on all 2,010 Novel queries, BEIR SciFact/NFCorpus retrieval-only
+  gates, and the frozen Medical 200-query answer/judge sample.
+Eligible frameworks: kontext-brain only (product retrieval-policy experiment)
+Parameter family and allowed values: original query is always retained. One
+  local GPT call may produce at most three distinct standalone search queries.
+  Original and expanded vector lists receive equal-weight RRF; original and
+  expanded BM25 lists receive equal-weight RRF. Candidate-k=50, outer fusion,
+  graph traversal, 5,000-character source windows, 50,000-character context
+  budget, models, reasoning effort, and output top-k=10 remain fixed from v7.
+  v11a uses the v7 rerank instruction; v11b uses the exact v10 coverage-aware
+  instruction. No dataset ID, corpus text, reference answer, gold evidence, or
+  judge output is available to query expansion.
+Maximum trials per framework: exactly two new Medical cells (v11a and v11b)
+Selection metric: the same joint Medical recall/raw-context-precision gate above;
+  ties are broken by lower retrieval latency, then checked on Novel and public
+  datasets. No per-dataset branch or post-score parameter adjustment is allowed.
+Held-out test run directories:
+  openai-small-kontext-v11a-multi-query-standard-2026-08-21
+  openai-small-kontext-v11b-multi-query-coverage-2026-08-21
+Outcome: pending
+```

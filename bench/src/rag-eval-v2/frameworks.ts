@@ -511,6 +511,8 @@ function kontextRetrievalMode(
   | "source-hydrated-llm-recall-safe-stack"
   | "source-hydrated-llm-candidate-safe-stack"
   | "source-hydrated-llm-coverage-aware-stack"
+  | "multi-query-standard-rerank-stack"
+  | "multi-query-coverage-aware-stack"
   | "adaptive-eece-stack" {
   if (
     value === "bidirectional-kg" ||
@@ -520,6 +522,8 @@ function kontextRetrievalMode(
     value === "source-hydrated-llm-recall-safe-stack" ||
     value === "source-hydrated-llm-candidate-safe-stack" ||
     value === "source-hydrated-llm-coverage-aware-stack" ||
+    value === "multi-query-standard-rerank-stack" ||
+    value === "multi-query-coverage-aware-stack" ||
     value === "adaptive-eece-stack"
   ) {
     return value;
