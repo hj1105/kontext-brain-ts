@@ -41,7 +41,6 @@ interface ResourceProjection {
   readonly capabilities: readonly string[];
   readonly processedWindows: number;
   readonly hypothesisCount: number;
-  readonly validationFailureCount: number;
 }
 
 class CheckpointingCodexLlmAdapter implements LLMAdapter {
@@ -110,8 +109,7 @@ async function main(): Promise<void> {
   const llm = new CheckpointingCodexLlmAdapter(resolve(options.cacheDirectory, "llm"));
   const enricher = new AdaptiveKnowledgeEnricher(llm, {
     concurrency: options.concurrency,
-    maxExtractionAttempts: 5,
-    validationFailurePolicy: "empty-window",
+    maxExtractionAttempts: 8,
   });
   const projections = await mapWithConcurrency(grouped, 2, async (resource, index) => {
     const [resourceId, resourceChunks] = resource;
@@ -125,10 +123,7 @@ async function main(): Promise<void> {
       process.stderr.write(
         `[adaptive-kg] resource cached=${index + 1}/${grouped.length} id=${resourceId}\n`,
       );
-      return {
-        ...projection,
-        validationFailureCount: projection.validationFailureCount ?? 0,
-      };
+      return projection;
     }
     const result = await enricher.enrich(resourceSnapshot(resourceId, resourceChunks));
     const projection: ResourceProjection = {
@@ -138,11 +133,10 @@ async function main(): Promise<void> {
       capabilities: result.capabilities,
       processedWindows: result.processedWindows,
       hypothesisCount: result.hypothesisCount,
-      validationFailureCount: result.validationFailureCount,
     };
     writeJsonAtomic(checkpointPath, projection);
     process.stderr.write(
-      `[adaptive-kg] resource complete=${index + 1}/${grouped.length} id=${resourceId} windows=${projection.processedWindows} entities=${projection.entities.length} facts=${projection.facts.length} hypotheses=${projection.hypothesisCount} validationFailures=${projection.validationFailureCount}\n`,
+      `[adaptive-kg] resource complete=${index + 1}/${grouped.length} id=${resourceId} windows=${projection.processedWindows} entities=${projection.entities.length} facts=${projection.facts.length} hypotheses=${projection.hypothesisCount}\n`,
     );
     return projection;
   });
@@ -154,7 +148,7 @@ async function main(): Promise<void> {
   const usage = summarizeUsage(resolve(options.cacheDirectory, "llm"));
   const report = {
     schemaVersion: 1,
-    sourceCommit: "996b8bb",
+    sourceCommit: "edb4ab0",
     goldAccess: false,
     inputs: {
       chunksPath: options.chunksPath,
@@ -166,8 +160,8 @@ async function main(): Promise<void> {
       chunksPerWindow: 6,
       overlapChunks: 1,
       maxWindowCharacters: 12_000,
-      maxExtractionAttempts: 5,
-      validationFailurePolicy: "empty-window",
+      maxExtractionAttempts: 8,
+      validationFailurePolicy: "fail-closed-resource",
       concurrency: options.concurrency,
       resourceConcurrency: 2,
       model: DEFAULT_RAG_EVAL_MANIFEST.models.answer.model,
@@ -177,10 +171,6 @@ async function main(): Promise<void> {
       entities: projections.reduce((sum, projection) => sum + projection.entities.length, 0),
       facts: projections.reduce((sum, projection) => sum + projection.facts.length, 0),
       hypotheses: projections.reduce((sum, projection) => sum + projection.hypothesisCount, 0),
-      validationFailures: projections.reduce(
-        (sum, projection) => sum + projection.validationFailureCount,
-        0,
-      ),
       processedWindows: projections.reduce(
         (sum, projection) => sum + projection.processedWindows,
         0,

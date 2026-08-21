@@ -83,7 +83,7 @@ const SOURCE_HYDRATED_LLM_RECALL_SAFE_STACK_FRAMEWORK_VERSION =
   "workspace-0.1.0+v6-source-hydrated-llm-recall-safe-stack";
 const SOURCE_HYDRATED_LLM_CANDIDATE_SAFE_STACK_FRAMEWORK_VERSION =
   "workspace-0.1.0+v7-source-hydrated-llm-candidate-safe-stack";
-const ADAPTIVE_EECE_STACK_FRAMEWORK_VERSION = "workspace-0.1.0+adaptive-eece-stack-v8";
+const ADAPTIVE_EECE_STACK_FRAMEWORK_VERSION = "workspace-0.1.0+adaptive-eece-stack-v9";
 const MAX_EXISTING_STACK_CANDIDATES = 20;
 const MAX_EXISTING_STACK_FUSION = {
   vector: 2,
@@ -626,7 +626,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
       ? options.candidateK
       : MAX_EXISTING_STACK_CANDIDATES;
     const retrievalMode = adaptiveEece
-      ? "adaptive-eece-stack-v8"
+      ? "adaptive-eece-stack-v9"
       : honorDeclaredCandidateK
         ? "v7-source-hydrated-llm-candidate-safe-stack"
         : recallSafeLlmRerank
@@ -1256,7 +1256,7 @@ function maxExistingStackDigest(
     .update(manifestDigest(manifest))
     .update(
       adaptiveEece
-        ? "\0adaptive-eece-stack-v8\0"
+        ? "\0adaptive-eece-stack-v9\0"
         : honorDeclaredCandidateK
           ? "\0v7-source-hydrated-llm-candidate-safe-stack\0"
           : recallSafeLlmRerank
