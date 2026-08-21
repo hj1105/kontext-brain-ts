@@ -64,6 +64,7 @@ export interface AdaptiveKnowledgeEnricherOptions {
   readonly overlapChunks?: number;
   readonly maxWindowCharacters?: number;
   readonly concurrency?: number;
+  readonly maxExtractionAttempts?: number;
 }
 
 interface ExtractionWindow {
@@ -179,6 +180,7 @@ export class AdaptiveKnowledgeEnricher implements ResourceSnapshotEnricher {
   private readonly overlapChunks: number;
   private readonly maxWindowCharacters: number;
   private readonly concurrency: number;
+  private readonly maxExtractionAttempts: number;
 
   constructor(
     private readonly llm: LLMAdapter,
@@ -188,10 +190,12 @@ export class AdaptiveKnowledgeEnricher implements ResourceSnapshotEnricher {
     this.overlapChunks = options.overlapChunks ?? 1;
     this.maxWindowCharacters = options.maxWindowCharacters ?? 12_000;
     this.concurrency = options.concurrency ?? 2;
+    this.maxExtractionAttempts = options.maxExtractionAttempts ?? 3;
     assertPositiveInteger(this.chunksPerWindow, "chunksPerWindow");
     assertNonNegativeInteger(this.overlapChunks, "overlapChunks");
     assertPositiveInteger(this.maxWindowCharacters, "maxWindowCharacters");
     assertPositiveInteger(this.concurrency, "concurrency");
+    assertPositiveInteger(this.maxExtractionAttempts, "maxExtractionAttempts");
     if (this.overlapChunks >= this.chunksPerWindow) {
       throw new Error("overlapChunks must be smaller than chunksPerWindow");
     }
@@ -208,20 +212,39 @@ export class AdaptiveKnowledgeEnricher implements ResourceSnapshotEnricher {
       return { snapshot, capabilities: [], processedWindows: 0, hypothesisCount: 0 };
     }
 
-    const extractions = await mapWithConcurrency(windows, this.concurrency, async (window) => {
-      const capabilities = await this.selectCapabilities(window);
-      return this.extractWindow(window, capabilities);
-    });
+    const extractions = await mapWithConcurrency(windows, this.concurrency, (window) =>
+      this.extractWithRetries(window),
+    );
     return assembleEnrichment(snapshot, extractions);
+  }
+
+  private async extractWithRetries(window: ExtractionWindow): Promise<WindowExtraction> {
+    let validationError: string | undefined;
+    for (let attempt = 1; attempt <= this.maxExtractionAttempts; attempt += 1) {
+      try {
+        const capabilities = await this.selectCapabilities(window, validationError);
+        return await this.extractWindow(window, capabilities, validationError);
+      } catch (error) {
+        validationError = error instanceof Error ? error.message : String(error);
+        if (attempt === this.maxExtractionAttempts) {
+          throw new Error(
+            `Adaptive knowledge extraction failed validation after ${attempt} attempt(s): ${validationError}`,
+            { cause: error },
+          );
+        }
+      }
+    }
+    throw new Error("Adaptive knowledge extraction exhausted its validation attempts");
   }
 
   private async selectCapabilities(
     window: ExtractionWindow,
+    validationError?: string,
   ): Promise<readonly KnowledgeGraphCapability[]> {
     const response = await this.llm.complete(
       CAPABILITY_SELECTION_PROMPT,
       window.context,
-      "Select only the necessary extraction capabilities.",
+      retryQuery("Select only the necessary extraction capabilities.", validationError),
     );
     const parsed = capabilitySelectionSchema.parse(JSON.parse(jsonObject(response)));
     return unique(parsed.capabilities).sort();
@@ -230,11 +253,15 @@ export class AdaptiveKnowledgeEnricher implements ResourceSnapshotEnricher {
   private async extractWindow(
     window: ExtractionWindow,
     capabilities: readonly KnowledgeGraphCapability[],
+    validationError?: string,
   ): Promise<WindowExtraction> {
     const response = await this.llm.complete(
       extractionPrompt(capabilities),
       window.context,
-      "Extract Entities, Events, and Claims using only the selected capabilities.",
+      retryQuery(
+        "Extract Entities, Events, and Claims using only the selected capabilities.",
+        validationError,
+      ),
     );
     const parsed = extractionSchema.parse(JSON.parse(jsonObject(response)));
     const chunksById = new Map(window.chunks.map((chunk) => [chunk.id, chunk]));
@@ -301,6 +328,12 @@ export class AdaptiveKnowledgeEnricher implements ResourceSnapshotEnricher {
       hypothesisCount: claims.filter((claim) => claim.support === "inferred").length,
     };
   }
+}
+
+function retryQuery(base: string, validationError?: string): string {
+  return validationError
+    ? `${base}\nPrevious extraction failed validation: ${validationError.slice(0, 500)}. Correct the structural error without weakening Evidence requirements.`
+    : base;
 }
 
 function extractionPrompt(capabilities: readonly KnowledgeGraphCapability[]): string {
