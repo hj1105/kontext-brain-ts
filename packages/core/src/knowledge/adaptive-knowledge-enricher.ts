@@ -350,8 +350,21 @@ function capabilitiesNamedIn(value: string): KnowledgeGraphCapability[] {
 
 function retryQuery(base: string, validationError?: string, attempt = 1, maxAttempts = 1): string {
   return validationError
-    ? `${base}\nRepair attempt ${attempt} of ${maxAttempts}. Previous extraction failed validation: ${validationError.slice(0, 500)}. Correct the structural error without weakening Evidence requirements.`
+    ? `${base}\nRepair attempt ${attempt} of ${maxAttempts}. Previous extraction failed validation: ${validationError.slice(0, 500)}. ${repairGuidance(validationError)} Correct the structural error without weakening Evidence requirements.`
     : base;
+}
+
+function repairGuidance(validationError: string): string {
+  if (validationError.includes("quote is not present")) {
+    return "Copy every quote character-for-character from the visible chunk text. If no exact substring supports an item, omit that item and every Claim that depends on it.";
+  }
+  if (validationError.includes("has no extracted Entity")) {
+    return "Either add the referenced Entity with an exact source Mention, or omit the dependent Claim.";
+  }
+  if (validationError.includes("unknown chunks")) {
+    return "Use only chunk_id values visible in the supplied context, or omit the unsupported item.";
+  }
+  return "Return a smaller extraction when necessary; omitting unsupported items is valid.";
 }
 
 function extractionPrompt(capabilities: readonly KnowledgeGraphCapability[]): string {
