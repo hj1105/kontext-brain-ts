@@ -389,6 +389,117 @@ describe("KontextBrainAdapter bidirectional KG mode", () => {
     expect(codexCalls).toBe(0);
   });
 
+  it("uses a valid cached expansion error as original-query-only without external calls", async () => {
+    const root = mkdtempSync(join(tmpdir(), "kontext-rag-eval-v14-cached-fallback-"));
+    temporaryDirectories.push(root);
+    const { dataDirectory, precomputedIndexDirectory } = await seedMedicalV13Cache(root);
+    const expansionDirectory = join(precomputedIndexDirectory, "multi-query-expansions");
+    const expansionName = readdirSync(expansionDirectory).find((name) => name.endsWith(".json"));
+    if (!expansionName) throw new Error("Missing cached expansion test fixture");
+    const expansionPath = join(expansionDirectory, expansionName);
+    const checkpoint = JSON.parse(readFileSync(expansionPath, "utf8")) as Record<string, unknown>;
+    writeFileSync(
+      expansionPath,
+      `${JSON.stringify({ ...checkpoint, queries: [], error: "local GPT usage limit" })}\n`,
+      "utf8",
+    );
+    const sourceBefore = readFileSync(expansionPath, "utf8");
+    const sourceMtimeBefore = statSync(expansionPath).mtimeMs;
+    const embeddingClient = new ThrowingEmbeddingClient();
+    let codexCalls = 0;
+    const workDirectory = join(root, "v14-run");
+    const adapter = new KontextBrainAdapter(DEFAULT_RAG_EVAL_MANIFEST, {
+      codexClient: new CodexJsonClient(async () => {
+        codexCalls += 1;
+        throw new Error("v14 cache-only retrieval must not call Codex");
+      }),
+      embeddingClient,
+      retrievalMode: "v14a-anchored-deterministic-soft-coverage-stack",
+      benchmarkDataDirectory: dataDirectory,
+      precomputedIndexDirectory,
+    });
+
+    const [result] = await adapter.retrieve(testBundle(), {
+      workDirectory,
+      topK: 1,
+      candidateK: 1,
+    });
+
+    expect(result).toMatchObject({ status: "ok", evidence: [{ sourceId: "med" }] });
+    expect(embeddingClient.embedCalls).toBe(0);
+    expect(codexCalls).toBe(0);
+    expect(readFileSync(expansionPath, "utf8")).toBe(sourceBefore);
+    expect(statSync(expansionPath).mtimeMs).toBe(sourceMtimeBefore);
+    const config = JSON.parse(
+      readFileSync(
+        join(
+          workDirectory,
+          "graphrag-bench-medical",
+          "kontext-brain",
+          "index",
+          "v14a-anchored-deterministic-soft-coverage-stack",
+          "kontext-kg-config.json",
+        ),
+        "utf8",
+      ),
+    ) as { multiQuery: Record<string, unknown> };
+    expect(config.multiQuery).toMatchObject({
+      execution: "precomputed-cache",
+      failedExpansions: 1,
+      cachedOriginalQueryOnlyFallbacks: 1,
+    });
+  });
+
+  it.each(["missing", "question-digest-mismatch"])(
+    "keeps a %s cached expansion fail-closed without external calls",
+    async (failure) => {
+      const root = mkdtempSync(join(tmpdir(), "kontext-rag-eval-v14-invalid-expansion-"));
+      temporaryDirectories.push(root);
+      const { dataDirectory, precomputedIndexDirectory } = await seedMedicalV13Cache(root);
+      const expansionDirectory = join(precomputedIndexDirectory, "multi-query-expansions");
+      if (failure === "missing") {
+        rmSync(expansionDirectory, { recursive: true, force: true });
+      } else {
+        const expansionName = readdirSync(expansionDirectory).find((name) =>
+          name.endsWith(".json"),
+        );
+        if (!expansionName) throw new Error("Missing cached expansion test fixture");
+        const expansionPath = join(expansionDirectory, expansionName);
+        const checkpoint = JSON.parse(readFileSync(expansionPath, "utf8")) as Record<
+          string,
+          unknown
+        >;
+        writeFileSync(
+          expansionPath,
+          `${JSON.stringify({ ...checkpoint, questionDigest: "mismatched-digest" })}\n`,
+          "utf8",
+        );
+      }
+      const embeddingClient = new ThrowingEmbeddingClient();
+      let codexCalls = 0;
+      const adapter = new KontextBrainAdapter(DEFAULT_RAG_EVAL_MANIFEST, {
+        codexClient: new CodexJsonClient(async () => {
+          codexCalls += 1;
+          throw new Error("v14 cache-only retrieval must not call Codex");
+        }),
+        embeddingClient,
+        retrievalMode: "v14a-anchored-deterministic-soft-coverage-stack",
+        benchmarkDataDirectory: dataDirectory,
+        precomputedIndexDirectory,
+      });
+
+      await expect(
+        adapter.retrieve(testBundle(), {
+          workDirectory: join(root, "v14-run"),
+          topK: 1,
+          candidateK: 1,
+        }),
+      ).rejects.toThrow(/Required cached multi-query expansion missing or invalid/);
+      expect(embeddingClient.embedCalls).toBe(0);
+      expect(codexCalls).toBe(0);
+    },
+  );
+
   it("routes retrieval through KontextAgent's evidence-backed branch", async () => {
     const root = mkdtempSync(join(tmpdir(), "kontext-rag-eval-kg-"));
     temporaryDirectories.push(root);

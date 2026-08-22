@@ -1163,6 +1163,13 @@ export class KontextBrainAdapter implements FrameworkAdapter {
             expandedQueries: expandedQueryInputs.length,
             failedExpansions: queryExpansions.filter((expansion) => expansion.error !== null)
               .length,
+            ...(cacheOnly
+              ? {
+                  cachedOriginalQueryOnlyFallbacks: queryExpansions.filter(
+                    (expansion) => expansion.error !== null && expansion.queries.length === 0,
+                  ).length,
+                }
+              : {}),
             goldAccess: false,
           }
         : null,
@@ -1500,11 +1507,17 @@ async function expandWithCheckpoint(
         cached.queries.length <= 3 &&
         cached.queries.every((query) => typeof query === "string") &&
         (cached.error === null || typeof cached.error === "string");
-      const cacheOnlyValid =
+      const cacheOnlySuccessfulExpansion =
         structurallyValid &&
         cached.error === null &&
         cached.queries.length > 0 &&
         validCachedExpandedQueries(cached.queries, question);
+      const cacheOnlyOriginalQueryFallback =
+        structurallyValid &&
+        cached.queries.length === 0 &&
+        typeof cached.error === "string" &&
+        cached.error.trim().length > 0;
+      const cacheOnlyValid = cacheOnlySuccessfulExpansion || cacheOnlyOriginalQueryFallback;
       if (structurallyValid && (!cacheOnly || cacheOnlyValid)) {
         return cached;
       }
