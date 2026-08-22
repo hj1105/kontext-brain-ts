@@ -239,7 +239,7 @@ describe("external framework retrieval", () => {
             {
               id: "native-context",
               sourceId: "graphrag-local-search-context",
-              text: "0|title: One\nsource_id: source-1\n\n1|title: Two\nsource_id: source-2",
+              text: '0|title: One\nsource_id: source-1\n\n1|title: Two\nsource_id: source-2\n{"content":"title: Three\\nsource_id: source-escaped\\n\\nBody"}',
               score: 1,
               rank: 1,
               metadata: { nativeContext: true },
@@ -264,6 +264,6 @@ describe("external framework retrieval", () => {
 
     expect(results).toHaveLength(2);
     expect(results.map((result) => result.queryId)).toEqual(["duplicate-query", "duplicate-query"]);
-    expect(results[0]?.evidence[0]?.sourceIds).toEqual(["source-1", "source-2"]);
+    expect(results[0]?.evidence[0]?.sourceIds).toEqual(["source-1", "source-2", "source-escaped"]);
   });
 });

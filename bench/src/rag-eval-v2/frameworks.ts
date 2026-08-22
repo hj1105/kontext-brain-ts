@@ -458,7 +458,7 @@ function addNativeContextProvenance(evidence: RetrievedEvidence): RetrievedEvide
   if (evidence.metadata.nativeContext !== true) return evidence;
   const sourceIds = [
     ...new Set(
-      [...evidence.text.matchAll(/^source_id:\s*(.+?)\s*$/gim)].map(
+      [...evidence.text.matchAll(/source_id:\s*([^\\\r\n"]+)/gim)].map(
         (match) => match[1]?.trim() ?? "",
       ),
     ),
