@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { CodexJsonClient } from "./codex-json.js";
-import type { AnswerResult, RetrievalResult } from "./contracts.js";
+import type { AnswerResult, DatasetId, RetrievalResult } from "./contracts.js";
 import { defaultDatasetPaths, loadDataset } from "./datasets.js";
 import type { EvaluationSampleManifest } from "./evaluation-sample.js";
 import { readJsonLines } from "./jsonl.js";
@@ -17,11 +17,15 @@ async function main(): Promise<void> {
   const shardCount = positiveInteger(requiredArgument("--shard-count"), "--shard-count");
   if (shardIndex >= shardCount) throw new Error("--shard-index must be smaller than --shard-count");
 
-  const datasetId = "graphrag-bench-medical" as const;
+  const requestedDatasetId = optionalArgument("--dataset") ?? "graphrag-bench-medical";
   const frameworkId = "kontext-brain" as const;
+  const manifest = loadFrozenRunManifest(join(workDirectory, "run-manifest.json"));
+  const datasetId = requestedDatasetId as DatasetId;
+  if (!manifest.datasets.some((dataset) => dataset.id === datasetId)) {
+    throw new Error(`Dataset ${requestedDatasetId} is not present in the frozen run manifest`);
+  }
   const datasetDirectory = join(workDirectory, datasetId);
   const frameworkDirectory = join(datasetDirectory, frameworkId);
-  const manifest = loadFrozenRunManifest(join(workDirectory, "run-manifest.json"));
   const sample = JSON.parse(
     readFileSync(join(datasetDirectory, "evaluation-sample.json"), "utf8"),
   ) as EvaluationSampleManifest;
@@ -54,6 +58,7 @@ async function main(): Promise<void> {
     `${JSON.stringify({
       shardIndex,
       shardCount,
+      datasetId,
       assigned: shardQueries.length,
       completed: results.filter((result) => result.status === "ok").length,
       errors: results.filter((result) => result.status === "error").length,
@@ -65,6 +70,14 @@ async function main(): Promise<void> {
 function requiredArgument(name: string): string {
   const index = process.argv.indexOf(name);
   const value = index >= 0 ? process.argv[index + 1] : undefined;
+  if (!value) throw new Error(`Missing ${name}`);
+  return value;
+}
+
+function optionalArgument(name: string): string | undefined {
+  const index = process.argv.indexOf(name);
+  if (index < 0) return undefined;
+  const value = process.argv[index + 1];
   if (!value) throw new Error(`Missing ${name}`);
   return value;
 }
