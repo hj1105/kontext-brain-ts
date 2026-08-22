@@ -418,7 +418,15 @@ Outcome: completed and promoted to cross-dataset validation. Medical retrieval
   completed 2,062/2,062 with zero final errors. Recall was 0.891368, equal to
   v11b and +0.000970 over v7. Raw context precision was 0.583434, +0.001385
   over v11b and +0.007466 over v7. Because v12 preserved the best recall while
-  winning the predeclared precision comparison, its configuration is now
-  frozen for Novel, BEIR SciFact/NFCorpus, and the Medical answer/judge sample.
-  No further Medical-based parameter adjustment is permitted.
+  winning the predeclared precision comparison, its configuration was frozen
+  for Novel, BEIR SciFact/NFCorpus, and the Medical answer/judge sample. Novel
+  completed 2,010/2,010 with recall 0.522886 (+0.005473 versus v7) and raw
+  context precision 0.287472 (-0.000727 versus v7). BEIR SciFact completed
+  300/300 with recall 0.960000 versus 0.822444 for the vector baseline; BEIR
+  NFCorpus completed 323/323 with recall 0.278269 versus 0.162923 for vector.
+  Medical frozen-sample answer/judge completed 200/200: correctness 0.865488,
+  strict faithfulness 0.912990, claim F1 0.843040, and citation F1 0.929133.
+  Retrieval and citation grounding improved, but correctness, faithfulness, and
+  claim F1 regressed versus v7, so v12 is a retrieval win rather than the final
+  end-to-end winner. No further v12 parameter adjustment is permitted.
 ```
