@@ -52,7 +52,12 @@ import type { FrameworkAdapter, FrameworkRunOptions } from "./frameworks.js";
 import { readJsonLines, writeJsonAtomic } from "./jsonl.js";
 import { LlmEvidenceReranker } from "./llm-evidence-reranker.js";
 import { type RagEvalManifest, manifestDigest } from "./manifest.js";
-import { CorpusBm25Ranker, fuseQueryPerspectives, fuseRankings } from "./max-existing-stack.js";
+import {
+  CorpusBm25Ranker,
+  applyOriginalAndExpansionQuota,
+  fuseQueryPerspectives,
+  fuseRankings,
+} from "./max-existing-stack.js";
 import { MultiQueryExpander, type MultiQueryExpansion } from "./multi-query-expander.js";
 import {
   type EmbeddingClient,
@@ -73,6 +78,8 @@ export type KontextRetrievalMode =
   | "multi-query-coverage-aware-stack"
   | "multi-query-plan-aware-coverage-stack"
   | "multi-query-anchored-evidence-answer-stack"
+  | "v14a-anchored-deterministic-soft-coverage-stack"
+  | "v14b-anchored-deterministic-quota-coverage-stack"
   | "adaptive-eece-stack";
 
 export interface KontextBrainAdapterOptions {
@@ -80,6 +87,7 @@ export interface KontextBrainAdapterOptions {
   readonly embeddingClient?: EmbeddingClient | null;
   readonly retrievalMode?: KontextRetrievalMode;
   readonly benchmarkDataDirectory?: string;
+  readonly precomputedIndexDirectory?: string;
 }
 
 const BIDIRECTIONAL_FRAMEWORK_VERSION = "workspace-0.1.0+bidirectional-kg-v2";
@@ -107,6 +115,43 @@ const V13_STACK_DESCRIPTOR = {
   readonly frameworkVersion: string;
   readonly answerPolicy: AnswerPolicy;
 };
+type DeterministicCoveragePolicy = "soft" | "quota";
+interface CacheOnlyCoverageDescriptor {
+  readonly retrievalMode: string;
+  readonly frameworkVersion: string;
+  readonly answerPolicy: AnswerPolicy;
+  readonly selectionPolicy: DeterministicCoveragePolicy;
+  readonly cacheOnly: true;
+  readonly candidateCount: 50;
+  readonly originalQueryWeight: 2;
+  readonly expandedQueryWeight: 1;
+  readonly reciprocalRankConstant: 10;
+  readonly topWindow: 10;
+  readonly originalQuota: number;
+  readonly perExpansionQuota: number;
+}
+const V14A_STACK_DESCRIPTOR = {
+  retrievalMode: "v14a-anchored-deterministic-soft-coverage-stack",
+  frameworkVersion: "workspace-0.1.0+v14a-anchored-deterministic-soft-coverage-stack",
+  answerPolicy: "supported-evidence-needs",
+  selectionPolicy: "soft",
+  cacheOnly: true,
+  candidateCount: 50,
+  originalQueryWeight: 2,
+  expandedQueryWeight: 1,
+  reciprocalRankConstant: 10,
+  topWindow: 10,
+  originalQuota: 0,
+  perExpansionQuota: 0,
+} as const satisfies CacheOnlyCoverageDescriptor;
+const V14B_STACK_DESCRIPTOR = {
+  ...V14A_STACK_DESCRIPTOR,
+  retrievalMode: "v14b-anchored-deterministic-quota-coverage-stack",
+  frameworkVersion: "workspace-0.1.0+v14b-anchored-deterministic-quota-coverage-stack",
+  selectionPolicy: "quota",
+  originalQuota: 5,
+  perExpansionQuota: 1,
+} as const satisfies CacheOnlyCoverageDescriptor;
 const ADAPTIVE_EECE_STACK_FRAMEWORK_VERSION = "workspace-0.1.0+adaptive-eece-stack-v9";
 const MAX_EXISTING_STACK_CANDIDATES = 20;
 const MAX_EXISTING_STACK_FUSION = {
@@ -223,6 +268,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
   private readonly embeddingClient: EmbeddingClient | null;
   private readonly retrievalMode: KontextRetrievalMode;
   private readonly benchmarkDataDirectory: string;
+  private readonly precomputedIndexDirectory: string | null;
 
   constructor(
     private readonly manifest: RagEvalManifest,
@@ -234,9 +280,34 @@ export class KontextBrainAdapter implements FrameworkAdapter {
     this.benchmarkDataDirectory =
       options.benchmarkDataDirectory ??
       resolve(dirname(fileURLToPath(import.meta.url)), "../../data");
+    this.precomputedIndexDirectory = options.precomputedIndexDirectory ?? null;
   }
 
   async doctor(): Promise<FrameworkDoctorResult> {
+    if (isCacheOnlyCoverageMode(this.retrievalMode)) {
+      if (!validEmbeddingDimensions(this.manifest.models.embedding.dimensions)) {
+        return {
+          frameworkId: this.id,
+          status: "blocked",
+          version: frameworkVersion(this.retrievalMode),
+          detail: "A positive embedding dimension is required to validate precomputed vectors",
+        };
+      }
+      if (!this.precomputedIndexDirectory || !existsSync(this.precomputedIndexDirectory)) {
+        return {
+          frameworkId: this.id,
+          status: "blocked",
+          version: frameworkVersion(this.retrievalMode),
+          detail: "KONTEXT_RAG_EVAL_PRECOMPUTED_INDEX must reference a readable v13 index",
+        };
+      }
+      return {
+        frameworkId: this.id,
+        status: "ready",
+        version: frameworkVersion(this.retrievalMode),
+        detail: "read-only precomputed expansions and embeddings; deterministic coverage selection",
+      };
+    }
     if (this.retrievalMode !== "legacy") {
       if (!this.embeddingClient) {
         return {
@@ -383,6 +454,38 @@ export class KontextBrainAdapter implements FrameworkAdapter {
         true,
         true,
         true,
+      );
+    }
+    if (this.retrievalMode === "v14a-anchored-deterministic-soft-coverage-stack") {
+      return this.retrieveMaxExistingStack(
+        bundle,
+        options,
+        true,
+        false,
+        true,
+        true,
+        false,
+        true,
+        true,
+        true,
+        false,
+        V14A_STACK_DESCRIPTOR,
+      );
+    }
+    if (this.retrievalMode === "v14b-anchored-deterministic-quota-coverage-stack") {
+      return this.retrieveMaxExistingStack(
+        bundle,
+        options,
+        true,
+        false,
+        true,
+        true,
+        false,
+        true,
+        true,
+        true,
+        false,
+        V14B_STACK_DESCRIPTOR,
       );
     }
     if (this.retrievalMode === "adaptive-eece-stack") {
@@ -720,14 +823,19 @@ export class KontextBrainAdapter implements FrameworkAdapter {
     multiQuery = false,
     planAwareCoverage = false,
     anchoredEvidenceAnswer = false,
+    deterministicCoverage: CacheOnlyCoverageDescriptor | null = null,
   ): Promise<RetrievalResult[]> {
-    const embeddingClient = this.embeddingClient;
+    const embeddingClient =
+      this.embeddingClient ??
+      (deterministicCoverage ? cacheOnlyEmbeddingClient(this.manifest) : null);
     if (!embeddingClient) throw new Error("Max existing stack retrieval requires OPENAI_API_KEY");
-    const candidateCount = anchoredEvidenceAnswer
-      ? V13_CANDIDATE_COUNT
-      : honorDeclaredCandidateK
-        ? options.candidateK
-        : MAX_EXISTING_STACK_CANDIDATES;
+    const candidateCount = deterministicCoverage
+      ? deterministicCoverage.candidateCount
+      : anchoredEvidenceAnswer
+        ? V13_CANDIDATE_COUNT
+        : honorDeclaredCandidateK
+          ? options.candidateK
+          : MAX_EXISTING_STACK_CANDIDATES;
     const inheritedRetrievalMode = planAwareCoverage
       ? "v12-multi-query-plan-aware-coverage-stack"
       : multiQuery
@@ -747,9 +855,9 @@ export class KontextBrainAdapter implements FrameworkAdapter {
                   : hydrateSourceContext
                     ? "v4-source-hydrated-stack"
                     : "v3-max-existing-stack";
-    const retrievalMode = anchoredEvidenceAnswer
-      ? V13_STACK_DESCRIPTOR.retrievalMode
-      : inheritedRetrievalMode;
+    const retrievalMode =
+      deterministicCoverage?.retrievalMode ??
+      (anchoredEvidenceAnswer ? V13_STACK_DESCRIPTOR.retrievalMode : inheritedRetrievalMode);
     const inheritedFrameworkVersion = planAwareCoverage
       ? MULTI_QUERY_PLAN_AWARE_COVERAGE_STACK_FRAMEWORK_VERSION
       : multiQuery
@@ -769,10 +877,19 @@ export class KontextBrainAdapter implements FrameworkAdapter {
                   : hydrateSourceContext
                     ? SOURCE_HYDRATED_STACK_FRAMEWORK_VERSION
                     : MAX_EXISTING_STACK_FRAMEWORK_VERSION;
-    const frameworkVersion = anchoredEvidenceAnswer
-      ? V13_STACK_DESCRIPTOR.frameworkVersion
-      : inheritedFrameworkVersion;
-    const answerPolicy = anchoredEvidenceAnswer ? V13_STACK_DESCRIPTOR.answerPolicy : undefined;
+    const frameworkVersion =
+      deterministicCoverage?.frameworkVersion ??
+      (anchoredEvidenceAnswer ? V13_STACK_DESCRIPTOR.frameworkVersion : inheritedFrameworkVersion);
+    const answerPolicy =
+      deterministicCoverage?.answerPolicy ??
+      (anchoredEvidenceAnswer ? V13_STACK_DESCRIPTOR.answerPolicy : undefined);
+    const originalQueryWeight =
+      deterministicCoverage?.originalQueryWeight ??
+      (anchoredEvidenceAnswer ? V13_ORIGINAL_QUERY_WEIGHT : 1);
+    const expandedQueryWeight = deterministicCoverage?.expandedQueryWeight ?? EXPANDED_QUERY_WEIGHT;
+    const perspectiveReciprocalRankConstant =
+      deterministicCoverage?.reciprocalRankConstant ??
+      MAX_EXISTING_STACK_FUSION.reciprocalRankConstant;
     const domain = graphRagDomain(bundle.id);
     if (!domain && bundle.track !== "static-kb") {
       return bundle.queries.map((query) => ({
@@ -798,6 +915,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
           planAwareCoverage,
           anchoredEvidenceAnswer,
           candidateCount,
+          deterministicCoverage,
         ),
       }));
     }
@@ -812,40 +930,48 @@ export class KontextBrainAdapter implements FrameworkAdapter {
       ? readKnowledgeGraph(join(this.benchmarkDataDirectory, `gb-${domain}-kg.json`))
       : emptyKnowledgeGraph(docs);
     const indexDirectory = join(options.workDirectory, bundle.id, this.id, "index", retrievalMode);
+    const cacheOnly = deterministicCoverage?.cacheOnly ?? false;
+    const cacheIndexDirectory = cacheOnly
+      ? requiredPrecomputedIndexDirectory(this.precomputedIndexDirectory)
+      : indexDirectory;
     const indexDigest = kgDocumentDigest(docs);
     const documentEmbeddings = await embedWithCheckpoints(
       embeddingClient,
       docs.map((doc) => ({ id: doc.id, title: doc.title, text: doc.body })),
       "RETRIEVAL_DOCUMENT",
-      join(indexDirectory, "document-embedding-batches"),
+      join(cacheIndexDirectory, "document-embedding-batches"),
       indexDigest,
+      cacheOnly,
     );
     const baseQueryDigest = kgQueryDigest(bundle, indexDigest);
     const queryEmbeddings = await embedWithCheckpoints(
       embeddingClient,
       bundle.queries.map((query) => ({ id: query.id, text: query.text })),
       "RETRIEVAL_QUERY",
-      join(indexDirectory, "query-embedding-batches"),
+      join(cacheIndexDirectory, "query-embedding-batches"),
       baseQueryDigest,
+      cacheOnly,
     );
     const queryVectors = splitVectors(
       queryEmbeddings.vectors,
       bundle.queries.map((query) => query.id),
       embeddingClient.dimensions,
     );
-    const multiQueryExpander = multiQuery
-      ? new MultiQueryExpander(this.codexClient, {
-          model: this.manifest.models.answer.model,
-          reasoningEffort: this.manifest.models.answer.reasoningEffort ?? "medium",
-        })
-      : null;
-    const queryExpansions = multiQueryExpander
+    const multiQueryExpander =
+      multiQuery && !cacheOnly
+        ? new MultiQueryExpander(this.codexClient, {
+            model: this.manifest.models.answer.model,
+            reasoningEffort: this.manifest.models.answer.reasoningEffort ?? "medium",
+          })
+        : null;
+    const queryExpansions = multiQuery
       ? await mapWithConcurrency(bundle.queries, LLM_RERANK_CONCURRENCY, (query) =>
           expandWithCheckpoint(
             multiQueryExpander,
             query.id,
             query.text,
-            join(indexDirectory, "multi-query-expansions"),
+            join(cacheIndexDirectory, "multi-query-expansions"),
+            cacheOnly,
           ),
         )
       : bundle.queries.map((query) => emptyMultiQueryCheckpoint(query.id, query.text));
@@ -863,15 +989,16 @@ export class KontextBrainAdapter implements FrameworkAdapter {
       embeddingClient,
       expandedQueryInputs,
       "RETRIEVAL_QUERY",
-      join(indexDirectory, "multi-query-embedding-batches"),
+      join(cacheIndexDirectory, "multi-query-embedding-batches"),
       expandedQueryDigest,
+      cacheOnly,
     );
     const expandedQueryVectors = splitVectors(
       expandedQueryEmbeddings.vectors,
       expandedQueryInputs.map((input) => input.id),
       embeddingClient.dimensions,
     );
-    const vectorIdsByQuery = new Map(
+    const vectorPerspectivesByQuery = new Map(
       bundle.queries.map((query) => {
         const queryVector = queryVectors.get(query.id);
         if (!queryVector) throw new Error(`Missing KG query embedding ${query.id}`);
@@ -898,16 +1025,22 @@ export class KontextBrainAdapter implements FrameworkAdapter {
             return doc ? [doc.id] : [];
           });
         });
-        const ids = multiQuery
+        const fusedIds = multiQuery
           ? fuseQueryPerspectives(originalIds, perspectiveIds, {
               limit: candidateCount,
-              originalQueryWeight: anchoredEvidenceAnswer ? V13_ORIGINAL_QUERY_WEIGHT : 1,
-              expandedQueryWeight: EXPANDED_QUERY_WEIGHT,
-              reciprocalRankConstant: MAX_EXISTING_STACK_FUSION.reciprocalRankConstant,
+              originalQueryWeight,
+              expandedQueryWeight,
+              reciprocalRankConstant: perspectiveReciprocalRankConstant,
             }).map((candidate) => candidate.id)
           : originalIds;
-        return [query.id, ids] as const;
+        return [query.id, { originalIds, perspectiveIds, fusedIds }] as const;
       }),
+    );
+    const vectorIdsByQuery = new Map(
+      Array.from(vectorPerspectivesByQuery, ([queryId, perspectives]) => [
+        queryId,
+        perspectives.fusedIds,
+      ]),
     );
     const seeds = bundle.queries.map((query) => ({
       question: query.text,
@@ -966,6 +1099,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
       planAwareCoverage,
       anchoredEvidenceAnswer,
       candidateCount,
+      deterministicCoverage,
     );
     const retrievalQueryDigest = multiQuery ? expandedQueryDigest : baseQueryDigest;
     const checkpointDirectory = join(indexDirectory, "retrieval-checkpoints", retrievalQueryDigest);
@@ -975,8 +1109,11 @@ export class KontextBrainAdapter implements FrameworkAdapter {
       answerPolicy,
       components: [
         ...(adaptiveEece ? ["adaptive Entity–Event–Claim–Evidence KG enrichment"] : []),
-        ...(multiQuery ? ["local GPT multi-query expansion"] : []),
-        "OpenAI cosine vector candidates",
+        ...(multiQuery && !cacheOnly ? ["local GPT multi-query expansion"] : []),
+        ...(cacheOnly ? ["precomputed multi-query perspectives"] : []),
+        cacheOnly
+          ? "precomputed OpenAI cosine vector candidates"
+          : "OpenAI cosine vector candidates",
         "production BidirectionalNLayerRetriever",
         "query-aware evidence-backed KG traversal",
         "corpus BM25 candidates",
@@ -993,6 +1130,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
         provider: "openai",
         model: embeddingClient.model,
         dimensions: embeddingClient.dimensions,
+        cacheOnly,
         vectorSeedCount: graphFanout.seedChunks,
         vectorCandidateCount: candidateCount,
         lexicalSeedCount: graphFanout.lexicalSeedChunks,
@@ -1003,18 +1141,22 @@ export class KontextBrainAdapter implements FrameworkAdapter {
       multiQuery: multiQuery
         ? {
             policyVersion: MULTI_QUERY_POLICY_VERSION,
-            execution: "codex-cli",
-            model: this.manifest.models.answer.model,
-            reasoningEffort: this.manifest.models.answer.reasoningEffort,
+            execution: cacheOnly ? "precomputed-cache" : "codex-cli",
+            ...(cacheOnly
+              ? {}
+              : {
+                  model: this.manifest.models.answer.model,
+                  reasoningEffort: this.manifest.models.answer.reasoningEffort,
+                }),
             originalQueryPreserved: true,
             maximumExpandedQueries: 3,
             perspectiveFusion: {
               method: "reciprocal-rank-fusion",
-              reciprocalRankConstant: MAX_EXISTING_STACK_FUSION.reciprocalRankConstant,
-              ...(anchoredEvidenceAnswer
+              reciprocalRankConstant: perspectiveReciprocalRankConstant,
+              ...(anchoredEvidenceAnswer || deterministicCoverage
                 ? {
-                    originalQueryWeight: V13_ORIGINAL_QUERY_WEIGHT,
-                    expandedQueryWeight: EXPANDED_QUERY_WEIGHT,
+                    originalQueryWeight,
+                    expandedQueryWeight,
                   }
                 : { equalWeight: true }),
             },
@@ -1022,6 +1164,23 @@ export class KontextBrainAdapter implements FrameworkAdapter {
             failedExpansions: queryExpansions.filter((expansion) => expansion.error !== null)
               .length,
             goldAccess: false,
+          }
+        : null,
+      deterministicCoverage: deterministicCoverage
+        ? {
+            policy: deterministicCoverage.selectionPolicy,
+            topWindow: deterministicCoverage.topWindow,
+            originalQuota: deterministicCoverage.originalQuota,
+            perExpansionQuota: deterministicCoverage.perExpansionQuota,
+            goldAccess: false,
+          }
+        : null,
+      cacheReuse: cacheOnly
+        ? {
+            readOnly: true,
+            newCodexCalls: 0,
+            newEmbeddingCalls: 0,
+            newInputTokens: 0,
           }
         : null,
       sourceHydration: hydrateSourceContext
@@ -1050,17 +1209,19 @@ export class KontextBrainAdapter implements FrameworkAdapter {
       documentEmbeddings.inputTokens +
       queryEmbeddings.inputTokens +
       expandedQueryEmbeddings.inputTokens;
-    writeJsonAtomic(join(indexDirectory, "embedding-usage.json"), {
-      provider: "openai",
-      model: embeddingClient.model,
-      dimensions: embeddingClient.dimensions,
-      indexInputTokens: documentEmbeddings.inputTokens,
-      queryInputTokens: queryEmbeddings.inputTokens,
-      expandedQueryInputTokens: expandedQueryEmbeddings.inputTokens,
-      totalInputTokens: totalEmbeddingInputTokens,
-      inputPriceUsdPerMillionTokens: 0.02,
-      estimatedCostUsd: (totalEmbeddingInputTokens * 0.02) / 1_000_000,
-    });
+    if (!cacheOnly) {
+      writeJsonAtomic(join(indexDirectory, "embedding-usage.json"), {
+        provider: "openai",
+        model: embeddingClient.model,
+        dimensions: embeddingClient.dimensions,
+        indexInputTokens: documentEmbeddings.inputTokens,
+        queryInputTokens: queryEmbeddings.inputTokens,
+        expandedQueryInputTokens: expandedQueryEmbeddings.inputTokens,
+        totalInputTokens: totalEmbeddingInputTokens,
+        inputPriceUsdPerMillionTokens: 0.02,
+        estimatedCostUsd: (totalEmbeddingInputTokens * 0.02) / 1_000_000,
+      });
+    }
 
     return mapWithConcurrency(
       bundle.queries,
@@ -1109,9 +1270,9 @@ export class KontextBrainAdapter implements FrameworkAdapter {
           const bm25Ids = multiQuery
             ? fuseQueryPerspectives(bm25Perspectives[0] ?? [], bm25Perspectives.slice(1), {
                 limit: candidateCount,
-                originalQueryWeight: anchoredEvidenceAnswer ? V13_ORIGINAL_QUERY_WEIGHT : 1,
-                expandedQueryWeight: EXPANDED_QUERY_WEIGHT,
-                reciprocalRankConstant: MAX_EXISTING_STACK_FUSION.reciprocalRankConstant,
+                originalQueryWeight,
+                expandedQueryWeight,
+                reciprocalRankConstant: perspectiveReciprocalRankConstant,
               }).map((candidate) => candidate.id)
             : (bm25Perspectives[0] ?? []);
           const candidateIds = Array.from(new Set([...graphIds, ...vectorIds, ...bm25Ids]));
@@ -1127,9 +1288,35 @@ export class KontextBrainAdapter implements FrameworkAdapter {
                 weight: MAX_EXISTING_STACK_FUSION.contextRerank,
               },
             ],
-            rerankWithLlm ? candidateCount : options.topK,
+            rerankWithLlm || deterministicCoverage ? candidateCount : options.topK,
             MAX_EXISTING_STACK_FUSION.reciprocalRankConstant,
           );
+          const vectorPerspectives = vectorPerspectivesByQuery.get(query.id);
+          const deterministicallySelected =
+            deterministicCoverage?.selectionPolicy === "quota" && vectorPerspectives
+              ? applyOriginalAndExpansionQuota(
+                  fusedCandidates,
+                  fuseVectorAndBm25Perspective(
+                    vectorPerspectives.originalIds,
+                    bm25Perspectives[0] ?? [],
+                    candidateCount,
+                    deterministicCoverage.reciprocalRankConstant,
+                  ),
+                  vectorPerspectives.perspectiveIds.map((vectorIds, index) =>
+                    fuseVectorAndBm25Perspective(
+                      vectorIds,
+                      bm25Perspectives[index + 1] ?? [],
+                      candidateCount,
+                      deterministicCoverage.reciprocalRankConstant,
+                    ),
+                  ),
+                  {
+                    topWindow: deterministicCoverage.topWindow,
+                    originalQuota: deterministicCoverage.originalQuota,
+                    perExpansionQuota: deterministicCoverage.perExpansionQuota,
+                  },
+                )
+              : fusedCandidates;
           const fused = llmReranker
             ? await llmReranker.rerank(
                 query.text,
@@ -1140,7 +1327,9 @@ export class KontextBrainAdapter implements FrameworkAdapter {
                 recallSafeLlmRerank ? candidateCount : options.topK,
                 planAwareCoverage ? (expansion?.queries ?? []) : [],
               )
-            : fusedCandidates;
+            : deterministicCoverage
+              ? deterministicallySelected.slice(0, options.topK)
+              : deterministicallySelected;
           const chunkEvidence = fused.flatMap((candidate, rank) => {
             const graphHit = graphByChunk.get(candidate.id);
             const doc = docsById.get(candidate.id);
@@ -1286,10 +1475,11 @@ interface MultiQueryExpansionCheckpoint extends MultiQueryExpansion {
 }
 
 async function expandWithCheckpoint(
-  expander: Pick<MultiQueryExpander, "expand">,
+  expander: Pick<MultiQueryExpander, "expand"> | null,
   queryId: string,
   question: string,
   directory: string,
+  cacheOnly = false,
 ): Promise<MultiQueryExpansionCheckpoint> {
   const questionDigest = createHash("sha256").update(question).digest("hex");
   const checkpointPath = join(
@@ -1301,7 +1491,7 @@ async function expandWithCheckpoint(
       const cached = JSON.parse(
         readFileSync(checkpointPath, "utf8"),
       ) as MultiQueryExpansionCheckpoint;
-      if (
+      const structurallyValid =
         cached.schemaVersion === 1 &&
         cached.policyVersion === MULTI_QUERY_POLICY_VERSION &&
         cached.queryId === queryId &&
@@ -1309,14 +1499,23 @@ async function expandWithCheckpoint(
         Array.isArray(cached.queries) &&
         cached.queries.length <= 3 &&
         cached.queries.every((query) => typeof query === "string") &&
-        (cached.error === null || typeof cached.error === "string")
-      ) {
+        (cached.error === null || typeof cached.error === "string");
+      const cacheOnlyValid =
+        structurallyValid &&
+        cached.error === null &&
+        cached.queries.length > 0 &&
+        validCachedExpandedQueries(cached.queries, question);
+      if (structurallyValid && (!cacheOnly || cacheOnlyValid)) {
         return cached;
       }
     } catch {
       // Invalid or interrupted expansion checkpoints are regenerated below.
     }
   }
+  if (cacheOnly) {
+    throw new Error(`Required cached multi-query expansion missing or invalid for ${queryId}`);
+  }
+  if (!expander) throw new Error("Multi-query expansion requires a configured expander");
   const expansion = await expander.expand(question);
   const checkpoint: MultiQueryExpansionCheckpoint = {
     schemaVersion: 1,
@@ -1327,6 +1526,21 @@ async function expandWithCheckpoint(
   };
   writeJsonAtomic(checkpointPath, checkpoint);
   return checkpoint;
+}
+
+function validCachedExpandedQueries(queries: readonly string[], question: string): boolean {
+  const seen = new Set<string>([normalizedQueryKey(question)]);
+  for (const query of queries) {
+    const trimmed = query.trim();
+    const key = normalizedQueryKey(trimmed);
+    if (!trimmed || trimmed.length > 500 || seen.has(key)) return false;
+    seen.add(key);
+  }
+  return true;
+}
+
+function normalizedQueryKey(value: string): string {
+  return value.toLocaleLowerCase().replace(/\s+/g, " ").trim();
 }
 
 function emptyMultiQueryCheckpoint(
@@ -1400,11 +1614,12 @@ async function embedWithCheckpoints(
   task: "RETRIEVAL_DOCUMENT" | "RETRIEVAL_QUERY",
   directory: string,
   digest: string,
+  cacheOnly = false,
 ): Promise<EmbeddingCheckpointResult> {
   const batchSize = 100;
   const vectors = new Float32Array(inputs.length * client.dimensions);
   let inputTokens = 0;
-  mkdirSync(directory, { recursive: true });
+  if (!cacheOnly) mkdirSync(directory, { recursive: true });
   for (let offset = 0; offset < inputs.length; offset += batchSize) {
     const batch = inputs.slice(offset, offset + batchSize);
     const stem = `batch-${String(offset).padStart(8, "0")}`;
@@ -1416,6 +1631,11 @@ async function embedWithCheckpoints(
       vectors.set(cached.vectors, offset * client.dimensions);
       inputTokens += cached.inputTokens;
       continue;
+    }
+    if (cacheOnly) {
+      throw new Error(
+        `Required cached ${task.toLowerCase()} embedding batch missing or invalid at ${stem}`,
+      );
     }
     const usageBefore = client.getUsage();
     const embeddings = await client.embed(batch, task);
@@ -1604,6 +1824,59 @@ function summarizeForClassification(text: string): string {
   return text.replace(/\s+/g, " ").trim().slice(0, 500);
 }
 
+function fuseVectorAndBm25Perspective(
+  vectorIds: readonly string[],
+  bm25Ids: readonly string[],
+  limit: number,
+  reciprocalRankConstant: number,
+): string[] {
+  return fuseRankings(
+    [
+      { name: "vector", ids: vectorIds, weight: MAX_EXISTING_STACK_FUSION.vector },
+      { name: "bm25", ids: bm25Ids, weight: MAX_EXISTING_STACK_FUSION.bm25 },
+    ],
+    limit,
+    reciprocalRankConstant,
+  ).map((candidate) => candidate.id);
+}
+
+function isCacheOnlyCoverageMode(mode: KontextRetrievalMode): boolean {
+  return (
+    mode === "v14a-anchored-deterministic-soft-coverage-stack" ||
+    mode === "v14b-anchored-deterministic-quota-coverage-stack"
+  );
+}
+
+function requiredPrecomputedIndexDirectory(directory: string | null): string {
+  if (!directory || !existsSync(directory)) {
+    throw new Error(
+      "KONTEXT_RAG_EVAL_PRECOMPUTED_INDEX must reference a readable precomputed index",
+    );
+  }
+  return directory;
+}
+
+function validEmbeddingDimensions(dimensions: number | undefined): dimensions is number {
+  return typeof dimensions === "number" && Number.isInteger(dimensions) && dimensions > 0;
+}
+
+function cacheOnlyEmbeddingClient(manifest: RagEvalManifest): EmbeddingClient {
+  const dimensions = manifest.models.embedding.dimensions;
+  if (!validEmbeddingDimensions(dimensions)) {
+    throw new Error("Cache-only retrieval requires a positive manifest embedding dimension");
+  }
+  return {
+    model: manifest.models.embedding.model,
+    dimensions,
+    async embed(): Promise<never> {
+      throw new Error("Cache-only retrieval cannot call the embedding API");
+    },
+    getUsage() {
+      return { requests: 0, inputTokens: 0, totalTokens: 0 };
+    },
+  };
+}
+
 function frameworkVersion(mode: KontextRetrievalMode): string {
   if (mode === "bidirectional-kg") return BIDIRECTIONAL_FRAMEWORK_VERSION;
   if (mode === "max-existing-stack") return MAX_EXISTING_STACK_FRAMEWORK_VERSION;
@@ -1630,6 +1903,12 @@ function frameworkVersion(mode: KontextRetrievalMode): string {
   if (mode === "multi-query-anchored-evidence-answer-stack") {
     return V13_STACK_DESCRIPTOR.frameworkVersion;
   }
+  if (mode === "v14a-anchored-deterministic-soft-coverage-stack") {
+    return V14A_STACK_DESCRIPTOR.frameworkVersion;
+  }
+  if (mode === "v14b-anchored-deterministic-quota-coverage-stack") {
+    return V14B_STACK_DESCRIPTOR.frameworkVersion;
+  }
   if (mode === "adaptive-eece-stack") return ADAPTIVE_EECE_STACK_FRAMEWORK_VERSION;
   return "workspace-0.1.0";
 }
@@ -1646,6 +1925,7 @@ function maxExistingStackDigest(
   planAwareCoverage = false,
   anchoredEvidenceAnswer = false,
   candidateCount = MAX_EXISTING_STACK_CANDIDATES,
+  deterministicCoverage: CacheOnlyCoverageDescriptor | null = null,
 ): string {
   const inheritedStackIdentity = planAwareCoverage
     ? `\0v12-multi-query-plan-aware-coverage-stack\0${MULTI_QUERY_POLICY_VERSION}\0`
@@ -1666,9 +1946,25 @@ function maxExistingStackDigest(
                 : hydrateSourceContext
                   ? "\0v4-source-hydrated-stack\0"
                   : "\0v3-max-existing-stack\0";
-  const stackIdentity = anchoredEvidenceAnswer
-    ? `\0v13-anchored-evidence-answer-stack\0${MULTI_QUERY_POLICY_VERSION}\0original-query-weight=${V13_ORIGINAL_QUERY_WEIGHT}\0expanded-query-weight=${EXPANDED_QUERY_WEIGHT}\0`
-    : inheritedStackIdentity;
+  const stackIdentity = deterministicCoverage
+    ? `\0${JSON.stringify({
+        retrievalMode: deterministicCoverage.retrievalMode,
+        frameworkVersion: deterministicCoverage.frameworkVersion,
+        answerPolicy: deterministicCoverage.answerPolicy,
+        selectionPolicy: deterministicCoverage.selectionPolicy,
+        cacheOnly: deterministicCoverage.cacheOnly,
+        candidateCount: deterministicCoverage.candidateCount,
+        originalQueryWeight: deterministicCoverage.originalQueryWeight,
+        expandedQueryWeight: deterministicCoverage.expandedQueryWeight,
+        reciprocalRankConstant: deterministicCoverage.reciprocalRankConstant,
+        topWindow: deterministicCoverage.topWindow,
+        originalQuota: deterministicCoverage.originalQuota,
+        perExpansionQuota: deterministicCoverage.perExpansionQuota,
+        multiQueryPolicyVersion: MULTI_QUERY_POLICY_VERSION,
+      })}\0`
+    : anchoredEvidenceAnswer
+      ? `\0v13-anchored-evidence-answer-stack\0${MULTI_QUERY_POLICY_VERSION}\0original-query-weight=${V13_ORIGINAL_QUERY_WEIGHT}\0expanded-query-weight=${EXPANDED_QUERY_WEIGHT}\0`
+      : inheritedStackIdentity;
   const hash = createHash("sha256")
     .update(manifestDigest(manifest))
     .update(stackIdentity)

@@ -22,6 +22,12 @@ export interface QueryPerspectiveFusionOptions {
   readonly reciprocalRankConstant: number;
 }
 
+export interface PerspectiveQuotaOptions {
+  readonly topWindow: number;
+  readonly originalQuota: number;
+  readonly perExpansionQuota: number;
+}
+
 interface IndexedDocument {
   readonly id: string;
   readonly tokens: readonly string[];
@@ -132,6 +138,50 @@ export function fuseQueryPerspectives(
     options.limit,
     options.reciprocalRankConstant,
   );
+}
+
+export function applyOriginalAndExpansionQuota(
+  baseCandidates: readonly FusedCandidate[],
+  originalQueryIds: readonly string[],
+  expandedQueryIds: readonly (readonly string[])[],
+  options: PerspectiveQuotaOptions,
+): FusedCandidate[] {
+  const candidatesById = new Map<string, FusedCandidate>();
+  for (const candidate of baseCandidates) {
+    if (!candidatesById.has(candidate.id)) candidatesById.set(candidate.id, candidate);
+  }
+  const base = [...candidatesById.values()];
+  const selected: FusedCandidate[] = [];
+  const selectedIds = new Set<string>();
+  const appendFrom = (ids: readonly string[], limit: number) => {
+    let appended = 0;
+    for (const id of ids) {
+      if (appended >= limit) break;
+      const candidate = candidatesById.get(id);
+      if (!candidate || selectedIds.has(id)) continue;
+      selected.push(candidate);
+      selectedIds.add(id);
+      appended += 1;
+    }
+  };
+
+  const topWindow = Math.max(0, options.topWindow);
+  appendFrom(originalQueryIds, Math.min(Math.max(0, options.originalQuota), topWindow));
+  for (const ids of expandedQueryIds) {
+    appendFrom(
+      ids,
+      Math.min(Math.max(0, options.perExpansionQuota), Math.max(0, topWindow - selected.length)),
+    );
+  }
+  appendFrom(
+    base.map((candidate) => candidate.id),
+    Math.max(0, topWindow - selected.length),
+  );
+  appendFrom(
+    base.map((candidate) => candidate.id),
+    base.length,
+  );
+  return selected;
 }
 
 function tokenize(value: string): string[] {

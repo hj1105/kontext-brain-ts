@@ -476,3 +476,50 @@ Held-out test run directories:
 These are new v13-only paths and do not overwrite v3, v6, v7, v11, or v12.
 Outcome: pending.
 ```
+
+## Cache-only deterministic coverage selection
+
+```text
+Experiment ID: kontext-cache-only-deterministic-coverage-v14-2026-08-22
+Registered at (UTC): 2026-08-22T07:19:51Z, before any v14 retrieval, answer,
+  judgement, or score exists
+Owner: benchmark operator / Codex
+Hypothesis: v13's original-query-anchored multi-query candidates contain the
+  required evidence before its quota-limited LLM selector fails. Reusing those
+  frozen question expansions and embeddings, disabling the LLM reranker, and
+  applying deterministic coverage should complete retrieval without new model
+  calls. v14a keeps weighted-RRF order as a soft coverage baseline. v14b applies
+  one fixed top-10 quota: at least five original-query candidates and one unique
+  candidate from each available expansion before filling from weighted RRF.
+Dataset and development split digest: run the two frozen policies unchanged on
+  all 2,062 Medical and 2,010 Novel retrieval queries, then use BEIR SciFact and
+  NFCorpus as retrieval-only generalization gates with the same configuration.
+  Existing v13 expansion and embedding checkpoints are read-only inputs. No
+  existing v3/v6/v7/v12/v13 artifact may be modified or resumed by this test.
+Eligible frameworks: kontext-brain only (retrieval-policy experiment)
+Parameter family and allowed values: exactly two policies. Both preserve the
+  v13 maximum of three question-only expansions, original-query weight=2,
+  expanded-query weight=1, perspective RRF k=10, candidate-k=50, outer fusion,
+  graph traversal, 5,000-character windows, 50,000-character context budget,
+  and supported-evidence-needs answer-policy identity. Both set the LLM
+  reranker off and require cacheOnly=true. v14a uses selectionPolicy=soft with
+  no quota. v14b uses topWindow=10, originalQuota=5, perExpansionQuota=1.
+  Dataset ID, reference answer, gold evidence, and judge output are unavailable.
+  Cache miss or invalid cache is fail-closed with zero Codex/OpenAI calls.
+Maximum trials per framework: exactly two new policies, v14a and v14b. No
+  score-driven parameter change or per-dataset branch is permitted.
+Selection metric: report recall@10 and raw context precision against v7/v12/v13
+  where available; Novel and BEIR are mandatory generalization guards. Report
+  zero newly incurred expansion/embedding/reranker tokens and calls separately
+  from historical tokens represented by reused caches.
+Held-out test run directories:
+  openai-small-kontext-v14a-cache-only-soft-coverage-medical-2026-08-22
+  openai-small-kontext-v14a-cache-only-soft-coverage-novel-2026-08-22
+  openai-small-kontext-v14a-cache-only-soft-coverage-scifact-2026-08-22
+  openai-small-kontext-v14a-cache-only-soft-coverage-nfcorpus-2026-08-22
+  openai-small-kontext-v14b-cache-only-quota-coverage-medical-2026-08-22
+  openai-small-kontext-v14b-cache-only-quota-coverage-novel-2026-08-22
+  openai-small-kontext-v14b-cache-only-quota-coverage-scifact-2026-08-22
+  openai-small-kontext-v14b-cache-only-quota-coverage-nfcorpus-2026-08-22
+Outcome: pending.
+```

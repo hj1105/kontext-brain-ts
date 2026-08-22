@@ -4,17 +4,53 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import type { CommandRunner } from "./codex-json.js";
 import type { DatasetBundle } from "./contracts.js";
-import type { EmbeddingClient } from "./openai-embeddings.js";
-import { ExternalCommandFrameworkAdapter, VectorRagRerankerAdapter } from "./frameworks.js";
+import {
+  ExternalCommandFrameworkAdapter,
+  VectorRagRerankerAdapter,
+  createFrameworkAdapters,
+} from "./frameworks.js";
 import { DEFAULT_RAG_EVAL_MANIFEST } from "./manifest.js";
+import type { EmbeddingClient } from "./openai-embeddings.js";
 
 const originalCommand = process.env.RAG_EVAL_GRAPHRAG_COMMAND;
+const originalOpenAiApiKey = process.env.OPENAI_API_KEY;
+const originalKontextMode = process.env.KONTEXT_RAG_EVAL_MODE;
+const originalPrecomputedIndex = process.env.KONTEXT_RAG_EVAL_PRECOMPUTED_INDEX;
 const temporaryDirectories: string[] = [];
 
 afterEach(() => {
   if (originalCommand === undefined) delete process.env.RAG_EVAL_GRAPHRAG_COMMAND;
   else process.env.RAG_EVAL_GRAPHRAG_COMMAND = originalCommand;
-  for (const directory of temporaryDirectories.splice(0)) rmSync(directory, { recursive: true, force: true });
+  restoreEnvironment("OPENAI_API_KEY", originalOpenAiApiKey);
+  restoreEnvironment("KONTEXT_RAG_EVAL_MODE", originalKontextMode);
+  restoreEnvironment("KONTEXT_RAG_EVAL_PRECOMPUTED_INDEX", originalPrecomputedIndex);
+  for (const directory of temporaryDirectories.splice(0))
+    rmSync(directory, { recursive: true, force: true });
+});
+
+describe("kontext cache-only coverage modes", () => {
+  it.each([
+    [
+      "v14a-anchored-deterministic-soft-coverage-stack",
+      "workspace-0.1.0+v14a-anchored-deterministic-soft-coverage-stack",
+    ],
+    [
+      "v14b-anchored-deterministic-quota-coverage-stack",
+      "workspace-0.1.0+v14b-anchored-deterministic-quota-coverage-stack",
+    ],
+  ])("wires %s and its precomputed index through the framework factory", async (mode, version) => {
+    const precomputedIndexDirectory = mkdtempSync(join(tmpdir(), "rag-eval-v14-cache-"));
+    temporaryDirectories.push(precomputedIndexDirectory);
+    restoreEnvironment("OPENAI_API_KEY", undefined);
+    process.env.KONTEXT_RAG_EVAL_MODE = mode;
+    process.env.KONTEXT_RAG_EVAL_PRECOMPUTED_INDEX = precomputedIndexDirectory;
+
+    const adapter = createFrameworkAdapters(DEFAULT_RAG_EVAL_MANIFEST).find(
+      (candidate) => candidate.id === "kontext-brain",
+    );
+
+    await expect(adapter?.doctor()).resolves.toMatchObject({ status: "ready", version });
+  });
 });
 
 describe("vector embedding checkpoints", () => {
@@ -24,23 +60,27 @@ describe("vector embedding checkpoints", () => {
     const bundle: DatasetBundle = {
       id: "graphrag-bench-medical",
       track: "static-kb",
-      documents: [{
-        id: "document-1",
-        sourceId: "source-1",
-        title: "Long document",
-        text: "word ".repeat(23_000),
-        metadata: {},
-      }],
-      queries: [{
-        id: "query-1",
-        text: "word",
-        referenceAnswer: "word",
-        goldEvidenceIds: ["source-1"],
-        goldEvidenceText: ["word"],
-        answerable: true,
-        category: "test",
-        metadata: {},
-      }],
+      documents: [
+        {
+          id: "document-1",
+          sourceId: "source-1",
+          title: "Long document",
+          text: "word ".repeat(23_000),
+          metadata: {},
+        },
+      ],
+      queries: [
+        {
+          id: "query-1",
+          text: "word",
+          referenceAnswer: "word",
+          goldEvidenceIds: ["source-1"],
+          goldEvidenceText: ["word"],
+          answerable: true,
+          category: "test",
+          metadata: {},
+        },
+      ],
       provenance: { source: "test", version: "1", license: "test" },
     };
     const firstClient = new FakeEmbeddingClient(2);
@@ -49,8 +89,9 @@ describe("vector embedding checkpoints", () => {
       DEFAULT_RAG_EVAL_MANIFEST,
     );
 
-    await expect(firstAdapter.retrieve(bundle, { workDirectory, topK: 1, candidateK: 1 }))
-      .rejects.toThrow("simulated quota failure");
+    await expect(
+      firstAdapter.retrieve(bundle, { workDirectory, topK: 1, candidateK: 1 }),
+    ).rejects.toThrow("simulated quota failure");
     expect(firstClient.documentBatchIds[0]).toHaveLength(100);
 
     const resumedClient = new FakeEmbeddingClient(null);
@@ -58,7 +99,11 @@ describe("vector embedding checkpoints", () => {
       resumedClient as unknown as EmbeddingClient,
       DEFAULT_RAG_EVAL_MANIFEST,
     );
-    const results = await resumedAdapter.retrieve(bundle, { workDirectory, topK: 1, candidateK: 1 });
+    const results = await resumedAdapter.retrieve(bundle, {
+      workDirectory,
+      topK: 1,
+      candidateK: 1,
+    });
 
     expect(results[0]?.status).toBe("ok");
     expect(resumedClient.documentBatchIds[0]?.[0]).toContain("vector-chunk-000100");
@@ -83,12 +128,21 @@ class FakeEmbeddingClient {
     if (task === "RETRIEVAL_DOCUMENT") this.documentBatchIds.push(inputs.map((input) => input.id));
     if (this.failOnCall === this.calls) throw new Error("simulated quota failure");
     this.inputTokens += inputs.length;
-    return inputs.map((input) => ({ id: input.id, values: Array.from({ length: 1536 }, () => 0.01) }));
+    return inputs.map((input) => ({
+      id: input.id,
+      values: Array.from({ length: 1536 }, () => 0.01),
+    }));
   }
 
   getUsage(): { requests: number; inputTokens: number; totalTokens: number } {
     return { requests: this.calls, inputTokens: this.inputTokens, totalTokens: this.inputTokens };
   }
+}
+
+function restoreEnvironment(name: string, value: string | undefined): void {
+  // biome-ignore lint/performance/noDelete: tests must restore an originally absent variable.
+  if (value === undefined) delete process.env[name];
+  else process.env[name] = value;
 }
 
 describe("external framework doctor", () => {
