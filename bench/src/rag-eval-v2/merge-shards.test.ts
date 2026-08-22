@@ -6,6 +6,41 @@ import { mergeJudgeShardRecords } from "./merge-judge-shards.js";
 import { answerInputDigest, judgeInputDigest } from "./pipeline.js";
 
 describe("answer shard merge validation", () => {
+  it("accepts identical source duplicates but rejects conflicting retrieval duplicates", () => {
+    const fixture = mergeFixture();
+    const retrieval0 = requiredRecord(fixture.retrievals, 0);
+    const answer0 = requiredRecord(fixture.answers, 0);
+    const answer1 = requiredRecord(fixture.answers, 1);
+    const common = {
+      manifest: DEFAULT_RAG_EVAL_MANIFEST,
+      bundle: fixture.bundle,
+      evaluationQueries: fixture.bundle.queries,
+      shardCount: 2,
+      shards: [
+        { shardIndex: 0, records: [answer0] },
+        { shardIndex: 1, records: [answer1] },
+      ],
+    } as const;
+
+    expect(
+      mergeAnswerShardRecords({
+        ...common,
+        retrievals: [retrieval0, retrieval0, requiredRecord(fixture.retrievals, 1)],
+      }),
+    ).toEqual(fixture.answers);
+
+    expect(() =>
+      mergeAnswerShardRecords({
+        ...common,
+        retrievals: [
+          retrieval0,
+          { ...retrieval0, latencyMs: retrieval0.latencyMs + 1 },
+          requiredRecord(fixture.retrievals, 1),
+        ],
+      }),
+    ).toThrow(/duplicate retrieval result/i);
+  });
+
   it("rejects stale digests instead of accepting a primary fallback", () => {
     const fixture = mergeFixture();
     const answer0 = requiredRecord(fixture.answers, 0);
@@ -96,6 +131,42 @@ describe("answer shard merge validation", () => {
 });
 
 describe("judge shard merge validation", () => {
+  it("accepts identical source duplicates but rejects conflicting retrieval duplicates", () => {
+    const fixture = mergeFixture();
+    const retrieval0 = requiredRecord(fixture.retrievals, 0);
+    const judgement0 = requiredRecord(fixture.judgements, 0);
+    const judgement1 = requiredRecord(fixture.judgements, 1);
+    const common = {
+      manifest: DEFAULT_RAG_EVAL_MANIFEST,
+      bundle: fixture.bundle,
+      evaluationQueries: fixture.bundle.queries,
+      answers: fixture.answers,
+      shardCount: 2,
+      shards: [
+        { shardIndex: 0, records: [judgement0] },
+        { shardIndex: 1, records: [judgement1] },
+      ],
+    } as const;
+
+    expect(
+      mergeJudgeShardRecords({
+        ...common,
+        retrievals: [retrieval0, retrieval0, requiredRecord(fixture.retrievals, 1)],
+      }),
+    ).toEqual(fixture.judgements);
+
+    expect(() =>
+      mergeJudgeShardRecords({
+        ...common,
+        retrievals: [
+          retrieval0,
+          { ...retrieval0, latencyMs: retrieval0.latencyMs + 1 },
+          requiredRecord(fixture.retrievals, 1),
+        ],
+      }),
+    ).toThrow(/duplicate retrieval result/i);
+  });
+
   it("rejects stale, missing, and misassigned judgement records", () => {
     const fixture = mergeFixture();
     const judgement0 = requiredRecord(fixture.judgements, 0);

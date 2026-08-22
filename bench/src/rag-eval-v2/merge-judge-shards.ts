@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { isDeepStrictEqual } from "node:util";
 import type {
   AnswerResult,
   BenchmarkQuery,
@@ -184,9 +185,10 @@ function uniqueRecordsByQuery<T extends { readonly queryId: string }>(
 ): Map<string, T> {
   const output = new Map<string, T>();
   for (const record of records) {
-    if (output.has(record.queryId))
+    const existing = output.get(record.queryId);
+    if (existing && !isDeepStrictEqual(existing, record))
       throw new Error(`Duplicate ${label} result for ${record.queryId}`);
-    output.set(record.queryId, record);
+    if (!existing) output.set(record.queryId, record);
   }
   return output;
 }
