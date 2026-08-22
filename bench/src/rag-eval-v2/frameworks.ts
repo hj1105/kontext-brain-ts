@@ -663,26 +663,36 @@ function validateExternalResults(
   frameworkId: FrameworkId,
   records: readonly RetrievalResult[],
 ): void {
-  const expectedQueryIds = new Set(bundle.queries.map((query) => query.id));
-  const seen = new Set<string>();
+  const expectedQueryCounts = new Map<string, number>();
+  for (const query of bundle.queries) {
+    expectedQueryCounts.set(query.id, (expectedQueryCounts.get(query.id) ?? 0) + 1);
+  }
+  const seenQueryCounts = new Map<string, number>();
   for (const record of records) {
     if (record.datasetId !== bundle.id || record.frameworkId !== frameworkId) {
       throw new Error(
         `External adapter returned mismatched dataset/framework for ${record.queryId}`,
       );
     }
-    if (!expectedQueryIds.has(record.queryId))
+    const expectedCount = expectedQueryCounts.get(record.queryId);
+    if (expectedCount === undefined)
       throw new Error(`Unexpected query ${record.queryId}`);
-    if (seen.has(record.queryId)) throw new Error(`Duplicate result ${record.queryId}`);
-    seen.add(record.queryId);
+    const seenCount = (seenQueryCounts.get(record.queryId) ?? 0) + 1;
+    if (seenCount > expectedCount) throw new Error(`Duplicate result ${record.queryId}`);
+    seenQueryCounts.set(record.queryId, seenCount);
     for (const [index, evidence] of record.evidence.entries()) {
       if (evidence.rank !== index + 1)
         throw new Error(`Non-contiguous evidence rank for ${record.queryId}`);
     }
   }
-  if (seen.size !== expectedQueryIds.size) {
+  if (
+    records.length !== bundle.queries.length ||
+    [...expectedQueryCounts].some(
+      ([queryId, expectedCount]) => seenQueryCounts.get(queryId) !== expectedCount,
+    )
+  ) {
     throw new Error(
-      `External adapter returned ${seen.size}/${expectedQueryIds.size} query results`,
+      `External adapter returned ${records.length}/${bundle.queries.length} query results`,
     );
   }
 }

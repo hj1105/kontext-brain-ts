@@ -9,6 +9,7 @@ import {
   VectorRagRerankerAdapter,
   createFrameworkAdapters,
 } from "./frameworks.js";
+import { writeJsonLines } from "./jsonl.js";
 import { DEFAULT_RAG_EVAL_MANIFEST } from "./manifest.js";
 import type { EmbeddingClient } from "./openai-embeddings.js";
 
@@ -187,5 +188,75 @@ describe("external framework doctor", () => {
       version: "3.0.0",
       detail: "Expected pinned version 3.1.1, found 3.0.0",
     });
+  });
+});
+
+describe("external framework retrieval", () => {
+  it("accepts one result for every identical duplicate query row", async () => {
+    process.env.RAG_EVAL_GRAPHRAG_COMMAND = JSON.stringify(["graphrag-adapter"]);
+    const framework = DEFAULT_RAG_EVAL_MANIFEST.frameworks.find(
+      (candidate) => candidate.id === "microsoft-graphrag",
+    );
+    if (!framework) throw new Error("Missing Microsoft GraphRAG manifest entry");
+    const workDirectory = mkdtempSync(join(tmpdir(), "rag-eval-external-duplicate-query-"));
+    temporaryDirectories.push(workDirectory);
+    const query = {
+      id: "duplicate-query",
+      text: "What happened?",
+      referenceAnswer: "An event happened.",
+      goldEvidenceIds: ["source-1"],
+      goldEvidenceText: ["An event happened."],
+      answerable: true,
+      category: "test",
+      metadata: {},
+    } as const;
+    const bundle: DatasetBundle = {
+      id: "graphrag-bench-novel",
+      track: "static-kb",
+      documents: [
+        {
+          id: "document-1",
+          sourceId: "source-1",
+          title: "Event",
+          text: "An event happened.",
+          metadata: {},
+        },
+      ],
+      queries: [query, { ...query }],
+      provenance: { source: "test", version: "1", license: "test" },
+    };
+    const runner: CommandRunner = async (_command, args) => {
+      const outputIndex = args.indexOf("--output");
+      if (outputIndex >= 0) {
+        const outputPath = args[outputIndex + 1];
+        if (!outputPath) throw new Error("Missing external adapter output path");
+        const record = {
+          datasetId: bundle.id,
+          frameworkId: framework.id,
+          queryId: query.id,
+          status: "ok" as const,
+          evidence: [],
+          latencyMs: 1,
+          inputTokens: null,
+          error: null,
+          frameworkVersion: framework.pinnedVersion ?? "unresolved",
+          configDigest: "adapter-digest",
+        };
+        writeJsonLines(outputPath, [record, { ...record }]);
+      }
+      return { exitCode: 0, stdout: "", stderr: "", durationMs: 1 };
+    };
+
+    const results = await new ExternalCommandFrameworkAdapter(
+      framework,
+      DEFAULT_RAG_EVAL_MANIFEST,
+      runner,
+    ).retrieve(bundle, { workDirectory, topK: 10, candidateK: 50 });
+
+    expect(results).toHaveLength(2);
+    expect(results.map((result) => result.queryId)).toEqual([
+      "duplicate-query",
+      "duplicate-query",
+    ]);
   });
 });
