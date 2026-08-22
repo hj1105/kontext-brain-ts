@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { CodexJsonClient, type CommandRunner } from "./codex-json.js";
 import type { DatasetBundle } from "./contracts.js";
 import { KontextBrainAdapter } from "./kontext-framework.js";
 import { DEFAULT_RAG_EVAL_MANIFEST } from "./manifest.js";
@@ -16,6 +17,95 @@ afterEach(() => {
 });
 
 describe("KontextBrainAdapter bidirectional KG mode", () => {
+  it("publishes an isolated v13 version for anchored evidence answering", async () => {
+    const adapter = new KontextBrainAdapter(DEFAULT_RAG_EVAL_MANIFEST, {
+      embeddingClient: null,
+      retrievalMode: "multi-query-anchored-evidence-answer-stack",
+    });
+
+    await expect(adapter.doctor()).resolves.toMatchObject({
+      status: "blocked",
+      version: "workspace-0.1.0+v13-anchored-evidence-answer-stack",
+    });
+  });
+
+  it("freezes v13 candidate and perspective-fusion settings", async () => {
+    const root = mkdtempSync(join(tmpdir(), "kontext-rag-eval-v13-"));
+    temporaryDirectories.push(root);
+    const dataDirectory = join(root, "data");
+    const workDirectory = join(root, "run");
+    mkdirSync(dataDirectory, { recursive: true });
+    writeFileSync(
+      join(dataDirectory, "gb-medical-chunks.jsonl"),
+      `${JSON.stringify({ id: "med-0", body: "Alpha evidence establishes the requested fact." })}\n`,
+    );
+    writeFileSync(
+      join(dataDirectory, "gb-medical-kg.json"),
+      `${JSON.stringify({ entities: [], edges: [], chunkToEntities: [["med-0", []]] })}\n`,
+    );
+    const runner: CommandRunner = async (_command, args, stdin) => {
+      const outputPath = args[args.indexOf("--output-last-message") + 1];
+      if (!outputPath) throw new Error("Codex command omitted --output-last-message path");
+      const text = stdin.includes("Generate up to three complementary")
+        ? JSON.stringify({ queries: ["Which literal alpha passage supports the fact?"] })
+        : JSON.stringify({ ranked_ids: ["med-0"] });
+      writeFileSync(outputPath, JSON.stringify({ text }));
+      return { exitCode: 0, stdout: "", stderr: "", durationMs: 1 };
+    };
+    const adapter = new KontextBrainAdapter(DEFAULT_RAG_EVAL_MANIFEST, {
+      codexClient: new CodexJsonClient(runner),
+      embeddingClient: new FakeEmbeddingClient(),
+      retrievalMode: "multi-query-anchored-evidence-answer-stack",
+      benchmarkDataDirectory: dataDirectory,
+    });
+
+    const results = await adapter.retrieve(testBundle(), {
+      workDirectory,
+      topK: 1,
+      candidateK: 1,
+    });
+
+    expect(results[0]).toMatchObject({
+      status: "ok",
+      frameworkVersion: "workspace-0.1.0+v13-anchored-evidence-answer-stack",
+      evidence: [{ metadata: { retrievalMode: "v13-anchored-evidence-answer-stack" } }],
+    });
+    const config = JSON.parse(
+      readFileSync(
+        join(
+          workDirectory,
+          "graphrag-bench-medical",
+          "kontext-brain",
+          "index",
+          "v13-anchored-evidence-answer-stack",
+          "kontext-kg-config.json",
+        ),
+        "utf8",
+      ),
+    ) as {
+      answerPolicy: string;
+      embedding: { vectorCandidateCount: number };
+      multiQuery: {
+        maximumExpandedQueries: number;
+        perspectiveFusion: {
+          reciprocalRankConstant: number;
+          originalQueryWeight: number;
+          expandedQueryWeight: number;
+        };
+      };
+    };
+    expect(config.answerPolicy).toBe("supported-evidence-needs");
+    expect(config.embedding.vectorCandidateCount).toBe(50);
+    expect(config.multiQuery).toMatchObject({
+      maximumExpandedQueries: 3,
+      perspectiveFusion: {
+        reciprocalRankConstant: 10,
+        originalQueryWeight: 2,
+        expandedQueryWeight: 1,
+      },
+    });
+  });
+
   it("routes retrieval through KontextAgent's evidence-backed branch", async () => {
     const root = mkdtempSync(join(tmpdir(), "kontext-rag-eval-kg-"));
     temporaryDirectories.push(root);

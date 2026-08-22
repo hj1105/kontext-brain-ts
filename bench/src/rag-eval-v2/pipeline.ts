@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { CodexJsonClient, runCommand } from "./codex-json.js";
 import type {
   AnswerContract,
   AnswerResult,
@@ -12,20 +13,24 @@ import type {
   JudgeResult,
   RetrievalResult,
 } from "./contracts.js";
-import { CodexJsonClient, runCommand } from "./codex-json.js";
 import {
-  doctorDatasets,
-  loadDataset,
   type DatasetLoadOptions,
   type DatasetPaths,
+  doctorDatasets,
+  loadDataset,
 } from "./datasets.js";
-import { createEvaluationSample, type EvaluationSampleManifest } from "./evaluation-sample.js";
-import { createFrameworkAdapters, type FrameworkAdapter } from "./frameworks.js";
+import { type EvaluationSampleManifest, createEvaluationSample } from "./evaluation-sample.js";
+import { type FrameworkAdapter, createFrameworkAdapters } from "./frameworks.js";
 import { createBlindHumanAuditSample } from "./human-audit.js";
 import { readJsonLines, writeJsonAtomic, writeJsonLines } from "./jsonl.js";
+import {
+  type RagEvalManifest,
+  assertValidManifest,
+  loadFrozenRunManifest,
+  manifestDigest,
+} from "./manifest.js";
 import type { DatasetFrameworkScore, PairedFrameworkComparison } from "./metrics.js";
 import { compareFrameworkPairs, scoreDatasetFramework } from "./metrics.js";
-import { assertValidManifest, type RagEvalManifest, manifestDigest } from "./manifest.js";
 
 export interface ModelDoctorResult {
   readonly component: "embedding" | "answer" | "judge";
@@ -73,6 +78,8 @@ const EMPTY_ANSWER: AnswerContract = {
   abstained: true,
   abstentionReason: "benchmark stage unavailable",
 };
+const ANSWER_INPUT_DIGEST_VERSION = "answer-input-v2";
+const JUDGE_INPUT_DIGEST_VERSION = "judge-input-v2";
 
 export async function doctorBenchmark(
   manifest: RagEvalManifest,
@@ -219,6 +226,7 @@ export async function runBenchmark(
       const answers = await answerQueries(
         manifest,
         bundle,
+        adapter.id,
         retrievals,
         evaluationSample.queries,
         frameworkDirectory,
@@ -231,6 +239,7 @@ export async function runBenchmark(
       const judgements = await judgeAnswers(
         manifest,
         bundle,
+        adapter.id,
         retrievals,
         answers,
         evaluationSample.queries,
@@ -317,9 +326,7 @@ export function freezeRunManifest(manifest: RagEvalManifest, workDirectory: stri
   const manifestPath = join(workDirectory, "run-manifest.json");
   const reportPath = join(workDirectory, "run-report.json");
   if (existsSync(manifestPath)) {
-    const existingDigest = (
-      JSON.parse(readFileSync(manifestPath, "utf8")) as { manifestDigest?: string }
-    ).manifestDigest;
+    const existingDigest = manifestDigest(loadFrozenRunManifest(manifestPath));
     if (existingDigest !== digest) {
       throw new Error(
         `Run directory manifest mismatch: ${workDirectory} contains ${existingDigest}, current is ${digest}. Use a new run directory.`,
@@ -476,6 +483,7 @@ function blockedRetrievals(
 export async function answerQueries(
   manifest: RagEvalManifest,
   bundle: ReturnType<typeof loadDataset>,
+  expectedFrameworkId: FrameworkId,
   retrievals: readonly RetrievalResult[],
   evaluationQueries: readonly BenchmarkQuery[],
   frameworkDirectory: string,
@@ -486,10 +494,40 @@ export async function answerQueries(
   const byQuery = new Map(existing.map((result) => [result.queryId, result]));
   const retrievalById = new Map(retrievals.map((result) => [result.queryId, result]));
   const evaluationIds = evaluationQueries.map((query) => query.id);
+  const inputDigestByQuery = new Map(
+    evaluationQueries.map((query) => [
+      query.id,
+      answerInputDigest(manifest, query, retrievalById.get(query.id)),
+    ]),
+  );
 
   for (const query of evaluationQueries) {
-    if (byQuery.get(query.id)?.status === "ok") continue;
+    const inputDigest = requiredMapValue(inputDigestByQuery, query.id);
+    const checkpoint = byQuery.get(query.id);
     const retrieval = retrievalById.get(query.id);
+    const identityError = prerequisiteIdentityError(
+      bundle.id,
+      expectedFrameworkId,
+      query.id,
+      retrieval,
+    );
+    if (identityError) {
+      byQuery.set(query.id, {
+        datasetId: bundle.id,
+        frameworkId: expectedFrameworkId,
+        queryId: query.id,
+        status: "blocked",
+        output: EMPTY_ANSWER,
+        latencyMs: 0,
+        inputTokens: null,
+        outputTokens: null,
+        error: identityError,
+        inputDigest,
+      });
+      continue;
+    }
+    if (checkpoint?.status === "ok" && checkpoint.inputDigest === inputDigest) continue;
+    byQuery.delete(query.id);
     if (!retrieval || retrieval.status !== "ok") {
       byQuery.set(query.id, {
         datasetId: bundle.id,
@@ -501,14 +539,25 @@ export async function answerQueries(
         inputTokens: null,
         outputTokens: null,
         error: retrieval?.error ?? "Retrieval result missing",
+        inputDigest,
       });
     }
   }
   writeJsonLines(outputPath, orderedValues(evaluationIds, byQuery));
 
   const pending = evaluationQueries.filter((query) => {
-    if (byQuery.get(query.id)?.status === "ok") return false;
-    return retrievalById.get(query.id)?.status === "ok";
+    const checkpoint = byQuery.get(query.id);
+    if (
+      checkpoint?.status === "ok" &&
+      checkpoint.inputDigest === requiredMapValue(inputDigestByQuery, query.id)
+    ) {
+      return false;
+    }
+    const retrieval = retrievalById.get(query.id);
+    return (
+      retrieval?.status === "ok" &&
+      !prerequisiteIdentityError(bundle.id, expectedFrameworkId, query.id, retrieval)
+    );
   });
   const answerBatches = batches(pending, manifest.benchmarkPolicy.answerCodexBatchSize);
   for (const wave of batches(answerBatches, manifest.benchmarkPolicy.codexConcurrency)) {
@@ -522,7 +571,15 @@ export async function answerQueries(
                   model: manifest.models.answer.model,
                   reasoningEffort: manifest.models.answer.reasoningEffort!,
                 },
-                batch.map((query) => ({ query, evidence: retrievalById.get(query.id)!.evidence })),
+                batch.map((query) => {
+                  const retrieval = retrievalById.get(query.id);
+                  if (!retrieval) throw new Error(`Retrieval result missing for ${query.id}`);
+                  return {
+                    query,
+                    evidence: retrieval.evidence,
+                    answerPolicy: retrieval.answerPolicy,
+                  };
+                }),
               ),
             manifest.benchmarkPolicy.maxRetries,
           );
@@ -554,6 +611,7 @@ export async function answerQueries(
               outcome.result.value.length,
             ),
             error: null,
+            inputDigest: requiredMapValue(inputDigestByQuery, item.queryId),
           });
         });
         continue;
@@ -569,6 +627,7 @@ export async function answerQueries(
           inputTokens: null,
           outputTokens: null,
           error: outcome.error.message,
+          inputDigest: requiredMapValue(inputDigestByQuery, query.id),
         });
       }
     }
@@ -580,6 +639,7 @@ export async function answerQueries(
 export async function judgeAnswers(
   manifest: RagEvalManifest,
   bundle: ReturnType<typeof loadDataset>,
+  expectedFrameworkId: FrameworkId,
   retrievals: readonly RetrievalResult[],
   answers: readonly AnswerResult[],
   evaluationQueries: readonly BenchmarkQuery[],
@@ -592,11 +652,63 @@ export async function judgeAnswers(
   const retrievalById = new Map(retrievals.map((result) => [result.queryId, result]));
   const answerById = new Map(answers.map((result) => [result.queryId, result]));
   const evaluationIds = evaluationQueries.map((query) => query.id);
+  const answerInputDigestByQuery = new Map(
+    evaluationQueries.map((query) => [
+      query.id,
+      answerInputDigest(manifest, query, retrievalById.get(query.id)),
+    ]),
+  );
+  const inputDigestByQuery = new Map(
+    evaluationQueries.map((query) => [
+      query.id,
+      judgeInputDigest(manifest, query, retrievalById.get(query.id), answerById.get(query.id)),
+    ]),
+  );
 
   for (const query of evaluationQueries) {
-    if (byQuery.get(query.id)?.status === "ok") continue;
+    const inputDigest = requiredMapValue(inputDigestByQuery, query.id);
+    const checkpoint = byQuery.get(query.id);
     const answer = answerById.get(query.id);
     const retrieval = retrievalById.get(query.id);
+    const identityError = prerequisiteIdentityError(
+      bundle.id,
+      expectedFrameworkId,
+      query.id,
+      retrieval,
+      answer,
+    );
+    if (identityError) {
+      byQuery.set(query.id, {
+        datasetId: bundle.id,
+        frameworkId: expectedFrameworkId,
+        queryId: query.id,
+        status: "blocked",
+        output: null,
+        latencyMs: 0,
+        inputTokens: null,
+        outputTokens: null,
+        error: identityError,
+        inputDigest,
+      });
+      continue;
+    }
+    if (answer && answer.inputDigest !== requiredMapValue(answerInputDigestByQuery, query.id)) {
+      byQuery.set(query.id, {
+        datasetId: bundle.id,
+        frameworkId: answer.frameworkId,
+        queryId: query.id,
+        status: "blocked",
+        output: null,
+        latencyMs: 0,
+        inputTokens: null,
+        outputTokens: null,
+        error: "Answer input digest mismatch; rerun the answer stage",
+        inputDigest,
+      });
+      continue;
+    }
+    if (checkpoint?.status === "ok" && checkpoint.inputDigest === inputDigest) continue;
+    byQuery.delete(query.id);
     if (!answer) {
       byQuery.set(query.id, {
         datasetId: bundle.id,
@@ -608,6 +720,7 @@ export async function judgeAnswers(
         inputTokens: null,
         outputTokens: null,
         error: "Answer result missing",
+        inputDigest,
       });
       continue;
     }
@@ -623,15 +736,32 @@ export async function judgeAnswers(
         inputTokens: null,
         outputTokens: null,
         error: answer.error ?? retrieval?.error ?? "Prerequisite stage unavailable",
+        inputDigest,
       });
     }
   }
   writeJsonLines(outputPath, orderedValues(evaluationIds, byQuery));
 
   const pending = evaluationQueries.filter((query) => {
-    if (byQuery.get(query.id)?.status === "ok") return false;
+    const checkpoint = byQuery.get(query.id);
+    if (
+      checkpoint?.status === "ok" &&
+      checkpoint.inputDigest === requiredMapValue(inputDigestByQuery, query.id)
+    ) {
+      return false;
+    }
     return (
-      answerById.get(query.id)?.status === "ok" && retrievalById.get(query.id)?.status === "ok"
+      answerById.get(query.id)?.status === "ok" &&
+      answerById.get(query.id)?.inputDigest ===
+        requiredMapValue(answerInputDigestByQuery, query.id) &&
+      retrievalById.get(query.id)?.status === "ok" &&
+      !prerequisiteIdentityError(
+        bundle.id,
+        expectedFrameworkId,
+        query.id,
+        retrievalById.get(query.id),
+        answerById.get(query.id),
+      )
     );
   });
   const judgeBatches = batches(pending, manifest.benchmarkPolicy.judgeCodexBatchSize);
@@ -683,6 +813,7 @@ export async function judgeAnswers(
               outcome.result.value.length,
             ),
             error: null,
+            inputDigest: requiredMapValue(inputDigestByQuery, item.queryId),
           });
         });
         continue;
@@ -699,12 +830,124 @@ export async function judgeAnswers(
           inputTokens: null,
           outputTokens: null,
           error: outcome.error.message,
+          inputDigest: requiredMapValue(inputDigestByQuery, query.id),
         });
       }
     }
     writeJsonLines(outputPath, orderedValues(evaluationIds, byQuery));
   }
   return orderedValues(evaluationIds, byQuery);
+}
+
+export function answerInputDigest(
+  manifest: RagEvalManifest,
+  query: BenchmarkQuery,
+  retrieval: RetrievalResult | undefined,
+): string {
+  return stageInputDigest(ANSWER_INPUT_DIGEST_VERSION, {
+    model: {
+      model: manifest.models.answer.model,
+      reasoningEffort: manifest.models.answer.reasoningEffort,
+      execution: manifest.models.answer.execution,
+    },
+    query: { id: query.id, text: query.text },
+    retrieval: retrieval
+      ? {
+          datasetId: retrieval.datasetId,
+          frameworkId: retrieval.frameworkId,
+          queryId: retrieval.queryId,
+          status: retrieval.status,
+          frameworkVersion: retrieval.frameworkVersion,
+          configDigest: retrieval.configDigest,
+          answerPolicy: retrieval.answerPolicy ?? null,
+          evidence: retrieval.evidence.map((item) => ({ id: item.id, text: item.text })),
+        }
+      : null,
+  });
+}
+
+export function judgeInputDigest(
+  manifest: RagEvalManifest,
+  query: BenchmarkQuery,
+  retrieval: RetrievalResult | undefined,
+  answer: AnswerResult | undefined,
+): string {
+  return stageInputDigest(JUDGE_INPUT_DIGEST_VERSION, {
+    model: {
+      model: manifest.models.judge.model,
+      reasoningEffort: manifest.models.judge.reasoningEffort,
+      execution: manifest.models.judge.execution,
+    },
+    query: {
+      id: query.id,
+      text: query.text,
+      answerable: query.answerable,
+      referenceAnswer: query.referenceAnswer,
+      goldEvidenceText: query.goldEvidenceText,
+    },
+    retrieval: retrieval
+      ? {
+          datasetId: retrieval.datasetId,
+          frameworkId: retrieval.frameworkId,
+          queryId: retrieval.queryId,
+          status: retrieval.status,
+          frameworkVersion: retrieval.frameworkVersion,
+          configDigest: retrieval.configDigest,
+          evidence: retrieval.evidence.map((item) => ({ id: item.id, text: item.text })),
+        }
+      : null,
+    answer: answer
+      ? {
+          datasetId: answer.datasetId,
+          frameworkId: answer.frameworkId,
+          queryId: answer.queryId,
+          status: answer.status,
+          inputDigest: answer.inputDigest,
+          output: answer.output,
+        }
+      : null,
+  });
+}
+
+function stageInputDigest(version: string, value: unknown): string {
+  return createHash("sha256")
+    .update(version)
+    .update("\0")
+    .update(JSON.stringify(value))
+    .digest("hex");
+}
+
+function prerequisiteIdentityError(
+  datasetId: DatasetId,
+  expectedFrameworkId: FrameworkId,
+  queryId: string,
+  retrieval: RetrievalResult | undefined,
+  answer?: AnswerResult,
+): string | null {
+  if (
+    retrieval &&
+    (retrieval.datasetId !== datasetId ||
+      retrieval.frameworkId !== expectedFrameworkId ||
+      retrieval.queryId !== queryId)
+  ) {
+    return `Retrieval identity mismatch for ${queryId}`;
+  }
+  if (
+    answer &&
+    (answer.datasetId !== datasetId ||
+      answer.frameworkId !== expectedFrameworkId ||
+      (retrieval && answer.frameworkId !== retrieval.frameworkId) ||
+      answer.queryId !== queryId)
+  ) {
+    return `Answer identity mismatch for ${queryId}`;
+  }
+  return null;
+}
+
+function requiredMapValue<K, V>(values: ReadonlyMap<K, V>, key: K): V {
+  const value = values.get(key);
+  if (value === undefined) throw new Error("Required checkpoint digest is missing");
+  return value;
 }
 
 function inferFrameworkId(retrievals: readonly RetrievalResult[]): FrameworkId {

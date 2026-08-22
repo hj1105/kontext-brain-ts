@@ -15,6 +15,13 @@ export interface FusedCandidate {
   readonly sourceRanks: Readonly<Record<string, number>>;
 }
 
+export interface QueryPerspectiveFusionOptions {
+  readonly limit: number;
+  readonly originalQueryWeight: number;
+  readonly expandedQueryWeight: number;
+  readonly reciprocalRankConstant: number;
+}
+
 interface IndexedDocument {
   readonly id: string;
   readonly tokens: readonly string[];
@@ -106,6 +113,25 @@ export function fuseRankings(
   return Array.from(byId, ([id, value]) => ({ id, ...value }))
     .sort((left, right) => right.score - left.score || left.id.localeCompare(right.id))
     .slice(0, limit);
+}
+
+export function fuseQueryPerspectives(
+  originalQueryIds: readonly string[],
+  expandedQueryIds: readonly (readonly string[])[],
+  options: QueryPerspectiveFusionOptions,
+): FusedCandidate[] {
+  return fuseRankings(
+    [
+      { name: "vector", ids: originalQueryIds, weight: options.originalQueryWeight },
+      ...expandedQueryIds.map((ids) => ({
+        name: "vector" as const,
+        ids,
+        weight: options.expandedQueryWeight,
+      })),
+    ],
+    options.limit,
+    options.reciprocalRankConstant,
+  );
 }
 
 function tokenize(value: string): string[] {

@@ -1,10 +1,11 @@
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import {
-  RAG_EVAL_SCHEMA_VERSION,
   type DatasetId,
   type DatasetTrack,
   type FrameworkId,
   type MetricId,
+  RAG_EVAL_SCHEMA_VERSION,
 } from "./contracts.js";
 
 export interface ModelManifest {
@@ -238,6 +239,50 @@ export function manifestDigest(manifest: RagEvalManifest): string {
   return createHash("sha256")
     .update(JSON.stringify(stableValue(manifest)))
     .digest("hex");
+}
+
+export function loadFrozenRunManifest(path: string): RagEvalManifest {
+  let value: unknown;
+  try {
+    value = JSON.parse(readFileSync(path, "utf8")) as unknown;
+  } catch (error) {
+    throw new Error(`Cannot read frozen run manifest envelope at ${path}`, { cause: error });
+  }
+  if (!isExactFrozenRunManifestEnvelope(value)) {
+    throw new Error(`Malformed frozen run manifest envelope at ${path}`);
+  }
+
+  const manifest = value.manifest as RagEvalManifest;
+  try {
+    assertValidManifest(manifest);
+  } catch (error) {
+    throw new Error(`Invalid frozen run manifest at ${path}`, { cause: error });
+  }
+  const actualDigest = manifestDigest(manifest);
+  if (value.manifestDigest !== actualDigest) {
+    throw new Error(
+      `Frozen run manifest digest mismatch at ${path}: stored ${value.manifestDigest}, canonical ${actualDigest}`,
+    );
+  }
+  return manifest;
+}
+
+function isExactFrozenRunManifestEnvelope(
+  value: unknown,
+): value is { readonly manifestDigest: string; readonly manifest: object } {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const record = value as Record<string, unknown>;
+  const keys = Object.keys(record).sort();
+  return (
+    keys.length === 2 &&
+    keys[0] === "manifest" &&
+    keys[1] === "manifestDigest" &&
+    typeof record.manifestDigest === "string" &&
+    /^[0-9a-f]{64}$/.test(record.manifestDigest) &&
+    !!record.manifest &&
+    typeof record.manifest === "object" &&
+    !Array.isArray(record.manifest)
+  );
 }
 
 export function assertValidManifest(manifest: RagEvalManifest): void {

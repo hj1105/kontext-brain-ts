@@ -87,7 +87,10 @@ export interface RetrievalResult {
   readonly error: string | null;
   readonly frameworkVersion: string;
   readonly configDigest: string;
+  readonly answerPolicy?: AnswerPolicy;
 }
+
+export type AnswerPolicy = "supported-evidence-needs";
 
 export interface AnswerContract {
   readonly answer: string;
@@ -106,6 +109,7 @@ export interface AnswerResult {
   readonly inputTokens: number | null;
   readonly outputTokens: number | null;
   readonly error: string | null;
+  readonly inputDigest: string;
 }
 
 export interface ClaimJudgement {
@@ -136,6 +140,7 @@ export interface JudgeResult {
   readonly inputTokens: number | null;
   readonly outputTokens: number | null;
   readonly error: string | null;
+  readonly inputDigest: string;
 }
 
 export interface FrameworkDoctorResult {

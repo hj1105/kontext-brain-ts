@@ -1,11 +1,11 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { CodexJsonClient } from "./codex-json.js";
-import type { AnswerResult, JudgeResult, RetrievalResult } from "./contracts.js";
+import type { AnswerResult, RetrievalResult } from "./contracts.js";
 import { defaultDatasetPaths, loadDataset } from "./datasets.js";
 import type { EvaluationSampleManifest } from "./evaluation-sample.js";
 import { readJsonLines } from "./jsonl.js";
-import { DEFAULT_RAG_EVAL_MANIFEST } from "./manifest.js";
+import { loadFrozenRunManifest } from "./manifest.js";
 import { judgeAnswers } from "./pipeline.js";
 
 async function main(): Promise<void> {
@@ -21,6 +21,7 @@ async function main(): Promise<void> {
   const frameworkId = "kontext-brain" as const;
   const datasetDirectory = join(workDirectory, datasetId);
   const frameworkDirectory = join(datasetDirectory, frameworkId);
+  const manifest = loadFrozenRunManifest(join(workDirectory, "run-manifest.json"));
   const sample = JSON.parse(
     readFileSync(join(datasetDirectory, "evaluation-sample.json"), "utf8"),
   ) as EvaluationSampleManifest;
@@ -28,28 +29,21 @@ async function main(): Promise<void> {
   const queryById = new Map(bundle.queries.map((query) => [query.id, query]));
   const retrievals = readJsonLines<RetrievalResult>(join(frameworkDirectory, "retrieval.jsonl"));
   const answers = readJsonLines<AnswerResult>(join(frameworkDirectory, "answers.jsonl"));
-  const primaryJudgementsPath = join(frameworkDirectory, "judgements.jsonl");
-  const completedIds = new Set(
-    (existsSync(primaryJudgementsPath) ? readJsonLines<JudgeResult>(primaryJudgementsPath) : [])
-      .filter((result) => result.status === "ok")
-      .map((result) => result.queryId),
-  );
-  const pending = sample.queryIds
-    .filter((queryId) => !completedIds.has(queryId))
-    .map((queryId) => {
-      const query = queryById.get(queryId);
-      if (!query) throw new Error(`Evaluation query ${queryId} is missing from the dataset`);
-      return query;
-    });
-  const shardQueries = pending.filter((_query, index) => index % shardCount === shardIndex);
+  const sampleQueries = sample.queryIds.map((queryId) => {
+    const query = queryById.get(queryId);
+    if (!query) throw new Error(`Evaluation query ${queryId} is missing from the dataset`);
+    return query;
+  });
+  const shardQueries = sampleQueries.filter((_query, index) => index % shardCount === shardIndex);
   const shardDirectory = join(
     frameworkDirectory,
     "judge-shards",
     `part-${String(shardIndex).padStart(2, "0")}-of-${String(shardCount).padStart(2, "0")}`,
   );
   const results = await judgeAnswers(
-    DEFAULT_RAG_EVAL_MANIFEST,
+    manifest,
     bundle,
+    frameworkId,
     retrievals,
     answers,
     shardQueries,

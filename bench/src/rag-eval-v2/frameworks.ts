@@ -514,6 +514,7 @@ function kontextRetrievalMode(
   | "multi-query-standard-rerank-stack"
   | "multi-query-coverage-aware-stack"
   | "multi-query-plan-aware-coverage-stack"
+  | "multi-query-anchored-evidence-answer-stack"
   | "adaptive-eece-stack" {
   if (
     value === "bidirectional-kg" ||
@@ -526,6 +527,7 @@ function kontextRetrievalMode(
     value === "multi-query-standard-rerank-stack" ||
     value === "multi-query-coverage-aware-stack" ||
     value === "multi-query-plan-aware-coverage-stack" ||
+    value === "multi-query-anchored-evidence-answer-stack" ||
     value === "adaptive-eece-stack"
   ) {
     return value;

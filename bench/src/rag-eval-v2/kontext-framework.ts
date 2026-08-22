@@ -42,6 +42,7 @@ import type { BenchDoc } from "../corpus.js";
 import type { KGSerialized, KGStore } from "../kg-builder.js";
 import { CodexJsonClient, runCommand } from "./codex-json.js";
 import type {
+  AnswerPolicy,
   CorpusDocument,
   DatasetBundle,
   FrameworkDoctorResult,
@@ -51,7 +52,7 @@ import type { FrameworkAdapter, FrameworkRunOptions } from "./frameworks.js";
 import { readJsonLines, writeJsonAtomic } from "./jsonl.js";
 import { LlmEvidenceReranker } from "./llm-evidence-reranker.js";
 import { type RagEvalManifest, manifestDigest } from "./manifest.js";
-import { CorpusBm25Ranker, fuseRankings } from "./max-existing-stack.js";
+import { CorpusBm25Ranker, fuseQueryPerspectives, fuseRankings } from "./max-existing-stack.js";
 import { MultiQueryExpander, type MultiQueryExpansion } from "./multi-query-expander.js";
 import {
   type EmbeddingClient,
@@ -71,6 +72,7 @@ export type KontextRetrievalMode =
   | "multi-query-standard-rerank-stack"
   | "multi-query-coverage-aware-stack"
   | "multi-query-plan-aware-coverage-stack"
+  | "multi-query-anchored-evidence-answer-stack"
   | "adaptive-eece-stack";
 
 export interface KontextBrainAdapterOptions {
@@ -96,6 +98,15 @@ const MULTI_QUERY_STANDARD_RERANK_STACK_FRAMEWORK_VERSION =
   "workspace-0.1.0+v11a-multi-query-standard-rerank-stack";
 const MULTI_QUERY_PLAN_AWARE_COVERAGE_STACK_FRAMEWORK_VERSION =
   "workspace-0.1.0+v12-multi-query-plan-aware-coverage-stack";
+const V13_STACK_DESCRIPTOR = {
+  retrievalMode: "v13-anchored-evidence-answer-stack",
+  frameworkVersion: "workspace-0.1.0+v13-anchored-evidence-answer-stack",
+  answerPolicy: "supported-evidence-needs",
+} as const satisfies {
+  readonly retrievalMode: string;
+  readonly frameworkVersion: string;
+  readonly answerPolicy: AnswerPolicy;
+};
 const ADAPTIVE_EECE_STACK_FRAMEWORK_VERSION = "workspace-0.1.0+adaptive-eece-stack-v9";
 const MAX_EXISTING_STACK_CANDIDATES = 20;
 const MAX_EXISTING_STACK_FUSION = {
@@ -115,6 +126,9 @@ const RECALL_SAFE_SOURCE_CONTEXT_POLICY: SourceContextPolicy = {
 };
 const LLM_RERANK_CONCURRENCY = 20;
 const MULTI_QUERY_POLICY_VERSION = "v11-search-perspectives-1";
+const V13_CANDIDATE_COUNT = 50;
+const V13_ORIGINAL_QUERY_WEIGHT = 2;
+const EXPANDED_QUERY_WEIGHT = 1;
 const BIDIRECTIONAL_ORGANIZATION_ID = "rag-eval";
 const BIDIRECTIONAL_PRINCIPAL: Principal = {
   organizationId: BIDIRECTIONAL_ORGANIZATION_ID,
@@ -265,9 +279,12 @@ export class KontextBrainAdapter implements FrameworkAdapter {
                               ? `local GPT multi-query retrieval + coverage-aware rerank + source-native provenance hydration; ${result.stdout.trim()}`
                               : this.retrievalMode === "multi-query-plan-aware-coverage-stack"
                                 ? `local GPT multi-query retrieval + plan-aware coverage rerank + source-native provenance hydration; ${result.stdout.trim()}`
-                                : this.retrievalMode === "adaptive-eece-stack"
-                                  ? `adaptive Entity–Event–Claim–Evidence KG + v7 retrieval stack; ${result.stdout.trim()}`
-                                  : `production BidirectionalNLayerRetriever + evidence items + OpenAI vector seeds; ${result.stdout.trim()}`,
+                                : this.retrievalMode ===
+                                    "multi-query-anchored-evidence-answer-stack"
+                                  ? `original-query-anchored multi-query retrieval + plan-aware coverage rerank + supported-needs answering; ${result.stdout.trim()}`
+                                  : this.retrievalMode === "adaptive-eece-stack"
+                                    ? `adaptive Entity–Event–Claim–Evidence KG + v7 retrieval stack; ${result.stdout.trim()}`
+                                    : `production BidirectionalNLayerRetriever + evidence items + OpenAI vector seeds; ${result.stdout.trim()}`,
         }
       : {
           frameworkId: this.id,
@@ -348,6 +365,21 @@ export class KontextBrainAdapter implements FrameworkAdapter {
         true,
         true,
         false,
+        true,
+        true,
+        true,
+      );
+    }
+    if (this.retrievalMode === "multi-query-anchored-evidence-answer-stack") {
+      return this.retrieveMaxExistingStack(
+        bundle,
+        options,
+        true,
+        true,
+        true,
+        true,
+        false,
+        true,
         true,
         true,
         true,
@@ -687,13 +719,16 @@ export class KontextBrainAdapter implements FrameworkAdapter {
     coverageAwareRerank = false,
     multiQuery = false,
     planAwareCoverage = false,
+    anchoredEvidenceAnswer = false,
   ): Promise<RetrievalResult[]> {
     const embeddingClient = this.embeddingClient;
     if (!embeddingClient) throw new Error("Max existing stack retrieval requires OPENAI_API_KEY");
-    const candidateCount = honorDeclaredCandidateK
-      ? options.candidateK
-      : MAX_EXISTING_STACK_CANDIDATES;
-    const retrievalMode = planAwareCoverage
+    const candidateCount = anchoredEvidenceAnswer
+      ? V13_CANDIDATE_COUNT
+      : honorDeclaredCandidateK
+        ? options.candidateK
+        : MAX_EXISTING_STACK_CANDIDATES;
+    const inheritedRetrievalMode = planAwareCoverage
       ? "v12-multi-query-plan-aware-coverage-stack"
       : multiQuery
         ? coverageAwareRerank
@@ -712,7 +747,10 @@ export class KontextBrainAdapter implements FrameworkAdapter {
                   : hydrateSourceContext
                     ? "v4-source-hydrated-stack"
                     : "v3-max-existing-stack";
-    const frameworkVersion = planAwareCoverage
+    const retrievalMode = anchoredEvidenceAnswer
+      ? V13_STACK_DESCRIPTOR.retrievalMode
+      : inheritedRetrievalMode;
+    const inheritedFrameworkVersion = planAwareCoverage
       ? MULTI_QUERY_PLAN_AWARE_COVERAGE_STACK_FRAMEWORK_VERSION
       : multiQuery
         ? coverageAwareRerank
@@ -731,6 +769,10 @@ export class KontextBrainAdapter implements FrameworkAdapter {
                   : hydrateSourceContext
                     ? SOURCE_HYDRATED_STACK_FRAMEWORK_VERSION
                     : MAX_EXISTING_STACK_FRAMEWORK_VERSION;
+    const frameworkVersion = anchoredEvidenceAnswer
+      ? V13_STACK_DESCRIPTOR.frameworkVersion
+      : inheritedFrameworkVersion;
+    const answerPolicy = anchoredEvidenceAnswer ? V13_STACK_DESCRIPTOR.answerPolicy : undefined;
     const domain = graphRagDomain(bundle.id);
     if (!domain && bundle.track !== "static-kb") {
       return bundle.queries.map((query) => ({
@@ -743,6 +785,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
         inputTokens: null,
         error: `Max-stack retrieval requires a static KB or registered KG artifact for ${bundle.id}`,
         frameworkVersion,
+        answerPolicy,
         configDigest: maxExistingStackDigest(
           this.manifest,
           hydrateSourceContext,
@@ -753,6 +796,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
           coverageAwareRerank,
           multiQuery,
           planAwareCoverage,
+          anchoredEvidenceAnswer,
           candidateCount,
         ),
       }));
@@ -855,15 +899,12 @@ export class KontextBrainAdapter implements FrameworkAdapter {
           });
         });
         const ids = multiQuery
-          ? fuseRankings(
-              [originalIds, ...perspectiveIds].map((rankedIds) => ({
-                name: "vector" as const,
-                ids: rankedIds,
-                weight: 1,
-              })),
-              candidateCount,
-              MAX_EXISTING_STACK_FUSION.reciprocalRankConstant,
-            ).map((candidate) => candidate.id)
+          ? fuseQueryPerspectives(originalIds, perspectiveIds, {
+              limit: candidateCount,
+              originalQueryWeight: anchoredEvidenceAnswer ? V13_ORIGINAL_QUERY_WEIGHT : 1,
+              expandedQueryWeight: EXPANDED_QUERY_WEIGHT,
+              reciprocalRankConstant: MAX_EXISTING_STACK_FUSION.reciprocalRankConstant,
+            }).map((candidate) => candidate.id)
           : originalIds;
         return [query.id, ids] as const;
       }),
@@ -923,6 +964,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
       coverageAwareRerank,
       multiQuery,
       planAwareCoverage,
+      anchoredEvidenceAnswer,
       candidateCount,
     );
     const retrievalQueryDigest = multiQuery ? expandedQueryDigest : baseQueryDigest;
@@ -930,6 +972,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
     writeJsonAtomic(join(indexDirectory, "kontext-kg-config.json"), {
       retrievalMode,
       frameworkVersion,
+      answerPolicy,
       components: [
         ...(adaptiveEece ? ["adaptive Entity–Event–Claim–Evidence KG enrichment"] : []),
         ...(multiQuery ? ["local GPT multi-query expansion"] : []),
@@ -968,7 +1011,12 @@ export class KontextBrainAdapter implements FrameworkAdapter {
             perspectiveFusion: {
               method: "reciprocal-rank-fusion",
               reciprocalRankConstant: MAX_EXISTING_STACK_FUSION.reciprocalRankConstant,
-              equalWeight: true,
+              ...(anchoredEvidenceAnswer
+                ? {
+                    originalQueryWeight: V13_ORIGINAL_QUERY_WEIGHT,
+                    expandedQueryWeight: EXPANDED_QUERY_WEIGHT,
+                  }
+                : { equalWeight: true }),
             },
             expandedQueries: expandedQueryInputs.length,
             failedExpansions: queryExpansions.filter((expansion) => expansion.error !== null)
@@ -1031,7 +1079,8 @@ export class KontextBrainAdapter implements FrameworkAdapter {
               checkpoint.queryId === query.id &&
               checkpoint.status === "ok" &&
               checkpoint.configDigest === digest &&
-              checkpoint.frameworkVersion === frameworkVersion
+              checkpoint.frameworkVersion === frameworkVersion &&
+              checkpoint.answerPolicy === answerPolicy
             ) {
               return checkpoint;
             }
@@ -1058,15 +1107,12 @@ export class KontextBrainAdapter implements FrameworkAdapter {
             ...(multiQuery ? (expansion?.queries ?? []) : []),
           ].map((perspective) => bm25Ranker.rank(perspective, candidateCount));
           const bm25Ids = multiQuery
-            ? fuseRankings(
-                bm25Perspectives.map((ids) => ({
-                  name: "bm25" as const,
-                  ids,
-                  weight: 1,
-                })),
-                candidateCount,
-                MAX_EXISTING_STACK_FUSION.reciprocalRankConstant,
-              ).map((candidate) => candidate.id)
+            ? fuseQueryPerspectives(bm25Perspectives[0] ?? [], bm25Perspectives.slice(1), {
+                limit: candidateCount,
+                originalQueryWeight: anchoredEvidenceAnswer ? V13_ORIGINAL_QUERY_WEIGHT : 1,
+                expandedQueryWeight: EXPANDED_QUERY_WEIGHT,
+                reciprocalRankConstant: MAX_EXISTING_STACK_FUSION.reciprocalRankConstant,
+              }).map((candidate) => candidate.id)
             : (bm25Perspectives[0] ?? []);
           const candidateIds = Array.from(new Set([...graphIds, ...vectorIds, ...bm25Ids]));
           const contextRerankedIds = searchGraph.rankContextChunkIds(query.text, candidateIds);
@@ -1167,6 +1213,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
             ),
             error: null,
             frameworkVersion,
+            answerPolicy,
             configDigest: digest,
           };
           writeJsonAtomic(checkpointPath, result);
@@ -1182,6 +1229,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
             inputTokens: null,
             error: (error as Error).message,
             frameworkVersion,
+            answerPolicy,
             configDigest: digest,
           };
           writeJsonAtomic(checkpointPath, result);
@@ -1579,6 +1627,9 @@ function frameworkVersion(mode: KontextRetrievalMode): string {
   if (mode === "multi-query-plan-aware-coverage-stack") {
     return MULTI_QUERY_PLAN_AWARE_COVERAGE_STACK_FRAMEWORK_VERSION;
   }
+  if (mode === "multi-query-anchored-evidence-answer-stack") {
+    return V13_STACK_DESCRIPTOR.frameworkVersion;
+  }
   if (mode === "adaptive-eece-stack") return ADAPTIVE_EECE_STACK_FRAMEWORK_VERSION;
   return "workspace-0.1.0";
 }
@@ -1593,31 +1644,34 @@ function maxExistingStackDigest(
   coverageAwareRerank = false,
   multiQuery = false,
   planAwareCoverage = false,
+  anchoredEvidenceAnswer = false,
   candidateCount = MAX_EXISTING_STACK_CANDIDATES,
 ): string {
+  const inheritedStackIdentity = planAwareCoverage
+    ? `\0v12-multi-query-plan-aware-coverage-stack\0${MULTI_QUERY_POLICY_VERSION}\0`
+    : multiQuery
+      ? coverageAwareRerank
+        ? `\0v11b-multi-query-coverage-aware-stack\0${MULTI_QUERY_POLICY_VERSION}\0`
+        : `\0v11a-multi-query-standard-rerank-stack\0${MULTI_QUERY_POLICY_VERSION}\0`
+      : coverageAwareRerank
+        ? "\0v10-source-hydrated-llm-coverage-aware-stack\0"
+        : adaptiveEece
+          ? "\0adaptive-eece-stack-v9\0"
+          : honorDeclaredCandidateK
+            ? "\0v7-source-hydrated-llm-candidate-safe-stack\0"
+            : recallSafeLlmRerank
+              ? "\0v6-source-hydrated-llm-recall-safe-stack\0"
+              : rerankWithLlm
+                ? "\0v5-source-hydrated-llm-stack\0"
+                : hydrateSourceContext
+                  ? "\0v4-source-hydrated-stack\0"
+                  : "\0v3-max-existing-stack\0";
+  const stackIdentity = anchoredEvidenceAnswer
+    ? `\0v13-anchored-evidence-answer-stack\0${MULTI_QUERY_POLICY_VERSION}\0original-query-weight=${V13_ORIGINAL_QUERY_WEIGHT}\0expanded-query-weight=${EXPANDED_QUERY_WEIGHT}\0`
+    : inheritedStackIdentity;
   const hash = createHash("sha256")
     .update(manifestDigest(manifest))
-    .update(
-      planAwareCoverage
-        ? `\0v12-multi-query-plan-aware-coverage-stack\0${MULTI_QUERY_POLICY_VERSION}\0`
-        : multiQuery
-          ? coverageAwareRerank
-            ? `\0v11b-multi-query-coverage-aware-stack\0${MULTI_QUERY_POLICY_VERSION}\0`
-            : `\0v11a-multi-query-standard-rerank-stack\0${MULTI_QUERY_POLICY_VERSION}\0`
-          : coverageAwareRerank
-            ? "\0v10-source-hydrated-llm-coverage-aware-stack\0"
-            : adaptiveEece
-              ? "\0adaptive-eece-stack-v9\0"
-              : honorDeclaredCandidateK
-                ? "\0v7-source-hydrated-llm-candidate-safe-stack\0"
-                : recallSafeLlmRerank
-                  ? "\0v6-source-hydrated-llm-recall-safe-stack\0"
-                  : rerankWithLlm
-                    ? "\0v5-source-hydrated-llm-stack\0"
-                    : hydrateSourceContext
-                      ? "\0v4-source-hydrated-stack\0"
-                      : "\0v3-max-existing-stack\0",
-    )
+    .update(stackIdentity)
     .update(String(candidateCount))
     .update("\0")
     .update(JSON.stringify(MAX_EXISTING_STACK_FUSION));

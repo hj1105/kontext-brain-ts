@@ -430,3 +430,49 @@ Outcome: completed and promoted to cross-dataset validation. Medical retrieval
   claim F1 regressed versus v7, so v12 is a retrieval win rather than the final
   end-to-end winner. No further v12 parameter adjustment is permitted.
 ```
+
+## Original-query-anchored retrieval and supported-needs answering
+
+```text
+Experiment ID: kontext-anchored-evidence-answer-v13-2026-08-22
+Registered at (UTC): 2026-08-22T03:12:42Z, before any v13 retrieval, answer,
+  judgement, or score exists
+Owner: benchmark operator / Codex
+Hypothesis: equal-weight query expansion can displace literal matches from the
+  original question, while unconstrained answer synthesis can turn overlapping
+  evidence into redundant or weakly supported claims. Anchoring both vector and
+  BM25 perspective fusion on the original question, then answering through a
+  supported-needs contract, should retain v12's bridge recall while improving
+  claim precision and citation alignment.
+Dataset and development split digest: the paired v7/v12 Medical error analysis
+  is an explicit development signal for this one architecture-motivated
+  follow-up. There is no parameter sweep: original weight=2 is registered once
+  before v13 execution, and the same policy must run unchanged on Medical,
+  Novel, BEIR SciFact, and BEIR NFCorpus. Novel and BEIR remain independent
+  generalization guards, and no result may trigger a per-dataset adjustment.
+Eligible frameworks: kontext-brain only (retrieval and answer-policy experiment)
+Parameter family and allowed values: exactly one fixed v13 configuration.
+  Original-query weight=2 and each expanded-query weight=1 in both vector and
+  BM25 perspective RRF; RRF k=10; at most three expansions; candidate-k=50.
+  Outer fusion, graph traversal, query-plan-aware coverage reranking, source
+  hydration, 5,000-character windows, 50,000-character context budget, models,
+  reasoning effort, and output top-k remain identical to v12. The opt-in answer
+  policy internally identifies distinct question-derived evidence needs using
+  only the question and retrieved evidence, emits at most one atomic claim with
+  one best citation per supported need, omits unsupported needs (partial
+  abstention), removes redundant claims, and caps the answer at eight claims.
+  Dataset ID, reference answer, gold evidence, and judge output are unavailable
+  to retrieval, selection, and answer-policy decisions.
+Maximum trials per framework: one v13 policy; no parameter sweep or per-dataset
+  adjustment is permitted.
+Selection metric: report retrieval recall/raw context precision, correctness,
+  strict faithfulness, claim F1, and citation F1 against frozen baselines, with
+  Novel and BEIR retained as generalization guards rather than tuning sets.
+Held-out test run directories:
+  openai-small-kontext-v13-anchored-evidence-answer-medical-2026-08-22
+  openai-small-kontext-v13-anchored-evidence-answer-novel-2026-08-22
+  openai-small-kontext-v13-anchored-evidence-answer-scifact-2026-08-22
+  openai-small-kontext-v13-anchored-evidence-answer-nfcorpus-2026-08-22
+These are new v13-only paths and do not overwrite v3, v6, v7, v11, or v12.
+Outcome: pending.
+```

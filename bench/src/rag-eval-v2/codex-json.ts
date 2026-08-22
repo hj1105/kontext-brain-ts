@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type {
   AnswerContract,
+  AnswerPolicy,
   BenchmarkQuery,
   JudgeContract,
   RetrievedEvidence,
@@ -58,6 +59,7 @@ export interface CodexJsonResult<T> {
 export interface AnswerBatchInput {
   readonly query: BenchmarkQuery;
   readonly evidence: readonly RetrievedEvidence[];
+  readonly answerPolicy?: AnswerPolicy;
 }
 
 export interface JudgeBatchInput extends AnswerBatchInput {
@@ -132,10 +134,18 @@ export class CodexJsonClient {
     model: CodexModelConfig,
     query: BenchmarkQuery,
     evidence: readonly RetrievedEvidence[],
+    answerPolicy?: AnswerPolicy,
   ): Promise<CodexJsonResult<AnswerContract>> {
-    const result = await this.execute(model, answerPrompt(query, evidence), ANSWER_SCHEMA);
+    const supportedNeeds = answerPolicy === "supported-evidence-needs";
+    const result = await this.execute(
+      model,
+      answerPrompt(query, evidence, answerPolicy),
+      supportedNeeds ? supportedEvidenceNeedsAnswerSchema(evidence) : ANSWER_SCHEMA,
+    );
     return {
-      value: parseAnswerContract(result.value),
+      value: supportedNeeds
+        ? parseSupportedEvidenceNeedsAnswer(result.value, evidence)
+        : parseAnswerContract(result.value),
       latencyMs: result.latencyMs,
       inputTokens: result.inputTokens,
       outputTokens: result.outputTokens,
@@ -162,9 +172,23 @@ export class CodexJsonClient {
     inputs: readonly AnswerBatchInput[],
   ): Promise<CodexJsonResult<readonly BatchItem<AnswerContract>[]>> {
     const queryIds = validateBatchInputs(inputs);
-    const result = await this.execute(model, answerBatchPrompt(inputs), answerBatchSchema(queryIds));
+    const inputByQueryId = new Map(inputs.map((input) => [input.query.id, input]));
+    const hasSupportedNeedsPolicy = inputs.some(
+      (input) => input.answerPolicy === "supported-evidence-needs",
+    );
+    const result = await this.execute(
+      model,
+      answerBatchPrompt(inputs),
+      hasSupportedNeedsPolicy ? policyAwareAnswerBatchSchema(inputs) : answerBatchSchema(queryIds),
+    );
     return {
-      value: parseBatchResults(result.value, queryIds, parseAnswerContract),
+      value: parseBatchResults(result.value, queryIds, (item, queryId) => {
+        const input = inputByQueryId.get(queryId);
+        if (!input) throw new Error(`Missing answer input for ${queryId}`);
+        return input.answerPolicy === "supported-evidence-needs"
+          ? parseSupportedEvidenceNeedsAnswer(item, input.evidence)
+          : parseAnswerContract(item);
+      }),
       latencyMs: result.latencyMs,
       inputTokens: result.inputTokens,
       outputTokens: result.outputTokens,
@@ -275,9 +299,7 @@ export class CodexJsonClient {
         const diagnostic = [commandResult.stderr.trim(), commandResult.stdout.trim()]
           .filter(Boolean)
           .join("\n");
-        throw new Error(
-          `codex exec failed with exit ${commandResult.exitCode}: ${diagnostic}`,
-        );
+        throw new Error(`codex exec failed with exit ${commandResult.exitCode}: ${diagnostic}`);
       }
       const rawOutput = readFileSync(outputPath, "utf8");
       const usage = extractLastUsage(commandResult.stdout);
@@ -317,6 +339,71 @@ function answerBatchSchema(queryIds: readonly string[]): unknown {
   };
 }
 
+function supportedEvidenceNeedsAnswerSchema(
+  evidence: readonly RetrievedEvidence[],
+): Record<string, unknown> {
+  const evidenceIds = [...new Set(evidence.map((item) => item.id))];
+  return {
+    type: "object",
+    additionalProperties: false,
+    required: ["claims", "abstained", "abstention_reason"],
+    properties: {
+      claims: {
+        type: "array",
+        maxItems: 8,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["claim", "citation"],
+          properties: {
+            claim: { type: "string", minLength: 1 },
+            citation:
+              evidenceIds.length > 0 ? { type: "string", enum: evidenceIds } : { type: "string" },
+          },
+        },
+      },
+      abstained: { type: "boolean" },
+      abstention_reason: { anyOf: [{ type: "string" }, { type: "null" }] },
+    },
+  };
+}
+
+function policyAwareAnswerBatchSchema(inputs: readonly AnswerBatchInput[]): unknown {
+  const itemSchemas = inputs.map((input) => {
+    const answerSchema =
+      input.answerPolicy === "supported-evidence-needs"
+        ? supportedEvidenceNeedsAnswerSchema(input.evidence)
+        : ANSWER_SCHEMA;
+    const required = answerSchema.required;
+    const properties = answerSchema.properties;
+    if (!Array.isArray(required) || !properties || typeof properties !== "object") {
+      throw new Error("Answer schema must declare required fields and properties");
+    }
+    return {
+      type: "object",
+      additionalProperties: false,
+      required: ["query_id", ...required],
+      properties: {
+        query_id: { type: "string", enum: [input.query.id] },
+        ...properties,
+      },
+    };
+  });
+  return {
+    type: "object",
+    additionalProperties: false,
+    required: ["results"],
+    properties: {
+      results: {
+        type: "array",
+        minItems: inputs.length,
+        maxItems: inputs.length,
+        items: itemSchemas.length === 1 ? itemSchemas[0] : { anyOf: itemSchemas },
+      },
+    },
+  };
+}
+
 function judgeBatchSchema(queryIds: readonly string[]): unknown {
   return {
     type: "object",
@@ -344,14 +431,15 @@ function judgeBatchSchema(queryIds: readonly string[]): unknown {
 function validateBatchInputs(inputs: readonly AnswerBatchInput[]): string[] {
   if (inputs.length === 0) throw new Error("Codex batch cannot be empty");
   const queryIds = inputs.map((input) => input.query.id);
-  if (new Set(queryIds).size !== queryIds.length) throw new Error("Codex batch query IDs must be unique");
+  if (new Set(queryIds).size !== queryIds.length)
+    throw new Error("Codex batch query IDs must be unique");
   return queryIds;
 }
 
 function parseBatchResults<T>(
   value: unknown,
   queryIds: readonly string[],
-  parse: (item: unknown) => T,
+  parse: (item: unknown, queryId: string) => T,
 ): BatchItem<T>[] {
   const object = asObject(value, "batch");
   if (!Array.isArray(object.results)) throw new Error("batch results must be an array");
@@ -361,18 +449,23 @@ function parseBatchResults<T>(
     const queryId = stringValue(item.query_id, `results[${index}].query_id`);
     if (!queryIds.includes(queryId)) throw new Error(`Unexpected batch query ID ${queryId}`);
     if (byQuery.has(queryId)) throw new Error(`Duplicate batch query ID ${queryId}`);
-    byQuery.set(queryId, parse(item));
+    byQuery.set(queryId, parse(item, queryId));
   }
   const missing = queryIds.filter((queryId) => !byQuery.has(queryId));
   if (missing.length > 0) throw new Error(`Missing batch query IDs: ${missing.join(", ")}`);
   return queryIds.map((queryId) => ({ queryId, value: byQuery.get(queryId)! }));
 }
 
-function answerPrompt(query: BenchmarkQuery, evidence: readonly RetrievedEvidence[]): string {
+function answerPrompt(
+  query: BenchmarkQuery,
+  evidence: readonly RetrievedEvidence[],
+  answerPolicy?: AnswerPolicy,
+): string {
   return [
     "Answer the benchmark question using only the supplied evidence.",
     "Every factual claim must cite one or more exact evidence IDs from the supplied list.",
     "If the evidence is insufficient, abstain. Do not use tools, files, web search, or prior knowledge.",
+    ...answerPolicyInstructions(answerPolicy),
     "Return only the JSON object required by the output schema.",
     "",
     `Question: ${query.text}`,
@@ -390,15 +483,27 @@ function answerBatchPrompt(inputs: readonly AnswerBatchInput[]): string {
     "If a case's evidence is insufficient, abstain. Do not use tools, files, web search, or prior knowledge.",
     "Return one result for every query_id and only the JSON object required by the output schema.",
     "",
-    ...inputs.flatMap(({ query, evidence }) => [
+    ...inputs.flatMap(({ query, evidence, answerPolicy }) => [
       `<case query_id=${JSON.stringify(query.id)}>`,
       `Question: ${query.text}`,
+      ...answerPolicyInstructions(answerPolicy),
       "Evidence:",
       ...evidence.map((item) => `[${item.id}] ${item.text}`),
       "</case>",
       "",
     ]),
   ].join("\n");
+}
+
+function answerPolicyInstructions(answerPolicy: AnswerPolicy | undefined): string[] {
+  if (answerPolicy !== "supported-evidence-needs") return [];
+  return [
+    "Internally identify the distinct evidence needs in the question using only the question and retrieved evidence.",
+    "At most one atomic claim for each supported evidence need may be included; add exactly one best supporting evidence ID for that claim in citations.",
+    "Return each supported atomic claim as one claims item with exactly claim and citation fields; do not add citation markers to claim text.",
+    "Use no more than eight factual claims, and remove redundant claims.",
+    "If only some evidence needs are supported, answer only the supported parts and omit unsupported needs; abstain only when none are supported.",
+  ];
 }
 
 function judgePrompt(
@@ -457,8 +562,70 @@ function parseAnswerContract(value: unknown): AnswerContract {
   const answer = stringValue(object.answer, "answer");
   const reason = nullableString(object.abstention_reason, "abstention_reason");
   if (abstained && reason === null) throw new Error("Abstained answers require abstention_reason");
-  if (!abstained && answer.trim().length === 0) throw new Error("Non-abstained answers require answer text");
+  if (!abstained && answer.trim().length === 0)
+    throw new Error("Non-abstained answers require answer text");
   return { answer, citations, abstained, abstentionReason: reason };
+}
+
+function parseSupportedEvidenceNeedsAnswer(
+  value: unknown,
+  evidence: readonly RetrievedEvidence[],
+): AnswerContract {
+  const object = asObject(value, "supported evidence-needs answer");
+  assertOnlyProperties(
+    object,
+    ["query_id", "claims", "abstained", "abstention_reason"],
+    "supported evidence-needs answer",
+  );
+  const claimsValue = object.claims;
+  if (!Array.isArray(claimsValue)) throw new Error("claims must be an array");
+  if (claimsValue.length > 8) throw new Error("claims must contain at most eight items");
+  const abstained = booleanValue(object.abstained, "abstained");
+  const reason = nullableString(object.abstention_reason, "abstention_reason");
+  if (claimsValue.length === 0) {
+    if (!abstained) throw new Error("Zero supported claims require abstention");
+    if (reason === null || reason.trim().length === 0) {
+      throw new Error("Abstention requires a non-empty abstention_reason");
+    }
+    return { answer: "", citations: [], abstained: true, abstentionReason: reason.trim() };
+  }
+  if (abstained) throw new Error("Supported claims cannot be paired with abstention");
+  if (reason !== null) throw new Error("Non-abstained answers require a null abstention_reason");
+
+  const allowedEvidenceIds = new Set(evidence.map((item) => item.id));
+  const seenClaims = new Set<string>();
+  const claims = claimsValue.map((rawClaim, index) => {
+    const item = asObject(rawClaim, `claims[${index}]`);
+    assertOnlyProperties(item, ["claim", "citation"], `claims[${index}]`);
+    const claim = stringValue(item.claim, `claims[${index}].claim`).trim();
+    if (claim.length === 0) throw new Error(`claims[${index}].claim must not be empty`);
+    if (/\r|\n/.test(claim)) {
+      throw new Error(`claims[${index}].claim must be one atomic line`);
+    }
+    const claimKey = normalizedClaimKey(claim);
+    if (seenClaims.has(claimKey)) throw new Error(`Duplicate or redundant claim at index ${index}`);
+    seenClaims.add(claimKey);
+
+    const citation = stringValue(item.citation, `claims[${index}].citation`);
+    if (!allowedEvidenceIds.has(citation)) {
+      throw new Error(`claims[${index}].citation is not supplied evidence: ${citation}`);
+    }
+    return { claim, citation };
+  });
+  return {
+    answer: claims.map((item) => `${item.claim} [${item.citation}]`).join("\n"),
+    citations: [...new Set(claims.map((item) => item.citation))],
+    abstained: false,
+    abstentionReason: null,
+  };
+}
+
+function normalizedClaimKey(value: string): string {
+  return value
+    .toLocaleLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(/[.!?]+$/, "")
+    .trim();
 }
 
 function parseJudgeContract(value: unknown): JudgeContract {
@@ -486,8 +653,19 @@ function parseJudgeContract(value: unknown): JudgeContract {
 }
 
 function asObject(value: unknown, name: string): Record<string, unknown> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(`${name} must be an object`);
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    throw new Error(`${name} must be an object`);
   return value as Record<string, unknown>;
+}
+
+function assertOnlyProperties(
+  value: Readonly<Record<string, unknown>>,
+  allowed: readonly string[],
+  name: string,
+): void {
+  const unknown = Object.keys(value).filter((key) => !allowed.includes(key));
+  if (unknown.length > 0)
+    throw new Error(`${name} has unexpected properties: ${unknown.join(", ")}`);
 }
 
 function stringValue(value: unknown, name: string): string {
@@ -569,18 +747,23 @@ export async function runCommand(
         settle(() => reject(timeoutError()));
         return;
       }
-      settle(() => resolve({
-        exitCode: code ?? 1,
-        stdout,
-        stderr,
-        durationMs: performance.now() - startedAt,
-      }));
+      settle(() =>
+        resolve({
+          exitCode: code ?? 1,
+          stdout,
+          stderr,
+          durationMs: performance.now() - startedAt,
+        }),
+      );
     });
     child.stdin.end(stdin);
   });
 }
 
-function extractLastUsage(stdout: string): { inputTokens: number | null; outputTokens: number | null } {
+function extractLastUsage(stdout: string): {
+  inputTokens: number | null;
+  outputTokens: number | null;
+} {
   let last: { inputTokens: number | null; outputTokens: number | null } = {
     inputTokens: null,
     outputTokens: null,

@@ -37,7 +37,16 @@ describe("human audit sampling", () => {
           frameworkId,
           queryId: query.id,
           status: "ok",
-          evidence: [{ id: query.goldEvidenceIds[0]!, sourceId: "s", text: "evidence", score: 1, rank: 1, metadata: {} }],
+          evidence: [
+            {
+              id: query.goldEvidenceIds[0]!,
+              sourceId: "s",
+              text: "evidence",
+              score: 1,
+              rank: 1,
+              metadata: {},
+            },
+          ],
           latencyMs: 1,
           inputTokens: null,
           error: null,
@@ -49,11 +58,17 @@ describe("human audit sampling", () => {
           frameworkId,
           queryId: query.id,
           status: "ok",
-          output: { answer: "answer", citations: [query.goldEvidenceIds[0]!], abstained: false, abstentionReason: null },
+          output: {
+            answer: "answer",
+            citations: [query.goldEvidenceIds[0]!],
+            abstained: false,
+            abstentionReason: null,
+          },
           latencyMs: 1,
           inputTokens: null,
           outputTokens: null,
           error: null,
+          inputDigest: "answer-input",
         });
       }
     }
@@ -62,7 +77,8 @@ describe("human audit sampling", () => {
     expect(sample.mapping).toHaveLength(100);
     expect(sample.rows.every((row) => !("frameworkId" in row))).toBe(true);
     const counts = new Map<FrameworkId, number>();
-    for (const mapping of sample.mapping) counts.set(mapping.frameworkId, (counts.get(mapping.frameworkId) ?? 0) + 1);
+    for (const mapping of sample.mapping)
+      counts.set(mapping.frameworkId, (counts.get(mapping.frameworkId) ?? 0) + 1);
     expect([...counts.values()]).toEqual([20, 20, 20, 20, 20]);
   });
 });

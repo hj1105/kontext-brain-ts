@@ -13,16 +13,18 @@ const bundle: DatasetBundle = {
   track: "static-kb",
   documents: [],
   provenance: { source: "test", version: "1", license: "test" },
-  queries: [{
-    id: "q1",
-    text: "question",
-    referenceAnswer: "answer",
-    goldEvidenceIds: ["e1", "e2"],
-    goldEvidenceText: ["gold evidence"],
-    answerable: true,
-    category: "Fact",
-    metadata: {},
-  }],
+  queries: [
+    {
+      id: "q1",
+      text: "question",
+      referenceAnswer: "answer",
+      goldEvidenceIds: ["e1", "e2"],
+      goldEvidenceText: ["gold evidence"],
+      answerable: true,
+      category: "Fact",
+      metadata: {},
+    },
+  ],
 };
 
 const retrieval: RetrievalResult = {
@@ -51,6 +53,7 @@ const answer: AnswerResult = {
   inputTokens: 10,
   outputTokens: 2,
   error: null,
+  inputDigest: "answer-input",
 };
 
 const judgement: JudgeResult = {
@@ -65,12 +68,15 @@ const judgement: JudgeResult = {
     citationPrecision: 1,
     citationRecall: 0.5,
     acceptableAbstention: false,
-    claims: [{ claim: "answer", supported: true, correct: true, citations: ["e1"], reason: "entailed" }],
+    claims: [
+      { claim: "answer", supported: true, correct: true, citations: ["e1"], reason: "entailed" },
+    ],
   },
   latencyMs: 30,
   inputTokens: 20,
   outputTokens: 5,
   error: null,
+  inputDigest: "judge-input",
 };
 
 describe("rag eval metrics", () => {
@@ -80,7 +86,13 @@ describe("rag eval metrics", () => {
   });
 
   it("reports per-dataset metrics without a combined score", () => {
-    const score = scoreDatasetFramework(bundle, "kontext-brain", [retrieval], [answer], [judgement]);
+    const score = scoreDatasetFramework(
+      bundle,
+      "kontext-brain",
+      [retrieval],
+      [answer],
+      [judgement],
+    );
     expect(score.answerCorrectness).toBe(1);
     expect(score.retrievalQueries).toBe(1);
     expect(score.retrievalCompleted).toBe(1);
@@ -126,7 +138,9 @@ describe("rag eval metrics", () => {
       [retrieval, otherRetrieval],
       [judgement, otherJudgement],
     );
-    const correctness = comparisons.find((comparison) => comparison.metric === "answer-correctness");
+    const correctness = comparisons.find(
+      (comparison) => comparison.metric === "answer-correctness",
+    );
     expect(correctness).toMatchObject({
       pairedQueries: 1,
       meanDifferenceLeftMinusRight: 1,
@@ -135,8 +149,6 @@ describe("rag eval metrics", () => {
   });
 
   it("bootstraps deterministically", () => {
-    expect(bootstrapMean95Ci([0, 1, 1], 100, 42)).toEqual(
-      bootstrapMean95Ci([0, 1, 1], 100, 42),
-    );
+    expect(bootstrapMean95Ci([0, 1, 1], 100, 42)).toEqual(bootstrapMean95Ci([0, 1, 1], 100, 42));
   });
 });
