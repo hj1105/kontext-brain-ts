@@ -376,7 +376,13 @@ Selection metric: the same joint Medical recall/raw-context-precision gate above
 Held-out test run directories:
   openai-small-kontext-v11a-multi-query-standard-2026-08-21
   openai-small-kontext-v11b-multi-query-coverage-2026-08-21
-Outcome: pending
+Outcome: completed. Both cells completed 2,062/2,062 retrieval queries with
+  zero final errors after checkpoint-preserving retries of transient local
+  Codex CLI timeouts. v11a produced recall 0.884093 and raw context precision
+  0.581472: precision improved over v7, but recall failed the joint gate. v11b
+  produced recall 0.891368 and raw context precision 0.582049, passing both
+  predeclared Medical conditions. v11b is promoted over v11a, subject to the
+  already-registered v12 selector comparison and cross-dataset guardrails.
 ```
 
 ## Query-plan-aware coverage selection
@@ -408,5 +414,11 @@ Selection metric: Medical evidence recall@10 > 0.890398 and raw context
   precision >= 0.575969; then no material Novel/BEIR regression.
 Held-out test run directory:
   openai-small-kontext-v12-multi-query-plan-aware-2026-08-21
-Outcome: pending
+Outcome: completed and promoted to cross-dataset validation. Medical retrieval
+  completed 2,062/2,062 with zero final errors. Recall was 0.891368, equal to
+  v11b and +0.000970 over v7. Raw context precision was 0.583434, +0.001385
+  over v11b and +0.007466 over v7. Because v12 preserved the best recall while
+  winning the predeclared precision comparison, its configuration is now
+  frozen for Novel, BEIR SciFact/NFCorpus, and the Medical answer/judge sample.
+  No further Medical-based parameter adjustment is permitted.
 ```
