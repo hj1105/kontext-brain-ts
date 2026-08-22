@@ -235,7 +235,16 @@ describe("external framework retrieval", () => {
           frameworkId: framework.id,
           queryId: query.id,
           status: "ok" as const,
-          evidence: [],
+          evidence: [
+            {
+              id: "native-context",
+              sourceId: "graphrag-local-search-context",
+              text: "0|title: One\nsource_id: source-1\n\n1|title: Two\nsource_id: source-2",
+              score: 1,
+              rank: 1,
+              metadata: { nativeContext: true },
+            },
+          ],
           latencyMs: 1,
           inputTokens: null,
           error: null,
@@ -254,9 +263,7 @@ describe("external framework retrieval", () => {
     ).retrieve(bundle, { workDirectory, topK: 10, candidateK: 50 });
 
     expect(results).toHaveLength(2);
-    expect(results.map((result) => result.queryId)).toEqual([
-      "duplicate-query",
-      "duplicate-query",
-    ]);
+    expect(results.map((result) => result.queryId)).toEqual(["duplicate-query", "duplicate-query"]);
+    expect(results[0]?.evidence[0]?.sourceIds).toEqual(["source-1", "source-2"]);
   });
 });

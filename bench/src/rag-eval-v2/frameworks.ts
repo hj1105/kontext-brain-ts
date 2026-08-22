@@ -444,11 +444,26 @@ export class ExternalCommandFrameworkAdapter implements FrameworkAdapter {
       24 * 60 * 60 * 1000,
     );
     if (retrieve.exitCode !== 0) throw new Error(`${this.id} retrieval failed: ${retrieve.stderr}`);
-    const records = readJsonLines<RetrievalResult>(outputPath);
+    const records = readJsonLines<RetrievalResult>(outputPath).map((record) => ({
+      ...record,
+      evidence: record.evidence.map(addNativeContextProvenance),
+    }));
     validateExternalResults(bundle, this.id, records);
     const digest = manifestDigest(this.manifest);
     return records.map((record) => ({ ...record, configDigest: digest }));
   }
+}
+
+function addNativeContextProvenance(evidence: RetrievedEvidence): RetrievedEvidence {
+  if (evidence.metadata.nativeContext !== true) return evidence;
+  const sourceIds = [
+    ...new Set(
+      [...evidence.text.matchAll(/^source_id:\s*(.+?)\s*$/gim)].map(
+        (match) => match[1]?.trim() ?? "",
+      ),
+    ),
+  ].filter(Boolean);
+  return sourceIds.length > 0 ? { ...evidence, sourceIds } : evidence;
 }
 
 function defaultFrameworkCommand(id: FrameworkId): readonly string[] | null {
@@ -675,8 +690,7 @@ function validateExternalResults(
       );
     }
     const expectedCount = expectedQueryCounts.get(record.queryId);
-    if (expectedCount === undefined)
-      throw new Error(`Unexpected query ${record.queryId}`);
+    if (expectedCount === undefined) throw new Error(`Unexpected query ${record.queryId}`);
     const seenCount = (seenQueryCounts.get(record.queryId) ?? 0) + 1;
     if (seenCount > expectedCount) throw new Error(`Duplicate result ${record.queryId}`);
     seenQueryCounts.set(record.queryId, seenCount);

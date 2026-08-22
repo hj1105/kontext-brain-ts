@@ -70,6 +70,7 @@ export interface DatasetBundle {
 export interface RetrievedEvidence {
   readonly id: string;
   readonly sourceId: string;
+  readonly sourceIds?: readonly string[];
   readonly text: string;
   readonly score: number;
   readonly rank: number;

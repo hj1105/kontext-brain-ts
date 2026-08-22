@@ -85,6 +85,28 @@ describe("rag eval metrics", () => {
     expect(contextPrecisionForQuery(bundle.queries[0]!, retrieval.evidence)).toBe(0.5);
   });
 
+  it("credits every provenance source represented by a bundled native context", () => {
+    const query = {
+      ...bundle.queries[0]!,
+      goldEvidenceIds: ["document-a", "document-b"],
+      goldEvidenceText: [],
+    };
+    const bundledEvidence = [
+      {
+        id: "native-context",
+        sourceId: "bundled-context",
+        sourceIds: ["document-a", "document-b"],
+        text: "Combined native context",
+        score: 1,
+        rank: 1,
+        metadata: {},
+      },
+    ];
+
+    expect(evidenceRecallForQuery(query, bundledEvidence)).toBe(1);
+    expect(contextPrecisionForQuery(query, bundledEvidence)).toBe(1);
+  });
+
   it("reports per-dataset metrics without a combined score", () => {
     const score = scoreDatasetFramework(
       bundle,

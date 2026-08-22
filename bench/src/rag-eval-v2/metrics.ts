@@ -264,8 +264,12 @@ export function evidenceRecallForQuery(
     return covered / query.goldEvidenceText.length;
   }
   if (query.goldEvidenceIds.length > 0) {
-    const retrieved = new Set(evidence.flatMap((item) => [item.id, item.sourceId]));
-    return query.goldEvidenceIds.filter((id) => retrieved.has(id)).length / query.goldEvidenceIds.length;
+    const retrieved = new Set(
+      evidence.flatMap((item) => [item.id, item.sourceId, ...(item.sourceIds ?? [])]),
+    );
+    return (
+      query.goldEvidenceIds.filter((id) => retrieved.has(id)).length / query.goldEvidenceIds.length
+    );
   }
   return null;
 }
@@ -283,7 +287,14 @@ export function contextPrecisionForQuery(
   }
   if (query.goldEvidenceIds.length > 0) {
     const gold = new Set(query.goldEvidenceIds);
-    return evidence.filter((item) => gold.has(item.id) || gold.has(item.sourceId)).length / evidence.length;
+    return (
+      evidence.filter(
+        (item) =>
+          gold.has(item.id) ||
+          gold.has(item.sourceId) ||
+          (item.sourceIds ?? []).some((sourceId) => gold.has(sourceId)),
+      ).length / evidence.length
+    );
   }
   return null;
 }
