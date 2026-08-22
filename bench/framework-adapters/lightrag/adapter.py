@@ -367,6 +367,7 @@ def read_retrieval_checkpoint(
         record.get("datasetId") != Path(args.dataset_dir).parents[1].name
         or record.get("frameworkId") != FRAMEWORK_ID
         or record.get("queryId") != query_id
+        or record.get("status") != "ok"
     ):
         return None
     return record
