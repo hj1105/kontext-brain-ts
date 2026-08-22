@@ -82,6 +82,9 @@ export type KontextRetrievalMode =
   | "v14b-anchored-deterministic-quota-coverage-stack"
   | "adaptive-eece-stack";
 
+export const DEFAULT_KONTEXT_RETRIEVAL_MODE: KontextRetrievalMode =
+  "multi-query-anchored-evidence-answer-stack";
+
 export interface KontextBrainAdapterOptions {
   readonly codexClient?: CodexJsonClient;
   readonly embeddingClient?: EmbeddingClient | null;
@@ -276,7 +279,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
   ) {
     this.codexClient = options.codexClient ?? new CodexJsonClient();
     this.embeddingClient = options.embeddingClient ?? null;
-    this.retrievalMode = options.retrievalMode ?? "legacy";
+    this.retrievalMode = options.retrievalMode ?? DEFAULT_KONTEXT_RETRIEVAL_MODE;
     this.benchmarkDataDirectory =
       options.benchmarkDataDirectory ??
       resolve(dirname(fileURLToPath(import.meta.url)), "../../data");

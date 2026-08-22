@@ -12,7 +12,11 @@ import type {
   RetrievedEvidence,
 } from "./contracts.js";
 import { readJsonLines, writeJsonAtomic, writeJsonLines } from "./jsonl.js";
-import { KontextBrainAdapter } from "./kontext-framework.js";
+import {
+  DEFAULT_KONTEXT_RETRIEVAL_MODE,
+  KontextBrainAdapter,
+  type KontextRetrievalMode,
+} from "./kontext-framework.js";
 import type { FrameworkManifest, RagEvalManifest } from "./manifest.js";
 import { manifestDigest } from "./manifest.js";
 import {
@@ -516,25 +520,10 @@ export function createFrameworkAdapters(manifest: RagEvalManifest): FrameworkAda
   });
 }
 
-function kontextRetrievalMode(
-  value: string | undefined,
-):
-  | "legacy"
-  | "bidirectional-kg"
-  | "max-existing-stack"
-  | "source-hydrated-stack"
-  | "source-hydrated-llm-stack"
-  | "source-hydrated-llm-recall-safe-stack"
-  | "source-hydrated-llm-candidate-safe-stack"
-  | "source-hydrated-llm-coverage-aware-stack"
-  | "multi-query-standard-rerank-stack"
-  | "multi-query-coverage-aware-stack"
-  | "multi-query-plan-aware-coverage-stack"
-  | "multi-query-anchored-evidence-answer-stack"
-  | "v14a-anchored-deterministic-soft-coverage-stack"
-  | "v14b-anchored-deterministic-quota-coverage-stack"
-  | "adaptive-eece-stack" {
+function kontextRetrievalMode(value: string | undefined): KontextRetrievalMode {
+  if (value === undefined || value.trim() === "") return DEFAULT_KONTEXT_RETRIEVAL_MODE;
   if (
+    value === "legacy" ||
     value === "bidirectional-kg" ||
     value === "max-existing-stack" ||
     value === "source-hydrated-stack" ||
@@ -552,7 +541,7 @@ function kontextRetrievalMode(
   ) {
     return value;
   }
-  return "legacy";
+  throw new Error(`Unknown KONTEXT_RAG_EVAL_MODE: ${value}`);
 }
 
 function parseCommand(raw: string | undefined): readonly string[] | null {

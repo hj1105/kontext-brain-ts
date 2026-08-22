@@ -30,6 +30,29 @@ afterEach(() => {
 });
 
 describe("kontext cache-only coverage modes", () => {
+  it("selects the promoted v13 profile when no mode override is configured", async () => {
+    restoreEnvironment("OPENAI_API_KEY", undefined);
+    restoreEnvironment("KONTEXT_RAG_EVAL_MODE", undefined);
+
+    const adapter = createFrameworkAdapters(DEFAULT_RAG_EVAL_MANIFEST).find(
+      (candidate) => candidate.id === "kontext-brain",
+    );
+
+    await expect(adapter?.doctor()).resolves.toMatchObject({
+      status: "blocked",
+      version: "workspace-0.1.0+v13-anchored-evidence-answer-stack",
+      detail: "OPENAI_API_KEY is required for bidirectional KG chunk seeds",
+    });
+  });
+
+  it("rejects an unknown mode instead of silently falling back to legacy retrieval", () => {
+    process.env.KONTEXT_RAG_EVAL_MODE = "typo-mode";
+
+    expect(() => createFrameworkAdapters(DEFAULT_RAG_EVAL_MANIFEST)).toThrow(
+      "Unknown KONTEXT_RAG_EVAL_MODE: typo-mode",
+    );
+  });
+
   it.each([
     [
       "v14a-anchored-deterministic-soft-coverage-stack",

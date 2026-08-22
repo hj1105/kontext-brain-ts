@@ -7,13 +7,13 @@
 [![typescript](https://img.shields.io/badge/typescript-5.x-blue)](https://www.typescriptlang.org/)
 
 A retrieval framework that organizes documents under a hierarchical ontology
-graph instead of a flat vector index. On a 12-doc tech-docs benchmark with
-local Ollama (`qwen2.5:1.5b` + `nomic-embed-text`), kontext beats a standard
-LangChain.js vector-RAG baseline by **~27x efficiency** (recall × keyword-hit /
-context × latency) when both systems use the same LLM for final answer
-generation. An extractive variant that skips the final LLM entirely reaches
-much larger ratios (~400,000x), but that comparison is apples-to-oranges —
-see the [Performance](#performance-benchmark) section for the honest framing.
+graph instead of a flat vector index. The promoted evaluated profile is
+**v13 anchored evidence answer**: original-query-anchored multi-query search,
+vector + KG + BM25 retrieval, coverage-aware LLM reranking, source hydration,
+and evidence-constrained answering. On GraphRAG-Bench Medical it reached
+**94.61% answer correctness**, **95.34% strict faithfulness**, and **89.23%
+Recall@10** on the frozen evaluation. See [Current RAG results](#current-rag-results)
+for the complete comparison and its limitations.
 
 The idea: most production RAG indexes documents into a single semantic vector
 space. kontext routes queries first through a small **ontology graph** (e.g.
@@ -22,6 +22,147 @@ subspace. This (a) prunes irrelevant docs early, (b) gives you a natural place
 to plug multiple data sources (Notion, Slack, GitHub) under one knowledge
 structure, and (c) lets you swap retrieval strategies per layer without
 rewriting the whole pipeline.
+
+---
+
+## Recommended RAG profile: v13
+
+The `rag-eval-v2` harness now selects v13 for `kontext-brain` when
+`KONTEXT_RAG_EVAL_MODE` is unset. There is no hidden fallback to the old
+pipeline: an unknown override fails immediately, and `legacy` must be selected
+explicitly if it is required for a regression run.
+
+v13 is one fixed, dataset-independent policy:
+
+1. Generate up to three complementary search perspectives without answering
+   the question.
+2. Preserve the original question as the anchor and fuse its vector and BM25
+   rankings at weight 2, versus weight 1 for each expansion (RRF `k=10`).
+3. Fuse vector, bidirectional KG, BM25, and graph/lexical rankings over 50
+   candidates.
+4. Rerank the candidates so the leading evidence collectively covers the
+   entities, constraints, events, comparisons, and temporal or causal steps in
+   the question.
+5. Hydrate ranked KG chunks back to source text, with 5,000 characters per
+   window and a 50,000-character total context budget.
+6. Answer with at most eight non-redundant atomic claims. Every claim must name
+   exactly one retrieved Evidence ID; unsupported parts are omitted, and the
+   answer abstains only when no requested part is supported.
+
+The retriever and answerer never receive the dataset name, reference answer,
+gold Evidence, or judge output. Medical, Novel, SciFact, and NFCorpus use the
+same weights and policy. The reference implementation currently lives in the
+benchmark harness; the generic `KontextAgent` and production knowledge runtime
+remain the stable library interfaces and do not silently add benchmark-only
+Codex calls to an existing deployment.
+
+### Run the default v13 profile
+
+The mode requires an OpenAI embedding key and an authenticated local Codex CLI.
+Those are runtime credentials, not tuning settings.
+
+```bash
+corepack enable
+pnpm install
+pnpm -r build
+
+export OPENAI_API_KEY=...
+codex login status
+
+# No KONTEXT_RAG_EVAL_MODE is needed: kontext-brain resolves to v13.
+pnpm --filter @kontext-brain/bench rag-eval-v2 doctor
+pnpm --filter @kontext-brain/bench rag-eval-v2 smoke \
+  --frameworks kontext-brain --limit 1 \
+  --work-dir /tmp/kontext-v13-smoke
+pnpm --filter @kontext-brain/bench rag-eval-v2 run \
+  --frameworks kontext-brain \
+  --work-dir /absolute/path/to/kontext-v13-run
+```
+
+Completed embedding and per-query checkpoints are resumable when the same work
+directory is reused. To reproduce an older profile, set an explicit override,
+for example `KONTEXT_RAG_EVAL_MODE=legacy`; do not reuse a v13 run directory.
+
+### Where it fits
+
+| use case | recommended integration | why |
+|---|---|---|
+| Company knowledge across Notion, Slack, GitHub, or Jira | MCP connectors into the production PostgreSQL/pgvector knowledge runtime; expose results again through `@kontext-brain/tool-server` | Unifies multiple source systems while preserving source identity, Evidence, ACLs, and citations |
+| AI-agent memory or research assistant | Call `KontextAgent.retrieve()` for grounded context or `answer()` for a cited answer | Keeps retrieval separate from agent reasoning and makes provenance inspectable |
+| General static document RAG | Use the v13 reference profile for high-recall evaluation; use the programmatic interfaces below to supply the corpus, embedding store, and LLM | The policy is domain-independent and was guarded on medical, narrative, scientific, and biomedical corpora |
+| Regulated internal search | PostgreSQL RLS, active/stale Evidence lifecycle, S3-compatible source bodies, and fail-closed answering | A Fact is visible only through accessible active Evidence |
+| Local or cost-sensitive lookup | Ollama-backed library setup or `ExtractiveRetriever` | Avoids hosted generation; extractive mode is appropriate when answers are literal corpus sentences |
+| Sub-second, high-QPS search | Start with vector/extractive retrieval, then add graph or LLM reranking only to difficult queries | v13 prioritizes recall and answer quality; its observed retrieval p95 is tens of seconds because it performs local-LLM expansion and reranking |
+
+The MCP server can be registered in Claude Desktop, Claude Code, Cursor, or
+another MCP host, but MCP is optional. The same library can run in-process,
+behind an HTTP application, as a batch indexer, or as the retrieval layer for a
+custom agent.
+
+## Current RAG results
+
+These are completed, checkpointed runs. Medical answer metrics use the same
+frozen 200-query sample; retrieval metrics use all 2,062 queries. Higher is
+better except latency and token/cost columns.
+
+| Medical system | Recall@10 | Raw context precision | Correctness | Strict faithfulness | Claim F1 | Citation F1 | Retrieval p95 | E2E p95 | Embedding cost |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| **Kontext v13** | 0.892338 | 0.580222 | **0.946127** | **0.953411** | 0.855016 | **0.954141** | 34.94 s | **104.24 s** | $0.008150 |
+| LightRAG 1.5.6 | **0.932590** | 0.999030\* | 0.893900 | 0.941684 | **0.857511** | 0.947662 | 377.92 s | 445.01 s | $0.015409 |
+| Microsoft GraphRAG 3.1.1 | 0.830262 | 0.997090\* | 0.781650 | 0.873956 | 0.733552 | 0.851768 | **0.52 s** | 107.26 s | $0.013623 |
+| Vector + BM25-RRF | 0.706596 | 0.381232 | 0.873801 | 0.895057 | 0.807975 | 0.899981 | **0.004 s** | 178.22 s | $0.005831 |
+| Kontext v12 | 0.891368 | 0.583434 | 0.865488 | 0.912990 | 0.843040 | 0.929133 | 76.58 s | 166.60 s | $0.008150 |
+| Kontext v7 | 0.890398 | 0.575969 | 0.880350 | 0.931951 | 0.852906 | 0.917894 | 17.62 s | 123.79 s | $0.006362 |
+
+\* LightRAG and Microsoft GraphRAG package a large native context as one
+Evidence item, while v13 returns about 7.92 separately scored source windows.
+Their near-1.0 raw context precision is therefore package-sensitive and is not
+an apples-to-apples precision advantage.
+
+The shared answer and judge stages recorded the following token totals. They do
+not include local-Codex query expansion or framework-native KG construction.
+
+| Medical system | Answer + judge input tokens | Output tokens | Input per judged query | Output per judged query |
+|---|---:|---:|---:|---:|
+| **Kontext v13** | 9,029,688 | **268,838** | 45,148 | **1,344** |
+| LightRAG 1.5.6 | 11,582,245 | 330,228 | 57,911 | 1,651 |
+| Microsoft GraphRAG 3.1.1 | 8,680,479 | 388,382 | 43,402 | 1,942 |
+| Vector + BM25-RRF | **5,696,801** | 355,907 | **28,484** | 1,780 |
+| Kontext v12 | 8,989,626 | 356,455 | 44,948 | 1,782 |
+| Kontext v7 | 8,987,464 | 338,480 | 44,937 | 1,692 |
+
+The generalization datasets currently have retrieval-only scores. `N/A` means
+that no shared answer/judge result exists, not that the system scored zero.
+
+| Dataset | System | Completed | Recall@10 | Raw context precision | Retrieval p95 | Embedding tokens / cost | Answer metrics |
+|---|---|---:|---:|---:|---:|---:|---|
+| Novel | **Kontext v13** | 2,010/2,010 | **0.525871** | **0.289687** | 37.29 s | 891,981 / $0.017840 | N/A |
+| Novel | Kontext v12 | 2,010/2,010 | 0.522886 | 0.287472 | 33.56 s | 891,981 / $0.017840 | N/A |
+| SciFact | **Kontext v13** | 300/300 | **0.960000** | 0.034686 | 38.71 s | 1,680,151 / $0.033603 | N/A |
+| SciFact | Kontext v12 | 300/300 | **0.960000** | 0.034727 | 41.41 s | 1,680,151 / $0.033603 | N/A |
+| SciFact | Vector + BM25-RRF | 300/300 | 0.822444 | **0.163667** | **0.017 s** | 1,693,048 / $0.033861 | N/A |
+| NFCorpus | **Kontext v13** | 323/323 | **0.278486** | 0.174640 | 57.26 s | 1,253,777 / $0.025076 | N/A |
+| NFCorpus | Kontext v12 | 323/323 | 0.278269 | 0.175353 | 59.74 s | 1,253,777 / $0.025076 | N/A |
+| NFCorpus | Vector + BM25-RRF | 323/323 | 0.162923 | **0.308978** | **0.015 s** | 1,283,605 / $0.025672 | N/A |
+
+The v13 embedding total across Medical, Novel, SciFact, and NFCorpus is
+4,233,427 input tokens, or **$0.084669** at the recorded `$0.02/M` price.
+Medical answer + judge calls recorded 9,029,688 input and 268,838 output
+tokens. Local Codex expansion, reranking, answering, and judging consume the
+authenticated Codex allowance and are not represented as an API-dollar cost.
+
+LightRAG and Microsoft GraphRAG Novel answer/judge runs, and their SciFact and
+NFCorpus indexing runs, are still incomplete and are deliberately not scored
+from partial output. HippoRAG2 completed no valid retrieval cell and is also not
+ranked. FRAMES was excluded from this execution because of its much larger
+runtime, not counted as a negative result. The full artifacts, v14 precision
+ablations, configuration identity, and caveats are in the
+[v13/v14 comparison report](./bench/data/rag-eval-v2/kontext-v13-v14-final-comparison-2026-08-22.md).
+
+The older tech-docs, SQuAD 2.0, HotpotQA, and GraphRAG-Bench research rounds
+remain below as historical experiments. Their metrics, corpora, models, and
+task boundaries differ from RAG evaluation v2 and must not be merged into the
+table above.
 
 ---
 
@@ -40,7 +181,9 @@ A modular monorepo with eight published packages and a benchmark harness:
 | `@kontext-brain/object-storage` | S3-compatible compressed Resource content storage |
 | `@kontext-brain/github` | accumulated ontology-proposal draft PR publisher |
 
-There is no Python in the project — it is end-to-end TypeScript / Node.js.
+The published runtime packages are end-to-end TypeScript / Node.js. Isolated
+benchmark adapters for Python-native frameworks such as LightRAG and Microsoft
+GraphRAG live under `bench/framework-adapters` and run in pinned `uv` projects.
 
 ### Architecture in one diagram
 

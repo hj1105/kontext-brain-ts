@@ -38,6 +38,20 @@ The machine-readable source of truth is `manifest.ts`. Its SHA-256 digest is
 written into each run report so a configuration change cannot silently mix with
 earlier results.
 
+### Default kontext profile
+
+When `KONTEXT_RAG_EVAL_MODE` is absent, the framework factory selects
+`multi-query-anchored-evidence-answer-stack`, the promoted v13 profile. The
+default is shared by `doctor`, `smoke`, and `run`, and direct construction of
+`KontextBrainAdapter`. An unknown mode is rejected instead of silently falling
+back to legacy retrieval.
+
+v13 requires `OPENAI_API_KEY` for `text-embedding-3-small` and an authenticated
+local `codex` command for query expansion and evidence reranking. Those are
+runtime prerequisites; no mode, fusion weight, candidate count, prompt, or
+dataset-specific setting is required. Explicit overrides remain available for
+reproduction, for example `KONTEXT_RAG_EVAL_MODE=legacy`.
+
 ## Dataset tracks
 
 The primary static-KB track uses GraphRAG-Bench Medical, GraphRAG-Bench Novel,
@@ -105,18 +119,18 @@ Integration constraints are retained in the artifacts:
 # Prepare the official FRAMES TSV and a reproducible Wikitext snapshot of every
 # referenced Wikipedia page. The page cache is resumable and generated data
 # stays gitignored.
-bench/node_modules/.bin/tsx bench/src/rag-eval-v2/cli.ts prepare-frames
+pnpm --filter @kontext-brain/bench rag-eval-v2 prepare-frames
 
 # Inspect every model, dataset, and framework prerequisite.
-bench/node_modules/.bin/tsx bench/src/rag-eval-v2/cli.ts doctor
+pnpm --filter @kontext-brain/bench rag-eval-v2 doctor
 
 # Wiring smoke test; this is not a benchmark score.
-bench/node_modules/.bin/tsx bench/src/rag-eval-v2/cli.ts smoke \
+pnpm --filter @kontext-brain/bench rag-eval-v2 smoke \
   --frameworks kontext-brain --limit 1 \
   --work-dir /tmp/kontext-rag-eval-v2-smoke
 
 # Full run after all required resources are ready.
-bench/node_modules/.bin/tsx bench/src/rag-eval-v2/cli.ts run \
+pnpm --filter @kontext-brain/bench rag-eval-v2 run \
   --work-dir /absolute/path/to/rag-eval-v2-run
 ```
 
@@ -132,11 +146,11 @@ The OpenAI documentation price represented by the 2026-08-14 baseline is
 `$0.02` per million input tokens for `text-embedding-3-small`. The conservative
 budgeting envelope is about 238.5 million tokens if all five framework cells
 re-embed the complete raw corpus, or about `$4.77` before framework-generated
-KG text and queries. The actual total differs because kontext-brain does not use
-this embedding path and some framework cells may be unsupported. This is an
-estimate, not a spending guarantee. Exact successful embedding-request usage is
-written to `embedding-usage.json` for the built-in vector baseline and
-`openai-embedding-usage.jsonl` for external adapters.
+KG text and queries. The actual total differs because every framework builds a
+different index and some cells may be unsupported. This is an estimate, not a
+spending guarantee. Exact successful embedding-request usage is written to
+`embedding-usage.json` for kontext-brain and the built-in vector baseline, and
+to `openai-embedding-usage.jsonl` for external adapters.
 
 Set `OPENAI_API_KEY` in the process environment before any embedding-backed
 framework is run. The CLI also loads the repository-root `.env.local`, which is

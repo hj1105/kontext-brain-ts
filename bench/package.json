@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node --import tsx src/run.ts",
     "ralph": "node --import tsx src/ralph.ts",
+    "rag-eval-v2": "node --import tsx src/rag-eval-v2/cli.ts",
     "squad": "node --import tsx src/squad-run.ts",
     "structured": "node --import tsx src/structured-bench.ts",
     "hotpot": "node --import tsx src/hotpot-run.ts",
