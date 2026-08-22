@@ -18,8 +18,8 @@ supported-evidence-needs answer contract.
 ## Medical end-to-end comparison
 
 All answer metrics use the same frozen 200-query sample. Context precision is
-raw evidence-unit precision and is not directly comparable with LightRAG's
-single bundled-context packaging.
+raw evidence-unit precision and is not directly comparable with LightRAG or
+Microsoft GraphRAG because each packages the full context as one evidence item.
 
 | System | Retrieval | Recall@10 | Raw context precision | Correctness | Strict faithfulness | Claim F1 | Citation F1 | Retrieval p95 | E2E p95 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -27,13 +27,22 @@ single bundled-context packaging.
 | v12 | 2,062/2,062 | 0.891368 | 0.583434 | 0.865488 | 0.912990 | 0.843040 | 0.929133 | 76.58 s | 166.60 s |
 | **v13** | **2,062/2,062** | **0.892338** | **0.580222** | **0.946127** | **0.953411** | **0.855016** | **0.954141** | **34.94 s** | **104.24 s** |
 | LightRAG | 2,062/2,062 | 0.932590 | 0.999030* | 0.893900 | 0.941684 | 0.857511 | 0.947662 | 377.92 s | 445.01 s |
+| Microsoft GraphRAG | 2,062/2,062 | 0.830262 | 0.997090* | 0.781650 | 0.873956 | 0.733552 | 0.851768 | 0.52 s | 107.26 s |
 
-`*` LightRAG packages a very large context as one evidence item, so its context
-precision is package-sensitive and not an apples-to-apples raw precision score.
+`*` LightRAG and Microsoft GraphRAG each package a large context as one evidence
+item, so their context precision is package-sensitive and not an
+apples-to-apples raw precision score. Mean package size is about 78,641
+characters for LightRAG and 42,039 for Microsoft GraphRAG; v13 emits about 7.92
+separately scored evidence windows within a fixed 50,000-character budget.
 
 v13 versus LightRAG: correctness +0.052227, strict faithfulness +0.011728,
 citation F1 +0.006480, claim F1 -0.002495, and recall -0.040252. v13 retrieval
 p95 is about 10.8x faster and end-to-end p95 about 4.3x faster in these runs.
+
+v13 versus Microsoft GraphRAG: recall +0.062076, correctness +0.164477,
+strict faithfulness +0.079455, claim F1 +0.121463, and citation F1 +0.102373.
+Microsoft retrieval p95 is much lower (0.52 s versus 34.94 s), while v13's
+end-to-end p95 is slightly lower (104.24 s versus 107.26 s).
 
 v13 versus v7: recall +0.001940, raw context precision +0.004253,
 correctness +0.065777, strict faithfulness +0.021461, claim F1 +0.002110,
@@ -80,6 +89,16 @@ For Medical v13 answer plus judge calls, the recorded totals are 9,029,688
 input tokens and 268,838 output tokens across 200 queries. This is 45,148 input
 tokens and 1,344 output tokens per judged query. Local GPT CLI usage is not
 priced by these artifacts, so it must not be represented as a dollar cost.
+
+| Medical answer + judge | Input tokens | Output tokens | Per-query input | Per-query output |
+|---|---:|---:|---:|---:|
+| **v13** | **9,029,688** | **268,838** | **45,148** | **1,344** |
+| LightRAG | 11,582,245 | 330,228 | 57,911 | 1,651 |
+| Microsoft GraphRAG | 8,680,479 | 388,382 | 43,402 | 1,942 |
+
+v13 uses about 22% fewer input tokens than LightRAG and about 31% fewer output
+tokens than Microsoft GraphRAG. These totals cover answer and judge stages only;
+they are not a complete price for local query expansion or reranking.
 
 OpenAI `text-embedding-3-small` is priced in the run manifests at $0.02 per
 million input tokens:

@@ -481,7 +481,12 @@ Outcome: completed and promoted as the final end-to-end configuration. Medical
   0.855016, and citation F1 0.954141. Relative to v7, all six quality metrics
   improved; relative to LightRAG, correctness, strict faithfulness, and
   citation F1 improved while claim F1 was 0.002495 lower and retrieval recall
-  was 0.040252 lower. Novel completed 2,010/2,010 with recall 0.525871 and raw
+  was 0.040252 lower. Relative to Microsoft GraphRAG, v13 improved recall by
+  0.062076, correctness by 0.164477, strict faithfulness by 0.079455, claim F1
+  by 0.121463, and citation F1 by 0.102373. LightRAG and Microsoft GraphRAG
+  each package their full context as one evidence record, so their near-one
+  context-precision scores are not directly comparable with v13's raw evidence
+  units. Novel completed 2,010/2,010 with recall 0.525871 and raw
   context precision 0.289687, improving both metrics over v12. BEIR SciFact
   completed 300/300 with recall 0.960000 and BEIR NFCorpus completed 323/323
   with recall 0.278486, preserving or slightly improving v12 recall. The same
