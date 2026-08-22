@@ -553,3 +553,46 @@ Outcome: completed as a non-promoted precision-oriented ablation. All v14a and
   strict-cache NFCorpus failure directories are retained only as audit
   artifacts and are excluded from every reported final score.
 ```
+
+## Corpus-complete anchored retrieval
+
+```text
+Experiment ID: kontext-corpus-complete-anchored-v15-2026-08-23
+Registered at (UTC): 2026-08-23T00:00:00Z, before any v15 retrieval, answer,
+  judgement, or score exists
+Owner: benchmark operator / Codex
+Hypothesis: a precomputed KG artifact can omit original corpus resources even
+  when its retrieval policy is sound. Deterministically supplementing only the
+  original resources not represented by the artifact, using the same canonical
+  5,000-character/400-character-overlap fallback chunker, should remove this
+  corpus-coverage ceiling while preserving v13 ranking and answer behavior.
+Dataset and development split digest: the completed Novel v13 evaluation is an
+  explicit development signal: its artifact represents 11 of 20 source
+  resources and produced recall=0.525871 and correctness=0.465432. Novel is
+  therefore not treated as a fresh held-out selection set for v15. The single
+  fixed policy must also run unchanged on Medical as a regression gate and on
+  BEIR SciFact/NFCorpus as public retrieval generalization guards. No score may
+  trigger a per-dataset policy or parameter change.
+Eligible frameworks: kontext-brain only (corpus-completeness defect correction)
+Parameter family and allowed values: exactly one fixed v15 configuration. It
+  preserves all v13 query expansion, original/expanded-query weights (2/1),
+  candidate-k=50, graph traversal, plan-aware coverage reranking, hydration,
+  supported-needs answer policy, models, and budgets. For any artifact-backed
+  static corpus, resources are considered represented by exact source identity
+  or a normalized source-text probe; only unrepresented original resources are
+  canonically chunked and appended. Dataset ID, query, reference answer, gold
+  evidence, category, and judge output are unavailable to coverage decisions.
+Maximum trials per framework: one; no parameter sweep.
+Selection metric: jointly require evidence recall and answer correctness to
+  improve on the identified Novel failure, while Medical correctness/recall,
+  strict faithfulness, claim F1, and citation F1 remain non-regressed within
+  their reported uncertainty. Also report raw context precision, latency,
+  answer/judge tokens, embedding tokens, and auditable embedding cost.
+Held-out / regression run directories:
+  openai-small-kontext-v15-corpus-complete-medical-2026-08-23
+  openai-small-kontext-v15-corpus-complete-novel-2026-08-23
+  openai-small-kontext-v15-corpus-complete-scifact-2026-08-23
+  openai-small-kontext-v15-corpus-complete-nfcorpus-2026-08-23
+These are new paths and cannot overwrite v3/v6/v7/v12/v13/v14 artifacts.
+Outcome: pending.
+```

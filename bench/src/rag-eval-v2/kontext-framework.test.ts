@@ -37,6 +37,18 @@ describe("KontextBrainAdapter bidirectional KG mode", () => {
     });
   });
 
+  it("publishes an isolated v15 version for corpus-complete anchored retrieval", async () => {
+    const adapter = new KontextBrainAdapter(DEFAULT_RAG_EVAL_MANIFEST, {
+      embeddingClient: null,
+      retrievalMode: "corpus-complete-anchored-evidence-answer-stack",
+    });
+
+    await expect(adapter.doctor()).resolves.toMatchObject({
+      status: "blocked",
+      version: "workspace-0.1.0+v15-corpus-complete-anchored-evidence-answer-stack",
+    });
+  });
+
   it("freezes v13 candidate and perspective-fusion settings", async () => {
     const root = mkdtempSync(join(tmpdir(), "kontext-rag-eval-v13-"));
     temporaryDirectories.push(root);
@@ -111,6 +123,241 @@ describe("KontextBrainAdapter bidirectional KG mode", () => {
         originalQueryWeight: 2,
         expandedQueryWeight: 1,
       },
+    });
+  });
+
+  it("supplements artifact-backed retrieval with every missing corpus resource", async () => {
+    const root = mkdtempSync(join(tmpdir(), "kontext-rag-eval-v15-complete-corpus-"));
+    temporaryDirectories.push(root);
+    const dataDirectory = join(root, "data");
+    const workDirectory = join(root, "run");
+    mkdirSync(dataDirectory, { recursive: true });
+    writeFileSync(
+      join(dataDirectory, "gb-novel-chunks.jsonl"),
+      `${JSON.stringify({ id: "Novel-first-0", body: "First source artifact text." })}\n`,
+    );
+    writeFileSync(
+      join(dataDirectory, "gb-novel-kg.json"),
+      `${JSON.stringify({
+        entities: [],
+        edges: [],
+        chunkToEntities: [["Novel-first-0", []]],
+      })}\n`,
+    );
+    const runner: CommandRunner = async (_command, args, stdin) => {
+      const outputPath = args[args.indexOf("--output-last-message") + 1];
+      if (!outputPath) throw new Error("Codex command omitted --output-last-message path");
+      const text = stdin.includes("Generate up to three complementary")
+        ? JSON.stringify({ queries: ["Which missing source states gamma?"] })
+        : JSON.stringify({ ranked_ids: ["doc-missing-0"] });
+      writeFileSync(outputPath, JSON.stringify({ text }));
+      return { exitCode: 0, stdout: "", stderr: "", durationMs: 1 };
+    };
+    const bundle = corpusCompletionBundle();
+    const adapter = new KontextBrainAdapter(DEFAULT_RAG_EVAL_MANIFEST, {
+      codexClient: new CodexJsonClient(runner),
+      embeddingClient: new FakeEmbeddingClient(),
+      retrievalMode: "corpus-complete-anchored-evidence-answer-stack",
+      benchmarkDataDirectory: dataDirectory,
+    });
+
+    const [result] = await adapter.retrieve(bundle, {
+      workDirectory,
+      topK: 1,
+      candidateK: 50,
+    });
+
+    expect(result).toMatchObject({
+      status: "ok",
+      frameworkVersion: "workspace-0.1.0+v15-corpus-complete-anchored-evidence-answer-stack",
+    });
+    expect(result?.evidence).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sourceId: "Novel-missing",
+          metadata: expect.objectContaining({
+            retrievalMode: "v15-corpus-complete-anchored-evidence-answer-stack",
+            sourceChunkIds: "doc-missing-0",
+          }),
+        }),
+      ]),
+    );
+    const config = JSON.parse(
+      readFileSync(
+        join(
+          workDirectory,
+          bundle.id,
+          "kontext-brain",
+          "index",
+          "v15-corpus-complete-anchored-evidence-answer-stack",
+          "kontext-kg-config.json",
+        ),
+        "utf8",
+      ),
+    ) as { corpusCoverage: Record<string, unknown>; graph: { chunks: number } };
+    expect(config).toMatchObject({
+      corpusCoverage: {
+        policy: "artifact-plus-canonical-gap-fill",
+        originalSourceCount: 2,
+        artifactCoveredSourceCount: 1,
+        supplementedSourceCount: 1,
+        supplementedSourceIds: ["Novel-missing"],
+        queryAware: false,
+        goldAccess: false,
+      },
+      graph: { chunks: 2 },
+    });
+  });
+
+  it("recognizes artifact coverage by source text when artifact and corpus IDs differ", async () => {
+    const root = mkdtempSync(join(tmpdir(), "kontext-rag-eval-v15-alias-coverage-"));
+    temporaryDirectories.push(root);
+    const dataDirectory = join(root, "data");
+    const workDirectory = join(root, "run");
+    mkdirSync(dataDirectory, { recursive: true });
+    writeFileSync(
+      join(dataDirectory, "gb-medical-chunks.jsonl"),
+      `${JSON.stringify({
+        id: "med-0",
+        body: "Alpha evidence establishes the requested fact.",
+      })}\n`,
+    );
+    writeFileSync(
+      join(dataDirectory, "gb-medical-kg.json"),
+      `${JSON.stringify({ entities: [], edges: [], chunkToEntities: [["med-0", []]] })}\n`,
+    );
+    const runner: CommandRunner = async (_command, args, stdin) => {
+      const outputPath = args[args.indexOf("--output-last-message") + 1];
+      if (!outputPath) throw new Error("Codex command omitted --output-last-message path");
+      const text = stdin.includes("Generate up to three complementary")
+        ? JSON.stringify({ queries: ["Which alpha passage supports the fact?"] })
+        : JSON.stringify({ ranked_ids: ["med-0"] });
+      writeFileSync(outputPath, JSON.stringify({ text }));
+      return { exitCode: 0, stdout: "", stderr: "", durationMs: 1 };
+    };
+    const adapter = new KontextBrainAdapter(DEFAULT_RAG_EVAL_MANIFEST, {
+      codexClient: new CodexJsonClient(runner),
+      embeddingClient: new FakeEmbeddingClient(),
+      retrievalMode: "corpus-complete-anchored-evidence-answer-stack",
+      benchmarkDataDirectory: dataDirectory,
+    });
+
+    const [v15Result] = await adapter.retrieve(testBundle(), {
+      workDirectory,
+      topK: 1,
+      candidateK: 50,
+    });
+    const v13Adapter = new KontextBrainAdapter(DEFAULT_RAG_EVAL_MANIFEST, {
+      codexClient: new CodexJsonClient(runner),
+      embeddingClient: new FakeEmbeddingClient(),
+      retrievalMode: "multi-query-anchored-evidence-answer-stack",
+      benchmarkDataDirectory: dataDirectory,
+    });
+    const [v13Result] = await v13Adapter.retrieve(testBundle(), {
+      workDirectory: join(root, "v13-run"),
+      topK: 1,
+      candidateK: 50,
+    });
+
+    const config = JSON.parse(
+      readFileSync(
+        join(
+          workDirectory,
+          "graphrag-bench-medical",
+          "kontext-brain",
+          "index",
+          "v15-corpus-complete-anchored-evidence-answer-stack",
+          "kontext-kg-config.json",
+        ),
+        "utf8",
+      ),
+    ) as { corpusCoverage: Record<string, unknown>; graph: { chunks: number } };
+    expect(config).toMatchObject({
+      corpusCoverage: {
+        originalSourceCount: 1,
+        artifactCoveredSourceCount: 1,
+        supplementedSourceCount: 0,
+        supplementedSourceIds: [],
+      },
+      graph: { chunks: 1 },
+    });
+    expect(v15Result?.configDigest).not.toBe(v13Result?.configDigest);
+  });
+
+  it("does not mistake shared document boilerplate for artifact coverage", async () => {
+    const root = mkdtempSync(join(tmpdir(), "kontext-rag-eval-v15-boilerplate-"));
+    temporaryDirectories.push(root);
+    const dataDirectory = join(root, "data");
+    const workDirectory = join(root, "run");
+    const sharedBoilerplate = "Shared public-domain boilerplate. ".repeat(20);
+    mkdirSync(dataDirectory, { recursive: true });
+    writeFileSync(
+      join(dataDirectory, "gb-novel-chunks.jsonl"),
+      `${JSON.stringify({
+        id: "Novel-first-0",
+        body: `${sharedBoilerplate}Artifact-only body and conclusion.`,
+      })}\n`,
+    );
+    writeFileSync(
+      join(dataDirectory, "gb-novel-kg.json"),
+      `${JSON.stringify({
+        entities: [],
+        edges: [],
+        chunkToEntities: [["Novel-first-0", []]],
+      })}\n`,
+    );
+    const baseBundle = corpusCompletionBundle();
+    const firstDocument = baseBundle.documents[0];
+    const missingDocument = baseBundle.documents[1];
+    if (!firstDocument || !missingDocument) throw new Error("Incomplete corpus test fixture");
+    const bundle: DatasetBundle = {
+      ...baseBundle,
+      documents: [
+        {
+          ...firstDocument,
+          text: `${sharedBoilerplate}Artifact-only body and conclusion.`,
+        },
+        {
+          ...missingDocument,
+          text: `${sharedBoilerplate}Different missing body states gamma.`,
+        },
+      ],
+    };
+    const runner: CommandRunner = async (_command, args, stdin) => {
+      const outputPath = args[args.indexOf("--output-last-message") + 1];
+      if (!outputPath) throw new Error("Codex command omitted --output-last-message path");
+      const text = stdin.includes("Generate up to three complementary")
+        ? JSON.stringify({ queries: ["Which missing source states gamma?"] })
+        : JSON.stringify({ ranked_ids: ["doc-missing-0"] });
+      writeFileSync(outputPath, JSON.stringify({ text }));
+      return { exitCode: 0, stdout: "", stderr: "", durationMs: 1 };
+    };
+    const adapter = new KontextBrainAdapter(DEFAULT_RAG_EVAL_MANIFEST, {
+      codexClient: new CodexJsonClient(runner),
+      embeddingClient: new FakeEmbeddingClient(),
+      retrievalMode: "corpus-complete-anchored-evidence-answer-stack",
+      benchmarkDataDirectory: dataDirectory,
+    });
+
+    await adapter.retrieve(bundle, { workDirectory, topK: 1, candidateK: 50 });
+
+    const config = JSON.parse(
+      readFileSync(
+        join(
+          workDirectory,
+          bundle.id,
+          "kontext-brain",
+          "index",
+          "v15-corpus-complete-anchored-evidence-answer-stack",
+          "kontext-kg-config.json",
+        ),
+        "utf8",
+      ),
+    ) as { corpusCoverage: Record<string, unknown> };
+    expect(config.corpusCoverage).toMatchObject({
+      artifactCoveredSourceCount: 1,
+      supplementedSourceCount: 1,
+      supplementedSourceIds: ["Novel-missing"],
     });
   });
 
@@ -920,6 +1167,44 @@ function testBundle(): DatasetBundle {
         referenceAnswer: "Alpha evidence",
         goldEvidenceIds: ["Medical"],
         goldEvidenceText: ["Alpha evidence establishes the requested fact."],
+        answerable: true,
+        category: "Fact Retrieval",
+        metadata: {},
+      },
+    ],
+    provenance: { source: "test", version: "1", license: "test" },
+  };
+}
+
+function corpusCompletionBundle(): DatasetBundle {
+  return {
+    id: "graphrag-bench-novel",
+    track: "static-kb",
+    documents: [
+      {
+        id: "doc-first",
+        sourceId: "Novel-first",
+        title: "First source",
+        text: "First source artifact text.",
+        metadata: {},
+      },
+      {
+        id: "doc-missing",
+        sourceId: "Novel-missing",
+        title: "Missing source",
+        text: "Gamma is stated only in the original resource omitted by the artifact.",
+        metadata: {},
+      },
+    ],
+    queries: [
+      {
+        id: "q-missing",
+        text: "Which source states gamma?",
+        referenceAnswer: "The missing source states gamma.",
+        goldEvidenceIds: ["Novel-missing"],
+        goldEvidenceText: [
+          "Gamma is stated only in the original resource omitted by the artifact.",
+        ],
         answerable: true,
         category: "Fact Retrieval",
         metadata: {},

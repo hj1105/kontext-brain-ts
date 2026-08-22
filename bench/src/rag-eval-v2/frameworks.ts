@@ -531,6 +531,7 @@ function kontextRetrievalMode(
   | "multi-query-coverage-aware-stack"
   | "multi-query-plan-aware-coverage-stack"
   | "multi-query-anchored-evidence-answer-stack"
+  | "corpus-complete-anchored-evidence-answer-stack"
   | "v14a-anchored-deterministic-soft-coverage-stack"
   | "v14b-anchored-deterministic-quota-coverage-stack"
   | "adaptive-eece-stack" {
@@ -546,6 +547,7 @@ function kontextRetrievalMode(
     value === "multi-query-coverage-aware-stack" ||
     value === "multi-query-plan-aware-coverage-stack" ||
     value === "multi-query-anchored-evidence-answer-stack" ||
+    value === "corpus-complete-anchored-evidence-answer-stack" ||
     value === "v14a-anchored-deterministic-soft-coverage-stack" ||
     value === "v14b-anchored-deterministic-quota-coverage-stack" ||
     value === "adaptive-eece-stack"

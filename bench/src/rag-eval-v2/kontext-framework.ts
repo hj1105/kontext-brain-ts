@@ -78,6 +78,7 @@ export type KontextRetrievalMode =
   | "multi-query-coverage-aware-stack"
   | "multi-query-plan-aware-coverage-stack"
   | "multi-query-anchored-evidence-answer-stack"
+  | "corpus-complete-anchored-evidence-answer-stack"
   | "v14a-anchored-deterministic-soft-coverage-stack"
   | "v14b-anchored-deterministic-quota-coverage-stack"
   | "adaptive-eece-stack";
@@ -114,6 +115,19 @@ const V13_STACK_DESCRIPTOR = {
   readonly retrievalMode: string;
   readonly frameworkVersion: string;
   readonly answerPolicy: AnswerPolicy;
+};
+const V15_STACK_DESCRIPTOR = {
+  retrievalMode: "v15-corpus-complete-anchored-evidence-answer-stack",
+  frameworkVersion: "workspace-0.1.0+v15-corpus-complete-anchored-evidence-answer-stack",
+  answerPolicy: "supported-evidence-needs",
+  corpusCoveragePolicy: "artifact-plus-canonical-gap-fill",
+  corpusCoveragePolicyVersion: 1,
+} as const satisfies {
+  readonly retrievalMode: string;
+  readonly frameworkVersion: string;
+  readonly answerPolicy: AnswerPolicy;
+  readonly corpusCoveragePolicy: string;
+  readonly corpusCoveragePolicyVersion: number;
 };
 type DeterministicCoveragePolicy = "soft" | "quota";
 interface CacheOnlyCoverageDescriptor {
@@ -353,9 +367,12 @@ export class KontextBrainAdapter implements FrameworkAdapter {
                                 : this.retrievalMode ===
                                     "multi-query-anchored-evidence-answer-stack"
                                   ? `original-query-anchored multi-query retrieval + plan-aware coverage rerank + supported-needs answering; ${result.stdout.trim()}`
-                                  : this.retrievalMode === "adaptive-eece-stack"
-                                    ? `adaptive Entity–Event–Claim–Evidence KG + v7 retrieval stack; ${result.stdout.trim()}`
-                                    : `production BidirectionalNLayerRetriever + evidence items + OpenAI vector seeds; ${result.stdout.trim()}`,
+                                  : this.retrievalMode ===
+                                      "corpus-complete-anchored-evidence-answer-stack"
+                                    ? `v13 retrieval with artifact-independent canonical corpus gap filling; ${result.stdout.trim()}`
+                                    : this.retrievalMode === "adaptive-eece-stack"
+                                      ? `adaptive Entity–Event–Claim–Evidence KG + v7 retrieval stack; ${result.stdout.trim()}`
+                                      : `production BidirectionalNLayerRetriever + evidence items + OpenAI vector seeds; ${result.stdout.trim()}`,
         }
       : {
           frameworkId: this.id,
@@ -453,6 +470,23 @@ export class KontextBrainAdapter implements FrameworkAdapter {
         true,
         true,
         true,
+        true,
+      );
+    }
+    if (this.retrievalMode === "corpus-complete-anchored-evidence-answer-stack") {
+      return this.retrieveMaxExistingStack(
+        bundle,
+        options,
+        true,
+        true,
+        true,
+        true,
+        false,
+        true,
+        true,
+        true,
+        true,
+        null,
         true,
       );
     }
@@ -824,6 +858,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
     planAwareCoverage = false,
     anchoredEvidenceAnswer = false,
     deterministicCoverage: CacheOnlyCoverageDescriptor | null = null,
+    completeCorpusCoverage = false,
   ): Promise<RetrievalResult[]> {
     const embeddingClient =
       this.embeddingClient ??
@@ -857,7 +892,11 @@ export class KontextBrainAdapter implements FrameworkAdapter {
                     : "v3-max-existing-stack";
     const retrievalMode =
       deterministicCoverage?.retrievalMode ??
-      (anchoredEvidenceAnswer ? V13_STACK_DESCRIPTOR.retrievalMode : inheritedRetrievalMode);
+      (completeCorpusCoverage
+        ? V15_STACK_DESCRIPTOR.retrievalMode
+        : anchoredEvidenceAnswer
+          ? V13_STACK_DESCRIPTOR.retrievalMode
+          : inheritedRetrievalMode);
     const inheritedFrameworkVersion = planAwareCoverage
       ? MULTI_QUERY_PLAN_AWARE_COVERAGE_STACK_FRAMEWORK_VERSION
       : multiQuery
@@ -879,10 +918,18 @@ export class KontextBrainAdapter implements FrameworkAdapter {
                     : MAX_EXISTING_STACK_FRAMEWORK_VERSION;
     const frameworkVersion =
       deterministicCoverage?.frameworkVersion ??
-      (anchoredEvidenceAnswer ? V13_STACK_DESCRIPTOR.frameworkVersion : inheritedFrameworkVersion);
+      (completeCorpusCoverage
+        ? V15_STACK_DESCRIPTOR.frameworkVersion
+        : anchoredEvidenceAnswer
+          ? V13_STACK_DESCRIPTOR.frameworkVersion
+          : inheritedFrameworkVersion);
     const answerPolicy =
       deterministicCoverage?.answerPolicy ??
-      (anchoredEvidenceAnswer ? V13_STACK_DESCRIPTOR.answerPolicy : undefined);
+      (completeCorpusCoverage
+        ? V15_STACK_DESCRIPTOR.answerPolicy
+        : anchoredEvidenceAnswer
+          ? V13_STACK_DESCRIPTOR.answerPolicy
+          : undefined);
     const originalQueryWeight =
       deterministicCoverage?.originalQueryWeight ??
       (anchoredEvidenceAnswer ? V13_ORIGINAL_QUERY_WEIGHT : 1);
@@ -916,15 +963,20 @@ export class KontextBrainAdapter implements FrameworkAdapter {
           anchoredEvidenceAnswer,
           candidateCount,
           deterministicCoverage,
+          completeCorpusCoverage,
         ),
       }));
     }
 
-    const docs = domain
+    const artifactDocs = domain
       ? readJsonLines<{ readonly id: string; readonly body: string }>(
           join(this.benchmarkDataDirectory, `gb-${domain}-chunks.jsonl`),
         ).map<BenchDoc>((doc) => ({ ...doc, title: chunkTitle(doc.id) }))
       : chunkCanonicalDocuments(bundle.documents);
+    const corpusCoverage = completeCorpusCoverage
+      ? completeCorpusFromArtifact(artifactDocs, bundle.documents)
+      : null;
+    const docs = corpusCoverage?.docs ?? artifactDocs;
     const docsById = new Map(docs.map((doc) => [doc.id, doc]));
     const graph = domain
       ? readKnowledgeGraph(join(this.benchmarkDataDirectory, `gb-${domain}-kg.json`))
@@ -1100,6 +1152,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
       anchoredEvidenceAnswer,
       candidateCount,
       deterministicCoverage,
+      completeCorpusCoverage,
     );
     const retrievalQueryDigest = multiQuery ? expandedQueryDigest : baseQueryDigest;
     const checkpointDirectory = join(indexDirectory, "retrieval-checkpoints", retrievalQueryDigest);
@@ -1179,6 +1232,19 @@ export class KontextBrainAdapter implements FrameworkAdapter {
             topWindow: deterministicCoverage.topWindow,
             originalQuota: deterministicCoverage.originalQuota,
             perExpansionQuota: deterministicCoverage.perExpansionQuota,
+            goldAccess: false,
+          }
+        : null,
+      corpusCoverage: corpusCoverage
+        ? {
+            policy: V15_STACK_DESCRIPTOR.corpusCoveragePolicy,
+            policyVersion: V15_STACK_DESCRIPTOR.corpusCoveragePolicyVersion,
+            originalSourceCount: corpusCoverage.originalSourceCount,
+            artifactCoveredSourceCount: corpusCoverage.artifactCoveredSourceCount,
+            supplementedSourceCount: corpusCoverage.supplementedSourceIds.length,
+            supplementedSourceIds: corpusCoverage.supplementedSourceIds,
+            supplementedSourceDigest: corpusCoverage.supplementedSourceDigest,
+            queryAware: false,
             goldAccess: false,
           }
         : null,
@@ -1757,6 +1823,65 @@ function chunkCanonicalDocuments(
   return chunks;
 }
 
+interface CorpusCoverageResult {
+  readonly docs: readonly BenchDoc[];
+  readonly originalSourceCount: number;
+  readonly artifactCoveredSourceCount: number;
+  readonly supplementedSourceIds: readonly string[];
+  readonly supplementedSourceDigest: string;
+}
+
+function completeCorpusFromArtifact(
+  artifactDocs: readonly BenchDoc[],
+  documents: readonly CorpusDocument[],
+): CorpusCoverageResult {
+  const artifactSourceIds = new Set(
+    artifactDocs.map((doc) => normalizeCoverageText(sourceDocumentId(doc))),
+  );
+  const artifactTextFingerprints = artifactDocs
+    .map((doc) => coverageFingerprint(normalizeCoverageText(doc.body)))
+    .filter((probes) => probes.length > 0);
+  const uncovered = documents.filter((document) => {
+    const sourceId = document.sourceId || document.id;
+    if (artifactSourceIds.has(normalizeCoverageText(sourceId))) return false;
+    const sourceText = normalizeCoverageText(`${document.title}\n${document.text}`);
+    return !artifactTextFingerprints.some((probes) =>
+      probes.every((probe) => sourceText.includes(probe)),
+    );
+  });
+  const supplementalDocs = chunkCanonicalDocuments(uncovered);
+  const seenIds = new Set(artifactDocs.map((doc) => doc.id));
+  for (const doc of supplementalDocs) {
+    if (seenIds.has(doc.id)) {
+      throw new Error(`Canonical corpus gap-fill chunk conflicts with artifact chunk ${doc.id}`);
+    }
+    seenIds.add(doc.id);
+  }
+  return {
+    docs: [...artifactDocs, ...supplementalDocs],
+    originalSourceCount: documents.length,
+    artifactCoveredSourceCount: documents.length - uncovered.length,
+    supplementedSourceIds: uncovered.map((document) => document.sourceId || document.id),
+    supplementedSourceDigest: documentDigest(uncovered),
+  };
+}
+
+function normalizeCoverageText(value: string): string {
+  return value.toLocaleLowerCase().replace(/\s+/gu, " ").trim();
+}
+
+function coverageFingerprint(normalizedText: string): readonly string[] {
+  if (normalizedText.length < 32) return [];
+  if (normalizedText.length <= 256) return [normalizedText];
+  const width = 128;
+  const starts = [
+    0,
+    Math.floor((normalizedText.length - width) / 2),
+    normalizedText.length - width,
+  ];
+  return Array.from(new Set(starts.map((start) => normalizedText.slice(start, start + width))));
+}
+
 function emptyKnowledgeGraph(docs: readonly BenchDoc[]): KGStore {
   return {
     entities: new Map(),
@@ -1916,6 +2041,9 @@ function frameworkVersion(mode: KontextRetrievalMode): string {
   if (mode === "multi-query-anchored-evidence-answer-stack") {
     return V13_STACK_DESCRIPTOR.frameworkVersion;
   }
+  if (mode === "corpus-complete-anchored-evidence-answer-stack") {
+    return V15_STACK_DESCRIPTOR.frameworkVersion;
+  }
   if (mode === "v14a-anchored-deterministic-soft-coverage-stack") {
     return V14A_STACK_DESCRIPTOR.frameworkVersion;
   }
@@ -1939,6 +2067,7 @@ function maxExistingStackDigest(
   anchoredEvidenceAnswer = false,
   candidateCount = MAX_EXISTING_STACK_CANDIDATES,
   deterministicCoverage: CacheOnlyCoverageDescriptor | null = null,
+  completeCorpusCoverage = false,
 ): string {
   const inheritedStackIdentity = planAwareCoverage
     ? `\0v12-multi-query-plan-aware-coverage-stack\0${MULTI_QUERY_POLICY_VERSION}\0`
@@ -1975,9 +2104,11 @@ function maxExistingStackDigest(
         perExpansionQuota: deterministicCoverage.perExpansionQuota,
         multiQueryPolicyVersion: MULTI_QUERY_POLICY_VERSION,
       })}\0`
-    : anchoredEvidenceAnswer
-      ? `\0v13-anchored-evidence-answer-stack\0${MULTI_QUERY_POLICY_VERSION}\0original-query-weight=${V13_ORIGINAL_QUERY_WEIGHT}\0expanded-query-weight=${EXPANDED_QUERY_WEIGHT}\0`
-      : inheritedStackIdentity;
+    : completeCorpusCoverage
+      ? `\0${V15_STACK_DESCRIPTOR.retrievalMode}\0${MULTI_QUERY_POLICY_VERSION}\0original-query-weight=${V13_ORIGINAL_QUERY_WEIGHT}\0expanded-query-weight=${EXPANDED_QUERY_WEIGHT}\0coverage-policy=${V15_STACK_DESCRIPTOR.corpusCoveragePolicy}\0coverage-policy-version=${V15_STACK_DESCRIPTOR.corpusCoveragePolicyVersion}\0`
+      : anchoredEvidenceAnswer
+        ? `\0v13-anchored-evidence-answer-stack\0${MULTI_QUERY_POLICY_VERSION}\0original-query-weight=${V13_ORIGINAL_QUERY_WEIGHT}\0expanded-query-weight=${EXPANDED_QUERY_WEIGHT}\0`
+        : inheritedStackIdentity;
   const hash = createHash("sha256")
     .update(manifestDigest(manifest))
     .update(stackIdentity)
