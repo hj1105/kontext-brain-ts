@@ -474,7 +474,19 @@ Held-out test run directories:
   openai-small-kontext-v13-anchored-evidence-answer-scifact-2026-08-22
   openai-small-kontext-v13-anchored-evidence-answer-nfcorpus-2026-08-22
 These are new v13-only paths and do not overwrite v3, v6, v7, v11, or v12.
-Outcome: pending.
+Outcome: completed and promoted as the final end-to-end configuration. Medical
+  retrieval completed 2,062/2,062 with recall 0.892338 and raw context
+  precision 0.580222. The frozen 200-query answer/judge sample completed
+  200/200 with correctness 0.946127, strict faithfulness 0.953411, claim F1
+  0.855016, and citation F1 0.954141. Relative to v7, all six quality metrics
+  improved; relative to LightRAG, correctness, strict faithfulness, and
+  citation F1 improved while claim F1 was 0.002495 lower and retrieval recall
+  was 0.040252 lower. Novel completed 2,010/2,010 with recall 0.525871 and raw
+  context precision 0.289687, improving both metrics over v12. BEIR SciFact
+  completed 300/300 with recall 0.960000 and BEIR NFCorpus completed 323/323
+  with recall 0.278486, preserving or slightly improving v12 recall. The same
+  fixed policy was used for all datasets; no dataset ID, reference answer,
+  gold evidence, or judge output entered retrieval or answer decisions.
 ```
 
 ## Cache-only deterministic coverage selection
@@ -521,5 +533,18 @@ Held-out test run directories:
   openai-small-kontext-v14b-cache-only-quota-coverage-novel-2026-08-22
   openai-small-kontext-v14b-cache-only-quota-coverage-scifact-2026-08-22
   openai-small-kontext-v14b-cache-only-quota-coverage-nfcorpus-2026-08-22
-Outcome: pending.
+Outcome: completed as a non-promoted precision-oriented ablation. All v14a and
+  v14b cells completed with zero final retrieval errors after a schema-valid
+  cached original-query-only expansion fallback was added for 73 NFCorpus
+  checkpoints. Each final config records cacheReuse.readOnly=true,
+  newCodexCalls=0, newEmbeddingCalls=0, and newInputTokens=0. Medical v14a/v14b
+  produced recall 0.833657/0.831232 and raw context precision
+  0.654693/0.658388. Novel produced recall 0.460697/0.452736 and precision
+  0.352307/0.352059. SciFact produced recall 0.883000/0.883667 and precision
+  0.100333/0.100667. NFCorpus produced recall 0.187594/0.190268 and precision
+  0.288545/0.288235. Both deterministic policies consistently traded too much
+  recall for precision and therefore failed promotion. v13 remains the final
+  configuration. Two aborted wrong-mode startup directories and two initial
+  strict-cache NFCorpus failure directories are retained only as audit
+  artifacts and are excluded from every reported final score.
 ```
