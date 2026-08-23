@@ -3,6 +3,7 @@ import {
   BidirectionalNLayerRetriever,
   type OntologyReindexer,
   type ResourceContentStore,
+  type ResourceSnapshotEnricher,
   SyncResourceUseCase,
 } from "@kontext-brain/core";
 import { MCPKnowledgeSynchronizer, type MCPResourceSnapshotAdapter } from "@kontext-brain/mcp";
@@ -22,6 +23,7 @@ export function createPostgresKnowledgeRuntime(
   contentStore: ResourceContentStore,
   mcpAdapters: readonly MCPResourceSnapshotAdapter[],
   ontologyReindexer: OntologyReindexer<StoredOntologyGraph>,
+  snapshotEnricher?: ResourceSnapshotEnricher,
 ) {
   const repository = new PostgresKnowledgeGraphRepository(pool);
   const resourceSync = new SyncResourceUseCase(repository, contentStore);
@@ -34,7 +36,11 @@ export function createPostgresKnowledgeRuntime(
     resourceSync,
     searchGraph,
     knowledgeRetriever: new BidirectionalNLayerRetriever(searchGraph),
-    mcpKnowledgeSynchronizer: new MCPKnowledgeSynchronizer(resourceSync, mcpAdapters),
+    mcpKnowledgeSynchronizer: new MCPKnowledgeSynchronizer(
+      resourceSync,
+      mcpAdapters,
+      snapshotEnricher,
+    ),
     ontologyProposalQueue,
     ontologyDeployments,
     ontologyActivation: {

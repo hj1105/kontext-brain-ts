@@ -174,6 +174,8 @@ import { S3ResourceContentStore } from "@kontext-brain/object-storage";
 import { createPostgresKnowledgeRuntime, migratePostgres } from "@kontext-brain/postgres";
 import { GenericMCPResourceSnapshotAdapter } from "@kontext-brain/mcp";
 import { KontextLoader } from "@kontext-brain/loader";
+import { AdaptiveKnowledgeEnricher } from "@kontext-brain/core";
+import { LangChainLLMAdapter, LLMProviderRegistry } from "@kontext-brain/llm";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 await migratePostgres(pool);
@@ -185,13 +187,21 @@ const candidateReindexer = {
   // Build and regression-check the candidate KG; resolve only when it is safe to activate.
   async prepare(candidate) { await rebuildCandidateKnowledgeGraph(candidate); },
 };
+const llmProviders = new LLMProviderRegistry();
+const extractionModel = llmProviders.createChat({
+  provider: "ollama",
+  model: "qwen2.5:7b",
+});
+const snapshotEnricher = new AdaptiveKnowledgeEnricher(
+  new LangChainLLMAdapter(extractionModel),
+);
 const runtime = createPostgresKnowledgeRuntime(pool, contentStore, [
   // Use source-native adapters for Slack messages, Notion block subtrees, etc.
   // This generic adapter is the recursive-chunk fallback.
   new GenericMCPResourceSnapshotAdapter("notion", "notion", {
     groupIds: ["knowledge-users"],
   }),
-], candidateReindexer);
+], candidateReindexer, snapshotEnricher);
 
 const agent = await new KontextLoader({
   knowledgeRuntime: {
@@ -217,6 +227,18 @@ Resource/Chunk–Ontology links, Facts, Evidence, Fact events, pgvector columns,
 idempotent extraction jobs, ontology deployments, proposals, and structured
 audit rows. `answer()` fails closed when no accessible active Evidence exists
 or the generated answer does not cite an Evidence ID.
+
+`AdaptiveKnowledgeEnricher` is optional. When enabled, it examines literal
+source chunks—not corpus or dataset names—to select and dispatch
+identity-resolution, event, temporal, causal, and cross-chunk extraction
+capabilities. It keeps entities resource-scoped by default, requires an exact
+source quote for every Mention and Claim, independently verifies that an
+explicit Claim is directly supported, anchors Entity identity to stable source
+addresses rather than display names, and resolves identity across all windows
+of a Resource. On updates, `SyncResourceUseCase` supplies prior active identity
+records separately from the new snapshot, so IDs can be reused without
+reactivating disappeared Mentions. Inferred Claims remain Hypotheses and any
+invalid window rejects the whole enrichment before synchronization.
 
 `kontext.yaml` for an Ollama-only setup:
 

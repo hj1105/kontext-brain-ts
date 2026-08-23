@@ -3,6 +3,7 @@ import {
   InMemoryKnowledgeGraphRepository,
   InMemoryResourceContentStore,
   type ResourceSnapshot,
+  type ResourceSnapshotEnricher,
   SyncResourceUseCase,
 } from "../src/index.js";
 
@@ -111,6 +112,47 @@ describe("SyncResourceUseCase", () => {
     expect(second.changed).toBe(false);
     expect(contentStore.putCount).toBe(1);
     expect(await repository.listFactEvents(organizationId, "order:42:status:paid")).toHaveLength(1);
+  });
+
+  it("passes prior identity separately without reactivating a disappeared Mention", async () => {
+    const repository = new InMemoryKnowledgeGraphRepository();
+    const sync = new SyncResourceUseCase(repository, new InMemoryResourceContentStore());
+    const priorCounts: number[] = [];
+    const enricher: ResourceSnapshotEnricher = {
+      async enrich(snapshot, priorEntities = []) {
+        priorCounts.push(priorEntities.length);
+        return {
+          snapshot:
+            priorCounts.length === 1
+              ? {
+                  ...snapshot,
+                  entities: [
+                    {
+                      entityId: "adaptive-order-42",
+                      scope: "resource",
+                      name: "Order 42",
+                      type: "other",
+                      mentionChunkIds: ["status-block"],
+                    },
+                  ],
+                }
+              : snapshot,
+          capabilities: [],
+          processedWindows: 1,
+          hypothesisCount: 0,
+        };
+      },
+    };
+
+    const first = await sync.execute(orderSnapshot("v1", "paid"), enricher);
+    await sync.execute(orderSnapshot("v2"), enricher);
+
+    expect(priorCounts).toEqual([0, 1]);
+    expect(
+      (await repository.listEntityMentions(organizationId, first.resourceId)).filter(
+        (mention) => mention.status === "active",
+      ),
+    ).toEqual([]);
   });
 
   it("soft-removes a missing source Resource and restores it when the source reappears", async () => {

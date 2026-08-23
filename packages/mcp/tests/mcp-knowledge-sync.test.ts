@@ -1,6 +1,7 @@
 import {
   InMemoryKnowledgeGraphRepository,
   InMemoryResourceContentStore,
+  type ResourceSnapshotEnricher,
   SyncResourceUseCase,
 } from "@kontext-brain/core";
 import { describe, expect, it } from "vitest";
@@ -44,5 +45,71 @@ describe("MCPKnowledgeSynchronizer", () => {
     expect(await repository.listChunks("acme", resource.resourceId)).toMatchObject([
       { sourceChunkId: "chunk-0", ontologyNodeIds: ["order", "payment"] },
     ]);
+  });
+
+  it("enriches a normalized snapshot before evidence-backed synchronization", async () => {
+    const repository = new InMemoryKnowledgeGraphRepository();
+    const enricher: ResourceSnapshotEnricher = {
+      async enrich(snapshot) {
+        return {
+          snapshot: {
+            ...snapshot,
+            entities: [
+              {
+                entityId: "order-42",
+                scope: "resource",
+                name: "Order 42",
+                type: "order",
+                mentionChunkIds: ["chunk-0"],
+              },
+            ],
+            facts: [
+              {
+                factKey: "adaptive-order-42-paid",
+                subject: { entityId: "order-42", scope: "resource" },
+                predicate: "status",
+                object: { kind: "literal", value: "paid" },
+                evidenceChunkIds: ["chunk-0"],
+                singleValue: true,
+              },
+            ],
+          },
+          capabilities: [],
+          processedWindows: 1,
+          hypothesisCount: 0,
+        };
+      },
+    };
+    const synchronizer = new MCPKnowledgeSynchronizer(
+      new SyncResourceUseCase(repository, new InMemoryResourceContentStore()),
+      [new GenericMCPResourceSnapshotAdapter("notion", "notion", { organizationWide: true })],
+      enricher,
+    );
+    const connector: MCPConnector = {
+      name: "notion",
+      async listResources() {
+        return [];
+      },
+      async fetchResource(resourceId) {
+        return { resourceId, content: "Order 42 was paid", metadata: {}, fetchedAt: new Date() };
+      },
+      async search() {
+        return [];
+      },
+    };
+
+    await synchronizer.sync(
+      "acme",
+      connector,
+      { id: "page-1", name: "Order page", description: "" },
+      ["order", "payment"],
+    );
+
+    expect(await repository.getFact("acme", "adaptive-order-42-paid")).toMatchObject({
+      predicate: "status",
+      object: { kind: "literal", value: "paid" },
+      status: "active",
+    });
+    expect(await repository.listEvidenceForFact("acme", "adaptive-order-42-paid")).toHaveLength(1);
   });
 });

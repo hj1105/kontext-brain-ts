@@ -47,6 +47,20 @@ export class PostgresKnowledgeGraphRepository implements KnowledgeGraphRepositor
     return this.read(organizationId, (unit) => unit.listChunks(resourceId));
   }
 
+  async listEntitiesForResource(
+    organizationId: string,
+    resourceId: string,
+  ): Promise<readonly EntityRecord[]> {
+    return this.read(organizationId, (unit) => unit.listEntities(resourceId));
+  }
+
+  async listEntityMentions(
+    organizationId: string,
+    resourceId: string,
+  ): Promise<readonly EntityMentionRecord[]> {
+    return this.read(organizationId, (unit) => unit.listEntityMentions(resourceId));
+  }
+
   async getFact(organizationId: string, factKey: string): Promise<FactRecord | null> {
     return this.read(organizationId, (unit) => unit.getFact(factKey));
   }
@@ -237,6 +251,16 @@ class PostgresKnowledgeGraphUnitOfWork implements KnowledgeGraphUnitOfWork {
         entity.status,
       ],
     );
+  }
+
+  async listEntities(resourceId: string): Promise<readonly EntityRecord[]> {
+    const result = await this.client.query(
+      `SELECT organization_id, entity_id, scope, resource_id, name, entity_type, status
+       FROM kontext_entities
+       WHERE organization_id = $1 AND resource_id = $2`,
+      [this.organizationId, resourceId],
+    );
+    return result.rows.map(mapEntity);
   }
 
   async listEntityMentions(resourceId: string): Promise<readonly EntityMentionRecord[]> {
@@ -555,6 +579,18 @@ function mapEntityMention(row: QueryResultRow): EntityMentionRecord {
     resourceId: String(row.resource_id),
     chunkId: String(row.chunk_id),
     status: row.status as EntityMentionRecord["status"],
+  };
+}
+
+function mapEntity(row: QueryResultRow): EntityRecord {
+  return {
+    organizationId: String(row.organization_id),
+    entityId: String(row.entity_id),
+    scope: row.scope as EntityRecord["scope"],
+    resourceId: row.resource_id === null ? undefined : String(row.resource_id),
+    name: String(row.name),
+    type: row.entity_type === null ? undefined : String(row.entity_type),
+    status: row.status as EntityRecord["status"],
   };
 }
 

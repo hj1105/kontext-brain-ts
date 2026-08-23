@@ -1,3 +1,4 @@
+import type { ResourceSnapshotEnricher } from "./adaptive-knowledge-enricher.js";
 import type {
   ChunkRecord,
   EntityMentionRecord,
@@ -19,6 +20,7 @@ export interface KnowledgeGraphUnitOfWork {
   listChunks(resourceId: string): Promise<readonly ChunkRecord[]>;
   saveChunk(chunk: ChunkRecord): Promise<void>;
   saveEntity(entity: EntityRecord): Promise<void>;
+  listEntities(resourceId: string): Promise<readonly EntityRecord[]>;
   listEntityMentions(resourceId: string): Promise<readonly EntityMentionRecord[]>;
   saveEntityMention(mention: EntityMentionRecord): Promise<void>;
   getFact(factKey: string): Promise<FactRecord | null>;
@@ -41,6 +43,14 @@ export interface KnowledgeGraphRepository {
   ): Promise<ResourceRecord | null>;
   getResource(organizationId: OrganizationId, resourceId: string): Promise<ResourceRecord | null>;
   listChunks(organizationId: OrganizationId, resourceId: string): Promise<readonly ChunkRecord[]>;
+  listEntitiesForResource(
+    organizationId: OrganizationId,
+    resourceId: string,
+  ): Promise<readonly EntityRecord[]>;
+  listEntityMentions(
+    organizationId: OrganizationId,
+    resourceId: string,
+  ): Promise<readonly EntityMentionRecord[]>;
   getFact(organizationId: OrganizationId, factKey: string): Promise<FactRecord | null>;
   listFacts(organizationId: OrganizationId): Promise<readonly FactRecord[]>;
   listEvidenceForFact(
@@ -94,6 +104,9 @@ export interface ResourceSyncResult {
 }
 
 export interface ResourceSyncUseCase {
-  execute(snapshot: ResourceSnapshot): Promise<ResourceSyncResult>;
+  execute(
+    snapshot: ResourceSnapshot,
+    snapshotEnricher?: ResourceSnapshotEnricher,
+  ): Promise<ResourceSyncResult>;
   remove(organizationId: OrganizationId, source: ResourceSource): Promise<boolean>;
 }

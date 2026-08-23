@@ -1,6 +1,8 @@
+import type { ResourceSnapshotEnricher } from "./adaptive-knowledge-enricher.js";
 import type {
   EntityRecord,
   EvidenceRecord,
+  ExtractedEntity,
   FactEventType,
   FactRecord,
   FactStatus,
@@ -24,15 +26,24 @@ export class SyncResourceUseCase implements ResourceSyncUseCase {
     private readonly clock: Clock = SystemClock,
   ) {}
 
-  async execute(snapshot: ResourceSnapshot): Promise<ResourceSyncResult> {
+  async execute(
+    incomingSnapshot: ResourceSnapshot,
+    snapshotEnricher?: ResourceSnapshotEnricher,
+  ): Promise<ResourceSyncResult> {
     const existing = await this.repository.getResourceBySource(
-      snapshot.organizationId,
-      snapshot.source,
+      incomingSnapshot.organizationId,
+      incomingSnapshot.source,
     );
-    const resourceId = existing?.resourceId ?? resourceIdentity(snapshot.source);
-    if (existing?.contentHash === snapshot.contentHash && existing.status === "active") {
+    const resourceId = existing?.resourceId ?? resourceIdentity(incomingSnapshot.source);
+    if (existing?.contentHash === incomingSnapshot.contentHash && existing.status === "active") {
       return { resourceId, changed: false, affectedFactKeys: [] };
     }
+    const priorEntities = existing
+      ? await this.loadPriorResourceEntities(incomingSnapshot.organizationId, resourceId)
+      : [];
+    const snapshot = snapshotEnricher
+      ? (await snapshotEnricher.enrich(incomingSnapshot, priorEntities)).snapshot
+      : incomingSnapshot;
 
     const objectKey = await this.contentStore.put({
       organizationId: snapshot.organizationId,
@@ -172,6 +183,43 @@ export class SyncResourceUseCase implements ResourceSyncUseCase {
       await this.contentStore.purge(objectKey).catch(() => undefined);
       throw error;
     }
+  }
+
+  private async loadPriorResourceEntities(
+    organizationId: string,
+    resourceId: string,
+  ): Promise<readonly ExtractedEntity[]> {
+    const [entities, mentions, chunks] = await Promise.all([
+      this.repository.listEntitiesForResource(organizationId, resourceId),
+      this.repository.listEntityMentions(organizationId, resourceId),
+      this.repository.listChunks(organizationId, resourceId),
+    ]);
+    const sourceChunkByStoredId = new Map(
+      chunks
+        .filter((chunk) => chunk.status === "active")
+        .map((chunk) => [chunk.chunkId, chunk.sourceChunkId]),
+    );
+    const mentionsByEntity = new Map<string, string[]>();
+    for (const mention of mentions) {
+      if (mention.status !== "active") continue;
+      const sourceChunkId = sourceChunkByStoredId.get(mention.chunkId);
+      if (!sourceChunkId) continue;
+      const ids = mentionsByEntity.get(mention.entityId) ?? [];
+      ids.push(sourceChunkId);
+      mentionsByEntity.set(mention.entityId, ids);
+    }
+    const prefix = `${resourceId}:`;
+    return entities
+      .filter((entity) => entity.scope === "resource" && entity.status === "active")
+      .map((entity) => ({
+        entityId: entity.entityId.startsWith(prefix)
+          ? entity.entityId.slice(prefix.length)
+          : entity.entityId,
+        scope: "resource" as const,
+        name: entity.name,
+        type: entity.type,
+        mentionChunkIds: unique(mentionsByEntity.get(entity.entityId) ?? []),
+      }));
   }
 
   async remove(organizationId: string, source: ResourceSnapshot["source"]): Promise<boolean> {
