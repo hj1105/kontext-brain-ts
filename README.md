@@ -1365,6 +1365,93 @@ is preserved as `kb-clean/` in the parent directory.
 
 ---
 
+## Productization roadmap (open-core → managed cloud)
+
+The framework is the free, self-hostable part. The product is a **governed
+knowledge layer for AI agents**: point it at your Notion / Slack / GitHub, and
+every agent answer respects who can see what (ACL), cites its source
+(Evidence), and refuses when it has no grounding (fail-closed). That governance
+substrate — not raw retrieval — is what most internal AI rollouts are missing,
+and it's what we monetize.
+
+### The wedge, in one sentence
+
+> Most RAG demos leak documents a user can't access, can't tell you why they
+> answered, and hallucinate when they don't know. kontext's production path
+> already fixes all three. We sell that as a hosted, governed service.
+
+### What already exists vs. what the cloud needs
+
+The open-core split maps cleanly onto "library" vs "product". The heavy
+retrieval + governance logic is already built; the cloud is mostly a control
+plane and operations wrapper around it.
+
+| Layer | Status | Where |
+|-------|--------|-------|
+| Retrieval pipelines, ontology graph, pluggable retrievers | ✅ built | `@kontext-brain/core` (Apache-2.0) |
+| MCP client + server, source adapters | ✅ built (⚠️ real-server E2E pending) | `@kontext-brain/mcp`, `tool-server` |
+| Multi-tenant KG, org RLS, ACL retrieval, Evidence, fail-closed `answer()` | ✅ built | `@kontext-brain/postgres` (BSL) |
+| Compressed source-of-truth body storage | ✅ built | `@kontext-brain/object-storage` (BSL) |
+| Ontology-proposal governance (draft PRs) | ✅ built | `@kontext-brain/github` (BSL) |
+| **Control plane** (signup, org provisioning, connector OAuth, usage metering, billing) | ⬜ to build | *cloud repo (closed)* |
+| **Admin UI** (connect sources, browse ontology, audit log, ACL preview) | ⬜ to build | *cloud repo (closed)* |
+| **Agent endpoint** (hosted MCP server + REST per org) | ⬜ mostly wiring | wraps `tool-server` + `postgres` |
+| SSO / SCIM, SOC2, on-prem installer | ⬜ enterprise phase | — |
+
+### Managed-cloud architecture (target)
+
+```
+                         ┌──────────────────────────────────────────┐
+   Notion / Slack /      │              kontext cloud                │
+   GitHub / Jira  ──MCP──►  ┌────────────┐   ┌────────────────────┐  │
+                         │  │ control    │   │  per-org runtime    │  │
+   customer's agent      │  │ plane      │   │  (from OSS + BSL):  │  │
+   (Claude, Cursor) ─────►  │ • auth/org │   │  createPostgres     │  │
+        (hosted MCP)     │  │ • connectors│  │   KnowledgeRuntime  │  │
+                         │  │ • metering │   │  • RLS retrieval     │  │
+   admin (browser) ──────►  │ • billing  │   │  • Evidence + ACL    │  │
+        (admin UI)       │  └────────────┘   │  • fail-closed answer│  │
+                         │       │           └─────────┬───────────┘  │
+                         │  Postgres/pgvector  ◄────────┘              │
+                         │  + S3 (object-storage)                     │
+                         └──────────────────────────────────────────┘
+```
+
+The per-org runtime is literally the code in this repo
+(`createPostgresKnowledgeRuntime` + `S3ResourceContentStore` +
+`KontextLoader`). The closed cloud repo adds only the multi-tenant control
+plane and UI on top — no re-implementation of retrieval.
+
+### Business model
+
+| Tier | For | Includes | Pricing |
+|------|-----|----------|---------|
+| **Community** | individuals, OSS | Apache-2.0 packages, self-host | free |
+| **Team (Cloud)** | startups | managed hosting, connectors, dashboard | seat + usage |
+| **Enterprise** | mid-market, regulated | RLS/ACL, SSO, audit UI, on-prem, SLA | annual |
+
+### Build phases
+
+| Phase | Theme | Deliverables |
+|-------|-------|--------------|
+| **P0 (M0–M1)** | de-risk | ✅ licensing decided · real Notion/GitHub/Slack MCP E2E smoke test + demo · landing page publishing the benchmark results |
+| **P1 (M2–M4)** | adoption | npm publish · MCP-registry listing · one-click Claude Desktop/Cursor install · HN/Reddit launch · LLM-as-judge eval harness |
+| **P2 (M5–M9)** | revenue | cloud MVP (signup → connect source → agent endpoint) · usage metering + billing · first 3–5 paying teams |
+| **P3 (M10–M18)** | expansion | SSO/SCIM · audit UI · on-prem installer · SOC2 prep · multi-hop / KG retriever improvements |
+
+### Go-to-market
+
+Developer-led → product-led → sales-led. The Round 12–17 benchmark reports
+(beating the GraphRAG-Bench leaderboard with a *smaller* LLM) are the
+top-of-funnel content asset; the free OSS core is the adoption engine; the
+governance cloud is the conversion target; ACL/audit needs in regulated
+industries (medical, finance, legal) are the enterprise expansion.
+
+> A visual one-pager of this roadmap is kept alongside the repo as an HTML
+> deck (see the maintainer's product notes).
+
+---
+
 ## License
 
 kontext-brain is **open-core**. See [`LICENSING.md`](./LICENSING.md) for the full
