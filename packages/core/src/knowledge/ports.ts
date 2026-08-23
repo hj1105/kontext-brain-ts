@@ -103,10 +103,16 @@ export interface ResourceSyncResult {
   readonly affectedFactKeys: readonly string[];
 }
 
+export interface ResourceSyncOptions {
+  /** Re-run an enricher even when the source bytes have not changed. */
+  readonly forceReenrich?: boolean;
+}
+
 export interface ResourceSyncUseCase {
   execute(
     snapshot: ResourceSnapshot,
     snapshotEnricher?: ResourceSnapshotEnricher,
+    options?: ResourceSyncOptions,
   ): Promise<ResourceSyncResult>;
   remove(organizationId: OrganizationId, source: ResourceSource): Promise<boolean>;
 }

@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test": "pnpm --dir .. exec vitest run --config bench/vitest.rag-eval-v2.config.ts",
+    "typecheck": "pnpm --dir .. exec tsc -p bench/tsconfig.rag-eval-v2.json",
     "start": "node --import tsx src/run.ts",
     "ralph": "node --import tsx src/ralph.ts",
     "squad": "node --import tsx src/squad-run.ts",

@@ -7,13 +7,16 @@
 [![typescript](https://img.shields.io/badge/typescript-5.x-blue)](https://www.typescriptlang.org/)
 
 A retrieval framework that organizes documents under a hierarchical ontology
-graph instead of a flat vector index. On a 12-doc tech-docs benchmark with
-local Ollama (`qwen2.5:1.5b` + `nomic-embed-text`), kontext beats a standard
-LangChain.js vector-RAG baseline by **~27x efficiency** (recall × keyword-hit /
-context × latency) when both systems use the same LLM for final answer
-generation. An extractive variant that skips the final LLM entirely reaches
-much larger ratios (~400,000x), but that comparison is apples-to-oranges —
-see the [Performance](#performance-benchmark) section for the honest framing.
+graph instead of a flat vector index. The included RAG evaluation harness uses
+the **v13 anchored-evidence stack** by default: original-query-anchored
+multi-query retrieval, graph/vector/BM25 fusion, coverage-aware reranking,
+source hydration, and evidence-needs-constrained answers. See
+[RAG evaluation v2](./bench/src/rag-eval-v2/README.md) and its
+[development report](./bench/data/rag-eval-v2/cross-framework-all-datasets-2026-08-23.md).
+The profile was iteratively tuned, some comparisons use a precomputed Kontext
+KG, and the report's raw run directories are not committed, so these results
+are regression evidence rather than an independently reproducible final
+cross-framework benchmark.
 
 The idea: most production RAG indexes documents into a single semantic vector
 space. kontext routes queries first through a small **ontology graph** (e.g.
@@ -95,6 +98,44 @@ ACL-accessible Evidence. It does not assume a DAG or a fixed number of lifts.
 - **Governed auto-setup**: the first setup session can build a small ontology.
   Later unmatched documents enter a deduplicated proposal queue and draft PR;
   they never mutate the active ontology directly.
+
+### Where it fits
+
+| use case | recommended integration |
+|----------|-------------------------|
+| Company knowledge across Notion, Slack, GitHub, Jira, or internal MCP servers | Connect source MCP servers, synchronize them into the Evidence KG, and use the PostgreSQL runtime when ACL/RLS enforcement is required. |
+| Existing AI clients and coding agents | Run `@kontext-brain/tool-server`; clients call the six kontext MCP tools without embedding the library. |
+| A TypeScript application or service | Load a YAML configuration with `KontextLoader`, then call `retrieve()` for grounded context or `answer()` for a cited response. |
+| Local or small-team knowledge base | Use the filesystem-backed store and local Ollama providers; no PostgreSQL or hosted completion API is required. |
+| RAG research and regression testing | Use `bench/src/rag-eval-v2`; it versions datasets, models, samples, metrics, manifests, and resumable checkpoints. |
+
+The production `KontextAgent` remains configuration-driven because company
+deployments have different stores, ACLs, models, and source connectors. The
+**v13 default applies to the comparable RAG-evaluation adapter**, where omitting
+`KONTEXT_RAG_EVAL_MODE` now selects the promoted stack. This distinction keeps
+a benchmark policy from silently overriding a production security or storage
+configuration.
+
+### What “v13” does
+
+1. Preserve the literal user question and generate at most three question-only
+   retrieval perspectives.
+2. Fuse vector and BM25 rankings with weighted reciprocal-rank fusion: the
+   original question has weight 2 and each expansion has weight 1.
+3. Add graph and context candidates, then apply a coverage-aware LLM reranker
+   to the shared 50-candidate pool.
+4. Hydrate selected sources into bounded 5,000-character windows under a
+   50,000-character context budget.
+5. Answer only supported question-derived evidence needs, with at most one
+   atomic claim and one best citation per need (maximum eight claims).
+
+Dataset names, reference answers, gold evidence, and judge outputs are not
+available to the runtime decisions. The v13/v15 policies were nevertheless
+selected through iterative development on reported datasets and are not an
+untouched holdout result. The newer v15 experiment adds corpus-completeness
+repair when a precomputed KG omitted original resources. It passed the Medical
+and public retrieval regression gates but remains an explicit candidate because
+Novel supplied the original development signal and SciFact moved slightly.
 
 ---
 

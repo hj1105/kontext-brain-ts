@@ -1,5 +1,6 @@
 import type { ResourceSnapshotEnricher } from "./adaptive-knowledge-enricher.js";
 import type {
+  AccessControlList,
   EntityRecord,
   EvidenceRecord,
   ExtractedEntity,
@@ -14,6 +15,7 @@ import type {
   KnowledgeGraphRepository,
   KnowledgeGraphUnitOfWork,
   ResourceContentStore,
+  ResourceSyncOptions,
   ResourceSyncResult,
   ResourceSyncUseCase,
 } from "./ports.js";
@@ -29,13 +31,19 @@ export class SyncResourceUseCase implements ResourceSyncUseCase {
   async execute(
     incomingSnapshot: ResourceSnapshot,
     snapshotEnricher?: ResourceSnapshotEnricher,
+    options: ResourceSyncOptions = {},
   ): Promise<ResourceSyncResult> {
     const existing = await this.repository.getResourceBySource(
       incomingSnapshot.organizationId,
       incomingSnapshot.source,
     );
     const resourceId = existing?.resourceId ?? resourceIdentity(incomingSnapshot.source);
-    if (existing?.contentHash === incomingSnapshot.contentHash && existing.status === "active") {
+    if (
+      existing?.contentHash === incomingSnapshot.contentHash &&
+      existing.status === "active" &&
+      !options.forceReenrich &&
+      (await this.hasUnchangedAccessControls(incomingSnapshot, resourceId, existing.acl))
+    ) {
       return { resourceId, changed: false, affectedFactKeys: [] };
     }
     const priorEntities = existing
@@ -183,6 +191,30 @@ export class SyncResourceUseCase implements ResourceSyncUseCase {
       await this.contentStore.purge(objectKey).catch(() => undefined);
       throw error;
     }
+  }
+
+  private async hasUnchangedAccessControls(
+    snapshot: ResourceSnapshot,
+    resourceId: string,
+    existingResourceAcl: AccessControlList,
+  ): Promise<boolean> {
+    if (!sameAcl(existingResourceAcl, snapshot.acl)) return false;
+
+    const existingChunks = (
+      await this.repository.listChunks(snapshot.organizationId, resourceId)
+    ).filter((chunk) => chunk.status === "active");
+    if (existingChunks.length !== snapshot.chunks.length) return false;
+
+    const existingBySourceChunkId = new Map(
+      existingChunks.map((chunk) => [chunk.sourceChunkId, chunk]),
+    );
+    if (existingBySourceChunkId.size !== existingChunks.length) return false;
+
+    for (const chunk of snapshot.chunks) {
+      const existing = existingBySourceChunkId.get(chunk.id);
+      if (!existing || !sameAcl(existing.acl, chunk.acl ?? snapshot.acl)) return false;
+    }
+    return new Set(snapshot.chunks.map((chunk) => chunk.id)).size === snapshot.chunks.length;
   }
 
   private async loadPriorResourceEntities(
@@ -350,6 +382,18 @@ function evidenceIdentity(resourceId: string, factKey: string, chunkId: string):
 
 function unique(values: readonly string[]): readonly string[] {
   return Array.from(new Set(values));
+}
+
+function sameAcl(left: AccessControlList, right: AccessControlList): boolean {
+  return canonicalAclKey(left) === canonicalAclKey(right);
+}
+
+function canonicalAclKey(acl: AccessControlList): string {
+  if (acl.organizationWide === true) return JSON.stringify({ organizationWide: true });
+  return JSON.stringify({
+    subjectIds: Array.from(new Set(acl.subjectIds ?? [])).sort(),
+    groupIds: Array.from(new Set(acl.groupIds ?? [])).sort(),
+  });
 }
 
 function normalizeEntityRef(ref: FactRecord["subject"], resourceId: string): FactRecord["subject"] {

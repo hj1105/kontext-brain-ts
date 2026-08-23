@@ -114,6 +114,37 @@ describe("BidirectionalNLayerRetriever", () => {
     expect(graph.expanded.filter((item) => item === key(target))).toHaveLength(1);
   });
 
+  it("still collects evidence from discovered seeds after the expansion budget is full", async () => {
+    const graph = new FakeSearchGraph();
+    const firstSeed: SearchNode = { kind: "chunk", id: "first" };
+    const answerSeed: SearchNode = { kind: "chunk", id: "answer" };
+    const firstDistractor: SearchNode = { kind: "entity", id: "distractor-1" };
+    const secondDistractor: SearchNode = { kind: "entity", id: "distractor-2" };
+    graph.seeds.push({ node: firstSeed, score: 1 }, { node: answerSeed, score: 0.8 });
+    graph.edges.set(key(firstSeed), [
+      edge(firstSeed, firstDistractor, "lift"),
+      edge(firstSeed, secondDistractor, "lift"),
+    ]);
+    graph.hits.set(key(answerSeed), [
+      {
+        evidenceId: "evidence:answer",
+        chunkId: answerSeed.id,
+        resourceId: "resource:answer",
+        text: "The lower-ranked direct seed contains the answer",
+        score: 1,
+      },
+    ]);
+
+    const result = await new BidirectionalNLayerRetriever(graph).retrieve({
+      question: "answer",
+      principal,
+      budget: { maxVisited: 10, maxCandidates: 3, timeBudgetMs: 1000 },
+    });
+
+    expect(result.evidence.map((item) => item.evidenceId)).toContain("evidence:answer");
+    expect(result.trace.stoppedBy).toBe("candidate_budget");
+  });
+
   it("passes the principal into every graph operation so ACL filtering happens before traversal", async () => {
     const seenPrincipals: Principal[] = [];
     const graph: SearchGraphPort = {
@@ -227,6 +258,36 @@ describe("BidirectionalNLayerRetriever", () => {
       elapsedMs: 10,
       stoppedBy: "time_budget",
     });
+  });
+
+  it("stops collecting direct-seed evidence when the time budget is exhausted", async () => {
+    let currentTime = 0;
+    let evidenceCalls = 0;
+    const graph: SearchGraphPort = {
+      async seed() {
+        return ["one", "two", "three"].map((id) => ({
+          node: { kind: "chunk" as const, id },
+          score: 1,
+        }));
+      },
+      async neighbors() {
+        return [];
+      },
+      async evidence() {
+        evidenceCalls += 1;
+        currentTime = 10;
+        return [];
+      },
+    };
+
+    const result = await new BidirectionalNLayerRetriever(
+      graph,
+      undefined,
+      () => currentTime,
+    ).retrieve({ question: "orders", principal, budget: { timeBudgetMs: 5 } });
+
+    expect(evidenceCalls).toBe(1);
+    expect(result.trace.stoppedBy).toBe("time_budget");
   });
 
   it("preserves traversal and cleanup failures when both operations throw", async () => {

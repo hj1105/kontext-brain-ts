@@ -209,9 +209,31 @@ export class BidirectionalNLayerRetriever {
     const frontier = new MaxPriorityQueue<FrontierCandidate>((candidate) => candidate.score);
     const bestScores = new Map<string, number>();
     const evidenceById = new Map<string, RankedEvidenceHit>();
+    const evidenceScoresByNode = new Map<string, number>();
     let candidateCount = 0;
     let visited = 0;
     let stoppedBy: SearchStopReason = "frontier_exhausted";
+    let candidateBudgetReached = false;
+
+    const collectEvidence = async (
+      node: SearchNode,
+      pathScore: number,
+      path: readonly SearchEdge[],
+    ): Promise<void> => {
+      const nodeKey = searchNodeKey(node);
+      if (pathScore <= (evidenceScoresByNode.get(nodeKey) ?? Number.NEGATIVE_INFINITY)) return;
+      evidenceScoresByNode.set(nodeKey, pathScore);
+      const hits = await this.graph.evidence(node, input.principal, session);
+      for (const hit of hits) {
+        const ranked: RankedEvidenceHit = {
+          ...hit,
+          score: this.scorePolicy.evidenceScore(pathScore, hit),
+          path,
+        };
+        const previous = evidenceById.get(hit.evidenceId);
+        if (!previous || ranked.score > previous.score) evidenceById.set(hit.evidenceId, ranked);
+      }
+    };
 
     // Pool checkout and session setup are part of the caller's latency budget.
     // If they consume it, avoid starting more database work just to discover that
@@ -228,7 +250,12 @@ export class BidirectionalNLayerRetriever {
       };
     }
 
-    for (const seed of await this.graph.seed(input.question, input.principal, session)) {
+    const seeds = await this.graph.seed(input.question, input.principal, session);
+    for (const seed of seeds) {
+      if (this.now() - startedAt >= budget.timeBudgetMs) {
+        stoppedBy = "time_budget";
+        break;
+      }
       const score = this.scorePolicy.seedScore(seed);
       if (score < budget.minScore || candidateCount >= budget.maxCandidates) continue;
       const nodeKey = searchNodeKey(seed.node);
@@ -236,6 +263,14 @@ export class BidirectionalNLayerRetriever {
       bestScores.set(nodeKey, score);
       frontier.push({ node: seed.node, score, hops: 0, kgHops: 0, path: [] });
       candidateCount++;
+      // A direct seed is already a successful retrieval candidate. Collect its
+      // evidence before graph expansion so a high-fanout seed cannot exhaust
+      // the candidate budget and starve lower-ranked direct hits.
+      await collectEvidence(seed.node, score, []);
+      if (this.now() - startedAt >= budget.timeBudgetMs) {
+        stoppedBy = "time_budget";
+        break;
+      }
     }
 
     while (frontier.size > 0) {
@@ -254,18 +289,9 @@ export class BidirectionalNLayerRetriever {
       if (current.score < (bestScores.get(currentKey) ?? Number.NEGATIVE_INFINITY)) continue;
       visited++;
 
-      const hits = await this.graph.evidence(current.node, input.principal, session);
-      for (const hit of hits) {
-        const ranked: RankedEvidenceHit = {
-          ...hit,
-          score: this.scorePolicy.evidenceScore(current.score, hit),
-          path: current.path,
-        };
-        const previous = evidenceById.get(hit.evidenceId);
-        if (!previous || ranked.score > previous.score) evidenceById.set(hit.evidenceId, ranked);
-      }
+      await collectEvidence(current.node, current.score, current.path);
 
-      if (current.hops >= budget.maxHops) continue;
+      if (current.hops >= budget.maxHops || candidateBudgetReached) continue;
       const neighbors = await this.graph.neighbors(
         current.node,
         input.question,
@@ -275,6 +301,7 @@ export class BidirectionalNLayerRetriever {
       for (const edge of neighbors) {
         if (candidateCount >= budget.maxCandidates) {
           stoppedBy = "candidate_budget";
+          candidateBudgetReached = true;
           break;
         }
         const kgHops = current.kgHops + (isKgExpansion(edge) ? 1 : 0);
@@ -294,7 +321,6 @@ export class BidirectionalNLayerRetriever {
         });
         candidateCount++;
       }
-      if (stoppedBy === "candidate_budget") break;
     }
 
     return {

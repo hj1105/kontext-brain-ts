@@ -10,7 +10,7 @@
   },
   "scripts": {
     "build": "pnpm -r build",
-    "test": "vitest run",
+    "test": "vitest run && pnpm --filter @kontext-brain/bench test",
     "test:watch": "vitest",
     "typecheck": "pnpm -r typecheck",
     "lint": "biome check .",

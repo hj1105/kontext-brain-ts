@@ -9,7 +9,7 @@
  *      mentions + boost from chunks that contain a seed entity directly
  *   5. Return top-K chunks
  */
-import type { KGStore, KGEdge } from "./kg-builder.js";
+import type { KGEdge, KGStore } from "./kg-builder.js";
 import { normalize } from "./kg-builder.js";
 
 export interface KGRetrieved {
@@ -28,8 +28,11 @@ interface BuiltAdjacency {
 function buildAdjacency(kg: KGStore): BuiltAdjacency {
   const adj = new Map<string, Array<{ to: string; weight: number }>>();
   const ensure = (id: string) => {
-    if (!adj.has(id)) adj.set(id, []);
-    return adj.get(id)!;
+    const neighbors = adj.get(id);
+    if (neighbors) return neighbors;
+    const created: Array<{ to: string; weight: number }> = [];
+    adj.set(id, created);
+    return created;
   };
   for (const ent of kg.entities.values()) ensure(ent.id);
   for (const e of kg.edges) {
@@ -82,10 +85,7 @@ function personalizedPageRank(
 }
 
 /** Match query content tokens to KG entity nodes by substring + overlap. */
-function findSeedEntities(
-  kg: KGStore,
-  query: string,
-): Map<string, number> {
+export function findSeedEntities(kg: KGStore, query: string): Map<string, number> {
   const seeds = new Map<string, number>();
   const qNorm = normalize(query);
   const qTokens = new Set(qNorm.split(/\s+/).filter((t) => t.length >= 3));
@@ -148,7 +148,7 @@ export class KGRetriever {
     }
 
     const ranked = Array.from(chunkScore.entries())
-      .sort((a, b) => b[1].score - a[1].score)
+      .sort((a, b) => b[1].score - a[1].score || a[0].localeCompare(b[0]))
       .slice(0, topK)
       .map(([chunkId, v]) => ({
         chunkId,
