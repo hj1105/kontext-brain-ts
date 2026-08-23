@@ -1367,4 +1367,16 @@ is preserved as `kb-clean/` in the parent directory.
 
 ## License
 
-TBD (currently unlicensed — request before production use).
+kontext-brain is **open-core**. See [`LICENSING.md`](./LICENSING.md) for the full
+breakdown.
+
+- **Apache-2.0** — `core`, `llm`, `mcp`, `loader`, `tool-server`. Free for any
+  use, including production and commercial.
+- **Business Source License 1.1** — `postgres`, `object-storage`, `github`
+  (the multi-tenant, ACL-aware, audited production substrate). Source-available;
+  free for internal and non-competing production use; converts to Apache-2.0 on
+  2030-08-23. Offering these as a competing hosted service requires a commercial
+  license.
+
+For a commercial license, hosted cloud, or enterprise support, contact the
+maintainer.
