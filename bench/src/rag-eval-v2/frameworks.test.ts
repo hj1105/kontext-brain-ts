@@ -30,6 +30,20 @@ afterEach(() => {
 });
 
 describe("kontext cache-only coverage modes", () => {
+  it("uses the promoted v13 stack when no retrieval mode is configured", async () => {
+    restoreEnvironment("OPENAI_API_KEY", undefined);
+    restoreEnvironment("KONTEXT_RAG_EVAL_MODE", undefined);
+
+    const adapter = createFrameworkAdapters(DEFAULT_RAG_EVAL_MANIFEST).find(
+      (candidate) => candidate.id === "kontext-brain",
+    );
+
+    await expect(adapter?.doctor()).resolves.toMatchObject({
+      status: "blocked",
+      version: "workspace-0.1.0+v13-anchored-evidence-answer-stack",
+    });
+  });
+
   it.each([
     [
       "v14a-anchored-deterministic-soft-coverage-stack",

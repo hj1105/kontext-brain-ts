@@ -607,5 +607,27 @@ Cost-control amendment (2026-08-23, after the first Novel retrieval and before
   key. The completed Novel result and all v13 artifacts remain untouched and
   are not rerun. Newly incurred versus reused vectors/tokens are recorded
   separately in each v15 config and embedding-usage artifact.
-Outcome: pending.
+Outcome: completed as a validated corpus-completeness candidate; v13 remains
+  the no-configuration evaluation default requested for this release. Novel
+  retrieval completed 2,010/2,010 and improved recall from v13's 0.525871 to
+  0.820896 and raw context precision from 0.289687 to 0.449236. On the same
+  frozen 200-query sample, correctness improved from 0.465432 to 0.856572,
+  strict faithfulness from 0.792182 to 0.929011, claim F1 from 0.518112 to
+  0.823365, and citation F1 from 0.552107 to 0.936913. Novel was the registered
+  development signal, so these gains are not described as a fresh held-out
+  estimate. Medical completed 2,062/2,062 retrievals and 200/200 answers and
+  judgements with zero final errors. Versus v13, recall changed by -0.000970
+  (0.892338 to 0.891368), raw precision by +0.000639, correctness by +0.003790
+  (to 0.949917), strict faithfulness by +0.007974 (to 0.961385), claim F1 by
+  +0.006144 (to 0.861159), and citation F1 by +0.004206 (to 0.958348); this
+  satisfies the registered Medical non-regression gate. Public retrieval
+  guards completed with the same fixed policy: SciFact 300/300 at recall
+  0.953333 and raw precision 0.034480, and NFCorpus 323/323 at recall 0.279016
+  and raw precision 0.174420. Relative to v13, these recall deltas are
+  -0.006667 and +0.000530 respectively. Medical reused 9,340 vectors, SciFact
+  6,364, and NFCorpus 4,645, each with newVectors=0, new embedding input
+  tokens=0, and estimated embedding cost=$0. The already completed Novel run
+  retains its auditable pre-fix 1,470,715 tokens / $0.0294143 and was not
+  rewritten. No per-dataset policy, gold evidence, reference answer, or judge
+  output entered retrieval or selection.
 ```

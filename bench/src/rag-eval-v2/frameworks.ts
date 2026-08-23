@@ -535,6 +535,7 @@ function kontextRetrievalMode(
   | "v14a-anchored-deterministic-soft-coverage-stack"
   | "v14b-anchored-deterministic-quota-coverage-stack"
   | "adaptive-eece-stack" {
+  if (!value?.trim()) return "multi-query-anchored-evidence-answer-stack";
   if (
     value === "bidirectional-kg" ||
     value === "max-existing-stack" ||

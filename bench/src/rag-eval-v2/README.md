@@ -38,6 +38,12 @@ The machine-readable source of truth is `manifest.ts`. Its SHA-256 digest is
 written into each run report so a configuration change cannot silently mix with
 earlier results.
 
+The latest four-dataset, cross-framework result table is
+[`cross-framework-all-datasets-2026-08-23.md`](../../data/rag-eval-v2/cross-framework-all-datasets-2026-08-23.md).
+It separates raw evidence precision from framework-native packaged-context
+precision and reports embedding cost only where an auditable usage artifact
+exists.
+
 ## Dataset tracks
 
 The primary static-KB track uses GraphRAG-Bench Medical, GraphRAG-Bench Novel,
@@ -101,6 +107,28 @@ Integration constraints are retained in the artifacts:
 
 ## Commands
 
+### Kontext retrieval profile
+
+With no mode override, the harness uses the promoted v13 profile:
+
+```bash
+unset KONTEXT_RAG_EVAL_MODE
+bench/node_modules/.bin/tsx bench/src/rag-eval-v2/cli.ts doctor
+```
+
+The reported framework version must be
+`workspace-0.1.0+v13-anchored-evidence-answer-stack`. Explicit mode overrides
+exist only to reproduce registered experiments; do not select one after looking
+at a dataset score. The production `KontextAgent` is separately
+configuration-driven and is not changed by this benchmark default.
+
+v13 preserves the original question, adds at most three question-only
+perspectives, uses vector and BM25 perspective RRF with weights 2:1 and k=10,
+fuses graph/context candidates, coverage-reranks candidate-k=50, hydrates
+5,000-character source windows under a 50,000-character budget, and applies the
+supported-evidence-needs answer contract. The full pre-registered policy and
+all later ablations are recorded in `TUNING_LOG.md`.
+
 ```bash
 # Prepare the official FRAMES TSV and a reproducible Wikitext snapshot of every
 # referenced Wikipedia page. The page cache is resumable and generated data
@@ -127,6 +155,14 @@ embedding batch under its index directory. A rate-limit or transient failure can
 therefore be resumed with the same `--work-dir` without re-embedding completed
 batches. Never reuse a Gemini-era run directory: the frozen manifest digest,
 model, and dimension checks intentionally reject mixed indexes.
+
+The v15 corpus-completeness experiment additionally uses a read-only,
+content-addressed v13 cache. Matching vectors are validated by task, model,
+dimensions, ID, title, and text; only new or content-changed inputs may reach
+the embedding API. A missing or corrupt explicitly configured source cache is a
+fail-closed error. `embedding-usage.json` separates reused vectors from newly
+embedded vectors and newly incurred tokens. Run-directory checkpoints and
+retrieval outputs are always written to the new run, never to the source cache.
 
 The OpenAI documentation price represented by the 2026-08-14 baseline is
 `$0.02` per million input tokens for `text-embedding-3-small`. The conservative
