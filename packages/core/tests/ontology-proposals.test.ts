@@ -96,4 +96,27 @@ describe("ontology proposal flow", () => {
     expect(published).toEqual(["ontology:\nrefund,tax"]);
     expect(await queue.listOpen("acme")).toEqual([]);
   });
+
+  it("does not reopen a published proposal when the same node is observed again", async () => {
+    const queue = new InMemoryOntologyProposalQueue();
+    const proposal = {
+      suggestedNodeId: "refund",
+      description: "Customer refunds",
+      resourceIds: ["notion:page-1"],
+    };
+
+    await queue.enqueue("acme", [proposal]);
+    await queue.markPublished("acme", ["refund"]);
+    await queue.enqueue("acme", [{ ...proposal, resourceIds: ["slack:thread-2"] }]);
+
+    expect(await queue.listOpen("acme")).toEqual([]);
+    expect(await queue.listPending("acme")).toMatchObject([
+      {
+        proposalKey: "refund",
+        occurrences: 2,
+        resourceIds: ["notion:page-1", "slack:thread-2"],
+        status: "published",
+      },
+    ]);
+  });
 });

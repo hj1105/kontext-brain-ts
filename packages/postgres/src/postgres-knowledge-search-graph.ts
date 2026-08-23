@@ -4,11 +4,15 @@ import type {
   ResourceContentStore,
   SearchEdge,
   SearchGraphPort,
+  SearchGraphSession,
   SearchNode,
   SearchSeed,
 } from "@kontext-brain/core";
 import type { Pool, PoolClient, QueryResultRow } from "pg";
-import { withOrganizationTransaction } from "./postgres-knowledge-graph.js";
+import { PostgresSearchSession, runPostgresSearchRead } from "./postgres-search-session.js";
+import { aclPredicate } from "./postgres-value-utils.js";
+
+const FALLBACK_ONTOLOGY_SEED_LIMIT = 12;
 
 interface StoredOntologyNode {
   readonly id: string;
@@ -29,7 +33,12 @@ export interface StoredOntologyGraph {
 }
 
 export interface SearchSeedProvider {
-  seed(question: string, principal: Principal): Promise<readonly SearchSeed[]>;
+  /** Database-backed providers must reuse `session` via `runPostgresSearchRead`. */
+  seed(
+    question: string,
+    principal: Principal,
+    session?: SearchGraphSession,
+  ): Promise<readonly SearchSeed[]>;
 }
 
 export class PostgresKnowledgeSearchGraph implements SearchGraphPort {
@@ -39,11 +48,35 @@ export class PostgresKnowledgeSearchGraph implements SearchGraphPort {
     private readonly additionalSeedProviders: readonly SearchSeedProvider[] = [],
   ) {}
 
-  async seed(question: string, principal: Principal): Promise<readonly SearchSeed[]> {
-    const [databaseSeeds, ...additional] = await Promise.all([
-      this.databaseSeeds(question, principal),
-      ...this.additionalSeedProviders.map((provider) => provider.seed(question, principal)),
-    ]);
+  async openSession(principal: Principal): Promise<SearchGraphSession> {
+    return PostgresSearchSession.open(this.pool, principal.organizationId);
+  }
+
+  /**
+   * Runs read-only work on the traversal's shared connection when a session is
+   * active, and otherwise falls back to its own short read-only transaction.
+   */
+  private async runRead<T>(
+    principal: Principal,
+    session: SearchGraphSession | undefined,
+    work: (client: PoolClient) => Promise<T>,
+  ): Promise<T> {
+    return runPostgresSearchRead(this.pool, principal.organizationId, session, work);
+  }
+
+  async seed(
+    question: string,
+    principal: Principal,
+    session?: SearchGraphSession,
+  ): Promise<readonly SearchSeed[]> {
+    // A session pins one connection, so all database-backed seed providers must
+    // receive it and run sequentially. Opening a second connection here can
+    // deadlock a saturated pool because the traversal already owns the first one.
+    const additional: Array<readonly SearchSeed[]> = [];
+    for (const provider of this.additionalSeedProviders) {
+      additional.push(await provider.seed(question, principal, session));
+    }
+    const databaseSeeds = await this.databaseSeeds(question, principal, session);
     const best = new Map<string, SearchSeed>();
     for (const seed of [databaseSeeds, ...additional].flat()) {
       const key = nodeKey(seed.node);
@@ -57,36 +90,34 @@ export class PostgresKnowledgeSearchGraph implements SearchGraphPort {
     node: SearchNode,
     question: string,
     principal: Principal,
+    session?: SearchGraphSession,
   ): Promise<readonly SearchEdge[]> {
-    const edges = await withOrganizationTransaction(
-      this.pool,
-      principal.organizationId,
-      async (client) => {
-        switch (node.kind) {
-          case "ontology":
-            return this.ontologyNeighbors(client, node, question, principal);
-          case "resource":
-            return this.resourceNeighbors(client, node, question, principal);
-          case "chunk":
-            return this.chunkNeighbors(client, node, question, principal);
-          case "entity":
-            return this.entityNeighbors(client, node, question, principal);
-          case "fact":
-            return this.factNeighbors(client, node, question, principal);
-        }
-      },
-    );
+    const edges = await this.runRead(principal, session, async (client) => {
+      switch (node.kind) {
+        case "ontology":
+          return this.ontologyNeighbors(client, node, question, principal);
+        case "resource":
+          return this.resourceNeighbors(client, node, question, principal);
+        case "chunk":
+          return this.chunkNeighbors(client, node, question, principal);
+        case "entity":
+          return this.entityNeighbors(client, node, question, principal);
+        case "fact":
+          return this.factNeighbors(client, node, question, principal);
+      }
+    });
     return deduplicateEdges(edges);
   }
 
-  async evidence(node: SearchNode, principal: Principal): Promise<readonly EvidenceHit[]> {
+  async evidence(
+    node: SearchNode,
+    principal: Principal,
+    session?: SearchGraphSession,
+  ): Promise<readonly EvidenceHit[]> {
     if (node.kind !== "chunk") return [];
-    const rows = await withOrganizationTransaction(
-      this.pool,
-      principal.organizationId,
-      async (client) => {
-        const result = await client.query(
-          `SELECT e.evidence_id, e.fact_key, e.resource_id, e.chunk_id,
+    const rows = await this.runRead(principal, session, async (client) => {
+      const result = await client.query(
+        `SELECT e.evidence_id, e.fact_key, e.resource_id, e.chunk_id,
                   f.status AS fact_status, c.source_chunk_id, c.content_object_key
            FROM kontext_evidence e
            LEFT JOIN kontext_facts f
@@ -101,11 +132,10 @@ export class PostgresKnowledgeSearchGraph implements SearchGraphPort {
              AND ${aclPredicate("e")}
              AND ${aclPredicate("r")}
              AND ${aclPredicate("c")}`,
-          [principal.organizationId, principal.subjectId, [...principal.groupIds], node.id],
-        );
-        return result.rows;
-      },
-    );
+        [principal.organizationId, principal.subjectId, [...principal.groupIds], node.id],
+      );
+      return result.rows;
+    });
     const hits: EvidenceHit[] = [];
     for (const row of rows) {
       const content = await this.contentStore.get(String(row.content_object_key));
@@ -125,8 +155,12 @@ export class PostgresKnowledgeSearchGraph implements SearchGraphPort {
     return hits;
   }
 
-  private async databaseSeeds(question: string, principal: Principal): Promise<SearchSeed[]> {
-    return withOrganizationTransaction(this.pool, principal.organizationId, async (client) => {
+  private async databaseSeeds(
+    question: string,
+    principal: Principal,
+    session?: SearchGraphSession,
+  ): Promise<SearchSeed[]> {
+    return this.runRead(principal, session, async (client) => {
       const seeds: SearchSeed[] = [];
       const resources = await client.query(
         `SELECT r.resource_id,
@@ -174,14 +208,35 @@ export class PostgresKnowledgeSearchGraph implements SearchGraphPort {
       const graph = await loadActiveOntologyGraph(client, principal.organizationId);
       const queryTerms = terms(question);
       const ontologyNodes = normalizeOntologyNodes(graph?.nodes ?? []);
+      let ontologyMatches = 0;
       for (const node of ontologyNodes) {
         const overlap = Array.from(terms(`${node.id} ${node.description ?? ""}`)).filter((term) =>
           queryTerms.has(term),
         ).length;
+        // Only seed ontology nodes that actually overlap the query. Non-overlapping
+        // nodes are still reachable via resource/entity "lift" edges, so seeding all
+        // of them just floods the frontier and wastes the traversal budget.
+        if (overlap === 0) continue;
+        ontologyMatches++;
         seeds.push({
           node: { kind: "ontology", id: node.id },
-          score: overlap > 0 ? Math.min(0.9, 0.45 + overlap * 0.15) : 0.08,
+          score: Math.min(0.9, 0.45 + overlap * 0.15),
         });
+      }
+      if (seeds.length === 0 && ontologyMatches === 0) {
+        // The default runtime has no vector provider. Keep a bounded, deterministic
+        // low-score backstop so a query with no exact lexical match does not produce
+        // an empty frontier, while avoiding the old all-node candidate flood.
+        const fallbackNodes = [...ontologyNodes]
+          .sort((left, right) => {
+            const rootOrder = Number(Boolean(left.parentId)) - Number(Boolean(right.parentId));
+            if (rootOrder !== 0) return rootOrder;
+            return left.id < right.id ? -1 : left.id > right.id ? 1 : 0;
+          })
+          .slice(0, FALLBACK_ONTOLOGY_SEED_LIMIT);
+        for (const node of fallbackNodes) {
+          seeds.push({ node: { kind: "ontology", id: node.id }, score: 0.08 });
+        }
       }
       return seeds;
     });
@@ -292,7 +347,8 @@ export class PostgresKnowledgeSearchGraph implements SearchGraphPort {
     }
     const facts = await client.query(
       `SELECT fact_key FROM kontext_evidence
-       WHERE organization_id = $1 AND chunk_id = $2 AND status = 'active'`,
+       WHERE organization_id = $1 AND chunk_id = $2 AND status = 'active'
+         AND fact_key IS NOT NULL`,
       [principal.organizationId, node.id],
     );
     for (const row of facts.rows) {
@@ -421,15 +477,6 @@ async function visibleResource(
     [principal.organizationId, principal.subjectId, [...principal.groupIds], resourceId],
   );
   return result.rowCount === 1;
-}
-
-function aclPredicate(alias: string): string {
-  return `(COALESCE((${alias}.acl->>'organizationWide')::boolean, false)
-    OR COALESCE(${alias}.acl->'subjectIds', '[]'::jsonb) ? $2
-    OR EXISTS (
-      SELECT 1 FROM jsonb_array_elements_text(COALESCE(${alias}.acl->'groupIds', '[]'::jsonb)) g(id)
-      WHERE g.id = ANY($3::text[])
-    ))`;
 }
 
 function makeEdge(

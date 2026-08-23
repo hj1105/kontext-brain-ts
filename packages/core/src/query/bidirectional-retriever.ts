@@ -38,17 +38,41 @@ export interface RankedEvidenceHit extends EvidenceHit {
 }
 
 /**
+ * A single traversal's shared resources (e.g. one pooled DB connection and
+ * read-only transaction). Opened once per `retrieve()` and closed at the end,
+ * so an implementation does not have to open a new transaction per visited node.
+ */
+export interface SearchGraphSession {
+  close(): Promise<void>;
+}
+
+/**
  * ACL filtering is part of this port's contract: implementations must never
  * return a seed, edge, or Evidence item that `principal` cannot access.
+ *
+ * `openSession` is optional: when provided, the retriever opens one session for
+ * the whole traversal and passes it back into every `seed`/`neighbors`/`evidence`
+ * call so they can reuse a single connection/transaction. Implementations that
+ * ignore the `session` argument keep working unchanged.
  */
 export interface SearchGraphPort {
-  seed(question: string, principal: Principal): Promise<readonly SearchSeed[]>;
+  openSession?(principal: Principal): Promise<SearchGraphSession>;
+  seed(
+    question: string,
+    principal: Principal,
+    session?: SearchGraphSession,
+  ): Promise<readonly SearchSeed[]>;
   neighbors(
     node: SearchNode,
     question: string,
     principal: Principal,
+    session?: SearchGraphSession,
   ): Promise<readonly SearchEdge[]>;
-  evidence(node: SearchNode, principal: Principal): Promise<readonly EvidenceHit[]>;
+  evidence(
+    node: SearchNode,
+    principal: Principal,
+    session?: SearchGraphSession,
+  ): Promise<readonly EvidenceHit[]>;
 }
 
 export interface SearchBudget {
@@ -139,6 +163,49 @@ export class BidirectionalNLayerRetriever {
   async retrieve(input: BidirectionalRetrievalInput): Promise<BidirectionalRetrievalResult> {
     const budget = { ...DEFAULT_SEARCH_BUDGET, ...input.budget };
     const startedAt = this.now();
+    // One session for the whole traversal, so adapters can share a single
+    // connection/transaction instead of opening one per visited node.
+    const session = await this.graph.openSession?.(input.principal);
+    let traversal:
+      | { readonly ok: true; readonly result: BidirectionalRetrievalResult }
+      | { readonly ok: false; readonly error: unknown };
+    try {
+      traversal = {
+        ok: true,
+        result: await this.traverse(input, budget, startedAt, session),
+      };
+    } catch (error) {
+      traversal = { ok: false, error };
+    }
+
+    let cleanupError: unknown;
+    let cleanupFailed = false;
+    try {
+      await session?.close();
+    } catch (error) {
+      cleanupFailed = true;
+      cleanupError = error;
+    }
+
+    if (!traversal.ok) {
+      if (cleanupFailed) {
+        throw new AggregateError(
+          [traversal.error, cleanupError],
+          "Search traversal and session cleanup both failed",
+        );
+      }
+      throw traversal.error;
+    }
+    if (cleanupFailed) throw cleanupError;
+    return traversal.result;
+  }
+
+  private async traverse(
+    input: BidirectionalRetrievalInput,
+    budget: SearchBudget,
+    startedAt: number,
+    session: SearchGraphSession | undefined,
+  ): Promise<BidirectionalRetrievalResult> {
     const frontier = new MaxPriorityQueue<FrontierCandidate>((candidate) => candidate.score);
     const bestScores = new Map<string, number>();
     const evidenceById = new Map<string, RankedEvidenceHit>();
@@ -146,7 +213,22 @@ export class BidirectionalNLayerRetriever {
     let visited = 0;
     let stoppedBy: SearchStopReason = "frontier_exhausted";
 
-    for (const seed of await this.graph.seed(input.question, input.principal)) {
+    // Pool checkout and session setup are part of the caller's latency budget.
+    // If they consume it, avoid starting more database work just to discover that
+    // the traversal has already timed out.
+    if (this.now() - startedAt >= budget.timeBudgetMs) {
+      return {
+        evidence: [],
+        trace: {
+          visited,
+          candidates: candidateCount,
+          elapsedMs: this.now() - startedAt,
+          stoppedBy: "time_budget",
+        },
+      };
+    }
+
+    for (const seed of await this.graph.seed(input.question, input.principal, session)) {
       const score = this.scorePolicy.seedScore(seed);
       if (score < budget.minScore || candidateCount >= budget.maxCandidates) continue;
       const nodeKey = searchNodeKey(seed.node);
@@ -172,7 +254,7 @@ export class BidirectionalNLayerRetriever {
       if (current.score < (bestScores.get(currentKey) ?? Number.NEGATIVE_INFINITY)) continue;
       visited++;
 
-      const hits = await this.graph.evidence(current.node, input.principal);
+      const hits = await this.graph.evidence(current.node, input.principal, session);
       for (const hit of hits) {
         const ranked: RankedEvidenceHit = {
           ...hit,
@@ -184,7 +266,12 @@ export class BidirectionalNLayerRetriever {
       }
 
       if (current.hops >= budget.maxHops) continue;
-      const neighbors = await this.graph.neighbors(current.node, input.question, input.principal);
+      const neighbors = await this.graph.neighbors(
+        current.node,
+        input.question,
+        input.principal,
+        session,
+      );
       for (const edge of neighbors) {
         if (candidateCount >= budget.maxCandidates) {
           stoppedBy = "candidate_budget";

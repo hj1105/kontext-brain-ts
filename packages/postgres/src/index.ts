@@ -6,3 +6,4 @@ export * from "./postgres-ontology-proposal-queue.js";
 export * from "./postgres-knowledge-search-graph.js";
 export * from "./postgres-runtime.js";
 export * from "./postgres-chunk-vector-index.js";
+export { runPostgresSearchRead } from "./postgres-search-session.js";

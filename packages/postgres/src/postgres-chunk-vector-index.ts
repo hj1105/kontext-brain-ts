@@ -1,7 +1,9 @@
-import type { Principal, SearchSeed } from "@kontext-brain/core";
-import type { Pool } from "pg";
+import type { Principal, SearchGraphSession, SearchSeed } from "@kontext-brain/core";
+import type { Pool, PoolClient } from "pg";
 import { withOrganizationTransaction } from "./postgres-knowledge-graph.js";
 import type { SearchSeedProvider } from "./postgres-knowledge-search-graph.js";
+import { runPostgresSearchRead } from "./postgres-search-session.js";
+import { aclPredicate } from "./postgres-value-utils.js";
 
 export interface QuestionEmbeddingProvider {
   embed(text: string): Promise<readonly number[] | Float32Array>;
@@ -31,10 +33,14 @@ export class PostgresChunkVectorIndex implements SearchSeedProvider {
     });
   }
 
-  async seed(question: string, principal: Principal): Promise<readonly SearchSeed[]> {
+  async seed(
+    question: string,
+    principal: Principal,
+    session?: SearchGraphSession,
+  ): Promise<readonly SearchSeed[]> {
     const embedding = Array.from(await this.embeddingProvider.embed(question));
     this.assertDimensions(embedding);
-    return withOrganizationTransaction(this.pool, principal.organizationId, async (client) => {
+    const search = async (client: PoolClient): Promise<readonly SearchSeed[]> => {
       const result = await client.query(
         `SELECT c.chunk_id, 1 - (c.embedding <=> $4::vector) AS score
          FROM kontext_chunks c
@@ -57,7 +63,8 @@ export class PostgresChunkVectorIndex implements SearchSeedProvider {
         node: { kind: "chunk" as const, id: String(row.chunk_id) },
         score: Math.max(0, Math.min(1, Number(row.score))),
       }));
-    });
+    };
+    return runPostgresSearchRead(this.pool, principal.organizationId, session, search);
   }
 
   private assertDimensions(embedding: readonly number[]): void {
@@ -70,15 +77,6 @@ export class PostgresChunkVectorIndex implements SearchSeedProvider {
       throw new Error("Embedding contains a non-finite value");
     }
   }
-}
-
-function aclPredicate(alias: string): string {
-  return `(COALESCE((${alias}.acl->>'organizationWide')::boolean, false)
-    OR COALESCE(${alias}.acl->'subjectIds', '[]'::jsonb) ? $2
-    OR EXISTS (
-      SELECT 1 FROM jsonb_array_elements_text(COALESCE(${alias}.acl->'groupIds', '[]'::jsonb)) g(id)
-      WHERE g.id = ANY($3::text[])
-    ))`;
 }
 
 function vectorLiteral(values: readonly number[]): string {

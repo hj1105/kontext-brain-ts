@@ -192,10 +192,10 @@ export class KontextAgent {
       }
       const result = await this.knowledgeRetriever.retrieve({ question, principal });
       const context = result.evidence
-        .map(
-          (evidence) =>
-            `[Evidence ${evidence.evidenceId}; Resource ${evidence.resourceId}; Chunk ${evidence.chunkId}]\n${evidence.text}`,
-        )
+        .map((evidence) => {
+          const factStatus = evidence.factStatus ? `; Fact status ${evidence.factStatus}` : "";
+          return `[Evidence ${evidence.evidenceId}; Resource ${evidence.resourceId}; Chunk ${evidence.chunkId}${factStatus}]\n${evidence.text}`;
+        })
         .join("\n\n---\n\n");
       return {
         context,

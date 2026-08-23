@@ -273,13 +273,14 @@ describe("KontextAgent state boundaries", () => {
             chunkId: "slack:message-1",
             text: "Order 42 was paid",
             score: 1,
+            factStatus: "conflict" as const,
           },
         ];
       },
     });
     const citedLlm: LLMAdapter = {
       async complete() {
-        return "Order 42 was paid [Evidence evidence-1]";
+        return "Sources conflict, but one says order 42 was paid [Evidence evidence-1]";
       },
     };
     const agent = new KontextAgent({
@@ -305,6 +306,7 @@ describe("KontextAgent state boundaries", () => {
 
     expect(retrieval.retrievalMode).toBe("bidirectional");
     expect(retrieval.evidence?.[0]?.evidenceId).toBe("evidence-1");
+    expect(retrieval.context).toContain("Fact status conflict");
     expect(answered.answer).toContain("evidence-1");
     await expect(
       agent.retrieve("Was order 42 paid?", { ...principal, organizationId: "other" }),

@@ -1,10 +1,12 @@
-import type {
-  OntologyProposal,
-  OntologyProposalDraft,
-  OntologyProposalQueue,
+import {
+  type OntologyProposal,
+  type OntologyProposalDraft,
+  type OntologyProposalQueue,
+  normalizeProposalKey,
 } from "@kontext-brain/core";
 import type { Pool, QueryResultRow } from "pg";
 import { withOrganizationTransaction } from "./postgres-knowledge-graph.js";
+import { toIsoString } from "./postgres-value-utils.js";
 
 export class PostgresOntologyProposalQueue implements OntologyProposalQueue {
   constructor(private readonly pool: Pool) {}
@@ -32,10 +34,8 @@ export class PostgresOntologyProposalQueue implements OntologyProposalQueue {
                ORDER BY value
              ),
              occurrences = kontext_ontology_proposals.occurrences + 1,
-             status = CASE
-               WHEN kontext_ontology_proposals.status = 'accepted' THEN 'accepted'
-               ELSE 'open'
-             END,
+             -- Preserve the existing lifecycle status. Re-observing an unmapped node
+             -- must not resurrect a proposal that is already published or decided.
              updated_at = now()`,
           [
             organizationId,
@@ -50,27 +50,37 @@ export class PostgresOntologyProposalQueue implements OntologyProposalQueue {
   }
 
   async listOpen(organizationId: string): Promise<readonly OntologyProposal[]> {
-    return withOrganizationTransaction(this.pool, organizationId, async (client) => {
-      const result = await client.query(
-        `SELECT * FROM kontext_ontology_proposals
-         WHERE organization_id = $1 AND status = 'open'
-         ORDER BY occurrences DESC, proposal_key`,
-        [organizationId],
-      );
-      return result.rows.map(mapProposal);
-    });
+    return withOrganizationTransaction(
+      this.pool,
+      organizationId,
+      async (client) => {
+        const result = await client.query(
+          `SELECT * FROM kontext_ontology_proposals
+           WHERE organization_id = $1 AND status = 'open'
+           ORDER BY occurrences DESC, proposal_key`,
+          [organizationId],
+        );
+        return result.rows.map(mapProposal);
+      },
+      { readOnly: true },
+    );
   }
 
   async listPending(organizationId: string): Promise<readonly OntologyProposal[]> {
-    return withOrganizationTransaction(this.pool, organizationId, async (client) => {
-      const result = await client.query(
-        `SELECT * FROM kontext_ontology_proposals
-         WHERE organization_id = $1 AND status IN ('open', 'published')
-         ORDER BY occurrences DESC, proposal_key`,
-        [organizationId],
-      );
-      return result.rows.map(mapProposal);
-    });
+    return withOrganizationTransaction(
+      this.pool,
+      organizationId,
+      async (client) => {
+        const result = await client.query(
+          `SELECT * FROM kontext_ontology_proposals
+           WHERE organization_id = $1 AND status IN ('open', 'published')
+           ORDER BY occurrences DESC, proposal_key`,
+          [organizationId],
+        );
+        return result.rows.map(mapProposal);
+      },
+      { readOnly: true },
+    );
   }
 
   async markPublished(organizationId: string, proposalKeys: readonly string[]): Promise<void> {
@@ -95,16 +105,6 @@ function mapProposal(row: QueryResultRow): OntologyProposal {
     resourceIds: row.resource_ids as string[],
     occurrences: Number(row.occurrences),
     status: row.status as OntologyProposal["status"],
-    updatedAt:
-      row.updated_at instanceof Date
-        ? row.updated_at.toISOString()
-        : new Date(String(row.updated_at)).toISOString(),
+    updatedAt: toIsoString(row.updated_at),
   };
-}
-
-function normalizeProposalKey(value: string): string {
-  return value
-    .trim()
-    .toLocaleLowerCase()
-    .replace(/[^a-z0-9가-힣_-]+/g, "-");
 }

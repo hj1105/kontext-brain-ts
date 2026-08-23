@@ -1,6 +1,7 @@
 import type { ExtractionJob, ExtractionJobKey, ExtractionJobQueue } from "@kontext-brain/core";
 import type { Pool, QueryResultRow } from "pg";
 import { withOrganizationTransaction } from "./postgres-knowledge-graph.js";
+import { toIsoString } from "./postgres-value-utils.js";
 
 export class PostgresExtractionJobQueue implements ExtractionJobQueue {
   constructor(private readonly pool: Pool) {}
@@ -111,13 +112,9 @@ function mapJob(row: QueryResultRow): ExtractionJob {
     ontologyHash: String(row.ontology_hash),
     state: row.state as ExtractionJob["state"],
     attempts: Number(row.attempts),
-    availableAt: toIso(row.available_at),
+    availableAt: toIsoString(row.available_at),
     lockedBy: row.locked_by === null ? undefined : String(row.locked_by),
-    lockedUntil: row.locked_until === null ? undefined : toIso(row.locked_until),
+    lockedUntil: row.locked_until === null ? undefined : toIsoString(row.locked_until),
     lastError: row.last_error === null ? undefined : String(row.last_error),
   };
-}
-
-function toIso(value: unknown): string {
-  return value instanceof Date ? value.toISOString() : new Date(String(value)).toISOString();
 }

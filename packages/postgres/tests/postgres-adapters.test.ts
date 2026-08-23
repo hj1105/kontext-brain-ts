@@ -9,10 +9,11 @@ import {
   RetrieveFactsUseCase,
   SyncResourceUseCase,
 } from "@kontext-brain/core";
-import { Pool } from "pg";
+import { Pool, type PoolClient } from "pg";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import {
   PostgresAuthorizedKnowledgeGraphReader,
+  PostgresChunkVectorIndex,
   PostgresExtractionJobQueue,
   PostgresKnowledgeGraphRepository,
   PostgresKnowledgeSearchGraph,
@@ -120,6 +121,75 @@ describe.runIf(pool !== null)("PostgreSQL adapters", () => {
     expect(await queue.listOpen("acme")).toMatchObject([
       { occurrences: 2, resourceIds: ["notion:p1", "slack:t1"] },
     ]);
+
+    await queue.markPublished("acme", ["refund"]);
+    await queue.enqueue("acme", [
+      { suggestedNodeId: "refund", description: "Refunds", resourceIds: ["github:i1"] },
+    ]);
+    expect(await queue.listOpen("acme")).toEqual([]);
+    expect(await queue.listPending("acme")).toMatchObject([
+      { occurrences: 3, status: "published" },
+    ]);
+  });
+
+  it("uses a single pooled connection and transaction for retrieval and vector seeds", async () => {
+    const repository = new PostgresKnowledgeGraphRepository(requiredPool());
+    const contents = new InMemoryResourceContentStore();
+    await new SyncResourceUseCase(repository, contents).execute(snapshot("v1", "paid"));
+    const deployments = new PostgresOntologyDeploymentRepository<{
+      nodes: Array<{ id: string; description: string }>;
+      edges: Array<{ from: string; to: string; weight: number }>;
+    }>(requiredPool());
+    await deployments.stage({
+      organizationId: "acme",
+      contentHash: "ontology-v1",
+      yaml: "- id: order",
+      graph: { nodes: [{ id: "order", description: "Customer order" }], edges: [] },
+      status: "staged",
+      createdAt: new Date().toISOString(),
+    });
+    await deployments.activate("acme", "ontology-v1");
+
+    let checkouts = 0;
+    let begins = 0;
+    class CountingPool extends Pool {
+      override async connect(): Promise<never> {
+        if (checkouts > 0) throw new Error("Retrieval attempted a second pool checkout");
+        const client = await (super.connect() as Promise<PoolClient>);
+        checkouts++;
+        const query = client.query.bind(client) as PoolClient["query"];
+        // biome-ignore lint/suspicious/noExplicitAny: passthrough spy
+        (client as any).query = (...args: any[]) => {
+          const text = typeof args[0] === "string" ? args[0] : (args[0]?.text ?? "");
+          if (String(text).trimStart().toUpperCase().startsWith("BEGIN")) begins++;
+          // biome-ignore lint/suspicious/noExplicitAny: passthrough spy
+          return (query as any)(...args);
+        };
+        return client as never;
+      }
+    }
+    const countingPool = new CountingPool({ connectionString: databaseUrl, max: 1 });
+    try {
+      const vectorIndex = new PostgresChunkVectorIndex(countingPool, {
+        async embed() {
+          return new Array<number>(1536).fill(0);
+        },
+      });
+      const retriever = new BidirectionalNLayerRetriever(
+        new PostgresKnowledgeSearchGraph(countingPool, contents, [vectorIndex]),
+      );
+      const result = await retriever.retrieve({
+        question: "Was order 42 paid?",
+        principal: { organizationId: "acme", subjectId: "u1", groupIds: ["finance"] },
+      });
+
+      expect(result.trace.visited).toBeGreaterThan(1);
+      expect(checkouts).toBe(1);
+      expect(begins).toBe(1);
+      expect(countingPool.idleCount).toBe(1);
+    } finally {
+      await countingPool.end();
+    }
   });
 
   it("lifts and grounds through the PostgreSQL KG while filtering ACL before each edge", async () => {

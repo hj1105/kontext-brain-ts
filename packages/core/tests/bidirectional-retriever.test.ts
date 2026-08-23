@@ -5,6 +5,7 @@ import {
   type Principal,
   type SearchEdge,
   type SearchGraphPort,
+  type SearchGraphSession,
   type SearchNode,
   type SearchSeed,
 } from "../src/index.js";
@@ -134,5 +135,130 @@ describe("BidirectionalNLayerRetriever", () => {
 
     expect(seenPrincipals).toHaveLength(3);
     expect(seenPrincipals.every((received) => received === principal)).toBe(true);
+  });
+
+  it("opens one session per retrieval and hands it to every graph operation", async () => {
+    const session: SearchGraphSession = { close: async () => closed++ };
+    let opened = 0;
+    let closed = 0;
+    const seenSessions: Array<SearchGraphSession | undefined> = [];
+    const graph: SearchGraphPort = {
+      async openSession() {
+        opened++;
+        return session;
+      },
+      async seed(_question, _principal, received) {
+        seenSessions.push(received);
+        return [{ node: { kind: "chunk", id: "c1" }, score: 1 }];
+      },
+      async neighbors(_node, _question, _principal, received) {
+        seenSessions.push(received);
+        return [];
+      },
+      async evidence(_node, _principal, received) {
+        seenSessions.push(received);
+        return [];
+      },
+    };
+
+    await new BidirectionalNLayerRetriever(graph).retrieve({ question: "orders", principal });
+
+    expect(opened).toBe(1);
+    expect(closed).toBe(1);
+    expect(seenSessions).toHaveLength(3);
+    expect(seenSessions.every((received) => received === session)).toBe(true);
+  });
+
+  it("closes the session even when traversal throws", async () => {
+    let closed = 0;
+    const graph: SearchGraphPort = {
+      async openSession() {
+        return { close: async () => closed++ };
+      },
+      async seed() {
+        throw new Error("seed failed");
+      },
+      async neighbors() {
+        return [];
+      },
+      async evidence() {
+        return [];
+      },
+    };
+
+    await expect(
+      new BidirectionalNLayerRetriever(graph).retrieve({ question: "orders", principal }),
+    ).rejects.toThrow("seed failed");
+    expect(closed).toBe(1);
+  });
+
+  it("counts session acquisition against the traversal time budget", async () => {
+    let currentTime = 0;
+    let seeded = 0;
+    let closed = 0;
+    const graph: SearchGraphPort = {
+      async openSession() {
+        currentTime = 10;
+        return { close: async () => closed++ };
+      },
+      async seed() {
+        seeded++;
+        return [];
+      },
+      async neighbors() {
+        return [];
+      },
+      async evidence() {
+        return [];
+      },
+    };
+
+    const result = await new BidirectionalNLayerRetriever(
+      graph,
+      undefined,
+      () => currentTime,
+    ).retrieve({ question: "orders", principal, budget: { timeBudgetMs: 5 } });
+
+    expect(seeded).toBe(0);
+    expect(closed).toBe(1);
+    expect(result.trace).toEqual({
+      visited: 0,
+      candidates: 0,
+      elapsedMs: 10,
+      stoppedBy: "time_budget",
+    });
+  });
+
+  it("preserves traversal and cleanup failures when both operations throw", async () => {
+    const seedError = new Error("seed failed");
+    const closeError = new Error("close failed");
+    const graph: SearchGraphPort = {
+      async openSession() {
+        return {
+          async close() {
+            throw closeError;
+          },
+        };
+      },
+      async seed() {
+        throw seedError;
+      },
+      async neighbors() {
+        return [];
+      },
+      async evidence() {
+        return [];
+      },
+    };
+
+    let thrown: unknown;
+    try {
+      await new BidirectionalNLayerRetriever(graph).retrieve({ question: "orders", principal });
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(AggregateError);
+    expect((thrown as AggregateError).errors).toEqual([seedError, closeError]);
   });
 });
