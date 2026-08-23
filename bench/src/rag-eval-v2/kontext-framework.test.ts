@@ -300,7 +300,9 @@ describe("KontextBrainAdapter bidirectional KG mode", () => {
       ),
     ) as { artifactSelection: Record<string, unknown> };
     expect(config.artifactSelection).toEqual({
-      policy: "best-corpus-evidence-coverage-v1",
+      policy: "best-corpus-evidence-coverage",
+      policyVersion: 1,
+      fallback: "canonical-static-corpus",
       artifactKey: "arbitrary-source",
       coveredSourceCount: 1,
       inputs: ["resource identity", "normalized source text"],

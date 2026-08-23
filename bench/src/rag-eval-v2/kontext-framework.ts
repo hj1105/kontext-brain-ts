@@ -129,6 +129,11 @@ const V15_STACK_DESCRIPTOR = {
   readonly corpusCoveragePolicy: string;
   readonly corpusCoveragePolicyVersion: number;
 };
+const KNOWLEDGE_ARTIFACT_SELECTION_POLICY = {
+  policy: "best-corpus-evidence-coverage",
+  policyVersion: 1,
+  fallback: "canonical-static-corpus",
+} as const;
 type DeterministicCoveragePolicy = "soft" | "quota";
 interface CacheOnlyCoverageDescriptor {
   readonly retrievalMode: string;
@@ -1210,7 +1215,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
           : "canonical static corpus -> source/chunk production SearchGraphPort",
       artifactSelection: artifact
         ? {
-            policy: "best-corpus-evidence-coverage-v1",
+            ...KNOWLEDGE_ARTIFACT_SELECTION_POLICY,
             artifactKey: artifact.key,
             coveredSourceCount: artifact.coveredSourceCount,
             inputs: ["resource identity", "normalized source text"],
@@ -1218,7 +1223,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
             goldAccess: false,
           }
         : {
-            policy: "canonical-static-corpus-fallback-v1",
+            ...KNOWLEDGE_ARTIFACT_SELECTION_POLICY,
             artifactKey: null,
             coveredSourceCount: 0,
             inputs: ["resource identity", "normalized source text"],
@@ -2464,6 +2469,8 @@ function maxExistingStackDigest(
   const hash = createHash("sha256")
     .update(manifestDigest(manifest))
     .update(stackIdentity)
+    .update("\0")
+    .update(JSON.stringify(KNOWLEDGE_ARTIFACT_SELECTION_POLICY))
     .update(String(candidateCount))
     .update("\0")
     .update(JSON.stringify(MAX_EXISTING_STACK_FUSION));
