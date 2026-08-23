@@ -404,7 +404,7 @@ async function retrieveOrLoadCompleted(
   return cached ?? (await retrieveOrRecordErrors(adapter, bundle, options, manifest));
 }
 
-function loadCompletedRetrieval(
+export function loadCompletedRetrieval(
   frameworkId: FrameworkId,
   bundle: ReturnType<typeof loadDataset>,
   options: BenchmarkRunOptions,
@@ -422,6 +422,8 @@ function loadCompletedRetrieval(
           record.datasetId !== bundle.id ||
           record.frameworkId !== frameworkId ||
           record.queryId !== expectedIds[index] ||
+          record.status === "error" ||
+          record.status === "blocked" ||
           record.configDigest !== manifestDigest(manifest),
       )
     ) {

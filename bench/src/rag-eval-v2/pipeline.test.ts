@@ -4,7 +4,8 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { CodexJsonClient, type CommandRunner } from "./codex-json.js";
 import type { AnswerResult, DatasetBundle, RetrievalResult } from "./contracts.js";
-import { DEFAULT_RAG_EVAL_MANIFEST } from "./manifest.js";
+import { defaultDatasetPaths } from "./datasets.js";
+import { DEFAULT_RAG_EVAL_MANIFEST, manifestDigest } from "./manifest.js";
 import {
   answerInputDigest,
   answerQueries,
@@ -12,6 +13,7 @@ import {
   freezeRunManifest,
   judgeAnswers,
   judgeInputDigest,
+  loadCompletedRetrieval,
 } from "./pipeline.js";
 
 const directories: string[] = [];
@@ -56,6 +58,47 @@ describe("run manifest freeze", () => {
       /sample mismatch/i,
     );
   });
+});
+
+describe("retrieval completion cache", () => {
+  it.each(["error", "blocked"] as const)(
+    "does not reuse a full-size retrieval file containing %s rows",
+    (status) => {
+      const directory = mkdtempSync(join(tmpdir(), "rag-eval-error-retrieval-cache-"));
+      directories.push(directory);
+      const bundle = checkpointBundle("Question?");
+      const retrievalPath = join(directory, "retrieval.jsonl");
+      const failed: RetrievalResult = {
+        datasetId: bundle.id,
+        frameworkId: "kontext-brain",
+        queryId: "q1",
+        status,
+        evidence: [],
+        latencyMs: 0,
+        inputTokens: null,
+        error: "temporary network failure",
+        frameworkVersion: "unresolved",
+        configDigest: manifestDigest(DEFAULT_RAG_EVAL_MANIFEST),
+      };
+      writeFileSync(retrievalPath, `${JSON.stringify(failed)}\n`, "utf8");
+
+      const cached = loadCompletedRetrieval(
+        "kontext-brain",
+        bundle,
+        {
+          workDirectory: directory,
+          datasetPaths: defaultDatasetPaths(process.cwd()),
+          stage: "retrieval",
+          topK: 10,
+          candidateK: 50,
+        },
+        DEFAULT_RAG_EVAL_MANIFEST,
+        retrievalPath,
+      );
+
+      expect(cached).toBeNull();
+    },
+  );
 });
 
 describe("v13 answer policy", () => {
