@@ -628,6 +628,19 @@ Outcome: completed as a validated corpus-completeness candidate; v13 remains
   6,364, and NFCorpus 4,645, each with newVectors=0, new embedding input
   tokens=0, and estimated embedding cost=$0. The already completed Novel run
   retains its auditable pre-fix 1,470,715 tokens / $0.0294143 and was not
-  rewritten. No per-dataset policy, gold evidence, reference answer, or judge
-  output entered retrieval or selection.
+  rewritten. No per-dataset ranking policy, gold evidence, reference answer,
+  or judge output entered retrieval or selection.
+Post-run artifact-selector audit (2026-08-23): the scored Medical and Novel
+  runs still used their dataset IDs solely to locate the corresponding static
+  `*-chunks.jsonl` / `*-kg.json` pair. Although this did not alter weights,
+  ranking, prompts, or scores, it violated the stronger no-dataset-name
+  architecture constraint. The locator was replaced with deterministic
+  best-coverage selection using only Resource identity and normalized source
+  text; ties fail closed before embedding or Codex calls. A read-only full-data
+  audit selected the same `gb-medical` artifact (1/1 source represented) and
+  `gb-novel` artifact (11/20 sources represented), so the scored graph/chunk
+  inputs are unchanged and no run artifact or embedding was regenerated. Two
+  regression tests cover arbitrary dataset IDs and ambiguous equal-coverage
+  artifacts. Production retrieval code now contains no Medical, Novel,
+  SciFact, NFCorpus, reference-answer, gold-evidence, or category branch.
 ```

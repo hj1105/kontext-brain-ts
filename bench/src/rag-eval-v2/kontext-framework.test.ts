@@ -209,6 +209,151 @@ describe("KontextBrainAdapter bidirectional KG mode", () => {
     });
   });
 
+  it("selects a matching KG artifact from corpus evidence instead of the dataset id", async () => {
+    const root = mkdtempSync(join(tmpdir(), "kontext-rag-eval-content-artifact-"));
+    temporaryDirectories.push(root);
+    const dataDirectory = join(root, "data");
+    const workDirectory = join(root, "run");
+    mkdirSync(dataDirectory, { recursive: true });
+    writeFileSync(
+      join(dataDirectory, "arbitrary-source-chunks.jsonl"),
+      `${JSON.stringify({
+        id: "Source-A-0",
+        body: "Alpha evidence establishes the requested fact.",
+      })}\n`,
+    );
+    writeFileSync(
+      join(dataDirectory, "arbitrary-source-kg.json"),
+      `${JSON.stringify({
+        entities: [],
+        edges: [],
+        chunkToEntities: [["Source-A-0", []]],
+      })}\n`,
+    );
+    const bundle: DatasetBundle = {
+      ...testBundle(),
+      id: "beir-scifact",
+      documents: [
+        {
+          id: "doc-a",
+          sourceId: "Source-A",
+          title: "Source A",
+          text: "Alpha evidence establishes the requested fact.",
+          metadata: {},
+        },
+      ],
+      queries: [
+        {
+          id: "query-a",
+          text: "What establishes the requested fact?",
+          referenceAnswer: null,
+          goldEvidenceIds: [],
+          goldEvidenceText: [],
+          answerable: true,
+          category: "retrieval-only",
+          metadata: {},
+        },
+      ],
+    };
+    const runner: CommandRunner = async (_command, args, stdin) => {
+      const outputPath = args[args.indexOf("--output-last-message") + 1];
+      if (!outputPath) throw new Error("Codex command omitted --output-last-message path");
+      const text = stdin.includes("Generate up to three complementary")
+        ? JSON.stringify({ queries: ["Which alpha passage establishes the fact?"] })
+        : JSON.stringify({ ranked_ids: ["Source-A-0"] });
+      writeFileSync(outputPath, JSON.stringify({ text }));
+      return { exitCode: 0, stdout: "", stderr: "", durationMs: 1 };
+    };
+    const adapter = new KontextBrainAdapter(DEFAULT_RAG_EVAL_MANIFEST, {
+      codexClient: new CodexJsonClient(runner),
+      embeddingClient: new FakeEmbeddingClient(),
+      retrievalMode: "corpus-complete-anchored-evidence-answer-stack",
+      benchmarkDataDirectory: dataDirectory,
+    });
+
+    const [result] = await adapter.retrieve(bundle, {
+      workDirectory,
+      topK: 1,
+      candidateK: 50,
+    });
+
+    expect(result).toMatchObject({
+      status: "ok",
+      evidence: [
+        {
+          sourceId: "Source-A",
+          metadata: { sourceChunkIds: "Source-A-0" },
+        },
+      ],
+    });
+    const config = JSON.parse(
+      readFileSync(
+        join(
+          workDirectory,
+          bundle.id,
+          "kontext-brain",
+          "index",
+          "v15-corpus-complete-anchored-evidence-answer-stack",
+          "kontext-kg-config.json",
+        ),
+        "utf8",
+      ),
+    ) as { artifactSelection: Record<string, unknown> };
+    expect(config.artifactSelection).toEqual({
+      policy: "best-corpus-evidence-coverage-v1",
+      artifactKey: "arbitrary-source",
+      coveredSourceCount: 1,
+      inputs: ["resource identity", "normalized source text"],
+      queryAware: false,
+      goldAccess: false,
+    });
+  });
+
+  it("fails closed when two KG artifacts have equal corpus-evidence coverage", async () => {
+    const root = mkdtempSync(join(tmpdir(), "kontext-rag-eval-ambiguous-artifact-"));
+    temporaryDirectories.push(root);
+    const dataDirectory = join(root, "data");
+    mkdirSync(dataDirectory, { recursive: true });
+    for (const key of ["candidate-a", "candidate-b"]) {
+      writeFileSync(
+        join(dataDirectory, `${key}-chunks.jsonl`),
+        `${JSON.stringify({
+          id: `${key}-0`,
+          body: "Alpha evidence establishes the requested fact.",
+        })}\n`,
+      );
+      writeFileSync(
+        join(dataDirectory, `${key}-kg.json`),
+        `${JSON.stringify({
+          entities: [],
+          edges: [],
+          chunkToEntities: [[`${key}-0`, []]],
+        })}\n`,
+      );
+    }
+    const embeddingClient = new ThrowingEmbeddingClient();
+    let codexCalls = 0;
+    const adapter = new KontextBrainAdapter(DEFAULT_RAG_EVAL_MANIFEST, {
+      codexClient: new CodexJsonClient(async () => {
+        codexCalls += 1;
+        throw new Error("ambiguous artifact selection must fail before Codex");
+      }),
+      embeddingClient,
+      retrievalMode: "corpus-complete-anchored-evidence-answer-stack",
+      benchmarkDataDirectory: dataDirectory,
+    });
+
+    await expect(
+      adapter.retrieve(testBundle(), {
+        workDirectory: join(root, "run"),
+        topK: 1,
+        candidateK: 50,
+      }),
+    ).rejects.toThrow(/Ambiguous corpus-matched knowledge artifacts: candidate-a, candidate-b/);
+    expect(embeddingClient.embedCalls).toBe(0);
+    expect(codexCalls).toBe(0);
+  });
+
   it("recognizes artifact coverage by source text when artifact and corpus IDs differ", async () => {
     const root = mkdtempSync(join(tmpdir(), "kontext-rag-eval-v15-alias-coverage-"));
     temporaryDirectories.push(root);

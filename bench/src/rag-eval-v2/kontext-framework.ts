@@ -644,8 +644,11 @@ export class KontextBrainAdapter implements FrameworkAdapter {
   ): Promise<RetrievalResult[]> {
     const embeddingClient = this.embeddingClient;
     if (!embeddingClient) throw new Error("Bidirectional KG retrieval requires OPENAI_API_KEY");
-    const domain = graphRagDomain(bundle.id);
-    if (!domain) {
+    const artifact =
+      bundle.track === "static-kb"
+        ? selectKnowledgeArtifact(this.benchmarkDataDirectory, bundle.documents)
+        : null;
+    if (!artifact) {
       return bundle.queries.map((query) => ({
         datasetId: bundle.id,
         frameworkId: this.id,
@@ -660,14 +663,8 @@ export class KontextBrainAdapter implements FrameworkAdapter {
       }));
     }
 
-    const artifactPaths = {
-      chunks: join(this.benchmarkDataDirectory, `gb-${domain}-chunks.jsonl`),
-      graph: join(this.benchmarkDataDirectory, `gb-${domain}-kg.json`),
-    };
-    const docs = readJsonLines<{ readonly id: string; readonly body: string }>(
-      artifactPaths.chunks,
-    ).map<BenchDoc>((doc) => ({ ...doc, title: chunkTitle(doc.id) }));
-    const graph = readKnowledgeGraph(artifactPaths.graph);
+    const docs = artifact.docs;
+    const graph = artifact.graph;
     const indexDirectory = join(
       options.workDirectory,
       bundle.id,
@@ -937,8 +934,11 @@ export class KontextBrainAdapter implements FrameworkAdapter {
     const perspectiveReciprocalRankConstant =
       deterministicCoverage?.reciprocalRankConstant ??
       MAX_EXISTING_STACK_FUSION.reciprocalRankConstant;
-    const domain = graphRagDomain(bundle.id);
-    if (!domain && bundle.track !== "static-kb") {
+    const artifact =
+      bundle.track === "static-kb"
+        ? selectKnowledgeArtifact(this.benchmarkDataDirectory, bundle.documents)
+        : null;
+    if (!artifact && bundle.track !== "static-kb") {
       return bundle.queries.map((query) => ({
         datasetId: bundle.id,
         frameworkId: this.id,
@@ -968,19 +968,13 @@ export class KontextBrainAdapter implements FrameworkAdapter {
       }));
     }
 
-    const artifactDocs = domain
-      ? readJsonLines<{ readonly id: string; readonly body: string }>(
-          join(this.benchmarkDataDirectory, `gb-${domain}-chunks.jsonl`),
-        ).map<BenchDoc>((doc) => ({ ...doc, title: chunkTitle(doc.id) }))
-      : chunkCanonicalDocuments(bundle.documents);
+    const artifactDocs = artifact?.docs ?? chunkCanonicalDocuments(bundle.documents);
     const corpusCoverage = completeCorpusCoverage
       ? completeCorpusFromArtifact(artifactDocs, bundle.documents)
       : null;
     const docs = corpusCoverage?.docs ?? artifactDocs;
     const docsById = new Map(docs.map((doc) => [doc.id, doc]));
-    const graph = domain
-      ? readKnowledgeGraph(join(this.benchmarkDataDirectory, `gb-${domain}-kg.json`))
-      : emptyKnowledgeGraph(docs);
+    const graph = artifact?.graph ?? emptyKnowledgeGraph(docs);
     const indexDirectory = join(options.workDirectory, bundle.id, this.id, "index", retrievalMode);
     const cacheOnly = deterministicCoverage?.cacheOnly ?? false;
     const cacheIndexDirectory = cacheOnly
@@ -1211,9 +1205,26 @@ export class KontextBrainAdapter implements FrameworkAdapter {
       ],
       graphProjection: adaptiveEece
         ? "source chunks -> AdaptiveKnowledgeEnricher -> augmented production SearchGraphPort"
-        : domain
-          ? "GraphRAG-Bench KG -> production SearchGraphPort"
+        : artifact
+          ? "corpus-matched KG artifact -> production SearchGraphPort"
           : "canonical static corpus -> source/chunk production SearchGraphPort",
+      artifactSelection: artifact
+        ? {
+            policy: "best-corpus-evidence-coverage-v1",
+            artifactKey: artifact.key,
+            coveredSourceCount: artifact.coveredSourceCount,
+            inputs: ["resource identity", "normalized source text"],
+            queryAware: false,
+            goldAccess: false,
+          }
+        : {
+            policy: "canonical-static-corpus-fallback-v1",
+            artifactKey: null,
+            coveredSourceCount: 0,
+            inputs: ["resource identity", "normalized source text"],
+            queryAware: false,
+            goldAccess: false,
+          },
       agentEntryPoint: "KontextAgent.retrieve(question, principal)",
       embedding: {
         provider: "openai",
@@ -2065,12 +2076,6 @@ function embeddingInputDigest(
     .digest("hex");
 }
 
-function graphRagDomain(datasetId: DatasetBundle["id"]): "medical" | "novel" | null {
-  if (datasetId === "graphrag-bench-medical") return "medical";
-  if (datasetId === "graphrag-bench-novel") return "novel";
-  return null;
-}
-
 function chunkTitle(id: string): string {
   const match = /^(.*)-(\d+)$/.exec(id);
   return match ? `${match[1]} chunk ${match[2]}` : id;
@@ -2118,10 +2123,59 @@ interface CorpusCoverageResult {
   readonly supplementedSourceDigest: string;
 }
 
-function completeCorpusFromArtifact(
+interface KnowledgeArtifact {
+  readonly key: string;
+  readonly docs: readonly BenchDoc[];
+  readonly graph: KGStore;
+  readonly coveredSourceCount: number;
+}
+
+function selectKnowledgeArtifact(
+  directory: string,
+  documents: readonly CorpusDocument[],
+): KnowledgeArtifact | null {
+  if (!existsSync(directory)) return null;
+  const candidates = readdirSync(directory)
+    .filter((name) => name.endsWith("-chunks.jsonl"))
+    .sort()
+    .flatMap<KnowledgeArtifact>((chunksName) => {
+      const key = chunksName.slice(0, -"-chunks.jsonl".length);
+      const graphPath = join(directory, `${key}-kg.json`);
+      if (!existsSync(graphPath)) return [];
+      const docs = readJsonLines<{ readonly id: string; readonly body: string }>(
+        join(directory, chunksName),
+      ).map<BenchDoc>((doc) => ({ ...doc, title: chunkTitle(doc.id) }));
+      if (docs.length === 0) return [];
+      const coveredSourceCount = artifactCoverage(docs, documents).coveredSourceCount;
+      if (coveredSourceCount === 0) return [];
+      return [
+        {
+          key,
+          docs,
+          graph: readKnowledgeGraph(graphPath),
+          coveredSourceCount,
+        },
+      ];
+    })
+    .sort(
+      (left, right) =>
+        right.coveredSourceCount - left.coveredSourceCount || left.key.localeCompare(right.key),
+    );
+  const selected = candidates[0];
+  const runnerUp = candidates[1];
+  if (!selected) return null;
+  if (runnerUp?.coveredSourceCount === selected.coveredSourceCount) {
+    throw new Error(
+      `Ambiguous corpus-matched knowledge artifacts: ${selected.key}, ${runnerUp.key}`,
+    );
+  }
+  return selected;
+}
+
+function artifactCoverage(
   artifactDocs: readonly BenchDoc[],
   documents: readonly CorpusDocument[],
-): CorpusCoverageResult {
+): { readonly coveredSourceCount: number; readonly uncovered: readonly CorpusDocument[] } {
   const artifactSourceIds = new Set(
     artifactDocs.map((doc) => normalizeCoverageText(sourceDocumentId(doc))),
   );
@@ -2136,6 +2190,17 @@ function completeCorpusFromArtifact(
       probes.every((probe) => sourceText.includes(probe)),
     );
   });
+  return {
+    coveredSourceCount: documents.length - uncovered.length,
+    uncovered,
+  };
+}
+
+function completeCorpusFromArtifact(
+  artifactDocs: readonly BenchDoc[],
+  documents: readonly CorpusDocument[],
+): CorpusCoverageResult {
+  const { coveredSourceCount, uncovered } = artifactCoverage(artifactDocs, documents);
   const supplementalDocs = chunkCanonicalDocuments(uncovered);
   const seenIds = new Set(artifactDocs.map((doc) => doc.id));
   for (const doc of supplementalDocs) {
@@ -2147,7 +2212,7 @@ function completeCorpusFromArtifact(
   return {
     docs: [...artifactDocs, ...supplementalDocs],
     originalSourceCount: documents.length,
-    artifactCoveredSourceCount: documents.length - uncovered.length,
+    artifactCoveredSourceCount: coveredSourceCount,
     supplementedSourceIds: uncovered.map((document) => document.sourceId || document.id),
     supplementedSourceDigest: documentDigest(uncovered),
   };

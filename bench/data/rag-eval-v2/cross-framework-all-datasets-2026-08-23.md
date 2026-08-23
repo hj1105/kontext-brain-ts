@@ -24,9 +24,10 @@ and citation F1. On Novel, it raises both recall and correctness substantially.
   supplied OpenAI API key.
 - Retrieval is scored on every query. Medical and Novel answer metrics use the
   same deterministic 200-query sample per dataset.
-- Dataset names, reference answers, gold evidence, categories, and judge
-  outputs are unavailable to retrieval, query expansion, graph traversal,
-  reranking, and answer-policy decisions.
+- The final adapter chooses an optional precomputed KG by Resource identity and
+  normalized source-text coverage. Dataset names, reference answers, gold
+  evidence, categories, and judge outputs are unavailable to query expansion,
+  graph traversal, reranking, and answer-policy decisions.
 - SciFact and NFCorpus are BEIR retrieval-only datasets; they have qrels but no
   generation reference answer compatible with the shared answer judge.
 
@@ -206,6 +207,11 @@ unchanged v13 retrieval policy runs.
 
 - The exact policies and trial limits were registered before execution in
   `bench/src/rag-eval-v2/TUNING_LOG.md`.
+- The scored Medical/Novel runs originally used the dataset ID only as a file
+  locator for their static KG artifact. A post-run architecture audit replaced
+  that locator with corpus-evidence selection. A read-only full-data replay
+  selected the same `gb-medical` and `gb-novel` chunk/graph pairs, so ranking
+  inputs and scores are unchanged; equal-coverage ambiguity now fails closed.
 - v15 paths are new and do not overwrite v3, v6, v7, v12, v13, or v14.
 - Medical v15 contains 2,062 unique successful retrievals, 200 unique successful
   answers, and 200 unique successful judgements. Its sample digest
