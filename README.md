@@ -1447,8 +1447,8 @@ top-of-funnel content asset; the free OSS core is the adoption engine; the
 governance cloud is the conversion target; ACL/audit needs in regulated
 industries (medical, finance, legal) are the enterprise expansion.
 
-> A visual one-pager of this roadmap is kept alongside the repo as an HTML
-> deck (see the maintainer's product notes).
+> See the [visual productization one-pager](./docs/kontext-plan.html) for the
+> open-core split, target architecture, packaging, and build sequence.
 
 ---
 
