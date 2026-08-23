@@ -361,6 +361,230 @@ describe("KontextBrainAdapter bidirectional KG mode", () => {
     });
   });
 
+  it("reuses unchanged v13 embeddings and embeds only v15 corpus additions", async () => {
+    const root = mkdtempSync(join(tmpdir(), "kontext-rag-eval-v15-embedding-reuse-"));
+    temporaryDirectories.push(root);
+    const dataDirectory = join(root, "data");
+    const seedWorkDirectory = join(root, "seed-run");
+    const workDirectory = join(root, "v15-run");
+    mkdirSync(dataDirectory, { recursive: true });
+    writeFileSync(
+      join(dataDirectory, "gb-novel-chunks.jsonl"),
+      `${JSON.stringify({ id: "Novel-first-0", body: "First source artifact text." })}\n`,
+    );
+    writeFileSync(
+      join(dataDirectory, "gb-novel-kg.json"),
+      `${JSON.stringify({
+        entities: [],
+        edges: [],
+        chunkToEntities: [["Novel-first-0", []]],
+      })}\n`,
+    );
+    const bundle = corpusCompletionBundle();
+    const seedRunner: CommandRunner = async (_command, args, stdin) => {
+      const outputPath = args[args.indexOf("--output-last-message") + 1];
+      if (!outputPath) throw new Error("Codex command omitted --output-last-message path");
+      const text = stdin.includes("Generate up to three complementary")
+        ? JSON.stringify({ queries: ["Which missing source states gamma?"] })
+        : JSON.stringify({ ranked_ids: ["Novel-first-0"] });
+      writeFileSync(outputPath, JSON.stringify({ text }));
+      return { exitCode: 0, stdout: "", stderr: "", durationMs: 1 };
+    };
+    const seedAdapter = new KontextBrainAdapter(DEFAULT_RAG_EVAL_MANIFEST, {
+      codexClient: new CodexJsonClient(seedRunner),
+      embeddingClient: new FakeEmbeddingClient(),
+      retrievalMode: "multi-query-anchored-evidence-answer-stack",
+      benchmarkDataDirectory: dataDirectory,
+    });
+    await seedAdapter.retrieve(bundle, {
+      workDirectory: seedWorkDirectory,
+      topK: 1,
+      candidateK: 50,
+    });
+    const precomputedIndexDirectory = join(
+      seedWorkDirectory,
+      bundle.id,
+      "kontext-brain",
+      "index",
+      "v13-anchored-evidence-answer-stack",
+    );
+    const sourceCacheDirectories = [
+      "document-embedding-batches",
+      "query-embedding-batches",
+      "multi-query-expansions",
+      "multi-query-embedding-batches",
+    ].map((name) => join(precomputedIndexDirectory, name));
+    const sourceMtimes = sourceCacheDirectories.map((directory) => statSync(directory).mtimeMs);
+    const embeddingClient = new RecordingEmbeddingClient();
+    let expansionCalls = 0;
+    const adapter = new KontextBrainAdapter(DEFAULT_RAG_EVAL_MANIFEST, {
+      codexClient: new CodexJsonClient(async (_command, args, stdin) => {
+        const outputPath = args[args.indexOf("--output-last-message") + 1];
+        if (!outputPath) throw new Error("Codex command omitted --output-last-message path");
+        if (stdin.includes("Generate up to three complementary")) expansionCalls += 1;
+        const text = stdin.includes("Generate up to three complementary")
+          ? JSON.stringify({ queries: ["Which missing source states gamma?"] })
+          : JSON.stringify({ ranked_ids: ["doc-missing-0", "Novel-first-0"] });
+        writeFileSync(outputPath, JSON.stringify({ text }));
+        return { exitCode: 0, stdout: "", stderr: "", durationMs: 1 };
+      }),
+      embeddingClient,
+      retrievalMode: "corpus-complete-anchored-evidence-answer-stack",
+      benchmarkDataDirectory: dataDirectory,
+      precomputedIndexDirectory,
+    });
+
+    await adapter.retrieve(bundle, { workDirectory, topK: 1, candidateK: 50 });
+
+    expect(embeddingClient.calls).toEqual([{ task: "RETRIEVAL_DOCUMENT", ids: ["doc-missing-0"] }]);
+    expect(expansionCalls).toBe(0);
+    expect(sourceCacheDirectories.map((directory) => statSync(directory).mtimeMs)).toEqual(
+      sourceMtimes,
+    );
+    const config = JSON.parse(
+      readFileSync(
+        join(
+          workDirectory,
+          bundle.id,
+          "kontext-brain",
+          "index",
+          "v15-corpus-complete-anchored-evidence-answer-stack",
+          "kontext-kg-config.json",
+        ),
+        "utf8",
+      ),
+    ) as { cacheReuse: Record<string, unknown> };
+    expect(config.cacheReuse).toMatchObject({
+      readOnlySource: true,
+      reusedDocumentVectors: 1,
+      newDocumentVectors: 1,
+      reusedQueryVectors: 1,
+      newQueryVectors: 0,
+      reusedExpandedQueryVectors: 1,
+      newExpandedQueryVectors: 0,
+      newInputTokens: 1,
+    });
+    const usage = JSON.parse(
+      readFileSync(
+        join(
+          workDirectory,
+          bundle.id,
+          "kontext-brain",
+          "index",
+          "v15-corpus-complete-anchored-evidence-answer-stack",
+          "embedding-usage.json",
+        ),
+        "utf8",
+      ),
+    ) as Record<string, unknown>;
+    expect(usage).toMatchObject({
+      totalInputTokens: 1,
+      newlyIncurredInputTokens: 1,
+      reusedVectors: 3,
+      newVectors: 1,
+      readOnlySourceCache: true,
+      estimatedCostUsd: 0.00000002,
+    });
+  });
+
+  it("invalidates only the embedding whose content changed", async () => {
+    const root = mkdtempSync(join(tmpdir(), "kontext-rag-eval-v15-content-cache-"));
+    temporaryDirectories.push(root);
+    const workDirectory = join(root, "run");
+    const baseBundle: DatasetBundle = {
+      id: "beir-scifact",
+      track: "static-kb",
+      documents: [
+        {
+          id: "doc-a",
+          sourceId: "doc-a",
+          title: "Document A",
+          text: "Unchanged alpha evidence.",
+          metadata: {},
+        },
+        {
+          id: "doc-b",
+          sourceId: "doc-b",
+          title: "Document B",
+          text: "Original beta evidence.",
+          metadata: {},
+        },
+      ],
+      queries: [
+        {
+          id: "query-1",
+          text: "Which evidence is relevant?",
+          referenceAnswer: null,
+          goldEvidenceIds: [],
+          goldEvidenceText: [],
+          answerable: true,
+          category: "retrieval",
+          metadata: {},
+        },
+      ],
+      provenance: { source: "test", version: "1", license: "test" },
+    };
+    const runner: CommandRunner = async (_command, args, stdin) => {
+      const outputPath = args[args.indexOf("--output-last-message") + 1];
+      if (!outputPath) throw new Error("Codex command omitted --output-last-message path");
+      const text = stdin.includes("Generate up to three complementary")
+        ? JSON.stringify({ queries: ["Which alpha or beta passage is relevant?"] })
+        : JSON.stringify({ ranked_ids: ["doc-a-0", "doc-b-0"] });
+      writeFileSync(outputPath, JSON.stringify({ text }));
+      return { exitCode: 0, stdout: "", stderr: "", durationMs: 1 };
+    };
+    const embeddingClient = new RecordingEmbeddingClient();
+    const adapter = new KontextBrainAdapter(DEFAULT_RAG_EVAL_MANIFEST, {
+      codexClient: new CodexJsonClient(runner),
+      embeddingClient,
+      retrievalMode: "corpus-complete-anchored-evidence-answer-stack",
+    });
+    await adapter.retrieve(baseBundle, { workDirectory, topK: 1, candidateK: 50 });
+    embeddingClient.calls.splice(0);
+    const changedBundle: DatasetBundle = {
+      ...baseBundle,
+      documents: baseBundle.documents.map((document) =>
+        document.id === "doc-b" ? { ...document, text: "Changed beta evidence." } : document,
+      ),
+    };
+
+    await adapter.retrieve(changedBundle, { workDirectory, topK: 1, candidateK: 50 });
+
+    expect(embeddingClient.calls).toEqual([{ task: "RETRIEVAL_DOCUMENT", ids: ["doc-b-0"] }]);
+  });
+
+  it("fails before external calls when an explicit v15 source cache is incomplete", async () => {
+    const root = mkdtempSync(join(tmpdir(), "kontext-rag-eval-v15-incomplete-source-cache-"));
+    temporaryDirectories.push(root);
+    const { dataDirectory, precomputedIndexDirectory } = await seedMedicalV13Cache(root);
+    rmSync(join(precomputedIndexDirectory, "document-embedding-batches"), {
+      recursive: true,
+      force: true,
+    });
+    const embeddingClient = new ThrowingEmbeddingClient();
+    let codexCalls = 0;
+    const adapter = new KontextBrainAdapter(DEFAULT_RAG_EVAL_MANIFEST, {
+      codexClient: new CodexJsonClient(async () => {
+        codexCalls += 1;
+        throw new Error("v15 must fail before calling Codex when the source cache is incomplete");
+      }),
+      embeddingClient,
+      retrievalMode: "corpus-complete-anchored-evidence-answer-stack",
+      benchmarkDataDirectory: dataDirectory,
+      precomputedIndexDirectory,
+    });
+
+    await expect(
+      adapter.retrieve(testBundle(), {
+        workDirectory: join(root, "v15-run"),
+        topK: 1,
+        candidateK: 50,
+      }),
+    ).rejects.toThrow(/Required read-through retrieval_document embedding missing or invalid/);
+    expect(embeddingClient.embedCalls).toBe(0);
+    expect(codexCalls).toBe(0);
+  });
+
   it("runs v14a from read-only v13 caches without Codex or embedding calls", async () => {
     const root = mkdtempSync(join(tmpdir(), "kontext-rag-eval-v14a-"));
     temporaryDirectories.push(root);
@@ -1002,6 +1226,15 @@ class FakeEmbeddingClient implements EmbeddingClient {
       inputTokens: this.inputTokens,
       totalTokens: this.inputTokens,
     };
+  }
+}
+
+class RecordingEmbeddingClient extends FakeEmbeddingClient {
+  readonly calls: Array<{ readonly task: EmbeddingTask; readonly ids: readonly string[] }> = [];
+
+  override async embed(inputs: readonly EmbeddingInput[], task: EmbeddingTask) {
+    this.calls.push({ task, ids: inputs.map((input) => input.id) });
+    return super.embed(inputs, task);
   }
 }
 

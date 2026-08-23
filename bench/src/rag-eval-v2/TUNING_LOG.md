@@ -594,5 +594,18 @@ Held-out / regression run directories:
   openai-small-kontext-v15-corpus-complete-scifact-2026-08-23
   openai-small-kontext-v15-corpus-complete-nfcorpus-2026-08-23
 These are new paths and cannot overwrite v3/v6/v7/v12/v13/v14 artifacts.
+Cost-control amendment (2026-08-23, after the first Novel retrieval and before
+  Medical/SciFact/NFCorpus): the initial v15 Novel run exposed a cache transport
+  defect. Embedding batches were keyed by the full corpus digest, so appending
+  nine missing Novel resources invalidated unchanged v13 document, query, and
+  expanded-query vectors and incurred 1,470,715 new embedding input tokens
+  ($0.0294143). This does not alter ranking, chunking, prompts, models, budgets,
+  or the registered v15 policy. Subsequent v15 cells use a read-only,
+  content-addressed read-through of matching v13 vectors and materialize a new
+  v15 cache; only new or content-changed inputs may call the embedding API.
+  Model, dimensions, task, ID, title, and text remain part of the validation
+  key. The completed Novel result and all v13 artifacts remain untouched and
+  are not rerun. Newly incurred versus reused vectors/tokens are recorded
+  separately in each v15 config and embedding-usage artifact.
 Outcome: pending.
 ```

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -986,23 +986,49 @@ export class KontextBrainAdapter implements FrameworkAdapter {
     const cacheIndexDirectory = cacheOnly
       ? requiredPrecomputedIndexDirectory(this.precomputedIndexDirectory)
       : indexDirectory;
+    const readThroughIndexDirectory =
+      completeCorpusCoverage && this.precomputedIndexDirectory
+        ? requiredPrecomputedIndexDirectory(this.precomputedIndexDirectory)
+        : null;
     const indexDigest = kgDocumentDigest(docs);
+    const sourceIndexDigest = readThroughIndexDirectory ? kgDocumentDigest(artifactDocs) : null;
+    const documentInputs = docs.map((doc) => ({ id: doc.id, title: doc.title, text: doc.body }));
+    const sourceDocumentInputs = artifactDocs.map((doc) => ({
+      id: doc.id,
+      title: doc.title,
+      text: doc.body,
+    }));
     const documentEmbeddings = await embedWithCheckpoints(
       embeddingClient,
-      docs.map((doc) => ({ id: doc.id, title: doc.title, text: doc.body })),
+      documentInputs,
       "RETRIEVAL_DOCUMENT",
       join(cacheIndexDirectory, "document-embedding-batches"),
       indexDigest,
       cacheOnly,
+      readThroughIndexDirectory && sourceIndexDigest
+        ? {
+            directory: join(readThroughIndexDirectory, "document-embedding-batches"),
+            digest: sourceIndexDigest,
+            inputs: sourceDocumentInputs,
+          }
+        : null,
     );
     const baseQueryDigest = kgQueryDigest(bundle, indexDigest);
+    const queryInputs = bundle.queries.map((query) => ({ id: query.id, text: query.text }));
     const queryEmbeddings = await embedWithCheckpoints(
       embeddingClient,
-      bundle.queries.map((query) => ({ id: query.id, text: query.text })),
+      queryInputs,
       "RETRIEVAL_QUERY",
       join(cacheIndexDirectory, "query-embedding-batches"),
       baseQueryDigest,
       cacheOnly,
+      readThroughIndexDirectory && sourceIndexDigest
+        ? {
+            directory: join(readThroughIndexDirectory, "query-embedding-batches"),
+            digest: kgQueryDigest(bundle, sourceIndexDigest),
+            inputs: queryInputs,
+          }
+        : null,
     );
     const queryVectors = splitVectors(
       queryEmbeddings.vectors,
@@ -1024,6 +1050,9 @@ export class KontextBrainAdapter implements FrameworkAdapter {
             query.text,
             join(cacheIndexDirectory, "multi-query-expansions"),
             cacheOnly,
+            readThroughIndexDirectory
+              ? join(readThroughIndexDirectory, "multi-query-expansions")
+              : null,
           ),
         )
       : bundle.queries.map((query) => emptyMultiQueryCheckpoint(query.id, query.text));
@@ -1044,6 +1073,13 @@ export class KontextBrainAdapter implements FrameworkAdapter {
       join(cacheIndexDirectory, "multi-query-embedding-batches"),
       expandedQueryDigest,
       cacheOnly,
+      readThroughIndexDirectory && sourceIndexDigest
+        ? {
+            directory: join(readThroughIndexDirectory, "multi-query-embedding-batches"),
+            digest: multiQueryQueryDigest(bundle, sourceIndexDigest, queryExpansions),
+            inputs: expandedQueryInputs,
+          }
+        : null,
     );
     const expandedQueryVectors = splitVectors(
       expandedQueryEmbeddings.vectors,
@@ -1255,7 +1291,21 @@ export class KontextBrainAdapter implements FrameworkAdapter {
             newEmbeddingCalls: 0,
             newInputTokens: 0,
           }
-        : null,
+        : readThroughIndexDirectory
+          ? {
+              readOnlySource: true,
+              reusedDocumentVectors: documentEmbeddings.reusedVectors,
+              newDocumentVectors: documentEmbeddings.newVectors,
+              reusedQueryVectors: queryEmbeddings.reusedVectors,
+              newQueryVectors: queryEmbeddings.newVectors,
+              reusedExpandedQueryVectors: expandedQueryEmbeddings.reusedVectors,
+              newExpandedQueryVectors: expandedQueryEmbeddings.newVectors,
+              newInputTokens:
+                documentEmbeddings.inputTokens +
+                queryEmbeddings.inputTokens +
+                expandedQueryEmbeddings.inputTokens,
+            }
+          : null,
       sourceHydration: hydrateSourceContext
         ? recallSafeLlmRerank
           ? RECALL_SAFE_SOURCE_CONTEXT_POLICY
@@ -1291,6 +1341,16 @@ export class KontextBrainAdapter implements FrameworkAdapter {
         queryInputTokens: queryEmbeddings.inputTokens,
         expandedQueryInputTokens: expandedQueryEmbeddings.inputTokens,
         totalInputTokens: totalEmbeddingInputTokens,
+        newlyIncurredInputTokens: totalEmbeddingInputTokens,
+        reusedVectors:
+          documentEmbeddings.reusedVectors +
+          queryEmbeddings.reusedVectors +
+          expandedQueryEmbeddings.reusedVectors,
+        newVectors:
+          documentEmbeddings.newVectors +
+          queryEmbeddings.newVectors +
+          expandedQueryEmbeddings.newVectors,
+        readOnlySourceCache: readThroughIndexDirectory !== null,
         inputPriceUsdPerMillionTokens: 0.02,
         estimatedCostUsd: (totalEmbeddingInputTokens * 0.02) / 1_000_000,
       });
@@ -1538,6 +1598,14 @@ export class KontextBrainAdapter implements FrameworkAdapter {
 interface EmbeddingCheckpointResult {
   readonly vectors: Float32Array;
   readonly inputTokens: number;
+  readonly reusedVectors: number;
+  readonly newVectors: number;
+}
+
+interface EmbeddingReadThroughSource {
+  readonly directory: string;
+  readonly digest: string;
+  readonly inputs: readonly EmbeddingInput[];
 }
 
 interface MultiQueryExpansionCheckpoint extends MultiQueryExpansion {
@@ -1553,43 +1621,38 @@ async function expandWithCheckpoint(
   question: string,
   directory: string,
   cacheOnly = false,
+  readThroughDirectory: string | null = null,
 ): Promise<MultiQueryExpansionCheckpoint> {
   const questionDigest = createHash("sha256").update(question).digest("hex");
-  const checkpointPath = join(
-    directory,
-    `${createHash("sha256").update(queryId).update("\0").update(question).digest("hex")}.json`,
+  const checkpointName = `${createHash("sha256")
+    .update(queryId)
+    .update("\0")
+    .update(question)
+    .digest("hex")}.json`;
+  const checkpointPath = join(directory, checkpointName);
+  const cached = loadMultiQueryExpansionCheckpoint(
+    checkpointPath,
+    queryId,
+    question,
+    questionDigest,
+    cacheOnly,
   );
-  if (existsSync(checkpointPath)) {
-    try {
-      const cached = JSON.parse(
-        readFileSync(checkpointPath, "utf8"),
-      ) as MultiQueryExpansionCheckpoint;
-      const structurallyValid =
-        cached.schemaVersion === 1 &&
-        cached.policyVersion === MULTI_QUERY_POLICY_VERSION &&
-        cached.queryId === queryId &&
-        cached.questionDigest === questionDigest &&
-        Array.isArray(cached.queries) &&
-        cached.queries.length <= 3 &&
-        cached.queries.every((query) => typeof query === "string") &&
-        (cached.error === null || typeof cached.error === "string");
-      const cacheOnlySuccessfulExpansion =
-        structurallyValid &&
-        cached.error === null &&
-        cached.queries.length > 0 &&
-        validCachedExpandedQueries(cached.queries, question);
-      const cacheOnlyOriginalQueryFallback =
-        structurallyValid &&
-        cached.queries.length === 0 &&
-        typeof cached.error === "string" &&
-        cached.error.trim().length > 0;
-      const cacheOnlyValid = cacheOnlySuccessfulExpansion || cacheOnlyOriginalQueryFallback;
-      if (structurallyValid && (!cacheOnly || cacheOnlyValid)) {
-        return cached;
-      }
-    } catch {
-      // Invalid or interrupted expansion checkpoints are regenerated below.
+  if (cached) return cached;
+  if (readThroughDirectory && readThroughDirectory !== directory) {
+    const source = loadMultiQueryExpansionCheckpoint(
+      join(readThroughDirectory, checkpointName),
+      queryId,
+      question,
+      questionDigest,
+      cacheOnly,
+    );
+    if (source) {
+      writeJsonAtomic(checkpointPath, source);
+      return source;
     }
+    throw new Error(
+      `Required read-through multi-query expansion missing or invalid for ${queryId}`,
+    );
   }
   if (cacheOnly) {
     throw new Error(`Required cached multi-query expansion missing or invalid for ${queryId}`);
@@ -1605,6 +1668,42 @@ async function expandWithCheckpoint(
   };
   writeJsonAtomic(checkpointPath, checkpoint);
   return checkpoint;
+}
+
+function loadMultiQueryExpansionCheckpoint(
+  path: string,
+  queryId: string,
+  question: string,
+  questionDigest: string,
+  cacheOnly: boolean,
+): MultiQueryExpansionCheckpoint | null {
+  if (!existsSync(path)) return null;
+  try {
+    const cached = JSON.parse(readFileSync(path, "utf8")) as MultiQueryExpansionCheckpoint;
+    const structurallyValid =
+      cached.schemaVersion === 1 &&
+      cached.policyVersion === MULTI_QUERY_POLICY_VERSION &&
+      cached.queryId === queryId &&
+      cached.questionDigest === questionDigest &&
+      Array.isArray(cached.queries) &&
+      cached.queries.length <= 3 &&
+      cached.queries.every((query) => typeof query === "string") &&
+      (cached.error === null || typeof cached.error === "string");
+    const cacheOnlySuccessfulExpansion =
+      structurallyValid &&
+      cached.error === null &&
+      cached.queries.length > 0 &&
+      validCachedExpandedQueries(cached.queries, question);
+    const cacheOnlyOriginalQueryFallback =
+      structurallyValid &&
+      cached.queries.length === 0 &&
+      typeof cached.error === "string" &&
+      cached.error.trim().length > 0;
+    const cacheOnlyValid = cacheOnlySuccessfulExpansion || cacheOnlyOriginalQueryFallback;
+    return structurallyValid && (!cacheOnly || cacheOnlyValid) ? cached : null;
+  } catch {
+    return null;
+  }
 }
 
 function validCachedExpandedQueries(queries: readonly string[], question: string): boolean {
@@ -1676,7 +1775,7 @@ class BudgetedBidirectionalRetriever extends BidirectionalNLayerRetriever {
   }
 }
 
-interface EmbeddingBatchMetadata {
+interface EmbeddingBatchMetadataV1 {
   readonly schemaVersion: 1;
   readonly model: string;
   readonly dimensions: number;
@@ -1687,6 +1786,22 @@ interface EmbeddingBatchMetadata {
   readonly inputTokens: number;
 }
 
+interface EmbeddingBatchMetadataV2 {
+  readonly schemaVersion: 2;
+  readonly model: string;
+  readonly dimensions: number;
+  readonly digest: string;
+  readonly task: "RETRIEVAL_DOCUMENT" | "RETRIEVAL_QUERY";
+  readonly offset: number;
+  readonly ids: readonly string[];
+  readonly inputDigests: readonly string[];
+  readonly inputTokens: number;
+  readonly reusedVectors: number;
+  readonly newVectors: number;
+}
+
+type EmbeddingBatchMetadata = EmbeddingBatchMetadataV1 | EmbeddingBatchMetadataV2;
+
 async function embedWithCheckpoints(
   client: EmbeddingClient,
   inputs: readonly EmbeddingInput[],
@@ -1694,55 +1809,116 @@ async function embedWithCheckpoints(
   directory: string,
   digest: string,
   cacheOnly = false,
+  readThroughSource: EmbeddingReadThroughSource | null = null,
 ): Promise<EmbeddingCheckpointResult> {
   const batchSize = 100;
   const vectors = new Float32Array(inputs.length * client.dimensions);
   let inputTokens = 0;
+  let reusedVectors = 0;
+  let newVectors = 0;
   if (!cacheOnly) mkdirSync(directory, { recursive: true });
+  const reusableVectors = loadContentAddressedEmbeddingVectors(directory, client, task);
+  if (readThroughSource) {
+    for (const [key, value] of loadContentAddressedEmbeddingVectors(
+      readThroughSource.directory,
+      client,
+      task,
+    )) {
+      if (!reusableVectors.has(key)) reusableVectors.set(key, value);
+    }
+    for (const [key, value] of loadLegacyEmbeddingVectors(
+      readThroughSource,
+      client,
+      task,
+      batchSize,
+    )) {
+      if (!reusableVectors.has(key)) reusableVectors.set(key, value);
+    }
+    const missingRequiredInput = readThroughSource.inputs.find(
+      (input) => !reusableVectors.has(embeddingInputDigest(input, task, client)),
+    );
+    if (missingRequiredInput)
+      throw new Error(
+        `Required read-through ${task.toLowerCase()} embedding missing or invalid for ${missingRequiredInput.id}`,
+      );
+  }
   for (let offset = 0; offset < inputs.length; offset += batchSize) {
     const batch = inputs.slice(offset, offset + batchSize);
     const stem = `batch-${String(offset).padStart(8, "0")}`;
     const metadataPath = join(directory, `${stem}.json`);
     const vectorsPath = join(directory, `${stem}.f32`);
-    const ids = batch.map((input) => input.id);
-    const cached = loadEmbeddingBatch(metadataPath, vectorsPath, client, digest, task, offset, ids);
-    if (cached) {
-      vectors.set(cached.vectors, offset * client.dimensions);
-      inputTokens += cached.inputTokens;
-      continue;
-    }
-    if (cacheOnly) {
-      throw new Error(
-        `Required cached ${task.toLowerCase()} embedding batch missing or invalid at ${stem}`,
-      );
-    }
-    const usageBefore = client.getUsage();
-    const embeddings = await client.embed(batch, task);
-    const usageAfter = client.getUsage();
-    const batchInputTokens = usageAfter.inputTokens - usageBefore.inputTokens;
-    const batchVectors = new Float32Array(batch.length * client.dimensions);
-    embeddings.forEach((embedding, index) =>
-      batchVectors.set(embedding.values, index * client.dimensions),
-    );
-    writeFileSync(
+    const cached = loadEmbeddingBatch(
+      metadataPath,
       vectorsPath,
-      Buffer.from(batchVectors.buffer, batchVectors.byteOffset, batchVectors.byteLength),
-    );
-    const metadata: EmbeddingBatchMetadata = {
-      schemaVersion: 1,
-      model: client.model,
-      dimensions: client.dimensions,
+      client,
       digest,
       task,
       offset,
-      ids,
-      inputTokens: batchInputTokens,
-    };
-    writeFileSync(metadataPath, `${JSON.stringify(metadata)}\n`, "utf8");
+      batch,
+    );
+    if (cached) {
+      vectors.set(cached.vectors, offset * client.dimensions);
+      inputTokens += cached.inputTokens;
+      reusedVectors += cached.reusedVectors;
+      newVectors += cached.newVectors;
+      continue;
+    }
+    const batchVectors = new Float32Array(batch.length * client.dimensions);
+    const missingInputs: EmbeddingInput[] = [];
+    const missingIndexes: number[] = [];
+    let batchReusedVectors = 0;
+    for (const [index, input] of batch.entries()) {
+      const reusable = reusableVectors.get(embeddingInputDigest(input, task, client));
+      if (reusable) {
+        batchVectors.set(reusable, index * client.dimensions);
+        batchReusedVectors += 1;
+      } else {
+        missingInputs.push(input);
+        missingIndexes.push(index);
+      }
+    }
+    if (cacheOnly && missingInputs.length > 0)
+      throw new Error(
+        `Required cached ${task.toLowerCase()} embedding batch missing or invalid at ${stem}`,
+      );
+    const usageBefore = client.getUsage();
+    if (missingInputs.length > 0) {
+      const embeddings = await client.embed(missingInputs, task);
+      embeddings.forEach((embedding, index) => {
+        const targetIndex = missingIndexes[index];
+        if (targetIndex === undefined)
+          throw new Error(`Missing embedding index for ${embedding.id}`);
+        batchVectors.set(embedding.values, targetIndex * client.dimensions);
+      });
+    }
+    const usageAfter = client.getUsage();
+    const batchInputTokens = usageAfter.inputTokens - usageBefore.inputTokens;
+    if (!cacheOnly) {
+      writeFileSync(
+        vectorsPath,
+        Buffer.from(batchVectors.buffer, batchVectors.byteOffset, batchVectors.byteLength),
+      );
+      const metadata: EmbeddingBatchMetadataV2 = {
+        schemaVersion: 2,
+        model: client.model,
+        dimensions: client.dimensions,
+        digest,
+        task,
+        offset,
+        ids: batch.map((input) => input.id),
+        inputDigests: batch.map((input) => embeddingInputDigest(input, task, client)),
+        inputTokens: batchInputTokens,
+        reusedVectors: batchReusedVectors,
+        newVectors: missingInputs.length,
+      };
+      writeFileSync(metadataPath, `${JSON.stringify(metadata)}\n`, "utf8");
+    }
     vectors.set(batchVectors, offset * client.dimensions);
     inputTokens += batchInputTokens;
+    reusedVectors += batchReusedVectors;
+    newVectors += missingInputs.length;
   }
-  return { vectors, inputTokens };
+  return { vectors, inputTokens, reusedVectors, newVectors };
 }
 
 function loadEmbeddingBatch(
@@ -1752,13 +1928,14 @@ function loadEmbeddingBatch(
   digest: string,
   task: "RETRIEVAL_DOCUMENT" | "RETRIEVAL_QUERY",
   offset: number,
-  ids: readonly string[],
+  inputs: readonly EmbeddingInput[],
 ): EmbeddingCheckpointResult | null {
   if (!existsSync(metadataPath) || !existsSync(vectorsPath)) return null;
   try {
     const metadata = JSON.parse(readFileSync(metadataPath, "utf8")) as EmbeddingBatchMetadata;
+    const ids = inputs.map((input) => input.id);
     if (
-      metadata.schemaVersion !== 1 ||
+      (metadata.schemaVersion !== 1 && metadata.schemaVersion !== 2) ||
       metadata.model !== client.model ||
       metadata.dimensions !== client.dimensions ||
       metadata.digest !== digest ||
@@ -1768,14 +1945,124 @@ function loadEmbeddingBatch(
       metadata.ids.some((id, index) => id !== ids[index])
     )
       return null;
+    if (
+      metadata.schemaVersion === 2 &&
+      (metadata.inputDigests.length !== inputs.length ||
+        metadata.inputDigests.some((inputDigest, index) => {
+          const input = inputs[index];
+          return !input || inputDigest !== embeddingInputDigest(input, task, client);
+        }) ||
+        metadata.reusedVectors < 0 ||
+        metadata.newVectors < 0 ||
+        metadata.reusedVectors + metadata.newVectors !== inputs.length)
+    )
+      return null;
     const buffer = readFileSync(vectorsPath);
     if (buffer.byteLength !== ids.length * client.dimensions * Float32Array.BYTES_PER_ELEMENT)
       return null;
     const view = new Float32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 4);
-    return { vectors: new Float32Array(view), inputTokens: metadata.inputTokens };
+    return {
+      vectors: new Float32Array(view),
+      inputTokens: metadata.inputTokens,
+      reusedVectors: metadata.schemaVersion === 2 ? metadata.reusedVectors : 0,
+      newVectors: metadata.schemaVersion === 2 ? metadata.newVectors : inputs.length,
+    };
   } catch {
     return null;
   }
+}
+
+function loadContentAddressedEmbeddingVectors(
+  directory: string,
+  client: EmbeddingClient,
+  task: "RETRIEVAL_DOCUMENT" | "RETRIEVAL_QUERY",
+): Map<string, Float32Array> {
+  const vectorsByDigest = new Map<string, Float32Array>();
+  if (!existsSync(directory)) return vectorsByDigest;
+  for (const name of readdirSync(directory)
+    .filter((entry) => entry.endsWith(".json"))
+    .sort()) {
+    try {
+      const metadataPath = join(directory, name);
+      const metadata = JSON.parse(readFileSync(metadataPath, "utf8")) as EmbeddingBatchMetadata;
+      if (
+        metadata.schemaVersion !== 2 ||
+        metadata.model !== client.model ||
+        metadata.dimensions !== client.dimensions ||
+        metadata.task !== task ||
+        metadata.ids.length !== metadata.inputDigests.length
+      )
+        continue;
+      const vectorsPath = join(directory, name.replace(/\.json$/, ".f32"));
+      if (!existsSync(vectorsPath)) continue;
+      const buffer = readFileSync(vectorsPath);
+      if (
+        buffer.byteLength !==
+        metadata.ids.length * client.dimensions * Float32Array.BYTES_PER_ELEMENT
+      )
+        continue;
+      const view = new Float32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 4);
+      metadata.inputDigests.forEach((inputDigest, index) => {
+        vectorsByDigest.set(
+          inputDigest,
+          new Float32Array(view.slice(index * client.dimensions, (index + 1) * client.dimensions)),
+        );
+      });
+    } catch {
+      // Invalid or interrupted cache entries are ignored and regenerated if allowed.
+    }
+  }
+  return vectorsByDigest;
+}
+
+function loadLegacyEmbeddingVectors(
+  source: EmbeddingReadThroughSource,
+  client: EmbeddingClient,
+  task: "RETRIEVAL_DOCUMENT" | "RETRIEVAL_QUERY",
+  batchSize: number,
+): Map<string, Float32Array> {
+  const vectorsByDigest = new Map<string, Float32Array>();
+  for (let offset = 0; offset < source.inputs.length; offset += batchSize) {
+    const batch = source.inputs.slice(offset, offset + batchSize);
+    const stem = `batch-${String(offset).padStart(8, "0")}`;
+    const cached = loadEmbeddingBatch(
+      join(source.directory, `${stem}.json`),
+      join(source.directory, `${stem}.f32`),
+      client,
+      source.digest,
+      task,
+      offset,
+      batch,
+    );
+    if (!cached) continue;
+    batch.forEach((input, index) => {
+      vectorsByDigest.set(
+        embeddingInputDigest(input, task, client),
+        cached.vectors.slice(index * client.dimensions, (index + 1) * client.dimensions),
+      );
+    });
+  }
+  return vectorsByDigest;
+}
+
+function embeddingInputDigest(
+  input: EmbeddingInput,
+  task: "RETRIEVAL_DOCUMENT" | "RETRIEVAL_QUERY",
+  client: Pick<EmbeddingClient, "model" | "dimensions">,
+): string {
+  return createHash("sha256")
+    .update(task)
+    .update("\0")
+    .update(client.model)
+    .update("\0")
+    .update(String(client.dimensions))
+    .update("\0")
+    .update(input.id)
+    .update("\0")
+    .update(input.title ?? "")
+    .update("\0")
+    .update(input.text)
+    .digest("hex");
 }
 
 function graphRagDomain(datasetId: DatasetBundle["id"]): "medical" | "novel" | null {
