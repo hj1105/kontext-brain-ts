@@ -79,7 +79,8 @@ const EMPTY_ANSWER: AnswerContract = {
   abstentionReason: "benchmark stage unavailable",
 };
 const ANSWER_INPUT_DIGEST_VERSION = "answer-input-v2";
-const JUDGE_INPUT_DIGEST_VERSION = "judge-input-v2";
+// v3 adds clarity, conciseness, and fluency to the frozen judge contract.
+const JUDGE_INPUT_DIGEST_VERSION = "judge-input-v3";
 
 export async function doctorBenchmark(
   manifest: RagEvalManifest,

@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { DatasetId, FrameworkId } from "./contracts.js";
 import { defaultDatasetPaths } from "./datasets.js";
-import { DEFAULT_RAG_EVAL_MANIFEST } from "./manifest.js";
+import { DEFAULT_RAG_EVAL_MANIFEST, manifestForRunDirectory } from "./manifest.js";
 import { doctorBenchmark, runBenchmark } from "./pipeline.js";
 import { prepareFramesDataset } from "./prepare-frames.js";
 
@@ -26,7 +26,9 @@ async function main(): Promise<void> {
   const datasetPaths = defaultDatasetPaths(repositoryRoot);
   if (options.command === "prepare-frames") {
     const bundle = await prepareFramesDataset(resolve(datasetPaths.externalDataRoot, "frames"));
-    process.stdout.write(`${JSON.stringify({ datasetId: bundle.id, documents: bundle.documents.length, queries: bundle.queries.length }, null, 2)}\n`);
+    process.stdout.write(
+      `${JSON.stringify({ datasetId: bundle.id, documents: bundle.documents.length, queries: bundle.queries.length }, null, 2)}\n`,
+    );
     return;
   }
   if (options.command === "doctor") {
@@ -34,15 +36,17 @@ async function main(): Promise<void> {
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
     return;
   }
-  const report = await runBenchmark(DEFAULT_RAG_EVAL_MANIFEST, {
+  const runManifest = manifestForRunDirectory(DEFAULT_RAG_EVAL_MANIFEST, options.workDirectory);
+  const report = await runBenchmark(runManifest, {
     workDirectory: options.workDirectory,
     stage: options.stage,
     datasetPaths,
-    datasetIds: options.command === "smoke"
-      ? options.datasetIds ?? ["graphrag-bench-medical"]
-      : options.datasetIds,
+    datasetIds:
+      options.command === "smoke"
+        ? (options.datasetIds ?? ["graphrag-bench-medical"])
+        : options.datasetIds,
     frameworkIds: options.frameworkIds,
-    datasetLoad: { limit: options.command === "smoke" ? options.limit ?? 2 : options.limit },
+    datasetLoad: { limit: options.command === "smoke" ? (options.limit ?? 2) : options.limit },
     topK: options.topK,
     candidateK: options.candidateK,
   });
@@ -51,7 +55,12 @@ async function main(): Promise<void> {
 
 function parseCli(args: readonly string[]): CliOptions {
   const command = args[0] ?? "doctor";
-  if (command !== "doctor" && command !== "prepare-frames" && command !== "smoke" && command !== "run") {
+  if (
+    command !== "doctor" &&
+    command !== "prepare-frames" &&
+    command !== "smoke" &&
+    command !== "run"
+  ) {
     throw new Error(`Unknown command ${command}. Expected doctor, prepare-frames, smoke, or run.`);
   }
   const values = new Map<string, string>();
@@ -82,7 +91,10 @@ function benchmarkStage(value: string | undefined): "retrieval" | "full" {
 }
 
 function csv(value: string | undefined): string[] | undefined {
-  return value?.split(",").map((item) => item.trim()).filter(Boolean);
+  return value
+    ?.split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 function optionalPositiveInteger(value: string | undefined, name: string): number | undefined {
@@ -91,7 +103,8 @@ function optionalPositiveInteger(value: string | undefined, name: string): numbe
 
 function positiveInteger(value: string, name: string): number {
   const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed <= 0) throw new Error(`${name} must be a positive integer`);
+  if (!Number.isInteger(parsed) || parsed <= 0)
+    throw new Error(`${name} must be a positive integer`);
   return parsed;
 }
 

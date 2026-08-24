@@ -93,6 +93,9 @@ const JUDGE_SCHEMA = {
     "citation_precision",
     "citation_recall",
     "acceptable_abstention",
+    "clarity",
+    "conciseness",
+    "fluency",
     "claims",
   ],
   properties: {
@@ -102,6 +105,9 @@ const JUDGE_SCHEMA = {
     citation_precision: { type: "number", minimum: 0, maximum: 1 },
     citation_recall: { type: "number", minimum: 0, maximum: 1 },
     acceptable_abstention: { type: "boolean" },
+    clarity: { type: "number", minimum: 0, maximum: 1 },
+    conciseness: { type: "number", minimum: 0, maximum: 1 },
+    fluency: { type: "number", minimum: 0, maximum: 1 },
     claims: {
       type: "array",
       items: {
@@ -516,7 +522,11 @@ function judgePrompt(
     "Split only the literal semantic content of the candidate answer into atomic claims; never add detail from the reference answer.",
     "A claim is supported only when the cited evidence entails the complete claim",
     "including names, dates, quantities, and negation. Do not use tools, files, web search, or prior knowledge.",
+    "Set completeness to the fraction of necessary reference-answer claims covered by the candidate; this is Claim Recall.",
+    "Set strict_faithfulness from complete evidence entailment of every candidate claim, and mark each claim.supported independently for Claim Support Precision.",
+    "Citation precision measures whether cited evidence supports its attached claim; citation recall measures whether every claim needing support has a valid citation.",
     "For unanswerable questions, acceptable_abstention is true only when the candidate appropriately abstains.",
+    "Score clarity for understandable organization, conciseness for avoiding unnecessary or redundant wording without penalizing required coverage, and fluency for grammatical naturalness.",
     "Return only the JSON object required by the output schema.",
     "",
     `Question: ${query.text}`,
@@ -536,7 +546,11 @@ function judgeBatchPrompt(inputs: readonly JudgeBatchInput[]): string {
     "Never transfer facts, evidence, or judgements between cases.",
     "Split only the literal semantic content of each candidate answer into atomic claims.",
     "A claim is supported only when that case's cited evidence entails the complete claim, including names, dates, quantities, and negation.",
+    "Set completeness to the fraction of necessary reference-answer claims covered by the candidate; this is Claim Recall.",
+    "Set strict_faithfulness from complete evidence entailment of every candidate claim, and mark each claim.supported independently for Claim Support Precision.",
+    "Citation precision measures whether cited evidence supports its attached claim; citation recall measures whether every claim needing support has a valid citation.",
     "For unanswerable questions, acceptable_abstention is true only when the candidate appropriately abstains.",
+    "Score clarity for understandable organization, conciseness for avoiding unnecessary or redundant wording without penalizing required coverage, and fluency for grammatical naturalness.",
     "Do not use tools, files, web search, or prior knowledge.",
     "Return one result for every query_id and only the JSON object required by the output schema.",
     "",
@@ -639,6 +653,9 @@ function parseJudgeContract(value: unknown): JudgeContract {
     citationPrecision: scoreValue(object.citation_precision, "citation_precision"),
     citationRecall: scoreValue(object.citation_recall, "citation_recall"),
     acceptableAbstention: booleanValue(object.acceptable_abstention, "acceptable_abstention"),
+    clarity: scoreValue(object.clarity, "clarity"),
+    conciseness: scoreValue(object.conciseness, "conciseness"),
+    fluency: scoreValue(object.fluency, "fluency"),
     claims: claimsValue.map((claim, index) => {
       const item = asObject(claim, `claims[${index}]`);
       return {

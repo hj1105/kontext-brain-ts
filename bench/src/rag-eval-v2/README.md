@@ -189,12 +189,32 @@ these calls because the evaluator forbids tools and external knowledge.
 
 ## Metrics and artifacts
 
-Retrieval metrics include evidence recall@k and context precision. Answer metrics
-include answer correctness, claim precision/recall/F1, strict faithfulness,
-citation precision/recall/F1, and acceptable abstention where a dataset supplies
-the required labels. Robustness tracks report permutation sensitivity. Resource
-metrics report p95 retrieval/end-to-end latency, tokens, and cost when the
-provider exposes it.
+The benchmark reports layers separately and never produces a combined overall
+score:
+
+| Layer | Metric | Availability rule |
+|---|---|---|
+| Retrieval coverage | Evidence Recall@K | Gold evidence text or IDs required |
+| Retrieval ordering | nDCG@K | Binary gold relevance; rank-discounted |
+| Retrieval noise | Context Precision | Gold evidence text or IDs required; raw value is package-sensitive |
+| Answer coverage | Claim Recall | Judge reference answer required |
+| Grounding | Strict Faithfulness and Claim Support Precision | Judge plus retrieved evidence required |
+| Citations | Citation Precision, Recall, and F1 | Cited answer and retrieved evidence required |
+| KB boundary | Answerable/Unanswerable Joint Accuracy | Both answerable and unanswerable labels must be present; class-balanced |
+| Robustness | Robustness Drop | One baseline and at least one paired perturbation per group required |
+| Writing quality | Clarity, Conciseness, and Fluency | Judge-policy-v3 or later required |
+
+Joint accuracy counts an answerable case as handled only when it does not
+abstain and reaches at least 0.5 correctness. An unanswerable case is handled
+only by an acceptable abstention. Robustness Drop is the mean non-negative
+answer-correctness loss from each tagged baseline to its document-order,
+paraphrase, or distractor perturbations; lower is better. Unsupported metrics
+are serialized as `null`, never imputed from another dataset or an older judge.
+Historical score files remain valid and simply lack judge-policy-v3 writing
+quality values.
+
+Resource metrics report p95 retrieval/end-to-end latency, tokens, and cost when
+the provider exposes them.
 
 Each dataset/framework directory contains `retrieval.jsonl`, `answers.jsonl`,
 `judgements.jsonl`, and `score.json`. Retrieval files cover the complete query
