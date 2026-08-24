@@ -45,23 +45,31 @@ All rows below use the frozen shared answer/judge contract. Retrieval is scored
 over the full dataset; answer quality uses the same deterministic 200-query
 sample. Higher is better.
 
-| Dataset | System | Recall@10 | nDCG@10 | Correctness | Strict faithfulness | Claim F1 | Citation F1 |
-|---|---|---:|---:|---:|---:|---:|---:|
-| Medical | **Kontext v15** | 0.8914 | 0.9689 | **0.9499** | **0.9614** | **0.8612** | **0.9583** |
-| Medical | Kontext v13 default | 0.8923 | 0.9704 | 0.9461 | 0.9534 | 0.8550 | 0.9541 |
-| Medical | LightRAG 1.5.6 | **0.9326** | 0.9990* | 0.8939 | 0.9417 | 0.8575 | 0.9477 |
-| Medical | Microsoft GraphRAG 3.1.1 | 0.8303 | 0.9971* | 0.7817 | 0.8740 | 0.7336 | 0.8518 |
-| Novel | **Kontext v15** | 0.8209 | 0.9349 | **0.8566** | **0.9290** | **0.8234** | 0.9369 |
-| Novel | Kontext v13 default | 0.5259 | 0.6662 | 0.4654 | 0.7922 | 0.5181 | 0.5521 |
-| Novel | LightRAG 1.5.6 | **0.8567** | 0.9945* | 0.8498 | 0.9272 | 0.8201 | **0.9407** |
-| Novel | Microsoft GraphRAG 3.1.1 | 0.7716 | 0.9816* | 0.7668 | 0.8651 | 0.7434 | 0.8763 |
+| Dataset | System | Recall@10 | nDCG@10 | Correctness | Strict faithfulness | Claim F1 | Citation F1 | Retrieval p95 | E2E p95 | Embedding API cost | Answer+judge LLM tokens/query (in/out) | LLM API $/query |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Medical | **Kontext v15** | 0.8914 | 0.9689 | **0.9499** | **0.9614** | **0.8612** | **0.9583** | 34.05 s | 94.29 s | **$0 incremental**‡ | 45,150 / 1,277 | N/A§ |
+| Medical | Kontext v13 default | 0.8923 | 0.9704 | 0.9461 | 0.9534 | 0.8550 | 0.9541 | 34.94 s | 104.24 s | $0.008150 | 45,148 / 1,344 | N/A§ |
+| Medical | LightRAG 1.5.6 | **0.9326** | 0.9990* | 0.8939 | 0.9417 | 0.8575 | 0.9477 | 377.92 s | 445.01 s | $0.015409 | 57,911 / 1,651 | N/A§ |
+| Medical | Microsoft GraphRAG 3.1.1 | 0.8303 | 0.9971* | 0.7817 | 0.8740 | 0.7336 | 0.8518 | **0.52 s** | 107.26 s | $0.013623 | 43,402 / 1,942 | N/A§ |
+| Novel | **Kontext v15** | 0.8209 | 0.9349 | **0.8566** | **0.9290** | **0.8234** | 0.9369 | 972.11 s† | 1,009.84 s† | $0.029414¶ | 47,690 / 1,374 | N/A§ |
+| Novel | Kontext v13 default | 0.5259 | 0.6662 | 0.4654 | 0.7922 | 0.5181 | 0.5521 | 37.29 s | 92.42 s | $0.017840 | 47,508 / 1,088 | N/A§ |
+| Novel | LightRAG 1.5.6 | **0.8567** | 0.9945* | 0.8498 | 0.9272 | 0.8201 | **0.9407** | 3,386.57 s† | 3,406.37 s† | $0.049371 | 58,705 / 1,351 | N/A§ |
+| Novel | Microsoft GraphRAG 3.1.1 | 0.7716 | 0.9816* | 0.7668 | 0.8651 | 0.7434 | 0.8763 | **0.47 s** | **90.61 s** | $0.088326 | 43,492 / 1,653 | N/A§ |
 
 Context precision is deliberately omitted from this compact table. `*` marks
 package-sensitive nDCG: LightRAG and Microsoft GraphRAG package a large native
 context as one evidence record, while Kontext exposes separately scored evidence
-windows, so their raw ranking/noise values are not directly comparable. The
-detailed report includes that caveat, latency, confidence intervals, token use,
-embedding cost, and the public BEIR
+windows, so their raw ranking/noise values are not directly comparable. `†`
+marks queue-contended Novel timings, which are valid observations but not clean
+isolated-throughput measurements. `‡` is the v15 marginal run cost after reusing
+the $0.008150 v13 Medical embedding index. `¶` is the preserved pre-fix v15
+Novel run cost; its whole-batch cache invalidation was fixed but the benchmark
+was not rerun to manufacture a cheaper number. `§` means no dollar-per-call
+record exists: answer and judge stages used the local Codex CLI, not the supplied
+OpenAI API key. The token column covers answer+judge only; Kontext query expansion
+and reranking CLI tokens were not metered, so it must not be presented as total
+LLM compute cost. The detailed report includes confidence intervals and the
+public BEIR
 SciFact/NFCorpus retrieval guardrails:
 [cross-framework evaluation](./bench/data/rag-eval-v2/cross-framework-all-datasets-2026-08-23.md).
 

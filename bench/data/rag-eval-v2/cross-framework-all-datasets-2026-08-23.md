@@ -169,6 +169,8 @@ without its validated v13 source cache.
 |---|---:|---:|---|
 | Medical / Kontext v13 base | 407,518 | $0.008150 | Original reusable index |
 | Medical / v15 newly incurred | **0** | **$0** | 9,340 vectors reused; 0 new |
+| Medical / LightRAG | 770,450 | $0.015409 | Native-index usage log |
+| Medical / Microsoft GraphRAG | 681,136 | $0.013623 | Native-index usage log |
 | Novel / Kontext v13 base | 891,981 | $0.017840 | Original reusable index |
 | Novel / v15 actual run | 1,470,715 | $0.029414 | Pre-fix whole-batch invalidation; preserved, not rerun |
 | Novel / LightRAG | 2,468,525 | $0.049371 | Native-index usage log |
@@ -182,6 +184,13 @@ without its validated v13 source cache.
 | NFCorpus / Vector baseline | 1,283,605 | $0.025672 | Native vector index |
 | NFCorpus / LightRAG | 261,418 | $0.005228 | Native-index usage log |
 | NFCorpus / Microsoft GraphRAG | 5,509,618 | $0.110192 | Native KG index plus two query retrieval passes; provenance replay added only 2,781 tokens/$0.0000556 and did not rebuild the index |
+
+The answer/judge LLM was the local Codex CLI. It produced token telemetry but
+no API-call billing record, so dollar cost per query is `N/A`, not zero. The
+table above therefore reports only the separately auditable OpenAI embedding
+API charge. The answer/judge token table is the auditable per-query LLM usage;
+Kontext's local-CLI query-expansion and reranker calls were not token-metered and
+are excluded rather than estimated.
 
 The original v15 Novel run revealed a cache transport defect: adding nine
 missing resources changed a whole-corpus digest and invalidated otherwise
