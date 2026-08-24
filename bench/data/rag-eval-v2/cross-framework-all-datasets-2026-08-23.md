@@ -126,21 +126,26 @@ with 4,644 official source IDs before the score above was generated. The
 Microsoft SciFact row will be filled only after its native graph index and
 retrieval complete.
 
-## Answer/judge tokens
+## Answer/judge tokens and API-equivalent cost
 
 These are recorded local-Codex token counts for the shared answer and judge
-stages, not API-key dollar costs and not total framework compute.
+stages. The final column applies the 2026-08-24 official uncached API list
+prices to each stage: GPT-5.6 Terra answer tokens at $2 input/$12 output and
+GPT-5.6 Sol judge tokens at $4 input/$20 output per million tokens. It is an
+API-equivalent estimate, not an API invoice or a per-query Codex subscription
+charge. Cache-token telemetry was unavailable, so all input is conservatively
+priced as uncached.
 
-| Dataset | System | Input tokens / 200 queries | Output tokens / 200 queries | Input/query | Output/query |
-|---|---|---:|---:|---:|---:|
-| Medical | Kontext v15 | 9,029,975 | 255,371 | 45,150 | 1,277 |
-| Medical | Kontext v13 | 9,029,688 | 268,838 | 45,148 | 1,344 |
-| Medical | LightRAG | 11,582,245 | 330,228 | 57,911 | 1,651 |
-| Medical | Microsoft GraphRAG | 8,680,479 | 388,382 | 43,402 | 1,942 |
-| Novel | Kontext v15 | 9,538,002 | 274,849 | 47,690 | 1,374 |
-| Novel | Kontext v13 | 9,501,680 | 217,529 | 47,508 | 1,088 |
-| Novel | LightRAG | 11,741,076 | 270,193 | 58,705 | 1,351 |
-| Novel | Microsoft GraphRAG | 8,698,488 | 330,527 | 43,492 | 1,653 |
+| Dataset | System | Input tokens / 200 queries | Output tokens / 200 queries | Input/query | Output/query | API-equivalent $/query |
+|---|---|---:|---:|---:|---:|---:|
+| Medical | Kontext v15 | 9,029,975 | 255,371 | 45,150 | 1,277 | $0.1593 |
+| Medical | Kontext v13 | 9,029,688 | 268,838 | 45,148 | 1,344 | $0.1606 |
+| Medical | LightRAG | 11,582,245 | 330,228 | 57,911 | 1,651 | $0.2057 |
+| Medical | Microsoft GraphRAG | 8,680,479 | 388,382 | 43,402 | 1,942 | $0.1678 |
+| Novel | Kontext v15 | 9,538,002 | 274,849 | 47,690 | 1,374 | $0.1688 |
+| Novel | Kontext v13 | 9,501,680 | 217,529 | 47,508 | 1,088 | $0.1629 |
+| Novel | LightRAG | 11,741,076 | 270,193 | 58,705 | 1,351 | $0.2022 |
+| Novel | Microsoft GraphRAG | 8,698,488 | 330,527 | 43,492 | 1,653 | $0.1624 |
 
 ## Metric-contract coverage
 
@@ -185,11 +190,9 @@ without its validated v13 source cache.
 | NFCorpus / LightRAG | 261,418 | $0.005228 | Native-index usage log |
 | NFCorpus / Microsoft GraphRAG | 5,509,618 | $0.110192 | Native KG index plus two query retrieval passes; provenance replay added only 2,781 tokens/$0.0000556 and did not rebuild the index |
 
-The answer/judge LLM was the local Codex CLI. It produced token telemetry but
-no API-call billing record, so dollar cost per query is `N/A`, not zero. The
-table above therefore reports only the separately auditable OpenAI embedding
-API charge. The answer/judge token table is the auditable per-query LLM usage;
-Kontext's local-CLI query-expansion and reranker calls were not token-metered and
+The embedding table above reports the separately auditable OpenAI embedding API
+charge. The answer/judge table reports the stage-aware API-equivalent LLM cost;
+Kontext's local-CLI query-expansion and reranker calls were not fully metered and
 are excluded rather than estimated.
 
 The original v15 Novel run revealed a cache transport defect: adding nine
