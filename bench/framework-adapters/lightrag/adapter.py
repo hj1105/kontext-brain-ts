@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+from datetime import datetime, timezone
 import hashlib
 import json
 import os
@@ -61,6 +62,8 @@ def add_common_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--completion-reasoning-effort", required=True)
     parser.add_argument("--completion-execution", required=True)
     parser.add_argument("--top-k", required=True, type=int)
+    parser.add_argument("--query-concurrency", required=True, type=int)
+    parser.add_argument("--index-source-dir")
 
 
 def doctor() -> None:
@@ -93,6 +96,8 @@ def validate_shared_options(args: argparse.Namespace) -> None:
 
 async def build(args: argparse.Namespace) -> None:
     validate_shared_options(args)
+    if args.index_source_dir:
+        raise ValueError("build does not accept --index-source-dir")
     dataset_dir = Path(args.dataset_dir)
     index_dir = Path(args.index_dir)
     corpus = read_jsonl(dataset_dir / "corpus.jsonl")
@@ -131,11 +136,17 @@ async def retrieve(args: argparse.Namespace) -> None:
     validate_shared_options(args)
     dataset_dir = Path(args.dataset_dir)
     index_dir = Path(args.index_dir)
+    if args.query_concurrency <= 0:
+        raise ValueError("query_concurrency must be positive")
+    if args.index_source_dir:
+        index_source_dir = Path(args.index_source_dir).resolve()
+        validate_warm_index(index_source_dir, read_jsonl(dataset_dir / "corpus.jsonl"))
+        prepare_warm_runtime(index_source_dir, index_dir)
     queries = read_jsonl(dataset_dir / "queries.jsonl")
-    rag = create_rag(index_dir, args)
+    rag = create_rag(index_dir, args, enable_llm_cache=not bool(args.index_source_dir))
     await rag.initialize_storages()
     try:
-        query_semaphore = asyncio.Semaphore(rag.llm_model_max_async)
+        query_semaphore = asyncio.Semaphore(args.query_concurrency)
         checkpoint_directory = retrieval_checkpoint_directory(index_dir, queries, args)
 
         async def retrieve_one(index: int, query: dict[str, Any]) -> dict[str, Any]:
@@ -143,8 +154,10 @@ async def retrieve(args: argparse.Namespace) -> None:
             checkpoint = read_retrieval_checkpoint(checkpoint_path, args, query["id"])
             if checkpoint is not None:
                 return checkpoint
-            started = time.perf_counter()
             async with query_semaphore:
+                # Measure service latency, not time spent waiting for an in-process worker.
+                started = time.perf_counter()
+                started_at = datetime.now(timezone.utc).isoformat()
                 try:
                     context = await rag.aquery(
                         query["text"],
@@ -166,17 +179,17 @@ async def retrieve(args: argparse.Namespace) -> None:
                         "metadata": {"mode": "mix", "nativeContext": True},
                     }]
                     record = retrieval_record(
-                        args, query["id"], "ok", evidence, started, None
+                        args, query["id"], "ok", evidence, started, started_at, None
                     )
                 except Exception as error:  # preserve per-query failures
                     record = retrieval_record(
-                        args, query["id"], "error", [], started, str(error)
+                        args, query["id"], "error", [], started, started_at, str(error)
                     )
                 write_json_atomic(checkpoint_path, record)
                 return record
 
-        # asyncio.gather preserves the input query order while LightRAG's own
-        # default LLM concurrency (four in 1.5.6) controls resource use.
+        # asyncio.gather preserves input order; the harness freezes the worker
+        # count explicitly so clean latency runs never inherit a package default.
         records = await asyncio.gather(*(
             retrieve_one(index, query) for index, query in enumerate(queries)
         ))
@@ -196,7 +209,12 @@ def normalize_context(context: Any) -> str:
     return context
 
 
-def create_rag(index_dir: Path, args: argparse.Namespace) -> LightRAG:
+def create_rag(
+    index_dir: Path,
+    args: argparse.Namespace,
+    *,
+    enable_llm_cache: bool = True,
+) -> LightRAG:
     embedding_client = OpenAIEmbeddingClient(
         model=EMBEDDING_MODEL,
         dimensions=EMBEDDING_DIMENSIONS,
@@ -233,6 +251,7 @@ def create_rag(index_dir: Path, args: argparse.Namespace) -> LightRAG:
         embedding_func=embed,
         llm_model_func=complete,
         llm_model_name=args.completion_model,
+        enable_llm_cache=enable_llm_cache,
         auto_manage_storages_states=False,
     )
 
@@ -304,6 +323,7 @@ def retrieval_record(
     status: str,
     evidence: list[dict[str, Any]],
     started: float,
+    started_at: str,
     error: str | None,
 ) -> dict[str, Any]:
     dataset_id = Path(args.dataset_dir).parents[1].name
@@ -318,7 +338,51 @@ def retrieval_record(
         "error": error,
         "frameworkVersion": PINNED_VERSION,
         "configDigest": "set-by-parent-harness",
+        "startedAt": started_at,
+        "completedAt": datetime.now(timezone.utc).isoformat(),
     }
+
+
+def validate_warm_index(index_source_dir: Path, corpus: list[dict[str, Any]]) -> None:
+    marker_path = index_source_dir / "rag-eval-build.json"
+    if not marker_path.is_file():
+        raise RuntimeError(f"warm index marker missing: {marker_path}")
+    marker = json.loads(marker_path.read_text())
+    expected = {
+        "framework": FRAMEWORK_ID,
+        "version": PINNED_VERSION,
+        "corpusDigest": record_digest(corpus),
+        "embeddingModel": EMBEDDING_MODEL,
+        "embeddingDimensions": EMBEDDING_DIMENSIONS,
+    }
+    mismatches = [
+        f"{name}: expected {value!r}, found {marker.get(name)!r}"
+        for name, value in expected.items()
+        if marker.get(name) != value
+    ]
+    if mismatches:
+        raise RuntimeError("warm index marker mismatch: " + "; ".join(mismatches))
+
+
+def prepare_warm_runtime(index_source_dir: Path, index_dir: Path) -> None:
+    """Link immutable native stores into a clean, separately writable runtime."""
+    if index_source_dir == index_dir.resolve():
+        raise RuntimeError("warm index source and clean runtime must be different directories")
+    index_dir.mkdir(parents=True, exist_ok=True)
+    excluded = {
+        "kv_store_llm_response_cache.json",
+        "openai-embedding-usage.jsonl",
+        "retrieval-checkpoints",
+    }
+    for source in index_source_dir.iterdir():
+        if source.name in excluded:
+            continue
+        target = index_dir / source.name
+        if target.exists() or target.is_symlink():
+            if not target.is_symlink() or target.resolve() != source.resolve():
+                raise RuntimeError(f"clean runtime collision: {target}")
+            continue
+        target.symlink_to(source, target_is_directory=source.is_dir())
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:

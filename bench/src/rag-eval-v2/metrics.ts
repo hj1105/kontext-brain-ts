@@ -50,6 +50,7 @@ export interface DatasetFrameworkScore {
   readonly fluency: number | null;
   readonly cragTruthfulness: number | null;
   readonly retrievalLatencyP95Ms: number | null;
+  readonly queryToAnswerLatencyP95Ms: number | null;
   readonly endToEndLatencyP95Ms: number | null;
   readonly averageInputTokens: number | null;
   readonly estimatedCostUsd: null;
@@ -175,6 +176,12 @@ export function scoreDatasetFramework(
   const retrievalLatencies = retrievals
     .filter((result) => result.status === "ok")
     .map((result) => result.latencyMs);
+  const queryToAnswerLatencies = evaluationQueries.flatMap((query) => {
+    const retrieval = retrievalByQuery.get(query.id);
+    const answer = answerByQuery.get(query.id);
+    if (!retrieval || !answer || retrieval.status !== "ok" || answer.status !== "ok") return [];
+    return [retrieval.latencyMs + answer.latencyMs];
+  });
   const endToEndLatencies = evaluationQueries.flatMap((query) => {
     const retrieval = retrievalByQuery.get(query.id);
     const answer = answerByQuery.get(query.id);
@@ -224,8 +231,9 @@ export function scoreDatasetFramework(
     conciseness: meanOrNull(conciseness),
     fluency: meanOrNull(fluency),
     cragTruthfulness: meanOrNull(cragTruthfulness),
-    retrievalLatencyP95Ms: percentileOrNull(retrievalLatencies, 0.95),
-    endToEndLatencyP95Ms: percentileOrNull(endToEndLatencies, 0.95),
+    retrievalLatencyP95Ms: nearestRankPercentileOrNull(retrievalLatencies, 0.95),
+    queryToAnswerLatencyP95Ms: nearestRankPercentileOrNull(queryToAnswerLatencies, 0.95),
+    endToEndLatencyP95Ms: nearestRankPercentileOrNull(endToEndLatencies, 0.95),
     averageInputTokens: meanOrNull(inputTokens),
     estimatedCostUsd: null,
   };
@@ -589,8 +597,17 @@ function mean(values: readonly number[]): number {
   return values.reduce((total, value) => total + value, 0) / values.length;
 }
 
-function percentileOrNull(values: readonly number[], percentile: number): number | null {
+/**
+ * Nearest-rank percentile: sort ascending and select ceil(N * p), using a
+ * one-based rank. This is the frozen latency statistic for RAG evaluation.
+ */
+export function nearestRankPercentileOrNull(
+  values: readonly number[],
+  percentile: number,
+): number | null {
   if (values.length === 0) return null;
+  if (!Number.isFinite(percentile) || percentile <= 0 || percentile > 1)
+    throw new Error("percentile must be in (0, 1]");
   const sorted = [...values].sort((left, right) => left - right);
   return sorted.at(Math.max(0, Math.ceil(sorted.length * percentile) - 1)) ?? null;
 }

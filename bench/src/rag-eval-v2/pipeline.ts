@@ -566,6 +566,7 @@ export async function answerQueries(
   for (const wave of batches(answerBatches, manifest.benchmarkPolicy.codexConcurrency)) {
     const outcomes = await Promise.all(
       wave.map(async (batch) => {
+        const startedAt = new Date().toISOString();
         try {
           const result = await retry(
             () =>
@@ -586,9 +587,21 @@ export async function answerQueries(
               ),
             manifest.benchmarkPolicy.maxRetries,
           );
-          return { status: "ok", batch, result } as const;
+          return {
+            status: "ok",
+            batch,
+            result,
+            startedAt,
+            completedAt: new Date().toISOString(),
+          } as const;
         } catch (error) {
-          return { status: "error", batch, error: error as Error } as const;
+          return {
+            status: "error",
+            batch,
+            error: error as Error,
+            startedAt,
+            completedAt: new Date().toISOString(),
+          } as const;
         }
       }),
     );
@@ -615,6 +628,8 @@ export async function answerQueries(
             ),
             error: null,
             inputDigest: requiredMapValue(inputDigestByQuery, item.queryId),
+            startedAt: outcome.startedAt,
+            completedAt: outcome.completedAt,
           });
         });
         continue;
@@ -631,6 +646,8 @@ export async function answerQueries(
           outputTokens: null,
           error: outcome.error.message,
           inputDigest: requiredMapValue(inputDigestByQuery, query.id),
+          startedAt: outcome.startedAt,
+          completedAt: outcome.completedAt,
         });
       }
     }
@@ -771,6 +788,7 @@ export async function judgeAnswers(
   for (const wave of batches(judgeBatches, manifest.benchmarkPolicy.codexConcurrency)) {
     const outcomes = await Promise.all(
       wave.map(async (batch) => {
+        const startedAt = new Date().toISOString();
         try {
           const result = await retry(
             () =>
@@ -788,9 +806,21 @@ export async function judgeAnswers(
               ),
             manifest.benchmarkPolicy.maxRetries,
           );
-          return { status: "ok", batch, result } as const;
+          return {
+            status: "ok",
+            batch,
+            result,
+            startedAt,
+            completedAt: new Date().toISOString(),
+          } as const;
         } catch (error) {
-          return { status: "error", batch, error: error as Error } as const;
+          return {
+            status: "error",
+            batch,
+            error: error as Error,
+            startedAt,
+            completedAt: new Date().toISOString(),
+          } as const;
         }
       }),
     );
@@ -817,6 +847,8 @@ export async function judgeAnswers(
             ),
             error: null,
             inputDigest: requiredMapValue(inputDigestByQuery, item.queryId),
+            startedAt: outcome.startedAt,
+            completedAt: outcome.completedAt,
           });
         });
         continue;
@@ -834,6 +866,8 @@ export async function judgeAnswers(
           outputTokens: null,
           error: outcome.error.message,
           inputDigest: requiredMapValue(inputDigestByQuery, query.id),
+          startedAt: outcome.startedAt,
+          completedAt: outcome.completedAt,
         });
       }
     }

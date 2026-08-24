@@ -15,6 +15,7 @@ import {
   contextPrecisionForQuery,
   evidenceRecallForQuery,
   ndcgForQuery,
+  nearestRankPercentileOrNull,
   robustnessDropForQueries,
   scoreDatasetFramework,
 } from "./metrics.js";
@@ -184,8 +185,29 @@ describe("rag eval metrics", () => {
     expect(score.fluency).toBe(0.95);
     expect(score.answerabilityJointAccuracy).toBeNull();
     expect(score.robustnessDrop).toBeNull();
+    expect(score.retrievalLatencyP95Ms).toBe(10);
+    expect(score.queryToAnswerLatencyP95Ms).toBe(30);
     expect(score.endToEndLatencyP95Ms).toBe(60);
     expect(score).not.toHaveProperty("overallScore");
+  });
+
+  it("uses the frozen nearest-rank percentile definition", () => {
+    expect(nearestRankPercentileOrNull([], 0.95)).toBeNull();
+    expect(
+      nearestRankPercentileOrNull(
+        Array.from({ length: 20 }, (_, index) => index + 1),
+        0.95,
+      ),
+    ).toBe(19);
+    expect(nearestRankPercentileOrNull([30, 10, 20], 0.5)).toBe(20);
+    expect(() => nearestRankPercentileOrNull([1], 0)).toThrow("percentile must be in (0, 1]");
+  });
+
+  it("keeps user-facing query-to-answer latency independent of the judge", () => {
+    const score = scoreDatasetFramework(bundle, "kontext-brain", [retrieval], [answer], []);
+
+    expect(score.queryToAnswerLatencyP95Ms).toBe(30);
+    expect(score.endToEndLatencyP95Ms).toBeNull();
   });
 
   it("scores full retrieval separately from the answer/judge sample", () => {

@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 from contextlib import contextmanager
+from datetime import datetime, timezone
 import hashlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib.metadata import version
@@ -76,6 +77,8 @@ def add_common_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--completion-reasoning-effort", required=True)
     parser.add_argument("--completion-execution", required=True)
     parser.add_argument("--top-k", required=True, type=int)
+    parser.add_argument("--query-concurrency", required=True, type=int)
+    parser.add_argument("--index-source-dir")
 
 
 def doctor() -> None:
@@ -111,6 +114,8 @@ def validate_shared_options(args: argparse.Namespace) -> None:
 
 def build(args: argparse.Namespace) -> None:
     validate_shared_options(args)
+    if args.index_source_dir:
+        raise ValueError("build does not accept --index-source-dir")
     dataset_dir = Path(args.dataset_dir)
     index_dir = Path(args.index_dir)
     corpus = read_jsonl(dataset_dir / "corpus.jsonl")
@@ -151,6 +156,12 @@ def retrieve(args: argparse.Namespace) -> None:
     validate_shared_options(args)
     dataset_dir = Path(args.dataset_dir)
     index_dir = Path(args.index_dir)
+    if args.query_concurrency <= 0:
+        raise ValueError("query_concurrency must be positive")
+    if args.index_source_dir:
+        index_source_dir = Path(args.index_source_dir).resolve()
+        validate_warm_index(index_source_dir, read_jsonl(dataset_dir / "corpus.jsonl"))
+        prepare_warm_runtime(index_source_dir, index_dir)
     queries = read_jsonl(dataset_dir / "queries.jsonl")
     with openai_compatible_server(args) as api_base:
         configure_project(index_dir, args, api_base)
@@ -159,6 +170,7 @@ def retrieve(args: argparse.Namespace) -> None:
         records: list[dict[str, Any]] = []
         for query in queries:
             started = time.perf_counter()
+            started_at = datetime.now(timezone.utc).isoformat()
             try:
                 context = engine.context_builder.build_context(
                     query=query["text"],
@@ -181,9 +193,15 @@ def retrieve(args: argparse.Namespace) -> None:
                         "contextTables": ",".join(sorted(context.context_records.keys())),
                     },
                 }]
-                records.append(retrieval_record(args, query["id"], "ok", evidence, started, None))
+                records.append(
+                    retrieval_record(args, query["id"], "ok", evidence, started, started_at, None)
+                )
             except Exception as error:  # preserve per-query failures
-                records.append(retrieval_record(args, query["id"], "error", [], started, str(error)))
+                records.append(
+                    retrieval_record(
+                        args, query["id"], "error", [], started, started_at, str(error)
+                    )
+                )
     write_jsonl(Path(args.output), records)
 
 
@@ -422,6 +440,7 @@ def retrieval_record(
     status: str,
     evidence: list[dict[str, Any]],
     started: float,
+    started_at: str,
     error: str | None,
 ) -> dict[str, Any]:
     dataset_id = Path(args.dataset_dir).parents[1].name
@@ -436,7 +455,55 @@ def retrieval_record(
         "error": error,
         "frameworkVersion": PINNED_VERSION,
         "configDigest": "set-by-parent-harness",
+        "startedAt": started_at,
+        "completedAt": datetime.now(timezone.utc).isoformat(),
     }
+
+
+def validate_warm_index(index_source_dir: Path, corpus: list[dict[str, Any]]) -> None:
+    marker_path = index_source_dir / "rag-eval-build.json"
+    if not marker_path.is_file():
+        raise RuntimeError(f"warm index marker missing: {marker_path}")
+    marker = json.loads(marker_path.read_text())
+    expected = {
+        "framework": FRAMEWORK_ID,
+        "version": PINNED_VERSION,
+        "corpusDigest": record_digest(corpus),
+        "embeddingModel": EMBEDDING_MODEL,
+        "embeddingDimensions": EMBEDDING_DIMENSIONS,
+    }
+    mismatches = [
+        f"{name}: expected {value!r}, found {marker.get(name)!r}"
+        for name, value in expected.items()
+        if marker.get(name) != value
+    ]
+    if mismatches:
+        raise RuntimeError("warm index marker mismatch: " + "; ".join(mismatches))
+
+
+def prepare_warm_runtime(index_source_dir: Path, index_dir: Path) -> None:
+    """Expose a completed GraphRAG output through a clean runtime directory."""
+    if index_source_dir == index_dir.resolve():
+        raise RuntimeError("warm index source and clean runtime must be different directories")
+    index_dir.mkdir(parents=True, exist_ok=True)
+    for name in ("output", "input", "prompts", "rag-eval-build.json"):
+        source = index_source_dir / name
+        if not source.exists():
+            if name in {"input", "prompts"}:
+                continue
+            raise RuntimeError(f"warm index component missing: {source}")
+        target = index_dir / name
+        if target.exists() or target.is_symlink():
+            if not target.is_symlink() or target.resolve() != source.resolve():
+                raise RuntimeError(f"clean runtime collision: {target}")
+            continue
+        target.symlink_to(source, target_is_directory=source.is_dir())
+    settings_source = index_source_dir / "settings.yaml"
+    settings_target = index_dir / "settings.yaml"
+    if not settings_source.is_file():
+        raise RuntimeError(f"warm index settings missing: {settings_source}")
+    if not settings_target.exists():
+        shutil.copy2(settings_source, settings_target)
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:

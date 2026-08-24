@@ -89,6 +89,7 @@ export interface KontextBrainAdapterOptions {
   readonly retrievalMode?: KontextRetrievalMode;
   readonly benchmarkDataDirectory?: string;
   readonly precomputedIndexDirectory?: string;
+  readonly strictWarmIndex?: boolean;
 }
 
 const BIDIRECTIONAL_FRAMEWORK_VERSION = "workspace-0.1.0+bidirectional-kg-v2";
@@ -288,6 +289,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
   private readonly retrievalMode: KontextRetrievalMode;
   private readonly benchmarkDataDirectory: string;
   private readonly precomputedIndexDirectory: string | null;
+  private readonly strictWarmIndex: boolean;
 
   constructor(
     private readonly manifest: RagEvalManifest,
@@ -300,9 +302,27 @@ export class KontextBrainAdapter implements FrameworkAdapter {
       options.benchmarkDataDirectory ??
       resolve(dirname(fileURLToPath(import.meta.url)), "../../data");
     this.precomputedIndexDirectory = options.precomputedIndexDirectory ?? null;
+    this.strictWarmIndex = options.strictWarmIndex ?? false;
   }
 
   async doctor(): Promise<FrameworkDoctorResult> {
+    if (this.strictWarmIndex) {
+      if (!this.precomputedIndexDirectory || !existsSync(this.precomputedIndexDirectory)) {
+        return {
+          frameworkId: this.id,
+          status: "blocked",
+          version: frameworkVersion(this.retrievalMode),
+          detail: "Strict warm latency retrieval requires a readable precomputed index",
+        };
+      }
+      return {
+        frameworkId: this.id,
+        status: "ready",
+        version: frameworkVersion(this.retrievalMode),
+        detail:
+          "strict read-only warm index; cache miss fails without embedding or expansion calls",
+      };
+    }
     if (isCacheOnlyCoverageMode(this.retrievalMode)) {
       if (!validEmbeddingDimensions(this.manifest.models.embedding.dimensions)) {
         return {
@@ -864,7 +884,9 @@ export class KontextBrainAdapter implements FrameworkAdapter {
   ): Promise<RetrievalResult[]> {
     const embeddingClient =
       this.embeddingClient ??
-      (deterministicCoverage ? cacheOnlyEmbeddingClient(this.manifest) : null);
+      (deterministicCoverage || this.strictWarmIndex
+        ? cacheOnlyEmbeddingClient(this.manifest)
+        : null);
     if (!embeddingClient) throw new Error("Max existing stack retrieval requires OPENAI_API_KEY");
     const candidateCount = deterministicCoverage
       ? deterministicCoverage.candidateCount
@@ -981,16 +1003,21 @@ export class KontextBrainAdapter implements FrameworkAdapter {
     const docsById = new Map(docs.map((doc) => [doc.id, doc]));
     const graph = artifact?.graph ?? emptyKnowledgeGraph(docs);
     const indexDirectory = join(options.workDirectory, bundle.id, this.id, "index", retrievalMode);
-    const cacheOnly = deterministicCoverage?.cacheOnly ?? false;
-    const cacheIndexDirectory = cacheOnly
+    const deterministicCacheOnly = deterministicCoverage?.cacheOnly ?? false;
+    const cacheOnly = deterministicCacheOnly || this.strictWarmIndex;
+    const cacheIndexDirectory = deterministicCacheOnly
       ? requiredPrecomputedIndexDirectory(this.precomputedIndexDirectory)
       : indexDirectory;
     const readThroughIndexDirectory =
-      completeCorpusCoverage && this.precomputedIndexDirectory
+      (completeCorpusCoverage || this.strictWarmIndex) && this.precomputedIndexDirectory
         ? requiredPrecomputedIndexDirectory(this.precomputedIndexDirectory)
         : null;
     const indexDigest = kgDocumentDigest(docs);
-    const sourceIndexDigest = readThroughIndexDirectory ? kgDocumentDigest(artifactDocs) : null;
+    const sourceIndexDigest = readThroughIndexDirectory
+      ? this.strictWarmIndex
+        ? indexDigest
+        : kgDocumentDigest(artifactDocs)
+      : null;
     const documentInputs = docs.map((doc) => ({ id: doc.id, title: doc.title, text: doc.body }));
     const sourceDocumentInputs = artifactDocs.map((doc) => ({
       id: doc.id,
@@ -1008,12 +1035,20 @@ export class KontextBrainAdapter implements FrameworkAdapter {
         ? {
             directory: join(readThroughIndexDirectory, "document-embedding-batches"),
             digest: sourceIndexDigest,
-            inputs: sourceDocumentInputs,
+            inputs: this.strictWarmIndex ? documentInputs : sourceDocumentInputs,
           }
         : null,
     );
     const baseQueryDigest = kgQueryDigest(bundle, indexDigest);
     const queryInputs = bundle.queries.map((query) => ({ id: query.id, text: query.text }));
+    const sourceQueryUniverse = this.strictWarmIndex
+      ? (options.indexQueryUniverse ?? bundle.queries)
+      : bundle.queries;
+    const sourceQueryBundle = { ...bundle, queries: sourceQueryUniverse };
+    const sourceQueryInputs = sourceQueryUniverse.map((query) => ({
+      id: query.id,
+      text: query.text,
+    }));
     const queryEmbeddings = await embedWithCheckpoints(
       embeddingClient,
       queryInputs,
@@ -1024,8 +1059,8 @@ export class KontextBrainAdapter implements FrameworkAdapter {
       readThroughIndexDirectory && sourceIndexDigest
         ? {
             directory: join(readThroughIndexDirectory, "query-embedding-batches"),
-            digest: kgQueryDigest(bundle, sourceIndexDigest),
-            inputs: queryInputs,
+            digest: kgQueryDigest(sourceQueryBundle, sourceIndexDigest),
+            inputs: sourceQueryInputs,
           }
         : null,
     );
@@ -1042,23 +1077,45 @@ export class KontextBrainAdapter implements FrameworkAdapter {
           })
         : null;
     const queryExpansions = multiQuery
-      ? await mapWithConcurrency(bundle.queries, LLM_RERANK_CONCURRENCY, (query) =>
-          expandWithCheckpoint(
-            multiQueryExpander,
-            query.id,
-            query.text,
-            join(cacheIndexDirectory, "multi-query-expansions"),
-            cacheOnly,
-            readThroughIndexDirectory
-              ? join(readThroughIndexDirectory, "multi-query-expansions")
-              : null,
-          ),
+      ? await mapWithConcurrency(
+          bundle.queries,
+          options.queryConcurrency ?? LLM_RERANK_CONCURRENCY,
+          (query) =>
+            expandWithCheckpoint(
+              multiQueryExpander,
+              query.id,
+              query.text,
+              join(cacheIndexDirectory, "multi-query-expansions"),
+              cacheOnly,
+              readThroughIndexDirectory
+                ? join(readThroughIndexDirectory, "multi-query-expansions")
+                : null,
+            ),
         )
       : bundle.queries.map((query) => emptyMultiQueryCheckpoint(query.id, query.text));
+    const sourceQueryExpansions =
+      multiQuery && this.strictWarmIndex && readThroughIndexDirectory
+        ? await mapWithConcurrency(sourceQueryUniverse, 1, (query) =>
+            expandWithCheckpoint(
+              null,
+              query.id,
+              query.text,
+              join(readThroughIndexDirectory, "multi-query-expansions"),
+              true,
+              null,
+            ),
+          )
+        : queryExpansions;
     const expansionByQueryId = new Map(
       queryExpansions.map((expansion) => [expansion.queryId, expansion]),
     );
     const expandedQueryInputs = queryExpansions.flatMap((expansion) =>
+      expansion.queries.map((text, index) => ({
+        id: multiQueryEmbeddingId(expansion.queryId, index),
+        text,
+      })),
+    );
+    const sourceExpandedQueryInputs = sourceQueryExpansions.flatMap((expansion) =>
       expansion.queries.map((text, index) => ({
         id: multiQueryEmbeddingId(expansion.queryId, index),
         text,
@@ -1075,8 +1132,12 @@ export class KontextBrainAdapter implements FrameworkAdapter {
       readThroughIndexDirectory && sourceIndexDigest
         ? {
             directory: join(readThroughIndexDirectory, "multi-query-embedding-batches"),
-            digest: multiQueryQueryDigest(bundle, sourceIndexDigest, queryExpansions),
-            inputs: expandedQueryInputs,
+            digest: multiQueryQueryDigest(
+              sourceQueryBundle,
+              sourceIndexDigest,
+              sourceQueryExpansions,
+            ),
+            inputs: sourceExpandedQueryInputs,
           }
         : null,
     );
@@ -1338,7 +1399,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
             coverageAware: coverageAwareRerank,
             queryPlanAware: planAwareCoverage,
             goldAccess: false,
-            concurrency: LLM_RERANK_CONCURRENCY,
+            concurrency: options.queryConcurrency ?? LLM_RERANK_CONCURRENCY,
           }
         : null,
       outputTopK: options.topK,
@@ -1374,7 +1435,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
 
     return mapWithConcurrency(
       bundle.queries,
-      rerankWithLlm ? LLM_RERANK_CONCURRENCY : 1,
+      rerankWithLlm ? (options.queryConcurrency ?? LLM_RERANK_CONCURRENCY) : 1,
       async (query) => {
         const checkpointPath = join(
           checkpointDirectory,
@@ -1399,6 +1460,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
           }
         }
         const startedAt = performance.now();
+        const startedAtIso = new Date().toISOString();
         try {
           const retrieval = await agent.retrieve(query.text, BIDIRECTIONAL_PRINCIPAL);
           if (retrieval.retrievalMode !== "bidirectional") {
@@ -1553,6 +1615,8 @@ export class KontextBrainAdapter implements FrameworkAdapter {
             frameworkVersion,
             answerPolicy,
             configDigest: digest,
+            startedAt: startedAtIso,
+            completedAt: new Date().toISOString(),
           };
           writeJsonAtomic(checkpointPath, result);
           return result;
@@ -1569,6 +1633,8 @@ export class KontextBrainAdapter implements FrameworkAdapter {
             frameworkVersion,
             answerPolicy,
             configDigest: digest,
+            startedAt: startedAtIso,
+            completedAt: new Date().toISOString(),
           };
           writeJsonAtomic(checkpointPath, result);
           return result;

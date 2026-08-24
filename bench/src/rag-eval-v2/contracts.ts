@@ -99,6 +99,9 @@ export interface RetrievalResult {
   readonly frameworkVersion: string;
   readonly configDigest: string;
   readonly answerPolicy?: AnswerPolicy;
+  /** Optional wall-clock boundaries used by clean latency contamination checks. */
+  readonly startedAt?: string;
+  readonly completedAt?: string;
 }
 
 export type AnswerPolicy = "supported-evidence-needs";
@@ -121,6 +124,9 @@ export interface AnswerResult {
   readonly outputTokens: number | null;
   readonly error: string | null;
   readonly inputDigest: string;
+  /** Optional wall-clock boundaries used by clean latency contamination checks. */
+  readonly startedAt?: string;
+  readonly completedAt?: string;
 }
 
 export interface ClaimJudgement {
@@ -156,6 +162,9 @@ export interface JudgeResult {
   readonly outputTokens: number | null;
   readonly error: string | null;
   readonly inputDigest: string;
+  /** Optional wall-clock boundaries used by clean latency contamination checks. */
+  readonly startedAt?: string;
+  readonly completedAt?: string;
 }
 
 export interface FrameworkDoctorResult {
