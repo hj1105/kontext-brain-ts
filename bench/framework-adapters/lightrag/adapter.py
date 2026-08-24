@@ -14,6 +14,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from typing import Any
 
@@ -33,12 +34,23 @@ PINNED_VERSION = "1.5.6"
 FRAMEWORK_ID = "lightrag"
 EMBEDDING_MODEL = "text-embedding-3-small"
 EMBEDDING_DIMENSIONS = 1536
+COMPLETION_EXECUTION_MODES = ("codex-exec", "anthropic-api")
+COMPLETION_MODELS = {
+    "codex-exec": "gpt-5.6-terra",
+    "anthropic-api": "claude-sonnet-5",
+}
+ANTHROPIC_TIMEOUT_SECONDS = 600.0
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="command", required=True)
-    subparsers.add_parser("doctor")
+    doctor_command = subparsers.add_parser("doctor")
+    doctor_command.add_argument(
+        "--completion-execution",
+        choices=COMPLETION_EXECUTION_MODES,
+        default="codex-exec",
+    )
     for name in ("build", "retrieve"):
         command = subparsers.add_parser(name)
         add_common_arguments(command)
@@ -46,7 +58,7 @@ def main() -> None:
             command.add_argument("--output", required=True)
     args = parser.parse_args()
     if args.command == "doctor":
-        doctor()
+        doctor(args.completion_execution)
     elif args.command == "build":
         asyncio.run(build(args))
     else:
@@ -60,18 +72,19 @@ def add_common_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--embedding-dimensions", required=True, type=int)
     parser.add_argument("--completion-model", required=True)
     parser.add_argument("--completion-reasoning-effort", required=True)
-    parser.add_argument("--completion-execution", required=True)
+    parser.add_argument(
+        "--completion-execution", required=True, choices=COMPLETION_EXECUTION_MODES
+    )
     parser.add_argument("--top-k", required=True, type=int)
     parser.add_argument("--query-concurrency", required=True, type=int)
     parser.add_argument("--index-source-dir")
 
 
-def doctor() -> None:
+def doctor(completion_execution: str = "codex-exec") -> None:
     issues: list[str] = []
     if LIGHTRAG_VERSION != PINNED_VERSION:
         issues.append(f"expected lightrag-hku {PINNED_VERSION}, found {LIGHTRAG_VERSION}")
-    if shutil.which("codex") is None:
-        issues.append("codex CLI is not on PATH")
+    issues.extend(completion_execution_issues(completion_execution))
     if not os.getenv("OPENAI_API_KEY"):
         issues.append("OPENAI_API_KEY is not set")
     print(json.dumps({
@@ -81,13 +94,38 @@ def doctor() -> None:
     }))
 
 
+def completion_execution_issues(completion_execution: str) -> list[str]:
+    issues: list[str] = []
+    if completion_execution == "anthropic-api":
+        if not os.getenv("ANTHROPIC_API_KEY"):
+            issues.append("ANTHROPIC_API_KEY is not set")
+        if not anthropic_package_available():
+            issues.append("anthropic package is not importable")
+    else:
+        if shutil.which("codex") is None:
+            issues.append("codex CLI is not on PATH")
+    return issues
+
+
+def anthropic_package_available() -> bool:
+    try:
+        import anthropic  # noqa: F401
+    except ImportError:
+        return False
+    return True
+
+
 def validate_shared_options(args: argparse.Namespace) -> None:
+    if args.completion_execution not in COMPLETION_MODELS:
+        raise ValueError(
+            f"completion_execution must be one of {sorted(COMPLETION_MODELS)}, "
+            f"found {args.completion_execution!r}"
+        )
     expected = {
         "embedding_model": EMBEDDING_MODEL,
         "embedding_dimensions": EMBEDDING_DIMENSIONS,
-        "completion_model": "gpt-5.6-terra",
+        "completion_model": COMPLETION_MODELS[args.completion_execution],
         "completion_reasoning_effort": "medium",
-        "completion_execution": "codex-exec",
     }
     for name, value in expected.items():
         if getattr(args, name) != value:
@@ -127,6 +165,8 @@ async def build(args: argparse.Namespace) -> None:
             "embeddingModel": EMBEDDING_MODEL,
             "embeddingDimensions": EMBEDDING_DIMENSIONS,
             "embeddingMode": "symmetric OpenAI embedding",
+            "completionExecution": args.completion_execution,
+            "completionModel": args.completion_model,
         })
     finally:
         await rag.finalize_storages()
@@ -238,7 +278,12 @@ def create_rag(
         history_messages: list[dict[str, str]] | None = None,
         **_kwargs: Any,
     ) -> str:
-        return await codex_complete(
+        complete_one = (
+            anthropic_complete
+            if args.completion_execution == "anthropic-api"
+            else codex_complete
+        )
+        return await complete_one(
             prompt=prompt,
             system_prompt=system_prompt,
             history_messages=history_messages or [],
@@ -315,6 +360,93 @@ def codex_complete_sync(
         if result.returncode != 0:
             raise RuntimeError(f"codex exec failed: {result.stderr}\n{result.stdout}")
         return json.loads(output_path.read_text())["text"]
+
+
+async def anthropic_complete(
+    *,
+    prompt: str,
+    system_prompt: str | None,
+    history_messages: list[dict[str, str]],
+    model: str,
+    reasoning_effort: str,
+) -> str:
+    return await asyncio.to_thread(
+        anthropic_complete_sync,
+        prompt,
+        system_prompt,
+        history_messages,
+        model,
+        reasoning_effort,
+    )
+
+
+_anthropic_client: Any | None = None
+_anthropic_client_lock = threading.Lock()
+
+
+def anthropic_client() -> Any:
+    """Lazily build one in-process Anthropic client (reads ANTHROPIC_API_KEY).
+
+    Unlike the codex path, no environment scrubbing applies here: the call runs
+    in-process and must see ANTHROPIC_API_KEY in os.environ.
+    """
+    global _anthropic_client
+    with _anthropic_client_lock:
+        if _anthropic_client is None:
+            from anthropic import Anthropic
+
+            _anthropic_client = Anthropic(
+                max_retries=0, timeout=ANTHROPIC_TIMEOUT_SECONDS
+            )
+        return _anthropic_client
+
+
+def anthropic_request_messages(
+    prompt: str,
+    system_prompt: str | None,
+    history_messages: list[dict[str, str]],
+) -> tuple[str, list[dict[str, str]]]:
+    """Map LightRAG's prompt/system/history onto (system prompt, Anthropic messages)."""
+    system_parts: list[str] = [system_prompt] if system_prompt else []
+    chat: list[dict[str, str]] = []
+    for item in history_messages:
+        role = item.get("role", "user")
+        content = str(item.get("content", ""))
+        if role == "system":
+            system_parts.append(content)
+        elif role in ("user", "assistant"):
+            chat.append({"role": role, "content": content})
+        else:
+            raise ValueError(f"unsupported chat message role: {role!r}")
+    chat.append({"role": "user", "content": prompt})
+    return "\n".join(system_parts), chat
+
+
+def anthropic_complete_sync(
+    prompt: str,
+    system_prompt: str | None,
+    history_messages: list[dict[str, str]],
+    model: str,
+    reasoning_effort: str,
+) -> str:
+    system, chat = anthropic_request_messages(prompt, system_prompt, history_messages)
+    request: dict[str, Any] = {
+        "model": model,
+        "max_tokens": 16000,
+        "messages": chat,
+        "output_config": {"effort": reasoning_effort},
+    }
+    if system:
+        request["system"] = system
+    response = anthropic_client().messages.create(**request)
+    if response.stop_reason in ("refusal", "max_tokens"):
+        raise RuntimeError(
+            f"anthropic completion stopped early: stop_reason={response.stop_reason!r}"
+        )
+    return "".join(
+        block.text for block in response.content
+        if getattr(block, "type", None) == "text"
+    )
 
 
 def retrieval_record(

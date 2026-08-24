@@ -365,7 +365,12 @@ export class ExternalCommandFrameworkAdapter implements FrameworkAdapter {
     try {
       result = await this.commandRunner(
         this.command[0]!,
-        [...this.command.slice(1), "doctor"],
+        [
+          ...this.command.slice(1),
+          "doctor",
+          "--completion-execution",
+          this.manifest.models.answer.execution ?? "codex-exec",
+        ],
         "",
         180_000,
       );

@@ -30,6 +30,7 @@ export const CLEAN_LATENCY_SAMPLE_SIZE = 200;
 export const CLEAN_LATENCY_QUERY_CONCURRENCY = 1;
 export const CLEAN_LATENCY_TAIL_LIMIT_MS = 600_000;
 export const CLEAN_LATENCY_ANTHROPIC_ANSWER_MODEL = "claude-sonnet-5" as const;
+export const CLEAN_LATENCY_ANTHROPIC_JUDGE_CONCURRENCY = 4;
 
 export type CleanLatencyCompletionBackend = "codex-exec" | "anthropic-api";
 
@@ -94,7 +95,7 @@ export interface CleanLatencyReport {
     readonly newIndexEmbeddingsAllowed: false;
     readonly retrievalQueryConcurrency: 1;
     readonly answerConcurrency: 1;
-    readonly judgeConcurrency: 1;
+    readonly judgeConcurrency: number;
     readonly answerBatchSize: 1;
     readonly judgeBatchSize: 1;
     readonly maxRetries: 0;
@@ -275,6 +276,8 @@ export function cleanLatencyManifest(
       answerCodexBatchSize: 1,
       judgeCodexBatchSize: 1,
       codexConcurrency: 1,
+      judgeCodexConcurrency:
+        backend === "anthropic-api" ? CLEAN_LATENCY_ANTHROPIC_JUDGE_CONCURRENCY : 1,
       maxRetries: 0,
     },
     models:
@@ -285,6 +288,12 @@ export function cleanLatencyManifest(
               provider: "anthropic",
               model: CLEAN_LATENCY_ANTHROPIC_ANSWER_MODEL,
               reasoningEffort: "medium",
+              execution: "anthropic-api",
+            },
+            judge: {
+              provider: "anthropic",
+              model: CLEAN_LATENCY_ANTHROPIC_ANSWER_MODEL,
+              reasoningEffort: "xhigh",
               execution: "anthropic-api",
             },
           }
@@ -538,7 +547,8 @@ export function frozenConditions(
     newIndexEmbeddingsAllowed: false,
     retrievalQueryConcurrency: 1,
     answerConcurrency: 1,
-    judgeConcurrency: 1,
+    judgeConcurrency:
+      manifest.benchmarkPolicy.judgeCodexConcurrency ?? manifest.benchmarkPolicy.codexConcurrency,
     answerBatchSize: 1,
     judgeBatchSize: 1,
     maxRetries: 0,

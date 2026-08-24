@@ -786,7 +786,10 @@ export async function judgeAnswers(
     );
   });
   const judgeBatches = batches(pending, manifest.benchmarkPolicy.judgeCodexBatchSize);
-  for (const wave of batches(judgeBatches, manifest.benchmarkPolicy.codexConcurrency)) {
+  for (const wave of batches(
+    judgeBatches,
+    manifest.benchmarkPolicy.judgeCodexConcurrency ?? manifest.benchmarkPolicy.codexConcurrency,
+  )) {
     const outcomes = await Promise.all(
       wave.map(async (batch) => {
         const startedAt = new Date().toISOString();

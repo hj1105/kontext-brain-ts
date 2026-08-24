@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { validateCleanLatencySuiteConfig } from "./clean-latency-suite.js";
 import {
   CLEAN_LATENCY_ANTHROPIC_ANSWER_MODEL,
+  CLEAN_LATENCY_ANTHROPIC_JUDGE_CONCURRENCY,
   CLEAN_LATENCY_TAIL_LIMIT_MS,
   assessCleanLatency,
   cleanLatencyManifest,
@@ -128,7 +129,7 @@ describe("clean latency protocol", () => {
     ).toThrow("each Medical/Novel x four-system row exactly once");
   });
 
-  it("swaps only the answer model for the anthropic-api backend", () => {
+  it("swaps the answer and judge models for the anthropic-api backend", () => {
     const codexManifest = cleanLatencyManifest();
     const anthropicManifest = cleanLatencyManifest("anthropic-api");
 
@@ -139,9 +140,20 @@ describe("clean latency protocol", () => {
       reasoningEffort: "medium",
       execution: "anthropic-api",
     });
-    expect(anthropicManifest.models.judge).toEqual(codexManifest.models.judge);
+    expect(anthropicManifest.models.judge).toEqual({
+      provider: "anthropic",
+      model: CLEAN_LATENCY_ANTHROPIC_ANSWER_MODEL,
+      reasoningEffort: "xhigh",
+      execution: "anthropic-api",
+    });
     expect(anthropicManifest.models.embedding).toEqual(codexManifest.models.embedding);
-    expect(anthropicManifest.benchmarkPolicy).toEqual(codexManifest.benchmarkPolicy);
+    expect(codexManifest.benchmarkPolicy.judgeCodexConcurrency).toBe(1);
+    expect(anthropicManifest.benchmarkPolicy.judgeCodexConcurrency).toBe(
+      CLEAN_LATENCY_ANTHROPIC_JUDGE_CONCURRENCY,
+    );
+    expect({ ...anthropicManifest.benchmarkPolicy, judgeCodexConcurrency: 1 }).toEqual(
+      codexManifest.benchmarkPolicy,
+    );
   });
 
   it("records the completion backend and models in the frozen conditions", () => {
@@ -157,8 +169,10 @@ describe("clean latency protocol", () => {
     );
     expect(anthropicConditions.completionBackend).toBe("anthropic-api");
     expect(anthropicConditions.answerModel).toBe(CLEAN_LATENCY_ANTHROPIC_ANSWER_MODEL);
-    expect(anthropicConditions.judgeModel).toBe("gpt-5.6-sol");
+    expect(anthropicConditions.judgeModel).toBe(CLEAN_LATENCY_ANTHROPIC_ANSWER_MODEL);
     expect(anthropicConditions.answerModelMatchesIndexBuild).toBe(false);
+    expect(anthropicConditions.judgeConcurrency).toBe(CLEAN_LATENCY_ANTHROPIC_JUDGE_CONCURRENCY);
+    expect(codexConditions.judgeConcurrency).toBe(1);
     expect(anthropicConditions.maxRetries).toBe(codexConditions.maxRetries);
   });
 
