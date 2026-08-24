@@ -34,6 +34,12 @@ rewriting the whole pipeline.
 This is the section to read for current performance. The old Round-by-Round
 research log lives separately in [Benchmark history](./bench/data/BENCHMARK_HISTORY.md).
 
+The public benchmark scope is deliberately narrow: **GraphRAG-Bench Medical,
+GraphRAG-Bench Novel, BEIR SciFact, and BEIR NFCorpus**. Medical and Novel carry
+the shared retrieval, answer, citation, and judge evaluation; SciFact and
+NFCorpus are public retrieval guardrails. Historical datasets and exploratory
+harnesses are not part of the current performance claim.
+
 - **Default, no configuration:** v13 anchored-evidence stack.
 - **Latest validated candidate:** v15, which keeps the v13 ranking and answer
   policy but repairs missing original resources in incomplete precomputed KGs.
@@ -102,7 +108,8 @@ original frozen judge contract.
 
 ## What this project is
 
-A modular monorepo with eight published packages and a benchmark harness:
+A modular monorepo with eight published packages and the RAG evaluation v2
+harness:
 
 | package | purpose |
 |---------|---------|
@@ -115,7 +122,9 @@ A modular monorepo with eight published packages and a benchmark harness:
 | `@kontext-brain/object-storage` | S3-compatible compressed Resource content storage |
 | `@kontext-brain/github` | accumulated ontology-proposal draft PR publisher |
 
-There is no Python in the project — it is end-to-end TypeScript / Node.js.
+The product packages are TypeScript / Node.js. The benchmark keeps pinned Python
+environments only for official LightRAG and Microsoft GraphRAG adapters, whose
+native implementations are Python.
 
 ### Architecture in one diagram
 
@@ -245,9 +254,27 @@ pnpm test            # unit, contract, and integration tests
 ```bash
 pnpm --filter @kontext-brain/example-basic start       # in-process toy
 pnpm --filter @kontext-brain/example-auto-setup start  # mock MCP servers + autoSetup
-pnpm --filter @kontext-brain/bench start               # full 14-system benchmark (needs Ollama)
-pnpm --filter @kontext-brain/bench ralph               # short-form "Ralph loop"
 ```
+
+### Run the current benchmark harness
+
+The current public scope is explicit in the command so unrelated manifest
+tracks cannot be mixed into the comparison:
+
+```bash
+# Inspect model, data, and pinned-framework prerequisites.
+bench/node_modules/.bin/tsx bench/src/rag-eval-v2/cli.ts doctor
+
+# Medical + Novel quality evaluation and SciFact + NFCorpus retrieval gates.
+bench/node_modules/.bin/tsx bench/src/rag-eval-v2/cli.ts run \
+  --datasets graphrag-bench-medical,graphrag-bench-novel,beir-scifact,beir-nfcorpus \
+  --work-dir /absolute/path/to/rag-eval-v2-run
+```
+
+The exact dataset sample, model settings, framework versions, metrics, and
+checkpoint rules are frozen in
+[`bench/src/rag-eval-v2`](./bench/src/rag-eval-v2/README.md). Only output from
+that frozen harness is current benchmark evidence.
 
 ---
 
@@ -593,12 +620,12 @@ kontext-brain-ts/
 │   ├── basic/                     # programmatic toy
 │   └── auto-setup/                # mock Notion + Slack → autoSetup → query
 ├── tests/integration/             # vitest end-to-end
-└── bench/                         # 14-system benchmark + Ralph loop
-    ├── src/corpus.ts              # 12-doc tech corpus + 8 labeled queries
-    ├── src/baseline.ts            # standard LangChain.js vector RAG
-    ├── src/kontext-runner.ts      # all kontext variants (V1-V17)
-    ├── src/run.ts                 # full 14-system run
-    └── src/ralph.ts               # short-loop subset for fast iteration
+└── bench/
+    ├── src/rag-eval-v2/           # frozen manifest, datasets, pipeline, metrics, CLI
+    ├── framework-adapters/        # pinned LightRAG and Microsoft GraphRAG bridges
+    └── data/rag-eval-v2/
+        ├── cross-framework-all-datasets-2026-08-23.md
+        └── runs/                  # resumable, provenance-bound run artifacts
 ```
 
 ---
@@ -630,16 +657,19 @@ in the repo. Everything runs on a stock Node 20 install plus pnpm.
 - ✅ Core, llm, mcp, loader, tool-server packages: typecheck + build clean
 - ✅ Unit + integration coverage for retrieval, persistence, incremental MCP
   synchronization, graph traversal, entities, and the tool server
-- ✅ Real Ollama benchmarked end-to-end on 14 retrieval variants
-- ✅ Ralph-loop iterative optimization completed, exceeded 10x efficiency
-  target by ~40,000x
+- ✅ RAG evaluation v2 freezes corpus provenance, framework/model settings,
+  deterministic samples, layered metrics, and resumable checkpoints
+- ✅ Medical and Novel completed the shared 200-query answer and LLM-judge
+  contract; SciFact and NFCorpus provide public BEIR retrieval guardrails
+- ✅ The current comparison reports retrieval, answer correctness, grounding,
+  citations, latency, tokens, and auditable embedding cost without an aggregate
+  score
+- ✅ Kontext v13 is the no-configuration evaluation default; v15 is retained as
+  an explicit corpus-completeness candidate rather than silently promoted
 - ✅ `DEFAULT_PIPELINE` leaf-node bug fixed; original Kotlin codebase had
   the same issue
 - ⚠️ Real Notion / GitHub / Slack MCP servers not yet smoke-tested end-to-end
   (incremental synchronization is covered with mock connectors)
-- ⚠️ Larger-corpus benchmarking pending (12 docs is small)
-- ⚠️ LLM-as-judge quality scoring not implemented yet (currently using
-  keyword-fragment matching as a weak proxy)
 
 **Originally a Kotlin project**, ported to TypeScript because (a) the Model
 Context Protocol ecosystem is TypeScript-first, (b) AI-agent OSS gravity is
