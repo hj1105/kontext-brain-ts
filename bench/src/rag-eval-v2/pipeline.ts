@@ -23,6 +23,7 @@ import { type EvaluationSampleManifest, createEvaluationSample } from "./evaluat
 import { type FrameworkAdapter, createFrameworkAdapters } from "./frameworks.js";
 import { createBlindHumanAuditSample } from "./human-audit.js";
 import { readJsonLines, writeJsonAtomic, writeJsonLines } from "./jsonl.js";
+import type { JsonLlmClient } from "./llm-json-client.js";
 import {
   type RagEvalManifest,
   assertValidManifest,
@@ -490,7 +491,7 @@ export async function answerQueries(
   retrievals: readonly RetrievalResult[],
   evaluationQueries: readonly BenchmarkQuery[],
   frameworkDirectory: string,
-  codexClient: CodexJsonClient,
+  codexClient: JsonLlmClient,
 ): Promise<AnswerResult[]> {
   const outputPath = join(frameworkDirectory, "answers.jsonl");
   const existing = existsSync(outputPath) ? readJsonLines<AnswerResult>(outputPath) : [];
@@ -664,7 +665,7 @@ export async function judgeAnswers(
   answers: readonly AnswerResult[],
   evaluationQueries: readonly BenchmarkQuery[],
   frameworkDirectory: string,
-  codexClient: CodexJsonClient,
+  codexClient: JsonLlmClient,
 ): Promise<JudgeResult[]> {
   const outputPath = join(frameworkDirectory, "judgements.jsonl");
   const existing = existsSync(outputPath) ? readJsonLines<JudgeResult>(outputPath) : [];

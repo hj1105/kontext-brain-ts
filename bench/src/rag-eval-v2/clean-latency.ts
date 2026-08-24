@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { existsSync, lstatSync, readFileSync, readdirSync, realpathSync } from "node:fs";
 import { arch, cpus, loadavg, platform, release, totalmem } from "node:os";
 import { join, relative, resolve } from "node:path";
-import { CodexJsonClient, runCommand } from "./codex-json.js";
+import { runCommand } from "./codex-json.js";
 import type {
   AnswerResult,
   DatasetBundle,
@@ -20,6 +20,7 @@ import {
 } from "./frameworks.js";
 import { readJsonLines, writeJsonAtomic, writeJsonLines } from "./jsonl.js";
 import { KontextBrainAdapter, type KontextRetrievalMode } from "./kontext-framework.js";
+import { type JsonLlmClient, createJsonLlmClient } from "./llm-json-client.js";
 import { DEFAULT_RAG_EVAL_MANIFEST, type RagEvalManifest, manifestDigest } from "./manifest.js";
 import { nearestRankPercentileOrNull } from "./metrics.js";
 import { answerQueries, judgeAnswers } from "./pipeline.js";
@@ -28,6 +29,9 @@ export const CLEAN_LATENCY_PROTOCOL_VERSION = "clean-latency-v1" as const;
 export const CLEAN_LATENCY_SAMPLE_SIZE = 200;
 export const CLEAN_LATENCY_QUERY_CONCURRENCY = 1;
 export const CLEAN_LATENCY_TAIL_LIMIT_MS = 600_000;
+export const CLEAN_LATENCY_ANTHROPIC_ANSWER_MODEL = "claude-sonnet-5" as const;
+
+export type CleanLatencyCompletionBackend = "codex-exec" | "anthropic-api";
 
 export type CleanLatencySystem =
   | "kontext-v15"
@@ -42,6 +46,7 @@ export interface CleanLatencyRunOptions {
   readonly system: CleanLatencySystem;
   readonly indexSourceDirectory: string;
   readonly skipHostGuard?: boolean;
+  readonly completionBackend?: CleanLatencyCompletionBackend;
 }
 
 export interface LatencyStageSummary {
@@ -96,6 +101,10 @@ export interface CleanLatencyReport {
     readonly percentile: "nearest-rank";
     readonly queryToAnswerDefinition: "retrieval latency + answer latency; judge excluded";
     readonly evaluationEndToEndDefinition: "retrieval latency + answer latency + judge latency";
+    readonly completionBackend: CleanLatencyCompletionBackend;
+    readonly answerModel: string;
+    readonly judgeModel: string;
+    readonly answerModelMatchesIndexBuild: boolean;
   };
   readonly indexSource: {
     readonly path: string;
@@ -104,6 +113,7 @@ export interface CleanLatencyReport {
     readonly metadataDigestBefore: string;
     readonly metadataDigestAfter: string;
     readonly unchanged: boolean;
+    readonly indexBuildModels: IndexBuildModels | null;
   };
   readonly environment: Awaited<ReturnType<typeof environmentProvenance>>;
   readonly summary: CleanLatencySummary;
@@ -119,10 +129,13 @@ export async function runCleanLatency(
     throw new Error(
       `Clean latency report already exists; preserve it and use a new path: ${reportPath}`,
     );
+  const backend = options.completionBackend ?? "codex-exec";
   const indexSourceDirectory = realpathSync(resolve(options.indexSourceDirectory));
   const metadataDigestBefore = directoryMetadataDigest(indexSourceDirectory);
-  const manifest = cleanLatencyManifest();
-  const sourceManifest = validateIndexSourceProvenance(indexSourceDirectory, manifest);
+  const manifest = cleanLatencyManifest(backend);
+  const sourceManifest = validateIndexSourceProvenance(indexSourceDirectory, manifest, {
+    requireAnswerModelMatch: backend === "codex-exec",
+  });
   const fullBundle = loadDataset(
     options.datasetId,
     defaultDatasetPaths(resolve(options.repositoryRoot)),
@@ -137,10 +150,17 @@ export async function runCleanLatency(
       `Clean latency requires exactly ${CLEAN_LATENCY_SAMPLE_SIZE} queries, found ${sample.queries.length}`,
     );
   const sampledBundle: DatasetBundle = { ...fullBundle, queries: sample.queries };
+  const answerClient = createJsonLlmClient(
+    manifest.models.answer.execution === "anthropic-api" ? "anthropic-api" : "codex-exec",
+  );
+  const judgeClient = createJsonLlmClient(
+    manifest.models.judge.execution === "anthropic-api" ? "anthropic-api" : "codex-exec",
+  );
   const { adapter, frameworkId } = createCleanAdapter(
     options.system,
     manifest,
     indexSourceDirectory,
+    answerClient,
   );
   const doctor = await adapter.doctor();
   if (doctor.status !== "ready")
@@ -155,12 +175,13 @@ export async function runCleanLatency(
     frameworkId,
     sample: sample.manifest,
     manifestDigest: manifestDigest(manifest),
-    conditions: frozenConditions(),
+    conditions: frozenConditions(backend, manifest),
     indexSource: {
       path: indexSourceDirectory,
       runManifestPath: sourceManifest.path,
       runManifestDigest: sourceManifest.digest,
       metadataDigestBefore,
+      indexBuildModels: sourceManifest.indexBuildModels,
     },
     environment,
   };
@@ -185,7 +206,6 @@ export async function runCleanLatency(
     } satisfies FrameworkRunOptions));
   writeJsonLines(retrievalPath, retrievals);
 
-  const codexClient = new CodexJsonClient();
   const answers = await answerQueries(
     manifest,
     sampledBundle,
@@ -193,7 +213,7 @@ export async function runCleanLatency(
     retrievals,
     sample.queries,
     frameworkDirectory,
-    codexClient,
+    answerClient,
   );
   const judgements = await judgeAnswers(
     manifest,
@@ -203,7 +223,7 @@ export async function runCleanLatency(
     answers,
     sample.queries,
     frameworkDirectory,
-    codexClient,
+    judgeClient,
   );
   const metadataDigestAfter = directoryMetadataDigest(indexSourceDirectory);
   const summary = summarizeCleanLatency(sample.manifest.queryIds, retrievals, answers, judgements);
@@ -225,7 +245,7 @@ export async function runCleanLatency(
     sampleDigest: sample.manifest.sampleDigest,
     sampleQueryIds: sample.manifest.queryIds,
     manifestDigest: manifestDigest(manifest),
-    conditions: frozenConditions(),
+    conditions: frozenConditions(backend, manifest),
     indexSource: {
       path: indexSourceDirectory,
       runManifestPath: sourceManifest.path,
@@ -233,6 +253,7 @@ export async function runCleanLatency(
       metadataDigestBefore,
       metadataDigestAfter,
       unchanged: metadataDigestBefore === metadataDigestAfter,
+      indexBuildModels: sourceManifest.indexBuildModels,
     },
     environment: frozenProtocol.environment,
     summary,
@@ -242,17 +263,32 @@ export async function runCleanLatency(
   return report;
 }
 
-export function cleanLatencyManifest(): RagEvalManifest {
+export function cleanLatencyManifest(
+  backend: CleanLatencyCompletionBackend = "codex-exec",
+): RagEvalManifest {
+  const base = DEFAULT_RAG_EVAL_MANIFEST;
   return {
-    ...DEFAULT_RAG_EVAL_MANIFEST,
+    ...base,
     benchmarkPolicy: {
-      ...DEFAULT_RAG_EVAL_MANIFEST.benchmarkPolicy,
+      ...base.benchmarkPolicy,
       answerJudgeSamplePerDataset: CLEAN_LATENCY_SAMPLE_SIZE,
       answerCodexBatchSize: 1,
       judgeCodexBatchSize: 1,
       codexConcurrency: 1,
       maxRetries: 0,
     },
+    models:
+      backend === "anthropic-api"
+        ? {
+            ...base.models,
+            answer: {
+              provider: "anthropic",
+              model: CLEAN_LATENCY_ANTHROPIC_ANSWER_MODEL,
+              reasoningEffort: "medium",
+              execution: "anthropic-api",
+            },
+          }
+        : base.models,
   };
 }
 
@@ -375,10 +411,16 @@ export function directoryMetadataDigest(directory: string): string {
   return hash.digest("hex");
 }
 
+export interface IndexBuildModels {
+  readonly embedding: Readonly<Record<string, unknown>> | null;
+  readonly answer: Readonly<Record<string, unknown>> | null;
+}
+
 export function validateIndexSourceProvenance(
   indexSourceDirectory: string,
   manifest: RagEvalManifest,
-): { readonly path: string; readonly digest: string } {
+  options: { readonly requireAnswerModelMatch: boolean } = { requireAnswerModelMatch: true },
+): { readonly path: string; readonly digest: string; readonly indexBuildModels: IndexBuildModels } {
   let cursor = resolve(indexSourceDirectory);
   let manifestPath: string | null = null;
   for (let depth = 0; depth <= 6; depth += 1) {
@@ -397,23 +439,30 @@ export function validateIndexSourceProvenance(
   const source = JSON.parse(bytes.toString("utf8")) as {
     readonly manifest?: Pick<RagEvalManifest, "models">;
   };
-  const expectedModels = {
-    embedding: comparableModel(manifest.models.embedding),
-    answer: comparableModel(manifest.models.answer),
-  };
-  const actualModels = source.manifest
+  const actualModels: IndexBuildModels | null = source.manifest
     ? {
         embedding: comparableModel(source.manifest.models.embedding),
         answer: comparableModel(source.manifest.models.answer),
       }
     : null;
-  if (JSON.stringify(actualModels) !== JSON.stringify(expectedModels))
+  const expectedModels = {
+    embedding: comparableModel(manifest.models.embedding),
+    answer: options.requireAnswerModelMatch ? comparableModel(manifest.models.answer) : null,
+  };
+  const foundModels = actualModels
+    ? {
+        embedding: actualModels.embedding,
+        answer: options.requireAnswerModelMatch ? actualModels.answer : null,
+      }
+    : null;
+  if (JSON.stringify(foundModels) !== JSON.stringify(expectedModels))
     throw new Error(
-      `Warm index source model provenance mismatch at ${manifestPath}: expected ${JSON.stringify(expectedModels)}, found ${JSON.stringify(actualModels)}`,
+      `Warm index source model provenance mismatch at ${manifestPath}: expected ${JSON.stringify(expectedModels)}, found ${JSON.stringify(foundModels)}`,
     );
   return {
     path: realpathSync(manifestPath),
     digest: createHash("sha256").update(bytes).digest("hex"),
+    indexBuildModels: actualModels ?? { embedding: null, answer: null },
   };
 }
 
@@ -451,6 +500,7 @@ function createCleanAdapter(
   system: CleanLatencySystem,
   manifest: RagEvalManifest,
   indexSourceDirectory: string,
+  answerClient: JsonLlmClient,
 ): { readonly adapter: FrameworkAdapter; readonly frameworkId: FrameworkId } {
   const kontextModeBySystem: Partial<Record<CleanLatencySystem, KontextRetrievalMode>> = {
     "kontext-v13": "multi-query-anchored-evidence-answer-stack",
@@ -460,7 +510,7 @@ function createCleanAdapter(
   if (kontextMode) {
     return {
       adapter: new KontextBrainAdapter(manifest, {
-        codexClient: new CodexJsonClient(),
+        codexClient: answerClient,
         embeddingClient: null,
         retrievalMode: kontextMode,
         precomputedIndexDirectory: indexSourceDirectory,
@@ -478,7 +528,10 @@ function createCleanAdapter(
   };
 }
 
-function frozenConditions(): CleanLatencyReport["conditions"] {
+export function frozenConditions(
+  backend: CleanLatencyCompletionBackend,
+  manifest: RagEvalManifest,
+): CleanLatencyReport["conditions"] {
   return {
     warmIndex: true,
     indexBuildIncluded: false,
@@ -492,6 +545,10 @@ function frozenConditions(): CleanLatencyReport["conditions"] {
     percentile: "nearest-rank",
     queryToAnswerDefinition: "retrieval latency + answer latency; judge excluded",
     evaluationEndToEndDefinition: "retrieval latency + answer latency + judge latency",
+    completionBackend: backend,
+    answerModel: manifest.models.answer.model,
+    judgeModel: manifest.models.judge.model,
+    answerModelMatchesIndexBuild: backend === "codex-exec",
   };
 }
 

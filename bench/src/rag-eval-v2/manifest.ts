@@ -10,11 +10,11 @@ import {
 } from "./contracts.js";
 
 export interface ModelManifest {
-  readonly provider: "openai" | "codex-cli";
+  readonly provider: "openai" | "codex-cli" | "anthropic";
   readonly model: string;
   readonly dimensions?: number;
   readonly reasoningEffort?: "low" | "medium" | "high" | "xhigh";
-  readonly execution?: "api" | "codex-exec";
+  readonly execution?: "api" | "codex-exec" | "anthropic-api";
 }
 
 export interface FrameworkManifest {

@@ -51,6 +51,7 @@ import type {
 import type { FrameworkAdapter, FrameworkRunOptions } from "./frameworks.js";
 import { readJsonLines, writeJsonAtomic } from "./jsonl.js";
 import { LlmEvidenceReranker } from "./llm-evidence-reranker.js";
+import type { JsonLlmClient } from "./llm-json-client.js";
 import { type RagEvalManifest, manifestDigest } from "./manifest.js";
 import {
   CorpusBm25Ranker,
@@ -84,7 +85,7 @@ export type KontextRetrievalMode =
   | "adaptive-eece-stack";
 
 export interface KontextBrainAdapterOptions {
-  readonly codexClient?: CodexJsonClient;
+  readonly codexClient?: JsonLlmClient;
   readonly embeddingClient?: EmbeddingClient | null;
   readonly retrievalMode?: KontextRetrievalMode;
   readonly benchmarkDataDirectory?: string;
@@ -264,7 +265,7 @@ class CorpusConnector implements MCPConnector {
 
 class CodexLlmAdapter implements LLMAdapter {
   constructor(
-    private readonly client: CodexJsonClient,
+    private readonly client: JsonLlmClient,
     private readonly manifest: RagEvalManifest,
   ) {}
 
@@ -284,7 +285,7 @@ class CodexLlmAdapter implements LLMAdapter {
 
 export class KontextBrainAdapter implements FrameworkAdapter {
   readonly id = "kontext-brain" as const;
-  private readonly codexClient: CodexJsonClient;
+  private readonly codexClient: JsonLlmClient;
   private readonly embeddingClient: EmbeddingClient | null;
   private readonly retrievalMode: KontextRetrievalMode;
   private readonly benchmarkDataDirectory: string;

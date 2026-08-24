@@ -2,6 +2,7 @@ import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  type CleanLatencyCompletionBackend,
   type CleanLatencyReport,
   type CleanLatencySystem,
   runCleanLatency,
@@ -19,6 +20,7 @@ interface CleanLatencySuiteRow {
 interface CleanLatencySuiteConfig {
   readonly schemaVersion: "1.0.0";
   readonly outputRoot: string;
+  readonly completionBackend?: CleanLatencyCompletionBackend;
   readonly rows: readonly CleanLatencySuiteRow[];
 }
 
@@ -30,6 +32,7 @@ async function main(): Promise<void> {
   const config = JSON.parse(readFileSync(configPath, "utf8")) as CleanLatencySuiteConfig;
   validateCleanLatencySuiteConfig(config);
   const outputRoot = resolve(dirname(configPath), config.outputRoot);
+  const completionBackend = config.completionBackend ?? "codex-exec";
   const reports: CleanLatencyReport[] = [];
   for (const row of config.rows) {
     const workDirectory = join(outputRoot, row.outputDirectoryName);
@@ -43,9 +46,12 @@ async function main(): Promise<void> {
           system: row.system,
           indexSourceDirectory: resolve(dirname(configPath), row.indexSourceDirectory),
           skipHostGuard,
+          completionBackend,
         });
     if (report.datasetId !== row.datasetId || report.system !== row.system)
       throw new Error(`Existing clean report identity mismatch at ${reportPath}`);
+    if ((report.conditions.completionBackend ?? "codex-exec") !== completionBackend)
+      throw new Error(`Existing clean report backend mismatch at ${reportPath}`);
     const expectedIndexSource = resolve(dirname(configPath), row.indexSourceDirectory);
     if (report.indexSource.path !== realpathSync(expectedIndexSource))
       throw new Error(`Existing clean report index source mismatch at ${reportPath}`);
@@ -68,6 +74,7 @@ async function main(): Promise<void> {
   writeJsonAtomic(join(outputRoot, "clean-latency-suite-report.json"), {
     schemaVersion: "1.0.0",
     completedAt: new Date().toISOString(),
+    completionBackend,
     rows: reports,
   });
   process.stdout.write(`${JSON.stringify(reports, null, 2)}\n`);
@@ -76,6 +83,12 @@ async function main(): Promise<void> {
 export function validateCleanLatencySuiteConfig(config: CleanLatencySuiteConfig): void {
   if (config.schemaVersion !== "1.0.0") throw new Error("Unsupported clean suite schema");
   if (!config.outputRoot.trim()) throw new Error("outputRoot is required");
+  if (
+    config.completionBackend !== undefined &&
+    config.completionBackend !== "codex-exec" &&
+    config.completionBackend !== "anthropic-api"
+  )
+    throw new Error(`Unsupported completionBackend ${String(config.completionBackend)}`);
   const systems: readonly CleanLatencySystem[] = [
     "kontext-v15",
     "kontext-v13",

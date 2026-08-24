@@ -1,4 +1,5 @@
-import type { CodexJsonClient, CodexModelConfig } from "./codex-json.js";
+import type { CodexModelConfig } from "./codex-json.js";
+import type { JsonLlmClient } from "./llm-json-client.js";
 
 export interface EvidenceRerankCandidate {
   readonly id: string;
@@ -16,7 +17,7 @@ export interface EvidenceRerankerOptions {
 /** Ranks an over-retrieved candidate set without access to gold answers or dataset metadata. */
 export class LlmEvidenceReranker {
   constructor(
-    private readonly client: Pick<CodexJsonClient, "completeText">,
+    private readonly client: Pick<JsonLlmClient, "completeText">,
     private readonly model: CodexModelConfig,
     private readonly options: EvidenceRerankerOptions = {},
   ) {}
