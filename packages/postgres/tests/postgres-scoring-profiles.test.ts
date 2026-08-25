@@ -49,6 +49,48 @@ function fakeScoringDatabase() {
         runtimeFor(organizationId).canaryPercent = Number(values[1]);
         return result([]);
       }
+      if (
+        sql.startsWith("SELECT 1 FROM kontext_scoring_profiles") &&
+        sql.includes("status <> 'failed'")
+      ) {
+        const digest = String(values[1]);
+        const row = profiles.get(`${organizationId}:${digest}`);
+        return result(row && row.status !== "failed" ? [{ available: 1 }] : []);
+      }
+      if (
+        sql.startsWith("SELECT 1 FROM kontext_organization_runtime") &&
+        sql.includes("active_scoring_profile_digest")
+      ) {
+        const runtime = runtimes.get(organizationId);
+        return result(runtime?.activeDigest === String(values[1]) ? [{ active: 1 }] : []);
+      }
+      if (
+        sql.startsWith("INSERT INTO kontext_organization_runtime") &&
+        sql.includes("shadow_scoring_profile_digest")
+      ) {
+        runtimeFor(organizationId).shadowDigest = values[1] === null ? null : String(values[1]);
+        return result([]);
+      }
+      if (
+        sql.startsWith("UPDATE kontext_scoring_profiles") &&
+        sql.includes("SET status = 'failed'")
+      ) {
+        const digest = String(values[1]);
+        const key = `${organizationId}:${digest}`;
+        const row = profiles.get(key);
+        if (row && row.status !== "active") {
+          profiles.set(key, { ...row, status: "failed", failure: String(values[2]) });
+        }
+        return result([]);
+      }
+      if (
+        sql.startsWith("UPDATE kontext_organization_runtime") &&
+        sql.includes("SET shadow_scoring_profile_digest = NULL")
+      ) {
+        const runtime = runtimeFor(organizationId);
+        if (runtime.shadowDigest === String(values[1])) runtime.shadowDigest = null;
+        return result([]);
+      }
       if (sql.includes("LEFT JOIN kontext_scoring_profiles")) {
         const runtime = runtimes.get(organizationId);
         if (!runtime) return result([]);
@@ -266,5 +308,24 @@ describe("PostgresScoringProfileRepository", () => {
     const repository = new PostgresScoringProfileRepository(database.pool);
 
     await expect(repository.getActive("acme")).rejects.toThrow("Scoring profile digest mismatch");
+  });
+
+  it("stops resolving a cached shadow profile after it is marked failed", async () => {
+    const database = fakeScoringDatabase();
+    const profile = {
+      ...DEFAULT_CALIBRATED_SCORING_PROFILE,
+      id: "failing-shadow",
+      version: 2,
+    };
+    const digest = database.putProfile("acme", profile, "staged");
+    const repository = new PostgresScoringProfileRepository(database.pool, 60_000);
+    const principal = { organizationId: "acme", subjectId: "user:1", groupIds: [] };
+
+    await repository.setShadow("acme", digest);
+    expect(resolvedProfileId(await repository.resolveShadow(principal))).toBe("failing-shadow");
+    await repository.markFailed("acme", digest, "holdout regression");
+
+    expect(await repository.resolveShadow(principal)).toBeNull();
+    expect(await repository.getShadow("acme")).toBeNull();
   });
 });

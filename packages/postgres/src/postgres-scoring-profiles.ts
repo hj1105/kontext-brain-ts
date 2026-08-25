@@ -370,7 +370,14 @@ export class PostgresScoringProfileRepository implements TraversalScorePolicyRes
          WHERE organization_id = $1 AND profile_digest = $2 AND status <> 'active'`,
         [organizationId, profileDigest, failure],
       );
+      await client.query(
+        `UPDATE kontext_organization_runtime
+         SET shadow_scoring_profile_digest = NULL
+         WHERE organization_id = $1 AND shadow_scoring_profile_digest = $2`,
+        [organizationId, profileDigest],
+      );
     });
+    this.shadowCache.delete(organizationId);
   }
 }
 

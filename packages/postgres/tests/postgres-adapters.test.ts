@@ -153,6 +153,170 @@ describe.runIf(pool !== null)("PostgreSQL adapters", () => {
     );
   });
 
+  it("stages identical scoring content idempotently without changing the active profile", async () => {
+    const profiles = new PostgresScoringProfileRepository(requiredPool(), 0);
+    const profile = {
+      ...DEFAULT_CALIBRATED_SCORING_PROFILE,
+      id: "idempotent-stage",
+      version: 2,
+    };
+
+    const first = await profiles.stage("acme", profile, { run: "validation-1" });
+    const second = await profiles.stage("acme", profile, { run: "validation-2" });
+
+    expect(second).toMatchObject({
+      profileDigest: first.profileDigest,
+      status: "staged",
+      evaluationSummary: { run: "validation-2" },
+    });
+    expect(await profiles.getActive("acme")).toBeNull();
+  });
+
+  it("requires evaluation evidence unless activation explicitly uses break-glass", async () => {
+    const profiles = new PostgresScoringProfileRepository(requiredPool(), 0);
+    const staged = await profiles.stage("acme", {
+      ...DEFAULT_CALIBRATED_SCORING_PROFILE,
+      id: "unevaluated-profile",
+      version: 2,
+    });
+
+    await expect(profiles.activate("acme", staged.profileDigest)).rejects.toThrow(
+      `Scoring profile "${staged.profileDigest}" has no evaluation summary`,
+    );
+    expect(await profiles.getActive("acme")).toBeNull();
+
+    const activated = await profiles.activate("acme", staged.profileDigest, {
+      allowUnevaluated: true,
+    });
+    expect(activated.status).toBe("active");
+    expect((await profiles.getActive("acme"))?.profileDigest).toBe(staged.profileDigest);
+  });
+
+  it("never resolves the active or a failed scoring profile as shadow", async () => {
+    const profiles = new PostgresScoringProfileRepository(requiredPool(), 60_000);
+    const active = await profiles.stage(
+      "acme",
+      {
+        ...DEFAULT_CALIBRATED_SCORING_PROFILE,
+        id: "shadow-active",
+        version: 2,
+      },
+      { run: "validation" },
+    );
+    await profiles.activate("acme", active.profileDigest);
+    await expect(profiles.setShadow("acme", active.profileDigest)).rejects.toThrow(
+      "Shadow scoring profile must differ from the active profile",
+    );
+
+    const shadow = await profiles.stage(
+      "acme",
+      {
+        ...DEFAULT_CALIBRATED_SCORING_PROFILE,
+        id: "shadow-failed",
+        version: 2,
+      },
+      { run: "validation" },
+    );
+    await profiles.setShadow("acme", shadow.profileDigest);
+    const resolvedShadow = await profiles.resolveShadow({
+      organizationId: "acme",
+      subjectId: "user:1",
+      groupIds: [],
+    });
+    expect(resolvedShadow !== null && "descriptor" in resolvedShadow).toBe(true);
+
+    await profiles.markFailed("acme", shadow.profileDigest, "holdout regression");
+    expect(await profiles.getShadow("acme")).toBeNull();
+    expect(
+      await profiles.resolveShadow({
+        organizationId: "acme",
+        subjectId: "user:1",
+        groupIds: [],
+      }),
+    ).toBeNull();
+  });
+
+  it("restores the previous profile for every subject after rollback", async () => {
+    const profiles = new PostgresScoringProfileRepository(requiredPool(), 60_000);
+    const previous = await profiles.stage(
+      "acme",
+      {
+        ...DEFAULT_CALIBRATED_SCORING_PROFILE,
+        id: "rollback-previous",
+        version: 1,
+      },
+      { run: "validation" },
+    );
+    await profiles.activate("acme", previous.profileDigest);
+    const candidate = await profiles.stage(
+      "acme",
+      {
+        ...DEFAULT_CALIBRATED_SCORING_PROFILE,
+        id: "rollback-candidate",
+        version: 2,
+      },
+      { run: "validation" },
+    );
+    await profiles.activate("acme", candidate.profileDigest);
+    await profiles.setCanaryPercent("acme", 0);
+
+    await profiles.rollback("acme", previous.profileDigest);
+
+    expect((await profiles.getActive("acme"))?.profileDigest).toBe(previous.profileDigest);
+    const resolved = await profiles.resolve({
+      organizationId: "acme",
+      subjectId: "user:1",
+      groupIds: [],
+    });
+    expect("descriptor" in resolved ? resolved.descriptor.profileId : "legacy-v1").toBe(
+      "rollback-previous",
+    );
+  });
+
+  it("isolates scoring deployments and canary state between Organizations", async () => {
+    const profiles = new PostgresScoringProfileRepository(requiredPool(), 0);
+    const acme = await profiles.stage(
+      "acme",
+      {
+        ...DEFAULT_CALIBRATED_SCORING_PROFILE,
+        id: "acme-profile",
+        version: 2,
+      },
+      { run: "validation" },
+    );
+    const beta = await profiles.stage(
+      "beta",
+      {
+        ...DEFAULT_CALIBRATED_SCORING_PROFILE,
+        id: "beta-profile",
+        version: 2,
+      },
+      { run: "validation" },
+    );
+    await profiles.activate("acme", acme.profileDigest);
+    await profiles.activate("beta", beta.profileDigest);
+    await profiles.setCanaryPercent("acme", 0);
+
+    expect((await profiles.getActive("acme"))?.profile.id).toBe("acme-profile");
+    expect((await profiles.getActive("beta"))?.profile.id).toBe("beta-profile");
+    const acmeResolved = await profiles.resolve({
+      organizationId: "acme",
+      subjectId: "user:1",
+      groupIds: [],
+    });
+    const betaResolved = await profiles.resolve({
+      organizationId: "beta",
+      subjectId: "user:1",
+      groupIds: [],
+    });
+    expect("descriptor" in acmeResolved ? acmeResolved.descriptor.profileId : "legacy-v1").toBe(
+      "legacy-v1",
+    );
+    expect("descriptor" in betaResolved ? betaResolved.descriptor.profileId : "legacy-v1").toBe(
+      "beta-profile",
+    );
+  });
+
   it("deduplicates and leases extraction jobs by resource, content, and ontology hashes", async () => {
     const queue = new PostgresExtractionJobQueue(requiredPool());
     const key = {
