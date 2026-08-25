@@ -2,6 +2,7 @@ import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  type CleanLatencyAssessment,
   type CleanLatencyCompletionBackend,
   type CleanLatencyReport,
   type CleanLatencySystem,
@@ -62,12 +63,14 @@ async function main(): Promise<void> {
         datasetId: item.datasetId,
         system: item.system,
         status: item.assessment.status,
+        ...normalizeAssessment(item),
         completedAt: item.completedAt,
       })),
     });
-    if (report.assessment.status !== "valid")
+    const verdict = normalizeAssessment(report);
+    if (verdict.userFacingStatus !== "valid")
       throw new Error(
-        `Clean latency row is invalid and the suite stopped: ${row.datasetId}/${row.system}: ${report.assessment.reasons.join("; ")}`,
+        `Clean latency row has invalid user-facing latency and the suite stopped: ${row.datasetId}/${row.system}: ${verdict.userFacingReasons.join("; ")}`,
       );
   }
   assertSharedSamples(reports);
@@ -78,6 +81,25 @@ async function main(): Promise<void> {
     rows: reports,
   });
   process.stdout.write(`${JSON.stringify(reports, null, 2)}\n`);
+}
+
+/**
+ * Normalizes an assessment written by any protocol version. Reports produced
+ * before v1.1 have no separate user-facing gate, so their single overall
+ * status stands in for both scopes.
+ */
+export function normalizeAssessment(report: CleanLatencyReport): {
+  readonly userFacingStatus: "valid" | "invalid";
+  readonly judgeStatus: "valid" | "invalid";
+  readonly userFacingReasons: readonly string[];
+} {
+  const assessment = report.assessment as Partial<CleanLatencyAssessment> &
+    Pick<CleanLatencyAssessment, "status" | "reasons">;
+  return {
+    userFacingStatus: assessment.userFacingStatus ?? assessment.status,
+    judgeStatus: assessment.judgeStatus ?? assessment.status,
+    userFacingReasons: assessment.userFacingReasons ?? assessment.reasons,
+  };
 }
 
 export function validateCleanLatencySuiteConfig(config: CleanLatencySuiteConfig): void {

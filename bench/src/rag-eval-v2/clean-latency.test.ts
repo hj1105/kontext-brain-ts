@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { validateCleanLatencySuiteConfig } from "./clean-latency-suite.js";
+import { normalizeAssessment, validateCleanLatencySuiteConfig } from "./clean-latency-suite.js";
 import {
   CLEAN_LATENCY_ANTHROPIC_ANSWER_MODEL,
   CLEAN_LATENCY_ANTHROPIC_JUDGE_CONCURRENCY,
@@ -77,6 +77,57 @@ describe("clean latency protocol", () => {
     expect(summary.retrieval.p95Ms).toBe(20);
     expect(summary.queryToAnswer.p95Ms).toBe(60);
     expect(summary.judgeInclusiveEvaluationEndToEnd.p95Ms).toBe(120);
+  });
+
+  it("keeps user-facing latency valid when only the judge is contaminated", () => {
+    const assessment = assessCleanLatency(
+      queryIds,
+      [
+        retrieval("q1", 10, "2026-08-24T00:00:00.000Z"),
+        retrieval("q2", 20, "2026-08-24T00:00:30.000Z"),
+      ],
+      [answer("q1", 30, "2026-08-24T00:01:00.000Z"), answer("q2", 40, "2026-08-24T00:01:30.000Z")],
+      [
+        judgement("q1", 50, "2026-08-24T00:02:00.000Z"),
+        judgement("q2", CLEAN_LATENCY_TAIL_LIMIT_MS + 1, "2026-08-24T00:17:00.000Z"),
+      ],
+      true,
+    );
+
+    expect(assessment.userFacingStatus).toBe("valid");
+    expect(assessment.userFacingReasons).toEqual([]);
+    expect(assessment.judgeStatus).toBe("invalid");
+    expect(assessment.judgeReasons).toEqual(
+      expect.arrayContaining(["judge has 1 latency values over 600 seconds"]),
+    );
+    expect(assessment.status).toBe("invalid");
+  });
+
+  it("invalidates user-facing latency when retrieval or answer is contaminated", () => {
+    const assessment = assessCleanLatency(
+      queryIds,
+      [retrieval("q1", 10), retrieval("q2", CLEAN_LATENCY_TAIL_LIMIT_MS + 1)],
+      [answer("q1", 30), answer("q2", 40)],
+      [judgement("q1", 50), judgement("q2", 60)],
+      true,
+    );
+
+    expect(assessment.userFacingStatus).toBe("invalid");
+    expect(assessment.userFacingReasons).toEqual(
+      expect.arrayContaining(["retrieval has 1 latency values over 600 seconds"]),
+    );
+    expect(assessment.judgeStatus).toBe("valid");
+  });
+
+  it("treats a pre-v1.1 report's single status as both scopes", () => {
+    const legacy = {
+      assessment: { status: "valid", reasons: [] },
+    } as unknown as Parameters<typeof normalizeAssessment>[0];
+    expect(normalizeAssessment(legacy)).toEqual({
+      userFacingStatus: "valid",
+      judgeStatus: "valid",
+      userFacingReasons: [],
+    });
   });
 
   it("invalidates 600-second tails, throttle waves, and index mutations", () => {

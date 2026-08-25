@@ -25,7 +25,7 @@ import { DEFAULT_RAG_EVAL_MANIFEST, type RagEvalManifest, manifestDigest } from 
 import { nearestRankPercentileOrNull } from "./metrics.js";
 import { answerQueries, judgeAnswers } from "./pipeline.js";
 
-export const CLEAN_LATENCY_PROTOCOL_VERSION = "clean-latency-v1" as const;
+export const CLEAN_LATENCY_PROTOCOL_VERSION = "clean-latency-v1.1" as const;
 export const CLEAN_LATENCY_SAMPLE_SIZE = 200;
 export const CLEAN_LATENCY_QUERY_CONCURRENCY = 1;
 export const CLEAN_LATENCY_TAIL_LIMIT_MS = 600_000;
@@ -68,8 +68,19 @@ export interface CleanLatencySummary {
 }
 
 export interface CleanLatencyAssessment {
+  /** Valid only when every stage, including the judge, is clean. */
   readonly status: "valid" | "invalid";
+  /**
+   * Validity of the stages that make up user-facing latency (retrieval and
+   * answer). This is what gates a clean latency run: the judge is an
+   * evaluation-pipeline stage and never enters query-to-answer latency.
+   */
+  readonly userFacingStatus: "valid" | "invalid";
+  /** Validity of the judge stage, which only qualifies the evaluation E2E figure. */
+  readonly judgeStatus: "valid" | "invalid";
   readonly reasons: readonly string[];
+  readonly userFacingReasons: readonly string[];
+  readonly judgeReasons: readonly string[];
   readonly suspiciousCompletionWaveGaps: readonly {
     readonly stage: "retrieval" | "answer" | "judge";
     readonly gapMs: number;
@@ -102,6 +113,8 @@ export interface CleanLatencyReport {
     readonly percentile: "nearest-rank";
     readonly queryToAnswerDefinition: "retrieval latency + answer latency; judge excluded";
     readonly evaluationEndToEndDefinition: "retrieval latency + answer latency + judge latency";
+    readonly validityGate: "user-facing-stages";
+    readonly validityGateDefinition: string;
     readonly completionBackend: CleanLatencyCompletionBackend;
     readonly answerModel: string;
     readonly judgeModel: string;
@@ -345,13 +358,15 @@ export function assessCleanLatency(
   judgements: readonly JudgeResult[],
   indexSourceUnchanged: boolean,
 ): CleanLatencyAssessment {
-  const reasons: string[] = [];
+  const userFacingReasons: string[] = [];
+  const judgeReasons: string[] = [];
   const expectedIds = new Set(queryIds);
   for (const [stage, records] of [
     ["retrieval", retrievals],
     ["answer", answers],
     ["judge", judgements],
   ] as const) {
+    const reasons = stage === "judge" ? judgeReasons : userFacingReasons;
     const uniqueIds = new Set(records.map((record) => record.queryId));
     const completed = records.filter((record) => record.status === "ok").length;
     if (
@@ -380,19 +395,34 @@ export function assessCleanLatency(
         `${stage} has ${queueErrors.length} queue, throttle, quota, or usage-limit errors`,
       );
   }
-  if (!indexSourceUnchanged) reasons.push("read-only index source metadata changed during the run");
+  if (!indexSourceUnchanged)
+    userFacingReasons.push("read-only index source metadata changed during the run");
   const suspiciousCompletionWaveGaps = [
     ...completionWaveGaps("retrieval", retrievals),
     ...completionWaveGaps("answer", answers),
     ...completionWaveGaps("judge", judgements),
   ];
-  if (suspiciousCompletionWaveGaps.length > 0)
-    reasons.push(
-      `${suspiciousCompletionWaveGaps.length} inter-completion gaps fell in the 10-20 minute throttle-wave band`,
+  for (const [scope, reasons] of [
+    ["retrieval or answer", userFacingReasons],
+    ["judge", judgeReasons],
+  ] as const) {
+    const gaps = suspiciousCompletionWaveGaps.filter((gap) =>
+      scope === "judge" ? gap.stage === "judge" : gap.stage !== "judge",
     );
+    if (gaps.length > 0)
+      reasons.push(
+        `${gaps.length} ${scope} inter-completion gaps fell in the 10-20 minute throttle-wave band`,
+      );
+  }
+  const userFacingStatus = userFacingReasons.length === 0 ? "valid" : "invalid";
+  const judgeStatus = judgeReasons.length === 0 ? "valid" : "invalid";
   return {
-    status: reasons.length === 0 ? "valid" : "invalid",
-    reasons,
+    status: userFacingStatus === "valid" && judgeStatus === "valid" ? "valid" : "invalid",
+    userFacingStatus,
+    judgeStatus,
+    reasons: [...userFacingReasons, ...judgeReasons],
+    userFacingReasons,
+    judgeReasons,
     suspiciousCompletionWaveGaps,
   };
 }
@@ -555,6 +585,9 @@ export function frozenConditions(
     percentile: "nearest-rank",
     queryToAnswerDefinition: "retrieval latency + answer latency; judge excluded",
     evaluationEndToEndDefinition: "retrieval latency + answer latency + judge latency",
+    validityGate: "user-facing-stages",
+    validityGateDefinition:
+      "A run is accepted when the retrieval and answer stages are clean. Judge contamination is recorded separately and only disqualifies the judge-inclusive evaluation E2E figure, never retrieval or query-to-answer.",
     completionBackend: backend,
     answerModel: manifest.models.answer.model,
     judgeModel: manifest.models.judge.model,
