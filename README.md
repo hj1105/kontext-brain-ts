@@ -743,14 +743,6 @@ The per-org runtime is literally the code in this repo
 `KontextLoader`). The closed cloud repo adds only the multi-tenant control
 plane and UI on top — no re-implementation of retrieval.
 
-### Business model
-
-| Tier | For | Includes | Pricing |
-|------|-----|----------|---------|
-| **Community** | individuals, OSS | Apache-2.0 packages, self-host | free |
-| **Team (Cloud)** | startups | managed hosting, connectors, dashboard | seat + usage |
-| **Enterprise** | mid-market, regulated | RLS/ACL, SSO, audit UI, on-prem, SLA | annual |
-
 ### Build phases
 
 | Phase | Theme | Deliverables |
