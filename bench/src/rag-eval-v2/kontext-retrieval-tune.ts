@@ -1,7 +1,11 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { performance } from "node:perf_hooks";
-import { BidirectionalNLayerRetriever, type Principal } from "@kontext-brain/core";
+import {
+  AdaptiveRouteTraversalScorePolicy,
+  BidirectionalNLayerRetriever,
+  type Principal,
+} from "@kontext-brain/core";
 import {
   type BenchmarkGraphFanout,
   BidirectionalBenchmarkSearchGraph,
@@ -86,7 +90,10 @@ const variants: readonly Variant[] = [
 for (const variant of variants) {
   const startedAt = performance.now();
   const searchGraph = new BidirectionalBenchmarkSearchGraph(graph, docs, seeds, variant.fanout);
-  const retriever = new BidirectionalNLayerRetriever(searchGraph);
+  const retriever = new BidirectionalNLayerRetriever(
+    searchGraph,
+    new AdaptiveRouteTraversalScorePolicy(),
+  );
   const recalls: number[] = [];
   const precisions: number[] = [];
   const evidenceCounts: number[] = [];

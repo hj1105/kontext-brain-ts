@@ -7,3 +7,4 @@ coverage
 .env.local
 *.tsbuildinfo
 .turbo
+bench/data/rag-eval-v2/runs/

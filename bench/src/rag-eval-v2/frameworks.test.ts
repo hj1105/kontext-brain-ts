@@ -53,6 +53,31 @@ describe("kontext cache-only coverage modes", () => {
 
   it.each([
     [
+      "bidirectional-kg-direct-only-ablation",
+      "workspace-0.1.0+bidirectional-kg-v5-direct-only-ablation",
+    ],
+    ["bidirectional-kg-consensus-direct", "workspace-0.1.0+bidirectional-kg-v6-consensus-direct"],
+    ["source-hydrated-stack", "workspace-0.1.0+v4-source-hydrated-stack"],
+    [
+      "source-hydrated-direct-only-ablation",
+      "workspace-0.1.0+v4-source-hydrated-direct-only-ablation",
+    ],
+  ])("allows %s to run from embedding checkpoints without an API key", async (mode, version) => {
+    restoreEnvironment("OPENAI_API_KEY", undefined);
+    process.env.KONTEXT_RAG_EVAL_MODE = mode;
+
+    const adapter = createFrameworkAdapters(DEFAULT_RAG_EVAL_MANIFEST).find(
+      (candidate) => candidate.id === "kontext-brain",
+    );
+
+    await expect(adapter?.doctor()).resolves.toMatchObject({
+      status: "ready",
+      version,
+    });
+  });
+
+  it.each([
+    [
       "v14a-anchored-deterministic-soft-coverage-stack",
       "workspace-0.1.0+v14a-anchored-deterministic-soft-coverage-stack",
     ],

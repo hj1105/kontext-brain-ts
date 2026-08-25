@@ -77,12 +77,30 @@ describe("SyncResourceUseCase", () => {
     const repository = new InMemoryKnowledgeGraphRepository();
     const sync = new SyncResourceUseCase(repository, new InMemoryResourceContentStore());
 
-    const result = await sync.execute(orderSnapshot("v1", "paid"));
+    const base = orderSnapshot("v1", "paid");
+    const result = await sync.execute({
+      ...base,
+      ontologyLinks: [
+        { ontologyNodeId: "order", origin: "manual", confidence: 1 },
+        { ontologyNodeId: "payment", origin: "automatic", confidence: 0.7 },
+      ],
+      chunks: base.chunks.map((chunk) => ({
+        ...chunk,
+        ontologyLinks: [{ ontologyNodeId: "order", origin: "deterministic", confidence: 1 }],
+      })),
+    });
     const resource = await repository.getResource(organizationId, result.resourceId);
     const chunks = await repository.listChunks(organizationId, result.resourceId);
 
     expect(resource?.ontologyNodeIds).toEqual(["order", "payment"]);
     expect(chunks[0]?.ontologyNodeIds).toEqual(["order", "payment"]);
+    expect(resource?.ontologyLinks).toMatchObject([
+      { ontologyNodeId: "order", origin: "manual", confidence: 1 },
+      { ontologyNodeId: "payment", origin: "automatic", confidence: 0.7 },
+    ]);
+    expect(chunks[0]?.ontologyLinks).toMatchObject([
+      { ontologyNodeId: "order", origin: "deterministic", confidence: 1 },
+    ]);
   });
 
   it("marks competing active values as conflicts instead of choosing one", async () => {

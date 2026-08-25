@@ -12,7 +12,7 @@ import type {
   RetrievedEvidence,
 } from "./contracts.js";
 import { readJsonLines, writeJsonAtomic, writeJsonLines } from "./jsonl.js";
-import { KontextBrainAdapter } from "./kontext-framework.js";
+import { KontextBrainAdapter, type KontextRetrievalMode } from "./kontext-framework.js";
 import type { FrameworkManifest, RagEvalManifest } from "./manifest.js";
 import { manifestDigest } from "./manifest.js";
 import {
@@ -565,6 +565,12 @@ export function createFrameworkAdapters(manifest: RagEvalManifest): FrameworkAda
         retrievalMode: kontextRetrievalMode(process.env.KONTEXT_RAG_EVAL_MODE),
         benchmarkDataDirectory: process.env.KONTEXT_RAG_EVAL_BENCH_DATA_DIR,
         precomputedIndexDirectory: process.env.KONTEXT_RAG_EVAL_PRECOMPUTED_INDEX,
+        directVectorSeedCount: optionalPositiveInteger(
+          process.env.KONTEXT_DIRECT_VECTOR_SEED_COUNT,
+        ),
+        directLexicalSeedCount: optionalPositiveInteger(
+          process.env.KONTEXT_DIRECT_LEXICAL_SEED_COUNT,
+        ),
       });
     }
     if (framework.id === "vector-rag-reranker") {
@@ -574,30 +580,15 @@ export function createFrameworkAdapters(manifest: RagEvalManifest): FrameworkAda
   });
 }
 
-function kontextRetrievalMode(
-  value: string | undefined,
-):
-  | "legacy"
-  | "bidirectional-kg"
-  | "max-existing-stack"
-  | "source-hydrated-stack"
-  | "source-hydrated-llm-stack"
-  | "source-hydrated-llm-recall-safe-stack"
-  | "source-hydrated-llm-candidate-safe-stack"
-  | "source-hydrated-llm-coverage-aware-stack"
-  | "multi-query-standard-rerank-stack"
-  | "multi-query-coverage-aware-stack"
-  | "multi-query-plan-aware-coverage-stack"
-  | "multi-query-anchored-evidence-answer-stack"
-  | "corpus-complete-anchored-evidence-answer-stack"
-  | "v14a-anchored-deterministic-soft-coverage-stack"
-  | "v14b-anchored-deterministic-quota-coverage-stack"
-  | "adaptive-eece-stack" {
+function kontextRetrievalMode(value: string | undefined): KontextRetrievalMode {
   if (!value?.trim()) return "multi-query-anchored-evidence-answer-stack";
   if (
     value === "bidirectional-kg" ||
+    value === "bidirectional-kg-direct-only-ablation" ||
+    value === "bidirectional-kg-consensus-direct" ||
     value === "max-existing-stack" ||
     value === "source-hydrated-stack" ||
+    value === "source-hydrated-direct-only-ablation" ||
     value === "source-hydrated-llm-stack" ||
     value === "source-hydrated-llm-recall-safe-stack" ||
     value === "source-hydrated-llm-candidate-safe-stack" ||
@@ -614,6 +605,12 @@ function kontextRetrievalMode(
     return value;
   }
   throw new Error(`Unsupported KONTEXT_RAG_EVAL_MODE: ${value}`);
+}
+
+function optionalPositiveInteger(value: string | undefined): number | undefined {
+  if (!value?.trim()) return undefined;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
 function parseCommand(raw: string | undefined): readonly string[] | null {

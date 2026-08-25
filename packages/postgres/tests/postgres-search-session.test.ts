@@ -202,6 +202,6 @@ describe("PostgresSearchSession", () => {
     expect(ontologySeeds.map((seed) => seed.node.id)).toEqual(
       ontologyNodes.slice(0, 12).map((node) => node.id),
     );
-    expect(ontologySeeds.every((seed) => seed.score === 0.08)).toBe(true);
+    expect(ontologySeeds.every((seed) => seed.observations?.fallback === true)).toBe(true);
   });
 });

@@ -29,6 +29,9 @@ export * from "./query/layered-context-collector.js";
 export * from "./query/layered-query-pipeline.js";
 export * from "./query/n-layer.js";
 export * from "./query/bidirectional-retriever.js";
+export * from "./query/adaptive-traversal-scoring.js";
+export * from "./query/traversal-scoring.js";
+export * from "./query/seed-fusion.js";
 export * from "./query/source-context-hydrator.js";
 export * from "./query/answer-validator.js";
 

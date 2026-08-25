@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  AdaptiveRouteTraversalScorePolicy,
   BidirectionalNLayerRetriever,
   type BidirectionalRetrievalInput,
   type BidirectionalRetrievalResult,
@@ -68,8 +69,11 @@ import {
 export type KontextRetrievalMode =
   | "legacy"
   | "bidirectional-kg"
+  | "bidirectional-kg-direct-only-ablation"
+  | "bidirectional-kg-consensus-direct"
   | "max-existing-stack"
   | "source-hydrated-stack"
+  | "source-hydrated-direct-only-ablation"
   | "source-hydrated-llm-stack"
   | "source-hydrated-llm-recall-safe-stack"
   | "source-hydrated-llm-candidate-safe-stack"
@@ -89,11 +93,20 @@ export interface KontextBrainAdapterOptions {
   readonly retrievalMode?: KontextRetrievalMode;
   readonly benchmarkDataDirectory?: string;
   readonly precomputedIndexDirectory?: string;
+  readonly directVectorSeedCount?: number;
+  readonly directLexicalSeedCount?: number;
 }
 
-const BIDIRECTIONAL_FRAMEWORK_VERSION = "workspace-0.1.0+bidirectional-kg-v2";
+const BIDIRECTIONAL_FRAMEWORK_VERSION =
+  "workspace-0.1.0+bidirectional-kg-v5-adaptive-route-evidence";
+const BIDIRECTIONAL_DIRECT_ONLY_FRAMEWORK_VERSION =
+  "workspace-0.1.0+bidirectional-kg-v5-direct-only-ablation";
+const BIDIRECTIONAL_CONSENSUS_DIRECT_FRAMEWORK_VERSION =
+  "workspace-0.1.0+bidirectional-kg-v6-consensus-direct";
 const MAX_EXISTING_STACK_FRAMEWORK_VERSION = "workspace-0.1.0+v3-max-existing-stack";
 const SOURCE_HYDRATED_STACK_FRAMEWORK_VERSION = "workspace-0.1.0+v4-source-hydrated-stack";
+const SOURCE_HYDRATED_DIRECT_ONLY_FRAMEWORK_VERSION =
+  "workspace-0.1.0+v4-source-hydrated-direct-only-ablation";
 const SOURCE_HYDRATED_LLM_STACK_FRAMEWORK_VERSION = "workspace-0.1.0+v5-source-hydrated-llm-stack";
 const SOURCE_HYDRATED_LLM_RECALL_SAFE_STACK_FRAMEWORK_VERSION =
   "workspace-0.1.0+v6-source-hydrated-llm-recall-safe-stack";
@@ -288,6 +301,8 @@ export class KontextBrainAdapter implements FrameworkAdapter {
   private readonly retrievalMode: KontextRetrievalMode;
   private readonly benchmarkDataDirectory: string;
   private readonly precomputedIndexDirectory: string | null;
+  private readonly directVectorSeedCount: number;
+  private readonly directLexicalSeedCount: number;
 
   constructor(
     private readonly manifest: RagEvalManifest,
@@ -300,6 +315,8 @@ export class KontextBrainAdapter implements FrameworkAdapter {
       options.benchmarkDataDirectory ??
       resolve(dirname(fileURLToPath(import.meta.url)), "../../data");
     this.precomputedIndexDirectory = options.precomputedIndexDirectory ?? null;
+    this.directVectorSeedCount = positiveSeedCount(options.directVectorSeedCount, 30);
+    this.directLexicalSeedCount = positiveSeedCount(options.directLexicalSeedCount, 20);
   }
 
   async doctor(): Promise<FrameworkDoctorResult> {
@@ -327,7 +344,14 @@ export class KontextBrainAdapter implements FrameworkAdapter {
         detail: "read-only precomputed expansions and embeddings; deterministic coverage selection",
       };
     }
-    if (this.retrievalMode !== "legacy") {
+    if (
+      this.retrievalMode !== "legacy" &&
+      this.retrievalMode !== "bidirectional-kg-direct-only-ablation" &&
+      this.retrievalMode !== "bidirectional-kg-consensus-direct" &&
+      this.retrievalMode !== "max-existing-stack" &&
+      this.retrievalMode !== "source-hydrated-stack" &&
+      this.retrievalMode !== "source-hydrated-direct-only-ablation"
+    ) {
       if (!this.embeddingClient) {
         return {
           frameworkId: this.id,
@@ -402,14 +426,42 @@ export class KontextBrainAdapter implements FrameworkAdapter {
         configDigest: manifestDigest(this.manifest),
       }));
     }
-    if (this.retrievalMode === "bidirectional-kg") {
-      return this.retrieveBidirectionalKg(bundle, options);
+    if (
+      this.retrievalMode === "bidirectional-kg" ||
+      this.retrievalMode === "bidirectional-kg-direct-only-ablation" ||
+      this.retrievalMode === "bidirectional-kg-consensus-direct"
+    ) {
+      const consensusDirect = this.retrievalMode === "bidirectional-kg-consensus-direct";
+      return this.retrieveBidirectionalKg(
+        bundle,
+        options,
+        this.retrievalMode !== "bidirectional-kg",
+        consensusDirect,
+      );
     }
     if (this.retrievalMode === "max-existing-stack") {
       return this.retrieveMaxExistingStack(bundle, options);
     }
     if (this.retrievalMode === "source-hydrated-stack") {
       return this.retrieveMaxExistingStack(bundle, options, true);
+    }
+    if (this.retrievalMode === "source-hydrated-direct-only-ablation") {
+      return this.retrieveMaxExistingStack(
+        bundle,
+        options,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        null,
+        false,
+        true,
+      );
     }
     if (this.retrievalMode === "source-hydrated-llm-stack") {
       return this.retrieveMaxExistingStack(bundle, options, true, true);
@@ -646,8 +698,22 @@ export class KontextBrainAdapter implements FrameworkAdapter {
   private async retrieveBidirectionalKg(
     bundle: DatasetBundle,
     options: FrameworkRunOptions,
+    directOnly = false,
+    providerConsensus = false,
   ): Promise<RetrievalResult[]> {
-    const embeddingClient = this.embeddingClient;
+    const frameworkVersion = providerConsensus
+      ? BIDIRECTIONAL_CONSENSUS_DIRECT_FRAMEWORK_VERSION
+      : directOnly
+        ? BIDIRECTIONAL_DIRECT_ONLY_FRAMEWORK_VERSION
+        : BIDIRECTIONAL_FRAMEWORK_VERSION;
+    const retrievalMode = providerConsensus
+      ? "bidirectional-consensus-direct"
+      : directOnly
+        ? "bidirectional-direct-only-ablation"
+        : "bidirectional";
+    const maxHops = directOnly ? 0 : 8;
+    const embeddingClient =
+      this.embeddingClient ?? (directOnly ? cacheOnlyEmbeddingClient(this.manifest) : null);
     if (!embeddingClient) throw new Error("Bidirectional KG retrieval requires OPENAI_API_KEY");
     const artifact =
       bundle.track === "static-kb"
@@ -663,7 +729,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
         latencyMs: 0,
         inputTokens: null,
         error: `No evidence-backed KG artifact is registered for ${bundle.id}`,
-        frameworkVersion: BIDIRECTIONAL_FRAMEWORK_VERSION,
+        frameworkVersion,
         configDigest: manifestDigest(this.manifest),
       }));
     }
@@ -698,8 +764,14 @@ export class KontextBrainAdapter implements FrameworkAdapter {
       bundle.queries.map((query) => query.id),
       embeddingClient.dimensions,
     );
-    const vectorSeedCount = Math.min(10, docs.length);
-    const lexicalSeedCount = Math.min(5, docs.length);
+    const vectorSeedCount = Math.min(
+      providerConsensus ? this.directVectorSeedCount : 10,
+      docs.length,
+    );
+    const lexicalSeedCount = Math.min(
+      providerConsensus ? this.directLexicalSeedCount : 5,
+      docs.length,
+    );
     const seeds = bundle.queries.map((query) => {
       const queryVector = queryVectors.get(query.id);
       if (!queryVector) throw new Error(`Missing KG query embedding ${query.id}`);
@@ -725,17 +797,45 @@ export class KontextBrainAdapter implements FrameworkAdapter {
       entityFacts: 10,
       chunkEntities: 10,
       chunkFacts: 10,
+      providerConsensus,
     } as const;
     const searchGraph = new BidirectionalBenchmarkSearchGraph(graph, docs, seeds, graphFanout);
-    const knowledgeRetriever = new BidirectionalNLayerRetriever(searchGraph);
+    const scoringPolicy = new AdaptiveRouteTraversalScorePolicy();
+    const knowledgeRetriever = directOnly
+      ? new BudgetedBidirectionalRetriever(searchGraph, { maxHops })
+      : new BidirectionalNLayerRetriever(searchGraph, scoringPolicy);
     const agent = await this.createBidirectionalAgent(bundle, indexDirectory, knowledgeRetriever);
-    const digest = manifestDigest(this.manifest);
-    const checkpointDirectory = join(indexDirectory, "retrieval-checkpoints", queryDigest);
+    const candidatePoolDigest = createHash("sha256")
+      .update(queryDigest)
+      .update("\0")
+      .update(String(vectorSeedCount))
+      .update("\0")
+      .update(String(lexicalSeedCount))
+      .update("\0")
+      .update(providerConsensus ? "provider-consensus-v1" : "ordinal-fusion-v1")
+      .digest("hex");
+    const digest = createHash("sha256")
+      .update(manifestDigest(this.manifest))
+      .update("\0")
+      .update(scoringPolicy.descriptor.profileDigest)
+      .update("\0")
+      .update(scoringPolicy.descriptor.featureSchemaVersion)
+      .update("\0")
+      .update(frameworkVersion)
+      .update("\0")
+      .update(candidatePoolDigest)
+      .digest("hex");
+    const checkpointDirectory = join(indexDirectory, "retrieval-checkpoints", candidatePoolDigest);
     writeJsonAtomic(join(indexDirectory, "kontext-kg-config.json"), {
-      retrievalMode: "bidirectional",
-      frameworkVersion: BIDIRECTIONAL_FRAMEWORK_VERSION,
+      retrievalMode,
+      frameworkVersion,
       graphProjection: "GraphRAG-Bench KG -> production SearchGraphPort",
       agentEntryPoint: "KontextAgent.retrieve(question, principal)",
+      scoring: {
+        profile: scoringPolicy.descriptor,
+        featureSchemaVersion: scoringPolicy.descriptor.featureSchemaVersion,
+        candidatePoolDigest,
+      },
       embedding: {
         provider: "openai",
         model: embeddingClient.model,
@@ -746,7 +846,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
       graphFanout,
       searchBudget: {
         topK: options.topK,
-        maxHops: 8,
+        maxHops,
         maxKgHops: 3,
         maxVisited: 200,
         maxCandidates: 500,
@@ -780,7 +880,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
             checkpoint.frameworkId === this.id &&
             checkpoint.queryId === query.id &&
             checkpoint.configDigest === digest &&
-            checkpoint.frameworkVersion === BIDIRECTIONAL_FRAMEWORK_VERSION
+            checkpoint.frameworkVersion === frameworkVersion
           ) {
             return checkpoint;
           }
@@ -802,7 +902,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
           score: hit.score,
           rank: rank + 1,
           metadata: {
-            retrievalMode: "bidirectional",
+            retrievalMode,
             chunkId: hit.chunkId,
             factKey: hit.factKey ?? null,
             factStatus: hit.factStatus ?? null,
@@ -812,6 +912,11 @@ export class KontextBrainAdapter implements FrameworkAdapter {
             visited: trace?.visited ?? null,
             candidates: trace?.candidates ?? null,
             stoppedBy: trace?.stoppedBy ?? null,
+            scoringProfileId: trace?.scoring.profileId ?? null,
+            scoringProfileDigest: trace?.scoring.profileDigest ?? null,
+            missingSignals: trace?.scoring.missingSignals.join(",") ?? null,
+            adaptiveRouting: trace?.scoring.routing ? JSON.stringify(trace.scoring.routing) : null,
+            scoreBreakdown: hit.scoreBreakdown ? JSON.stringify(hit.scoreBreakdown) : null,
           },
         }));
         const result: RetrievalResult = {
@@ -823,8 +928,15 @@ export class KontextBrainAdapter implements FrameworkAdapter {
           latencyMs: performance.now() - startedAt,
           inputTokens: retrieval.contextTokensUsed,
           error: null,
-          frameworkVersion: BIDIRECTIONAL_FRAMEWORK_VERSION,
+          frameworkVersion,
           configDigest: digest,
+          scoringProfile: {
+            id: scoringPolicy.descriptor.profileId,
+            version: scoringPolicy.descriptor.profileVersion,
+            digest: scoringPolicy.descriptor.profileDigest,
+          },
+          featureSchemaVersion: scoringPolicy.descriptor.featureSchemaVersion,
+          candidatePoolDigest,
         };
         writeJsonAtomic(checkpointPath, result);
         return result;
@@ -838,8 +950,15 @@ export class KontextBrainAdapter implements FrameworkAdapter {
           latencyMs: performance.now() - startedAt,
           inputTokens: null,
           error: (error as Error).message,
-          frameworkVersion: BIDIRECTIONAL_FRAMEWORK_VERSION,
+          frameworkVersion,
           configDigest: digest,
+          scoringProfile: {
+            id: scoringPolicy.descriptor.profileId,
+            version: scoringPolicy.descriptor.profileVersion,
+            digest: scoringPolicy.descriptor.profileDigest,
+          },
+          featureSchemaVersion: scoringPolicy.descriptor.featureSchemaVersion,
+          candidatePoolDigest,
         };
         writeJsonAtomic(checkpointPath, result);
         return result;
@@ -861,10 +980,13 @@ export class KontextBrainAdapter implements FrameworkAdapter {
     anchoredEvidenceAnswer = false,
     deterministicCoverage: CacheOnlyCoverageDescriptor | null = null,
     completeCorpusCoverage = false,
+    directOnlyTraversal = false,
   ): Promise<RetrievalResult[]> {
     const embeddingClient =
       this.embeddingClient ??
-      (deterministicCoverage ? cacheOnlyEmbeddingClient(this.manifest) : null);
+      (deterministicCoverage || (!rerankWithLlm && !multiQuery)
+        ? cacheOnlyEmbeddingClient(this.manifest)
+        : null);
     if (!embeddingClient) throw new Error("Max existing stack retrieval requires OPENAI_API_KEY");
     const candidateCount = deterministicCoverage
       ? deterministicCoverage.candidateCount
@@ -892,13 +1014,14 @@ export class KontextBrainAdapter implements FrameworkAdapter {
                   : hydrateSourceContext
                     ? "v4-source-hydrated-stack"
                     : "v3-max-existing-stack";
-    const retrievalMode =
-      deterministicCoverage?.retrievalMode ??
-      (completeCorpusCoverage
-        ? V15_STACK_DESCRIPTOR.retrievalMode
-        : anchoredEvidenceAnswer
-          ? V13_STACK_DESCRIPTOR.retrievalMode
-          : inheritedRetrievalMode);
+    const retrievalMode = directOnlyTraversal
+      ? "v4-source-hydrated-direct-only-ablation"
+      : (deterministicCoverage?.retrievalMode ??
+        (completeCorpusCoverage
+          ? V15_STACK_DESCRIPTOR.retrievalMode
+          : anchoredEvidenceAnswer
+            ? V13_STACK_DESCRIPTOR.retrievalMode
+            : inheritedRetrievalMode));
     const inheritedFrameworkVersion = planAwareCoverage
       ? MULTI_QUERY_PLAN_AWARE_COVERAGE_STACK_FRAMEWORK_VERSION
       : multiQuery
@@ -918,13 +1041,14 @@ export class KontextBrainAdapter implements FrameworkAdapter {
                   : hydrateSourceContext
                     ? SOURCE_HYDRATED_STACK_FRAMEWORK_VERSION
                     : MAX_EXISTING_STACK_FRAMEWORK_VERSION;
-    const frameworkVersion =
-      deterministicCoverage?.frameworkVersion ??
-      (completeCorpusCoverage
-        ? V15_STACK_DESCRIPTOR.frameworkVersion
-        : anchoredEvidenceAnswer
-          ? V13_STACK_DESCRIPTOR.frameworkVersion
-          : inheritedFrameworkVersion);
+    const frameworkVersion = directOnlyTraversal
+      ? SOURCE_HYDRATED_DIRECT_ONLY_FRAMEWORK_VERSION
+      : (deterministicCoverage?.frameworkVersion ??
+        (completeCorpusCoverage
+          ? V15_STACK_DESCRIPTOR.frameworkVersion
+          : anchoredEvidenceAnswer
+            ? V13_STACK_DESCRIPTOR.frameworkVersion
+            : inheritedFrameworkVersion));
     const answerPolicy =
       deterministicCoverage?.answerPolicy ??
       (completeCorpusCoverage
@@ -969,6 +1093,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
           candidateCount,
           deterministicCoverage,
           completeCorpusCoverage,
+          directOnlyTraversal,
         ),
       }));
     }
@@ -1145,7 +1270,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
     } as const;
     const graphBudget = {
       topK: candidateCount,
-      maxHops: 8,
+      maxHops: directOnlyTraversal ? 0 : 8,
       maxKgHops: 3,
       maxVisited: 400,
       maxCandidates: 1_000,
@@ -1188,6 +1313,7 @@ export class KontextBrainAdapter implements FrameworkAdapter {
       candidateCount,
       deterministicCoverage,
       completeCorpusCoverage,
+      directOnlyTraversal,
     );
     const retrievalQueryDigest = multiQuery ? expandedQueryDigest : baseQueryDigest;
     const checkpointDirectory = join(indexDirectory, "retrieval-checkpoints", retrievalQueryDigest);
@@ -1780,7 +1906,7 @@ class BudgetedBidirectionalRetriever extends BidirectionalNLayerRetriever {
     graph: SearchGraphPort,
     private readonly defaultBudget: Readonly<Partial<SearchBudget>>,
   ) {
-    super(graph);
+    super(graph, new AdaptiveRouteTraversalScorePolicy());
   }
 
   override retrieve(input: BidirectionalRetrievalInput): Promise<BidirectionalRetrievalResult> {
@@ -1959,8 +2085,9 @@ function loadEmbeddingBatch(
       metadata.offset !== offset ||
       metadata.ids.length !== ids.length ||
       metadata.ids.some((id, index) => id !== ids[index])
-    )
+    ) {
       return null;
+    }
     if (
       metadata.schemaVersion === 2 &&
       (metadata.inputDigests.length !== inputs.length ||
@@ -2374,8 +2501,17 @@ function cacheOnlyEmbeddingClient(manifest: RagEvalManifest): EmbeddingClient {
 
 function frameworkVersion(mode: KontextRetrievalMode): string {
   if (mode === "bidirectional-kg") return BIDIRECTIONAL_FRAMEWORK_VERSION;
+  if (mode === "bidirectional-kg-direct-only-ablation") {
+    return BIDIRECTIONAL_DIRECT_ONLY_FRAMEWORK_VERSION;
+  }
+  if (mode === "bidirectional-kg-consensus-direct") {
+    return BIDIRECTIONAL_CONSENSUS_DIRECT_FRAMEWORK_VERSION;
+  }
   if (mode === "max-existing-stack") return MAX_EXISTING_STACK_FRAMEWORK_VERSION;
   if (mode === "source-hydrated-stack") return SOURCE_HYDRATED_STACK_FRAMEWORK_VERSION;
+  if (mode === "source-hydrated-direct-only-ablation") {
+    return SOURCE_HYDRATED_DIRECT_ONLY_FRAMEWORK_VERSION;
+  }
   if (mode === "source-hydrated-llm-stack") return SOURCE_HYDRATED_LLM_STACK_FRAMEWORK_VERSION;
   if (mode === "source-hydrated-llm-recall-safe-stack") {
     return SOURCE_HYDRATED_LLM_RECALL_SAFE_STACK_FRAMEWORK_VERSION;
@@ -2411,6 +2547,10 @@ function frameworkVersion(mode: KontextRetrievalMode): string {
   return "workspace-0.1.0";
 }
 
+function positiveSeedCount(value: number | undefined, fallback: number): number {
+  return Number.isFinite(value) && (value ?? 0) > 0 ? Math.floor(value as number) : fallback;
+}
+
 function maxExistingStackDigest(
   manifest: RagEvalManifest,
   hydrateSourceContext = false,
@@ -2425,6 +2565,7 @@ function maxExistingStackDigest(
   candidateCount = MAX_EXISTING_STACK_CANDIDATES,
   deterministicCoverage: CacheOnlyCoverageDescriptor | null = null,
   completeCorpusCoverage = false,
+  directOnlyTraversal = false,
 ): string {
   const inheritedStackIdentity = planAwareCoverage
     ? `\0v12-multi-query-plan-aware-coverage-stack\0${MULTI_QUERY_POLICY_VERSION}\0`
@@ -2473,7 +2614,9 @@ function maxExistingStackDigest(
     .update(JSON.stringify(KNOWLEDGE_ARTIFACT_SELECTION_POLICY))
     .update(String(candidateCount))
     .update("\0")
-    .update(JSON.stringify(MAX_EXISTING_STACK_FUSION));
+    .update(JSON.stringify(MAX_EXISTING_STACK_FUSION))
+    .update("\0")
+    .update(directOnlyTraversal ? "direct-only-traversal" : "graph-traversal");
   if (hydrateSourceContext) {
     hash
       .update("\0")
