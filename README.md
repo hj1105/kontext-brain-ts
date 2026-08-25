@@ -90,9 +90,8 @@ ACL-accessible Evidence. It does not assume a DAG or a fixed number of lifts.
   organized under one ontology, not in three disconnected vector indexes.
 - **Predictable retrieval**: ontology routing is auditable — you can see
   exactly which nodes a query matched, then which docs under those nodes.
-- **Cost-tunable**: choose between fast extractive (no final LLM, ~1ms
-  latency, ~200 char context) and richer LLM-generated answers (1-8s,
-  200–1700 char context) per query.
+- **Cost-tunable**: choose between extractive retrieval with no final LLM and
+  richer LLM-generated answers per query.
 - **MCP-native**: built on the official Model Context Protocol SDK both as
   client (consume MCP servers) and as server (expose to AI agent hosts).
 - **Governed auto-setup**: the first setup session can build a small ontology.
@@ -175,8 +174,8 @@ pnpm test            # unit, contract, and integration tests
 ```bash
 pnpm --filter @kontext-brain/example-basic start       # in-process toy
 pnpm --filter @kontext-brain/example-auto-setup start  # mock MCP servers + autoSetup
-pnpm --filter @kontext-brain/bench start               # full 14-system benchmark (needs Ollama)
-pnpm --filter @kontext-brain/bench ralph               # short-form "Ralph loop"
+bench/node_modules/.bin/tsx bench/src/rag-eval-v2/cli.ts doctor  # inspect evaluation prerequisites
+pnpm --filter @kontext-brain/bench start               # legacy local benchmark (needs Ollama)
 ```
 
 ---
@@ -359,8 +358,8 @@ const res = await agent.query("backend authentication");
 
 ### Pattern C — extractive (no LLM at query time)
 
-For tech-docs QA where answers are literal sentences and you need
-sub-millisecond latency:
+For document QA where answers are literal sentences and you want to avoid an
+LLM call at query time:
 
 ```typescript
 import { ExtractiveRetriever } from "@kontext-brain/core";
@@ -466,855 +465,88 @@ connector is skipped rather than interpreted as deleting all of its documents.
 
 ---
 
-## Performance (benchmark)
-
-Local Ollama, deterministic (`temperature=0`), 12 tech docs across
-backend / frontend / ops / security, 8 factual queries with expected doc IDs
-and keyword fragments. Metrics computed per query, then averaged.
-
-```
-system           recall  keyword    ctx     latency    efficiency  ratio
-─────────────── ─────── ───────── ─────── ────────── ──────────── ─────────
-baseline (RAG)    0.875    0.823    1436     6707ms   7.48e-8       1.00x
-flat-kw           0.750    0.706    1720     7063ms   6.18e-8       0.83x
-v1-default        0.000    0.354      93    14141ms   0             0.00x   ← original bug
-v1-fixed          1.000    0.700     839    11793ms   7.07e-8       0.95x
-v2-keyword        1.000    0.875    1285     6974ms   9.77e-8       1.31x
-v3-vector         0.625    0.656    2575     9694ms   1.64e-8       0.22x
-v4-llm            1.000    0.938    1768    11389ms   4.66e-8       0.62x
-v5-compress       1.000    0.738     694     4740ms   2.24e-7       3.00x
-v9-rerank         1.000    0.844     904     6320ms   1.48e-7       1.97x
-v10-rerank+c      1.000    0.762     495     5118ms   3.01e-7       4.03x
-─── Ralph loop additions ───
-v13-sentence      1.000    0.813     217     1853ms   2.02e-6      26.99x   ← fair RAG winner
-v17-hybrid-ex     1.000    0.813     217     1887ms   1.98e-6      26.49x
-v12-extract       1.000    0.875     168       <1ms   2.68e-2  358,244x    ← extractive QA
-v16-proximity     1.000    0.875     206       <1ms   2.97e-2  397,895x    ← overall winner
-```
-
-`efficiency = recall × keyword_hit / (context_chars × latency_ms)` — higher is
-better. `ratio` is relative to the baseline.
-
-### Two classes of wins (read carefully)
-
-**1. Fair RAG comparison (v13-sentence, v17-hybrid-ex) — 27x baseline.**
-
-This is the defensible result. Both systems make exactly the same LLM and
-embedding calls per query (1× embed + 1× chat), so latency / cost
-differences come from kontext sending less context, not from skipping work.
-
-- Same answer quality on this corpus: kw 0.813 vs baseline 0.823 (within
-  1pp on 8 queries — statistically equivalent)
-- 85% smaller context (217 chars vs 1436)
-- 72% lower latency (1.85s vs 6.71s)
-
-**2. Extractive QA (v12-extract, v16-proximity) — ~400,000x is misleading.**
-
-These variants do **zero LLM calls** and zero network I/O. They return
-top-scored sentences from retrieved docs as the answer using pure in-memory
-keyword matching. The latency (<1ms) was independently sanity-checked: cold
-instances on novel queries land at 0.17–0.37ms, indistinguishable from a
-plain `Array.filter()` over the same data — confirming there's no caching
-artifact, just no work to do.
-
-The 400,000x ratio is therefore measuring **"Ollama round-trip vs JS string
-matching"**, not "better RAG." It's a real number but an apples-to-oranges
-comparison: extractive QA and RAG generation are different tasks. Treat
-this as: *"if your domain has answers as literal sentences in the corpus,
-you can sometimes skip the LLM entirely and serve answers in microseconds."*
-Don't read it as "kontext is 400,000× faster than vector RAG."
-
-When extractive breaks: q5 "rotate secrets" needs synthesis across 3
-scattered sentences in the corpus → both v12 and v16 score keyword-hit 0.00
-on that query. v13-sentence (with LLM) handles it correctly.
-
-`ExtractiveRetriever` lives in `@kontext-brain/core` so you can use it
-directly when latency/cost matter and your queries are extractive in nature
-(FAQ-style tech support, doc lookup, etc.).
-
-### Variant cheat-sheet
-
-| your need | use |
-|-----------|-----|
-| Highest answer quality, willing to pay LLM cost | `v4-llm` (kw 0.938, 1768 ctx, 11s) |
-| Best balance, drop-in replacement for vector RAG | `v9-rerank` (kw 0.844, 904 ctx, 6s) |
-| Cheapest per query | `v10-rerank+c` (kw 0.762, 495 ctx, 5s) |
-| Fastest with LLM in the loop | `v5-compress` (kw 0.738, 694 ctx, 4.7s) |
-| Fastest possible, extractive ok | `v16-proximity` / `ExtractiveRetriever` (kw 0.875, 206 ctx, <1ms) |
-| Don't know yet | `v2-keyword` (kw 0.875, 1285 ctx, 7s — same speed as baseline, better answers) |
-
-### What didn't help on this corpus
-
-Tracked honestly so you don't repeat the same experiments:
-
-- **HyDE** (v7): hypothetical-document embedding from a 1.5B LLM was too noisy
-  → recall dropped to 0.500. Likely useful with larger models.
-- **Query expansion** (v8): LLM-generated keyword expansion pulled in
-  irrelevant docs, growing context without improving answers.
-- **Hybrid keyword+vector mapping** (v6, v11): vector noise on 10-word node
-  descriptions overwhelmed keyword signal. Default `KeywordMapping` and
-  `LLMMapping` outperformed it.
-- **Vector-only mapping** (v3): bare similarity on tiny node descriptions had
-  recall 0.625 — worse than keyword.
-- **Original `DEFAULT_PIPELINE`** (v1): had a structural bug — graph depth
-  was confused with retrieval-stage order, so a leaf match never reached
-  META/CONTENT. **Fixed in this version**: the collector runs the same
-  N-layer stage sequence for each traversed node.
-
-### Real research dataset: SQuAD 2.0 (Round 7-8, Claude-Code-judged)
-
-Swapped the hand-crafted tech-docs corpus for a 30-query sample of SQuAD 2.0
-dev (Wikipedia paragraph QA, 66 distractor paragraphs). Auto-ontology from
-article titles, auto-extracted entities (capitalized phrases in Round 7,
-plus TF-IDF common-noun phrases in Round 8). **Claude Code manually judged
-each answer** for whether it contains the reference.
-
-**Round 7** — isolated variants:
-
-```
-system       claude-judge  auto-kw    ctx      latency
-baseline        80.0%       76.2%    1587ch    5076ms   ← winner
-entity          66.7%       68.2%     275ch       1ms
-bm25-map        53.3%       54.5%    1883ch    5154ms
-extractive      50.0%       50.7%     282ch       1ms
-kw-map          16.7%       20.5%    2320ch    7053ms
-```
-
-Round 7 said "on an unmodified research dataset, kontext loses to vector
-RAG on quality". Fair reading — kontext's proper-noun entity extractor
-couldn't handle concept-level queries ("biomass", "complexity theory"),
-and the auto-ontology from article titles had no semantic signal.
-
-**Round 8** — new `HybridRetriever` combining vector similarity + entity
-matching, with common-noun entities (IDF-ranked phrases) added to the
-vocab:
-
-```
-system       claude-judge  recall   auto-kw    ctx      latency
-hybrid          83.3%       0.967    0.795    1508ch    2454ms   ← NEW WINNER
-baseline        80.0%       0.900    0.762    1587ch    4849ms
-vector-docs     80.0%       0.900    0.762    1506ch    3879ms   (doc-level vector only)
-entity          66.7%       0.700    0.682     275ch       1ms
-bm25-map        53.3%       0.500    0.545    1883ch    4882ms
-extractive      50.0%       0.567    0.507     282ch       1ms
-kw-map          16.7%       0.100    0.205    2320ch    6639ms
-```
-
-`hybrid` beats the standard vector-RAG baseline on every metric:
-
-- **+3.3pp Claude Code judgment** (83.3% vs 80.0%)
-- **+6.7pp recall** (0.967 vs 0.900) — almost every query's reference doc retrieved
-- **+3.3pp auto keyword-hit** (0.795 vs 0.762)
-- **−49% latency** (2454ms vs 4849ms) — doc-level embedding is faster than chunk-level, entity pre-filter reduces vector search work
-- Roughly equal context (−5%)
-
-Full per-query judgment for Round 7: [`bench/data/squad-judge-report.md`](./bench/data/squad-judge-report.md).
-Round 8 uses the same file plus `bench/src/squad-results.json` with the hybrid column.
-
-**What changed between Round 7 and 8**:
-
-1. `HybridRetriever` in `@kontext-brain/core` — weighted ensemble:
-   ```
-   score(doc) = entityWeight * entity_overlap_norm + vectorWeight * vector_similarity
-   ```
-   Default entityWeight=0.4, vectorWeight=0.6. Each signal catches what the
-   other misses.
-2. Entity vocabulary extended with **common-noun phrases** (TF-IDF-ranked
-   unigrams/bigrams) alongside proper nouns. Covers queries like "biomass",
-   "exercise", "algorithm" that the proper-noun-only extractor missed.
-3. Doc-level embedding instead of chunking (SQuAD paragraphs are already
-   right-sized). Faster indexing + shorter query compute.
-4. BM25 body compression on the retrieved docs before LLM answer. Smaller
-   context → faster LLM generation.
-
-**Important**: the LLM didn't change. Same `qwen2.5:1.5b` on Ollama. The
-accuracy gain is purely from the retrieval pipeline — confirmation that
-the earlier "LLM is too small" hypothesis was wrong; the gap was retrieval,
-not model quality.
-
-### Round 10–11: pushing SQuAD accuracy above 83%
-
-After hybrid's 83.3% on SQuAD (Round 8), tried three ways to push higher:
-
-1. **Retrieval ensemble** (hybrid ∪ baseline docs) — no quality gain, 26% faster
-2. **Extract-then-answer** (2-stage LLM) — actually regressed to 60% (the 1.5B model truncates answers too aggressively on stage 2)
-3. **Bigger LLM** (`qwen2.5:3b`) — 83.3% with *different* failure pattern (fixes sthène+O₂ but breaks Article 102 and "in bays")
-
-Key observation: hybrid@1.5b wrong on {sq-1, sq-14, sq-24, sq-27, sq-28};
-hybrid@3b wrong on {sq-14, sq-16, sq-20, sq-24, sq-28}. Overlap is only 3
-queries, so an **answer-selection ensemble** that runs both and asks a
-third LLM to pick the better answer could theoretically reach 27/30 = 90%.
-
-Implemented this as `SquadKontextAnswerEnsemble`:
-
-```
-system          judged   auto-kw    ctx      latency
-baseline         80.0%    0.762    1587ch    5237ms
-hybrid           83.3%    0.795    1508ch    2569ms
-hybrid-3b        83.3%    0.756    1508ch   10336ms   (different failures)
-ans-ensemble     86.7%    0.812    1508ch   14704ms   ← NEW BEST
-oracle limit     90.0%    —        —        —
-```
-
-**+3.3pp over hybrid, +6.7pp over baseline.** Judge correctly picked the
-better answer on sq-1 (sthène), sq-16 (in bays), sq-27 (O₂); picked wrong
-on sq-20 (Article 102). Three remaining failures (sq-14 aerobic, sq-24
-belt animals, sq-28 proteins) need deeper fixes — better retrieval for the
-first two, negation-aware query rewriting for the third — neither is a
-judge problem.
-
-Cost: ~5.7× hybrid latency (runs 2× hybrid + judge call). Appropriate
-when answer quality matters and latency budget allows. For latency-bound
-serving, plain hybrid at 83.3% / 2.5s is still the better pick.
-
-### Round 10: attempted push to 90% — regressed, documented honestly
-
-Tried a 3-way `synthesis` variant: hybrid@1.5b + hybrid@3b +
-extractive-on-hybrid (top-scored verbatim sentence from retrieved docs),
-plus exclusion-pattern detection (`"besides X, what..."`) and prefix-match
-query expansion. The 3b judge picked from the three or used extractive as
-a grounding sentence.
-
-**Result: 24/30 = 80.0%, regressed 2 queries vs ans-ensemble.** The
-extractive grounding introduced noise — its verbatim sentence sometimes
-biased the judge toward the wrong candidate (sq-1 sthène, sq-16 "in bays").
-Targeted fixes for the 4 remaining ans-ensemble failures (sq-14 aerobic,
-sq-20 Article 102, sq-24 belt animals, sq-28 proteins) did not land:
-three are LLM-capacity failures where a same-class 3b judge cannot
-reliably overrule its own weaker variants, and one (sq-24) is a retriever
-edge case where vector similarity on short questions latches onto generic
-tokens.
-
-**Decision: ans-ensemble at 86.7% stays as the best.** Pushing past 90%
-on this 30-query sample appears blocked on LLM capacity (7B+ would likely
-clear sq-20 / sq-28) rather than pipeline design. The 3-layer ontology
-already retrieves the correct doc for 29/30 queries (recall 0.967); the
-loss is in the answerer. Full per-query analysis in
-[`bench/data/round10-report.md`](./bench/data/round10-report.md).
-
-### Round 11: second research dataset — HotpotQA multi-hop, honest regression
-
-SQuAD is single-hop (one gold paragraph per question). To stress-test on a
-different shape, added HotpotQA distractor dev set as a second research
-dataset — **every question needs TWO gold paragraphs**, often with
-compositional answers that don't appear verbatim anywhere.
-
-20-query HotpotQA sample, same Ollama stack:
-
-```
-system       recall  both-gold  keyword   ctx     latency
-baseline     0.650   0.450      0.467    1366ch    4474ms
-hybrid       0.600   0.350      0.469    1217ch    3757ms
-hybrid-3b    0.600   0.350      0.570    1217ch    8642ms
-ans-ensemble 0.600   0.350      0.520    1217ch   11279ms
-```
-
-**Claude-Code-judged accuracy: ~30%** (vs. 86.7% on SQuAD). Massive
-regression. The drop is the story.
-
-Three structural reasons:
-1. **Retrieval is single-query top-k** — it biases toward docs that match
-   the *whole* question, not each mentioned entity. `both-gold-hit` is
-   only 35%; in 65% of queries we're missing at least one gold doc.
-2. **1.5b/3b LLMs can't compose** — even when both gold docs land in
-   context, questions like "country of origin common to X and Y" need
-   set-intersection reasoning the model can't do reliably.
-3. **Single-hop architecture is the real problem**, not the LLM — fixing
-   (1) via entity-decomposed or iterative retrieval would likely lift
-   `both-gold-hit` from 35% to 65%+ and accuracy correspondingly.
-
-Takeaway: **SQuAD 86.7% does not generalize to multi-hop.** The framework's
-hybrid retriever is strong on single-hop but not multi-hop aware.
-Documenting this before any "production ready" claims is the whole point
-of running a second dataset. Full analysis: [`bench/data/round11-report.md`](./bench/data/round11-report.md).
-
-### N-layer pipeline (added Round 11)
-
-Moved from "3-layer fixed" to "N-layer configurable" as a first-class
-abstraction. `packages/core/src/query/n-layer.ts` adds `LayerExecutor`,
-discriminated `Candidate` union (`node | doc | chunk | entity | member`),
-`PipelineSpec`, and a runner with per-layer tracing. Validates adjacent
-layer input/output kinds at load time.
-
-3-layer (ontology → meta → content) stays as the default preset. New
-domains can now define their own — law 4-layer (domain → article →
-section → body), code graph 4-layer (repo → class → member → source),
-multi-hop retrieval as a layer, etc. Future work: implement the code-graph
-and multi-hop-retriever layers against this abstraction.
-
-### Round 12: Claude Code as the LLM — isolating the capacity variable
-
-To test whether the SQuAD ceiling (86.7%) and the HotpotQA collapse
-(~30%) were truly LLM-capacity-bound, we kept the retriever, index, and
-contexts identical and swapped only the answerer — Claude Code instead of
-Ollama qwen2.5:1.5b+3b. The `dump-contexts` / `score-claude` scripts
-make this reproducible.
-
-**Per-query judged accuracy (manual)**:
-
-| System | SQuAD 30q | HotpotQA 20q |
-|--------|-----------|--------------|
-| Ollama hybrid@1.5b | 80.0% | 25% |
-| Ollama ans-ensemble (1.5b+3b+judge) | 86.7% | 30% |
-| **Claude Code over same retrieval** | **96.7% (29/30)** | **85.0% (17/20)** |
-
-- SQuAD: **+10pp** over best Ollama
-- HotpotQA: **+55pp** over best Ollama
-
-All 1 SQuAD failure (sq-24 belt animals) and all 3 HotpotQA failures
-(hp-0, hp-4, hp-13) are **retrieval failures** — the required gold page
-was absent from the retrieved context. Claude Code correctly identified
-each as unretrievable rather than hallucinating.
-
-**Confirms Round 10 hypothesis**: the 86.7% SQuAD ceiling was LLM capacity,
-not pipeline design. On hardware that can run 7B+ or pay for API, the
-existing architecture gets 96.7% on SQuAD with no code changes.
-HotpotQA's 55pp gap is even larger because multi-hop questions demand
-composition the 3B model can't do.
-
-Full per-query analysis: [`bench/data/round12-report.md`](./bench/data/round12-report.md).
-
-### Round 13: kontext-brain hybrid vs vanilla vector RAG, LLM-equalized
-
-Swapping out the LLM proved that single-hop capacity was the bottleneck.
-Round 13 asks the complementary question: **given the same LLM (Claude),
-does kontext-brain's hybrid retriever actually beat a plain vector RAG
-baseline?**
-
-Both pipelines dump retrieved contexts for the same 30 SQuAD + 20
-HotpotQA queries with `nomic-embed-text` embeddings; Claude answers over
-the retrieved contexts for both. Only the retriever differs.
-
-**Judged accuracy**:
-
-| System | SQuAD 30q | HotpotQA 20q |
-|--------|-----------|--------------|
-| **vanilla vector RAG + Claude** | **27/30 = 90.0%** | **18/20 = 90.0%** |
-| **kontext-brain hybrid + Claude** | **29/30 = 96.7%** | 17/20 = 85.0% |
-| Δ (kontext − vanilla) | **+6.7pp** | **-5.0pp** |
-
-**Honest finding: no universal winner.**
-
-On **SQuAD (single-hop, entity-anchored)**, kontext-brain's hybrid
-retriever wins by finding gold docs that vanilla RAG missed — sq-22
-"Normandy" (entity match on proper noun), sq-29 "Pleurobrachia" (entity
-match on species name). The entity signal is a pure gain when the
-question anchors to a named thing.
-
-On **HotpotQA (multi-hop)**, vanilla RAG wins because **bridge/
-comparison questions have two entities**. The hybrid retriever's entity
-signal boosts one entity's page to the top and crowds out the second
-gold doc. Vanilla vector similarity, with no entity bias, sometimes
-surfaces both gold docs simultaneously. Examples where vanilla got both
-and hybrid got only one: hp-4 (Saab/Mach number), hp-6 (Schnellenberger/
-Miami Dolphins), hp-18 (Adorno/Lulu).
-
-**Implication**: the choice of retriever should depend on query shape.
-The N-layer abstraction (Round 11) was designed for exactly this — a
-production deployment classifies question shape and dispatches to the
-appropriate preset.
-
-| Query shape | Best retriever |
-|-------------|----------------|
-| Single-hop, entity-anchored | kontext-brain hybrid |
-| Multi-hop bridge/comparison | vanilla vector RAG (until per-entity decomposed retrieval is added) |
-| Structured predicate | attribute retrieval (100% F1) |
-
-Reproduce: `pnpm --filter @kontext-brain/bench dump-contexts-baseline` +
-`score-claude`. Full per-query analysis:
-[`bench/data/round13-report.md`](./bench/data/round13-report.md).
-
-### Round 14: multi-hop retriever — kontext-brain wins HotpotQA too (100%)
-
-Round 13 showed kontext-brain's hybrid retriever regressed vs vanilla RAG
-on multi-hop. Round 14 implemented a purpose-built **multi-hop
-retriever** that beats vanilla RAG decisively.
-
-Key finding during debugging: `nomic-embed-text` collapses on short
-entity queries — "Tom Petty" and "Traveling Wilburys" return the same
-top-5 docs. Semantic similarity is unusable for short entity names;
-BM25 with title-match boost is required.
-
-Multi-hop retriever design:
-1. Extract named entities from the question
-2. Per-entity BM25 with strong title-match boost (weight 1.0)
-3. Full-question vector search (weight 0.6)
-4. Full-question BM25 (weight 0.4)
-5. **Iterative 2-hop expansion**: extract capitalized phrases from top-5
-   retrieved docs' bodies (up to 2500 chars), re-query BM25 per hop entity
-6. Coverage guarantee: one doc per question-entity in final top-K
-
-Both-gold retrieval progression on HotpotQA (20 multi-hop queries):
-
-| Retriever | Both-gold | Avg recall |
-|-----------|-----------|------------|
-| vanilla vector RAG | 45% | 0.650 |
-| kontext-brain hybrid | 35% | 0.600 |
-| multi-hop (BM25, no hop-2) | 50% | 0.725 |
-| multi-hop (+ title-boost) | 70% | 0.850 |
-| multi-hop (+ hop-2 expansion) | 85% | 0.925 |
-| **multi-hop (final, k=6, snippet 2500)** | **100%** | **1.000** |
-
-**End-to-end HotpotQA accuracy (Claude as LLM, judged)**:
-
-| Retriever | Correct | Accuracy | Δ vs vanilla |
-|-----------|---------|----------|--------------|
-| vanilla RAG + Claude | 18/20 | 90.0% | — |
-| kontext-brain hybrid + Claude | 17/20 | 85.0% | -5.0pp |
-| **kontext-brain multi-hop + Claude** | **20/20** | **100.0%** | **+10.0pp** |
-
-### Final head-to-head — kontext-brain wins every bench
-
-| Bench | Best kontext-brain variant | Score | Best alternative | Δ |
-|-------|---------------------------|-------|------------------|---|
-| SQuAD 2.0 single-hop (Claude) | hybrid | **96.7%** | vanilla RAG 90.0% | **+6.7pp** |
-| HotpotQA multi-hop (Claude) | **multi-hop** | **100.0%** | vanilla RAG 90.0% | **+10.0pp** |
-| SQuAD 2.0 single-hop (Ollama) | ans-ensemble | 86.7% | vanilla RAG 80.0% | +6.7pp |
-| Structured filter queries | attribute retrieval | **100% F1** | vanilla RAG 58.8% F1 | **+41.2pp** |
-
-The framework's point was always **pluggable retrievers per query shape**.
-Round 14 validates that with a multi-hop retriever matching HotpotQA's
-bridge/comparison demands. Full per-query analysis:
-[`bench/data/round14-report.md`](./bench/data/round14-report.md).
-
-### Round 15: GraphRAG-Bench (ICLR'26) — vs LightRAG / HippoRAG2 / GraphRAG / Fast-GraphRAG
-
-**GraphRAG-Bench** (Xiang et al., arXiv:2506.05690, ICLR'26) is the
-reference benchmark for graph-based RAG systems. It evaluates LightRAG,
-HippoRAG2, Microsoft's GraphRAG (local + global) + Lazy-GraphRAG,
-Fast-GraphRAG, RAPTOR, KGP, StructRAG, KET-RAG, and others on the same
-corpora with the same eval script. Two domains: **Medical** (cancer-care
-corpus, 2062 questions) + **Novel** (20 literary works, 2010 questions).
-
-We loaded the official data, ran our retrievers (vanilla / hybrid /
-multi-hop) on a sampled N=30 Fact Retrieval subset per domain, and had
-Claude Code answer over the multi-hop-retrieved contexts.
-
-**Retrieval coverage** (auto, evidence-token recall):
-
-| Retriever | Medical | Novel |
-|-----------|---------|-------|
-| vanilla RAG | 0.811 | 0.525 |
-| kontext-brain hybrid | 0.852 | 0.684 |
-| **kontext-brain multi-hop** | **0.864** | **0.764** |
-
-**End-to-end vs published leaderboard** (Fact_ACC / Fact_ROUGE-L):
-
-Medical:
-| Rank | System | ACC | ROUGE-L |
-|------|--------|-----|---------|
-| —    | **kontext-brain mh + Claude (N=30 subset)** | **86.66** | **62.06** |
-| 1    | G-reasoner | 68.84 | 44.73 |
-| 3    | HippoRAG2 | 66.28 | 36.69 |
-| 5    | LightRAG | 63.32 | 37.19 |
-| 4    | Fast-GraphRAG | 60.93 | 31.04 |
-| 11   | Lazy-GraphRAG (Microsoft) | 60.25 | 31.66 |
-| 14   | MS-GraphRAG (local) | 38.63 | 26.80 |
-
-Novel:
-| Rank | System | ACC | ROUGE-L |
-|------|--------|-----|---------|
-| —    | **kontext-brain mh + Claude (N=30 subset)** | **90.00** | **45.33** |
-| 3    | HippoRAG2 | 60.14 | 31.35 |
-| 12   | LightRAG | 58.62 | 35.72 |
-| 4    | Fast-GraphRAG | 56.95 | 35.90 |
-| 5    | MS-GraphRAG (local) | 49.29 | 26.11 |
-
-**Honest caveats** (must read before citing):
-
-1. **Subset, not full benchmark** — N=30 per domain (≈1.5% of full set).
-2. **Different LLM** — leaderboard uses 7B-class open models; we used
-   Claude Code (much more capable). Higher LLM ceiling matters
-   (consistent with Round 12 finding).
-3. **Auto-graded ACC vs LLM-judged ACC** — leaderboard uses LLM-as-judge,
-   we used token recall. Token recall is permissive.
-4. **Fact Retrieval only** — leaderboard ranks by Average over Fact +
-   Reasoning + Summarize + Creative. We measured only the easiest task.
-5. **General-knowledge leakage** — 6/30 novel answers fell back to world
-   knowledge when retrieval missed; strict retrieval-only protocol would
-   drop novel ACC to ~70%.
-
-**What this actually demonstrates honestly**: kontext-brain's multi-hop
-retriever achieves the highest evidence-token coverage of the three
-retrievers we built (apples-to-apples on the same embedder + corpus),
-and a capable answerer over solid retrieval is competitive with
-research-grade graph RAG systems on fact retrieval. We make no claims
-about Reasoning / Summarization / Creative Generation tasks.
-
-Full analysis: [`bench/data/round15-report.md`](./bench/data/round15-report.md).
-
-### Round 16: confounders removed — controlled comparison
-
-Round 15 had 5 confounders (sample size, LLM, ACC metric, task scope,
-world-knowledge fallback). Round 16 controls 4 of the 5 (LLM is the
-only irreducible one without rerunning the leaderboard systems). Two
-new tables:
-
-**Retrieval-only comparison (LLM-free, fully controlled)**:
-
-```
-MEDICAL (N=30)
-retriever  | tokenCov | ≥0.7-cov | top1-hit
-vanilla    | 0.811    |   22/30  |   8/30
-hybrid     | 0.852    |   24/30  |   9/30
-multi-hop  | 0.864    |   24/30  |   6/30   ← best aggregate
-
-NOVEL (N=30)
-retriever  | tokenCov | ≥0.7-cov | top1-hit
-vanilla    | 0.525    |   10/30  |   4/30
-hybrid     | 0.684    |   17/30  |   6/30
-multi-hop  | 0.764    |   19/30  |   9/30   ← best on every metric
-```
-
-**Strict end-to-end** (fallback answers scored 0):
-
-```
-MEDICAL: ACC 86.62, ROUGE-L 62.06, fallback-rejected 0/30
-NOVEL:   ACC 57.63, ROUGE-L 35.44, fallback-rejected 10/30   ← honest
-```
-
-**vs leaderboard with LLM caveat explicit**:
-
-| Medical Fact_ACC | Score |
-|------------------|-------|
-| **kontext-brain mh + Claude (STRICT)** | **86.62** |
-| G-reasoner (Llama-8B, full N) | 68.84 |
-| HippoRAG2 (8B, full N) | 66.28 |
-| LightRAG (8B, full N) | 63.32 |
-| Fast-GraphRAG (8B, full N) | 60.93 |
-| MS-GraphRAG (local, 8B, full N) | 38.63 |
-
-| Novel Fact_ACC | Score |
-|----------------|-------|
-| HippoRAG2 (8B, full N) | 60.14 |
-| G-reasoner (8B, full N) | 60.07 |
-| RAG w/ rerank (8B, full N) | 60.92 |
-| LightRAG (8B, full N) | 58.62 |
-| **kontext-brain mh + Claude (STRICT)** | **57.63** |
-| Fast-GraphRAG (8B, full N) | 56.95 |
-| MS-GraphRAG local (8B, full N) | 49.29 |
-
-**Three honest statements**:
-
-1. **Retrieval (controlled)**: multi-hop has the best evidence coverage
-   of the three retrievers we built (+5pp medical, +24pp novel vs
-   vanilla RAG). This is the apples-to-apples result.
-
-2. **Medical end-to-end**: kontext-brain + Claude beats every leaderboard
-   entry by ≥18pp. This gap is **mostly Claude vs 8B**, not the retriever.
-
-3. **Novel end-to-end**: kontext-brain + Claude lands **in the middle of
-   the pack** (-2.5pp behind HippoRAG2/G-reasoner). Retrieval failures
-   (10/30 fallbacks) bottleneck novel — narrative content is harder than
-   fact-dense medical text. **HippoRAG2 and G-reasoner beat us here.**
-
-What we still cannot claim: 4-task average, full-set N, retriever
-superiority on tasks other than measured, LLM-judge ACC.
-
-Full controlled-comparison analysis: [`bench/data/round16-report.md`](./bench/data/round16-report.md).
-
-### Round 17: 8B apples-to-apples vs leaderboard, chunking matched
-
-Round 16's "different LLM" was the unresolved confounder. Round 17
-controls it by switching from Claude to **Llama-3.1-8B-Instruct** as
-the answerer + LLM-judge. Also matched chunk size to leaderboard:
-**1024-char ≈ 256-token** (their default per `Examples/run_hipporag2.py`).
-
-Final ACC (Llama-3.1-8B answerer + Llama-3.1-8B judge):
-
-| | Vanilla | Hybrid | Multi-hop |
-|-|---------|--------|-----------|
-| **Medical** | 60.00% | **76.67%** | 36.67% |
-| **Novel** | 30.00% | **53.33%** | 46.67% |
-
-**vs published GraphRAG-Bench leaderboard** (their default LLM is
-qwen2.5-14b, ours is Llama-3.1-8B — we use a *smaller* model):
-
-| Medical Fact_ACC | LLM | ACC |
-|------------------|-----|-----|
-| **kontext-brain hybrid + Llama-3.1-8B (ours)** | **8B** | **76.67** |
-| G-reasoner (leaderboard #1) | 14B | 68.84 |
-| HippoRAG2 | 14B | 66.28 |
-| RAG (w/ rerank) | 14B | 64.73 |
-| LightRAG | 14B | 63.32 |
-| Fast-GraphRAG | 14B | 60.93 |
-| Lazy-GraphRAG (Microsoft) | 14B | 60.25 |
-| MS-GraphRAG (local) | 14B | 38.63 |
-
-| Novel Fact_ACC | LLM | ACC |
-|----------------|-----|-----|
-| RAG (w/ rerank) | 14B | 60.92 |
-| HippoRAG2 | 14B | 60.14 |
-| G-reasoner | 14B | 60.07 |
-| LightRAG | 14B | 58.62 |
-| Fast-GraphRAG | 14B | 56.95 |
-| **kontext-brain hybrid + Llama-3.1-8B (ours)** | **8B** | **53.33** |
-| HippoRAG | 14B | 52.93 |
-| Lazy-GraphRAG (Microsoft) | 14B | 51.65 |
-
-**Findings**:
-
-1. **Medical hybrid+8B beats every leaderboard entry** (+8pp over G-reasoner) using a *smaller* LLM. This is a retrieval+answering pipeline win on fact-dense content.
-2. **Novel hybrid+8B is mid-pack** (-7pp vs HippoRAG2). Narrative content is harder.
-3. **Smaller chunks help vanilla and hybrid, hurt multi-hop** — hop-2 expansion needs content-rich chunks to extract entities.
-4. **Multi-hop is wrong default for fact-dense corpora** — best at bridge questions (HotpotQA 100%), wrong tool here.
-
-**Caveats remaining**:
-- Self-judge: Llama as both answerer + judge may inflate ACC ~3-5pp
-- Embedder gap: ours 768-dim, leaderboard 1024-dim
-- N=30 subset variance ±5pp
-- Q4_K_M quantization vs leaderboard's full-precision
-
-Full analysis: [`bench/data/round17-report.md`](./bench/data/round17-report.md).
-
-### Round 18: Real ontology graph attempt — RAM-blocked
-
-Round 17 used flat chunks. The kontext-brain framework was *built* for
-ontology-based retrieval but we hadn't applied it on GraphRAG-Bench.
-Round 18 added a 4th retriever (`kg`) doing HippoRAG2-style:
-1. Per-chunk entity + triple extraction → knowledge graph
-2. Personalized PageRank from query entities
-3. Score chunks by entity-activation
-
-**Blocked by RAM**: Llama-3.1-8B Q4_K_M needs ~4.4-4.8 GB but only
-2.7-3.4 GB available — Ollama OOM'd every extraction call. Direct test:
-`model requires more system memory (4.4 GiB) than is available (2.7 GiB)`.
-
-**Heuristic fallback** (regex co-occurrence, no LLM) underperforms hybrid:
-
-| Retriever | Medical evidence-coverage | Novel evidence-coverage |
-|-----------|--------------------------|------------------------|
-| vanilla | 0.798 | 0.487 |
-| hybrid | 0.784 | 0.735 |
-| multi-hop | 0.746 | 0.701 |
-| **kg (heuristic)** | **0.581** | **0.549** |
-
-Why heuristic KG underperforms: co-occurrence ≠ semantics, untyped edges,
-PPR amplifies noise on uncurated graphs. The HippoRAG2-style typed-triple
-extraction would have worked, but RAM blocked it.
-
-What's shipped (ready when RAM frees up):
-- `bench/src/kg-builder.ts` (heuristic + LLM stubs both present)
-- `bench/src/kg-retriever.ts` (PPR retrieval)
-- `bench/src/gb-dump-kg.ts` (bench integration)
-
-Honest finding documented: a real LLM-extracted KG is the right approach
-to match HippoRAG2 (Stanford NeurIPS'24). The framework supports it but
-this hardware doesn't. Round 17 result (hybrid+8B Medical 76.67%) stands.
-
-Full analysis: [`bench/data/round18-report.md`](./bench/data/round18-report.md).
-
-### Round 19: Claude-extracted KG — high-quality typed triples, retrieval still loses
-
-Round 18 was blocked on RAM. Round 19 worked around it by dispatching
-**~20 parallel Claude-Code subagents** for entity+typed-triple extraction:
-
-- Medical: **100% (1385/1385 chunks)** extracted
-- Novel: **66% (2300/3503 chunks)** — quota limit hit ("resets 4:40am Asia/Seoul")
-
-Result: real LLM-quality KGs with **typed predicates** (treats, causes,
-located_in, etc.):
-- Medical: **2,432 entities, 9,333 typed edges**
-- Novel: **2,909 entities, 3,863 typed edges**
-
-End-to-end ACC (Llama-3.1-8B answerer + judge):
-
-| | vanilla | hybrid | multi-hop | **kg (Claude-extracted)** |
-|-|---------|--------|-----------|---------------------------|
-| Medical | 60.00% | **76.67%** | 36.67% | **23.33%** |
-| Novel | 30.00% | **53.33%** | 46.67% | **20.00%** |
-
-**Honest negative finding**: Even the highest-quality LLM-extracted KG we
-can build does NOT make our PPR-based retriever competitive — KG lost
-to hybrid by **-53pp Medical / -33pp Novel**. The Round 18 hypothesis
-("if only we had a real LLM-extracted KG") is **disconfirmed by the data**.
-
-Why KG lost despite high-quality extraction:
-1. **PPR diffuses signal** — α=0.15 over 9,333 edges spreads score
-   across the entity graph; a focused BM25 hit is sharper
-2. **Coverage cliff on novel** — 34% of chunks not in KG → invisible
-   to KG retriever
-3. **Seed selection too lenient** — substring/token-overlap matches
-   too many entities; PPR activates a broad cluster
-
-Closing the gap to HippoRAG2 requires algorithmic work on retrieval
-(smarter LLM-based seed selection, hop-aware walks, KG → vector
-reranking hybrid), not just better extraction.
-
-**Round 17 result stands as the headline**: kontext-brain hybrid +
-Llama-3.1-8B = 76.67% Medical, beats every leaderboard entry with
-*smaller* LLM. Round 19 is a documented negative result on the
-typed-KG direction.
-
-What's shipped: `bench/src/dump-chunks-for-claude.ts`,
-`merge-claude-kg.ts`, `bench/data/claude-kg-{medical,novel}-batch-*.jsonl`
-(37 batch files), and the final KG caches at
-`bench/data/gb-{medical,novel}-kg.json`. Reusable substrate for future
-retrieval-algorithm experiments.
-
-Full analysis: [`bench/data/round19-report.md`](./bench/data/round19-report.md).
-
-### Round 9 results — attribute model + re-measurement
-
-After extending the entity model with `nodeId` + `attributes` +
-`findByAttributes`, re-ran every benchmark.
-
-**SQuAD 2.0 (open-ended prose QA) — no regression**:
-```
-                recall   auto-kw    ctx     latency
-hybrid          0.967    0.795     1508ch   2809ms   ← still winning
-baseline        0.900    0.762     1587ch   5284ms
-```
-The attribute model additions are purely additive; existing retrievers
-unchanged, SQuAD numbers match Round 8.
-
-**Structured filter queries — attribute retrieval dominates**:
-Synthetic 14-entity corpus (databases + message queues), 5 filter queries
-like "open-source databases with JSON support released after 2010". Each
-query is a boolean / numeric / set-membership predicate. Baseline vector
-RAG indexes entity prose descriptions and extracts answers via LLM.
-
-```
-system      precision  recall    F1     avg_latency
-baseline    0.527      0.833     0.588     9595ms
-attribute   1.000      1.000     1.000     0.225ms
-```
-
-Attribute retrieval gets **perfect F1 in under 1ms**. Baseline's F1 of 0.59
-is bottlenecked by the LLM's over-retrieval on conjunctions ("open source
-AND relational AND JSON") and negation ("NOT open source"); vector
-similarity surfaces all doc mentions and the 1.5B LLM can't reliably
-filter. This is not an apples-to-oranges comparison — both systems answer
-the same structured question; they just use different data models to get
-there. For queries with a predicate shape, attribute retrieval is the
-right tool.
-
-Full per-query report: [`bench/data/round9-report.md`](./bench/data/round9-report.md).
-
-**Takeaway on data shape**:
-- Prose docs ↔ paraphrased questions → **hybrid** (vector + entity ensemble)
-- Typed facts ↔ filter questions → **attribute retrieval**
-- Many real apps need both simultaneously — kontext-brain supports both in
-  the same `@kontext-brain/core`.
-
-### Entity model: two interpretations on the same type (Round 9)
-
-The `Entity` type supports two complementary interpretations:
-
-**1. NER-style mention** (Rounds 6–8): named things in text, used by
-retrievers via name/alias match. No nodeId, no attributes.
-
-**2. Instance of an ontology node** (Round 9, proper ontological sense):
-an entity IS-A node (its class), carrying attribute values.
-
-```typescript
-const databaseNode = createNode({
-  id: "database",
-  description: "Persistent data store",
-  attributeSchema: {
-    version: "string", released: "number",
-    supports_json: "boolean", tags: "string[]",
-  },
-});
-
-createEntity({
-  id: "postgres", name: "PostgreSQL", type: "Database",
-  nodeId: "database",
-  attributes: { version: "15", released: 1996, supports_json: true, tags: ["relational", "opensource"] },
-});
-
-// Structured query:
-await entityIndex.findByAttributes({
-  nodeId: "database",
-  where: {
-    supports_json: { op: "eq", value: true },
-    released: { op: "gte", value: 2000 },
-    tags: { op: "has", value: "opensource" },
-  },
-});
-// → [MongoDB]
-```
-
-Predicates: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `in`, `contains`, `has`.
-Schema validation via `validateEntityAttributes` at ingest time.
-Backward compatible — `nodeId`/`attributes` are optional, NER-style code
-continues unchanged. Runnable example: [`examples/entity-instances`](./examples/entity-instances).
-
-### Entity layer (Round 6) — tech-docs corpus winner
-
-Entities are named things mentioned IN documents (JWT, Kafka, React),
-orthogonal to ontology category nodes. Typed relations between entities
-(`uses`, `alternative_to`, `depends_on`, `implements`) enable multi-hop
-query expansion. On the 29-doc corpus with a 28-entity vocabulary:
-
-```
-                  recall   kw     ratio
-baseline           0.750   0.549   1.00x
-v16-proximity      0.667   0.583   246502x   (prior best extractive)
-v24-entity         0.833   0.750   546513x   ← NEW BEST
-v25-entity-llm     0.833   0.636     5.39x   (entity retrieval + LLM)
-```
-
-v24-entity adds **+17pp recall and +17pp keyword-hit** over the previous
-best extractive variant. It wins because named entities ("Kafka" vs
-"RabbitMQ", "GraphQL N+1") resolve to the right docs regardless of how
-the query is phrased, and typed relations expand the net one hop further.
-
-Core exports: `Entity`, `EntityMention`, `EntityRelation`, `EntityIndex`,
-`InMemoryEntityIndex`, `AliasEntityExtractor`, `LLMEntityExtractor`,
-`HybridEntityExtractor`, `EntityRetriever`. `Edge.type` also added for
-typed ontology edges (e.g. `{ from: "backend", to: "security", type: "uses" }`).
-
-### Ontology-method improvements (Round 4 + 5)
-
-Four ontology-side improvements added: `Bm25NodeMappingStrategy`,
-`MmrSelector`, `EdgeAwareMappingStrategy`, `CentroidNodeEmbedder`. On the
-12-doc corpus they hit a ceiling and didn't separate from keyword variants.
-Re-measured on a **29-doc / 12-query** extended corpus:
-
-```
-                  recall   kw     ratio
-baseline           0.750   0.549   1.00x
-v18-bm25-map       0.667   0.649   1.24x   ← +18% kw-hit over baseline
-v19-mmr            0.750   0.646   1.82x   ← recall held + +18% kw
-v20-edge           0.583   0.571   0.40x   ← regressed
-v21-centroid       0.500   0.458   0.27x   ← regressed
-```
-
-**Takeaway**: MMR is the clear scale-sensitive win for richer answer quality
-on 30+ doc corpora — same recall as baseline with measurably better answers.
-BM25 mapping is competitive. Edge-aware and centroid embedding consistently
-regressed on this corpus shape; available in core but disabled by default.
-
-### Caveats
-
-- Corpus is small (12 docs, 8 queries). Direction is consistent across
-  queries, but not statistically powerful. Larger corpora may shift balances.
-- Hand-crafted ontology in the bench. `autoSetup()`-generated ontologies
-  should be measured separately.
-- Single small LLM (1.5B). Quality gaps likely shrink on larger models;
-  cost / latency wins should remain.
-- "Keyword hit" is a weak proxy for answer quality — counts whether expected
-  fragments appear in the answer. LLM-as-judge scoring is future work.
-- Extractive variants will lose ground on multi-sentence synthesis questions.
-- The headline 27x is the only number worth reporting outside this repo. The
-  400,000x is real but measures different workloads (extractive vs RAG) —
-  cite it only with the caveat that v12/v16 don't call an LLM at query time.
-- Sanity check for the sub-millisecond claims:
-  `cd bench && node --import tsx src/sanity-extractive.ts` — runs fresh
-  instances and novel queries, confirming the timings are not a caching
-  artifact.
-
-Reproducing it:
-
-```bash
-ollama pull qwen2.5:1.5b
-ollama pull nomic-embed-text
-pnpm install && pnpm -r build
-pnpm --filter @kontext-brain/bench start    # full 14-system run
-pnpm --filter @kontext-brain/bench ralph    # short Ralph-loop subset
-# Per-query answers: bench/src/results.json, bench/src/ralph-results.json
-```
+## Performance (current retrieval candidate)
+
+The latest evaluation (2026-08-25) covers the full GraphRAG-Bench Medical
+(2,062 queries) and Novel (2,010 queries) retrieval sets. The current quality
+candidate is **source-hydrated direct hybrid retrieval**: vector and lexical
+candidates are fused and reranked, then hydrated into contiguous
+5,000-character source windows under a 36,000-character context cap. Graph
+traversal is disabled (`maxHops: 0`) because the matched graph ablation did
+not pass the default-promotion gate.
+
+| Dataset | Queries | Evidence recall@10 | Lift vs raw direct | p95 retrieval |
+|---|---:|---:|---:|---:|
+| Medical | 2,062 | **0.80892** | **+0.09360 (+9.36pp)** | **4.18 ms** |
+| Novel | 2,010 | **0.43980** | **+0.06915 (+6.92pp)** | **12.40 ms** |
+
+Evidence recall measures how much of the required gold evidence is present in
+the combined top-10 context. These are retrieval results, not answer accuracy
+or citation scores. They use frozen OpenAI `text-embedding-3-small`
+checkpoints, vector seeds 10, lexical seeds 5, and the same candidate and
+reranking settings on both datasets.
+
+`Context precision` is retained as a secondary diagnostic because its name is
+easy to confuse with answer precision. For each query, it is the fraction of
+returned source windows that individually cover at least 50% of a gold-evidence
+text. It is sensitive to window packaging and does not mean that only 35.7% or
+65.6% of answers are correct.
+
+| Dataset | Raw direct | Current candidate | Absolute improvement |
+|---|---:|---:|---:|
+| Medical | 0.37410 | **0.65641** | **+0.28230** |
+| Novel | 0.18483 | **0.35696** | **+0.17214** |
+
+### Cross-framework comparison
+
+The latest completed shared-protocol comparison uses the **Kontext v15**
+evaluation profile. It is separate from the newer source-hydrated direct
+candidate above, which has not yet been rerun against every external system.
+Retrieval covers all 2,062 Medical and 2,010 Novel queries; answer and judge
+metrics use the same deterministic 200-query sample per dataset.
+
+| Dataset | System | Recall@10 | Answer correctness | Strict faithfulness | Citation F1 |
+|---|---|---:|---:|---:|---:|
+| Medical | **Kontext v15** | 89.1% | **95.0%** | **96.1%** | **95.8%** |
+| Medical | LightRAG 1.5.6 | **93.3%** | 89.4% | 94.2% | 94.8% |
+| Medical | Microsoft GraphRAG 3.1.1 | 83.0% | 78.2% | 87.4% | 85.2% |
+| Medical | Vector + BM25-RRF | 70.7% | 87.4% | 89.5% | 90.0% |
+| Novel | **Kontext v15** | 82.1% | **85.7%** | **92.9%** | 93.7% |
+| Novel | LightRAG 1.5.6 | **85.7%** | 85.0% | 92.7% | **94.1%** |
+| Novel | Microsoft GraphRAG 3.1.1 | 77.2% | 76.7% | 86.5% | 87.6% |
+
+Kontext v15 does not have the highest retrieval recall—LightRAG leads both
+datasets—but it produces the best answer correctness and strict faithfulness
+in this run. On Novel, LightRAG retains a small citation-F1 lead.
+
+This is a provisional development comparison, not an independent leaderboard.
+Kontext uses a precomputed KG while the external systems build native indexes,
+so index-build cost is not equivalent. Historical adapter timings used
+different queue boundaries and are intentionally omitted. Packaged-context
+precision is also omitted because LightRAG and Microsoft GraphRAG return large
+native contexts as single evidence records, making that metric incomparable.
+See the
+[cross-framework report](./bench/data/rag-eval-v2/cross-framework-all-datasets-2026-08-23.md)
+for the full protocol, raw scores, limitations, and unsupported systems.
+
+### Matched graph-traversal ablation
+
+The latest graph-enabled treatment changes only `maxHops` from 0 to 8.
+
+| Dataset | Direct recall | Graph recall | Recall delta (95% CI) | Context-precision delta (95% CI) | p95 direct → graph |
+|---|---:|---:|---:|---:|---:|
+| Medical | 0.80892 | **0.81474** | +0.00582 [0.00048, 0.01115] | -0.00602 [-0.00934, -0.00269] | 4.18 → 24.41 ms |
+| Novel | 0.43980 | **0.44478** | +0.00498 [0.00100, 0.00896] | -0.00277 [-0.00508, -0.00048] | 12.40 → 43.09 ms |
+
+Graph traversal adds about 0.5 percentage points of aggregate recall while
+slightly reducing context precision and materially increasing retrieval
+latency. The recall gain did not become a strict win on both regression
+holdouts, so graph traversal remains an explicit recall-first option rather
+than the default.
+
+See the
+[source-hydrated direct-only ablation](./bench/data/rag-eval-v2/source-hydrated-direct-only-ablation-2026-08-25.md)
+for the protocol, confidence intervals, holdout results, and artifact paths.
 
 ---
 
@@ -1373,12 +605,10 @@ kontext-brain-ts/
 │   ├── basic/                     # programmatic toy
 │   └── auto-setup/                # mock Notion + Slack → autoSetup → query
 ├── tests/integration/             # vitest end-to-end
-└── bench/                         # 14-system benchmark + Ralph loop
-    ├── src/corpus.ts              # 12-doc tech corpus + 8 labeled queries
-    ├── src/baseline.ts            # standard LangChain.js vector RAG
-    ├── src/kontext-runner.ts      # all kontext variants (V1-V17)
-    ├── src/run.ts                 # full 14-system run
-    └── src/ralph.ts               # short-loop subset for fast iteration
+└── bench/                         # versioned RAG evaluation and regression harness
+    ├── src/rag-eval-v2/           # datasets, adapters, metrics, and resumable runs
+    ├── data/rag-eval-v2/          # reviewed evaluation reports and manifests
+    └── src/run.ts                 # legacy local benchmark entry point
 ```
 
 ---
@@ -1410,16 +640,16 @@ in the repo. Everything runs on a stock Node 20 install plus pnpm.
 - ✅ Core, llm, mcp, loader, tool-server packages: typecheck + build clean
 - ✅ Unit + integration coverage for retrieval, persistence, incremental MCP
   synchronization, graph traversal, entities, and the tool server
-- ✅ Real Ollama benchmarked end-to-end on 14 retrieval variants
-- ✅ Ralph-loop iterative optimization completed, exceeded 10x efficiency
-  target by ~40,000x
+- ✅ Versioned retrieval evaluation covers all 4,072 Medical and Novel queries
+- ✅ Latest source-hydrated direct candidate has a matched graph on/off ablation
 - ✅ `DEFAULT_PIPELINE` leaf-node bug fixed; original Kotlin codebase had
   the same issue
 - ⚠️ Real Notion / GitHub / Slack MCP servers not yet smoke-tested end-to-end
   (incremental synchronization is covered with mock connectors)
-- ⚠️ Larger-corpus benchmarking pending (12 docs is small)
-- ⚠️ LLM-as-judge quality scoring not implemented yet (currently using
-  keyword-fragment matching as a weak proxy)
+- ⚠️ Graph traversal remains opt-in because its recall gain trades away
+  precision and does not pass the strict two-dataset holdout gate
+- ⚠️ Answer-level faithfulness and citation evaluation is still required for
+  the latest retrieval candidate before production activation
 
 **Originally a Kotlin project**, ported to TypeScript because (a) the Model
 Context Protocol ecosystem is TypeScript-first, (b) AI-agent OSS gravity is
@@ -1504,10 +734,9 @@ plane and UI on top — no re-implementation of retrieval.
 
 ### Go-to-market
 
-Developer-led → product-led → sales-led. The Round 12–17 benchmark reports
-(beating the GraphRAG-Bench leaderboard with a *smaller* LLM) are the
-top-of-funnel content asset; the free OSS core is the adoption engine; the
-governance cloud is the conversion target; ACL/audit needs in regulated
+Developer-led → product-led → sales-led. The versioned RAG evaluation reports
+are the top-of-funnel content asset; the free OSS core is the adoption engine;
+the governance cloud is the conversion target; ACL/audit needs in regulated
 industries (medical, finance, legal) are the enterprise expansion.
 
 > See the [visual productization one-pager](./docs/kontext-plan.html) for the
