@@ -91,6 +91,42 @@ describe("BidirectionalNLayerRetriever", () => {
     expect(result.trace.stoppedBy).toBe("frontier_exhausted");
   });
 
+  it("supports a zero-hop direct-only ablation without consulting graph neighbors", async () => {
+    const graph = new FakeSearchGraph();
+    const direct: SearchNode = { kind: "chunk", id: "direct" };
+    const graphOnly: SearchNode = { kind: "chunk", id: "graph-only" };
+    graph.seeds.push({ node: direct, score: 1 });
+    graph.edges.set(key(direct), [edge(direct, graphOnly, "expand")]);
+    graph.hits.set(key(direct), [
+      {
+        evidenceId: "evidence:direct",
+        chunkId: direct.id,
+        resourceId: "resource:direct",
+        text: "Direct evidence",
+        score: 1,
+      },
+    ]);
+    graph.hits.set(key(graphOnly), [
+      {
+        evidenceId: "evidence:graph-only",
+        chunkId: graphOnly.id,
+        resourceId: "resource:graph",
+        text: "Graph-only evidence",
+        score: 1,
+      },
+    ]);
+
+    const result = await new BidirectionalNLayerRetriever(graph).retrieve({
+      question: "direct",
+      principal,
+      budget: { maxHops: 0 },
+    });
+
+    expect(result.evidence.map((item) => item.evidenceId)).toEqual(["evidence:direct"]);
+    expect(result.evidence[0]?.path).toEqual([]);
+    expect(graph.expanded).toEqual([]);
+  });
+
   it("revisits a node only when a better-scoring path reaches it", async () => {
     const graph = new FakeSearchGraph();
     const start: SearchNode = { kind: "entity", id: "start" };
@@ -257,6 +293,17 @@ describe("BidirectionalNLayerRetriever", () => {
       candidates: 0,
       elapsedMs: 10,
       stoppedBy: "time_budget",
+      averageSelectedPathLength: 0,
+      maxSelectedPathLength: 0,
+      seedProviderCounts: {},
+      scoring: {
+        profileId: "legacy-v1",
+        profileVersion: 1,
+        profileDigest: "builtin:legacy-v1",
+        featureSchemaVersion: "legacy-score-fields-v1",
+        missingSignals: [],
+        missingSignalCounts: {},
+      },
     });
   });
 

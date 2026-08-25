@@ -1,7 +1,11 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { performance } from "node:perf_hooks";
-import { BidirectionalNLayerRetriever, type Principal } from "@kontext-brain/core";
+import {
+  AdaptiveRouteTraversalScorePolicy,
+  BidirectionalNLayerRetriever,
+  type Principal,
+} from "@kontext-brain/core";
 import { BidirectionalBenchmarkSearchGraph } from "../bidirectional-benchmark-search-graph.js";
 import type { BenchDoc } from "../corpus.js";
 import type { KGSerialized, KGStore } from "../kg-builder.js";
@@ -67,7 +71,10 @@ const searchGraph = new BidirectionalBenchmarkSearchGraph(graph, docs, seeds, {
   chunkEntities: 10,
   chunkFacts: 10,
 });
-const retriever = new BidirectionalNLayerRetriever(searchGraph);
+const retriever = new BidirectionalNLayerRetriever(
+  searchGraph,
+  new AdaptiveRouteTraversalScorePolicy(),
+);
 const bm25Ranker = new CorpusBm25Ranker(
   docs.map((doc) => ({ id: doc.id, text: `${doc.title} ${doc.body}` })),
 );

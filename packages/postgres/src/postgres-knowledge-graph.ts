@@ -11,6 +11,7 @@ import type {
   FactRecord,
   KnowledgeGraphRepository,
   KnowledgeGraphUnitOfWork,
+  OntologyLinkRecord,
   Principal,
   ResourceRecord,
   ResourceSource,
@@ -174,6 +175,7 @@ class PostgresKnowledgeGraphUnitOfWork implements KnowledgeGraphUnitOfWork {
       resource.organizationId,
       resource.resourceId,
       resource.ontologyNodeIds,
+      resource.ontologyLinks,
     );
   }
 
@@ -226,6 +228,7 @@ class PostgresKnowledgeGraphUnitOfWork implements KnowledgeGraphUnitOfWork {
       chunk.organizationId,
       chunk.chunkId,
       chunk.ontologyNodeIds,
+      chunk.ontologyLinks,
     );
   }
 
@@ -265,7 +268,8 @@ class PostgresKnowledgeGraphUnitOfWork implements KnowledgeGraphUnitOfWork {
 
   async listEntityMentions(resourceId: string): Promise<readonly EntityMentionRecord[]> {
     const result = await this.client.query(
-      `SELECT organization_id, entity_id, resource_id, chunk_id, status
+      `SELECT organization_id, entity_id, resource_id, chunk_id, status,
+              extraction_confidence, extractor_version, origin, observed_at
        FROM kontext_entity_mentions
        WHERE organization_id = $1 AND resource_id = $2`,
       [this.organizationId, resourceId],
@@ -277,24 +281,34 @@ class PostgresKnowledgeGraphUnitOfWork implements KnowledgeGraphUnitOfWork {
     assertOrganization(this.organizationId, mention.organizationId);
     await this.client.query(
       `INSERT INTO kontext_entity_mentions (
-         organization_id, entity_id, resource_id, chunk_id, status
-       ) VALUES ($1,$2,$3,$4,$5)
+         organization_id, entity_id, resource_id, chunk_id, status,
+         extraction_confidence, extractor_version, origin, observed_at
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
        ON CONFLICT (organization_id, entity_id, chunk_id) DO UPDATE SET
          resource_id = EXCLUDED.resource_id,
-         status = EXCLUDED.status`,
+         status = EXCLUDED.status,
+         extraction_confidence = EXCLUDED.extraction_confidence,
+         extractor_version = EXCLUDED.extractor_version,
+         origin = EXCLUDED.origin,
+         observed_at = EXCLUDED.observed_at`,
       [
         mention.organizationId,
         mention.entityId,
         mention.resourceId,
         mention.chunkId,
         mention.status,
+        mention.extractionConfidence ?? null,
+        mention.extractorVersion ?? null,
+        mention.origin ?? null,
+        mention.observedAt ?? null,
       ],
     );
   }
 
   async getFact(factKey: string): Promise<FactRecord | null> {
     const result = await this.client.query(
-      `SELECT organization_id, fact_key, subject, predicate, object, single_value, status, updated_at
+      `SELECT organization_id, fact_key, subject, predicate, object, single_value, status,
+              updated_at, extraction_confidence, extractor_version, origin, observed_at, verified_at
        FROM kontext_facts
        WHERE organization_id = $1 AND fact_key = $2`,
       [this.organizationId, factKey],
@@ -304,7 +318,8 @@ class PostgresKnowledgeGraphUnitOfWork implements KnowledgeGraphUnitOfWork {
 
   async listFacts(): Promise<readonly FactRecord[]> {
     const result = await this.client.query(
-      `SELECT organization_id, fact_key, subject, predicate, object, single_value, status, updated_at
+      `SELECT organization_id, fact_key, subject, predicate, object, single_value, status,
+              updated_at, extraction_confidence, extractor_version, origin, observed_at, verified_at
        FROM kontext_facts
        WHERE organization_id = $1`,
       [this.organizationId],
@@ -316,15 +331,21 @@ class PostgresKnowledgeGraphUnitOfWork implements KnowledgeGraphUnitOfWork {
     assertOrganization(this.organizationId, fact.organizationId);
     await this.client.query(
       `INSERT INTO kontext_facts (
-         organization_id, fact_key, subject, predicate, object, single_value, status, updated_at
-       ) VALUES ($1,$2,$3::jsonb,$4,$5::jsonb,$6,$7,$8)
+         organization_id, fact_key, subject, predicate, object, single_value, status, updated_at,
+         extraction_confidence, extractor_version, origin, observed_at, verified_at
+       ) VALUES ($1,$2,$3::jsonb,$4,$5::jsonb,$6,$7,$8,$9,$10,$11,$12,$13)
        ON CONFLICT (organization_id, fact_key) DO UPDATE SET
          subject = EXCLUDED.subject,
          predicate = EXCLUDED.predicate,
          object = EXCLUDED.object,
          single_value = EXCLUDED.single_value,
          status = EXCLUDED.status,
-         updated_at = EXCLUDED.updated_at`,
+         updated_at = EXCLUDED.updated_at,
+         extraction_confidence = EXCLUDED.extraction_confidence,
+         extractor_version = EXCLUDED.extractor_version,
+         origin = EXCLUDED.origin,
+         observed_at = EXCLUDED.observed_at,
+         verified_at = EXCLUDED.verified_at`,
       [
         fact.organizationId,
         fact.factKey,
@@ -334,13 +355,19 @@ class PostgresKnowledgeGraphUnitOfWork implements KnowledgeGraphUnitOfWork {
         fact.singleValue,
         fact.status,
         fact.updatedAt,
+        fact.extractionConfidence ?? null,
+        fact.extractorVersion ?? null,
+        fact.origin ?? null,
+        fact.observedAt ?? null,
+        fact.verifiedAt ?? null,
       ],
     );
   }
 
   async listEvidenceForResource(resourceId: string): Promise<readonly EvidenceRecord[]> {
     const result = await this.client.query(
-      `SELECT organization_id, evidence_id, fact_key, resource_id, chunk_id, acl, origin, status
+      `SELECT organization_id, evidence_id, fact_key, resource_id, chunk_id, acl, origin, status,
+              confidence, observed_at, verified_at
        FROM kontext_evidence
        WHERE organization_id = $1 AND resource_id = $2`,
       [this.organizationId, resourceId],
@@ -350,7 +377,8 @@ class PostgresKnowledgeGraphUnitOfWork implements KnowledgeGraphUnitOfWork {
 
   async listEvidenceForFact(factKey: string): Promise<readonly EvidenceRecord[]> {
     const result = await this.client.query(
-      `SELECT organization_id, evidence_id, fact_key, resource_id, chunk_id, acl, origin, status
+      `SELECT organization_id, evidence_id, fact_key, resource_id, chunk_id, acl, origin, status,
+              confidence, observed_at, verified_at
        FROM kontext_evidence
        WHERE organization_id = $1 AND fact_key = $2`,
       [this.organizationId, factKey],
@@ -362,15 +390,19 @@ class PostgresKnowledgeGraphUnitOfWork implements KnowledgeGraphUnitOfWork {
     assertOrganization(this.organizationId, evidence.organizationId);
     await this.client.query(
       `INSERT INTO kontext_evidence (
-         organization_id, evidence_id, fact_key, resource_id, chunk_id, acl, origin, status
-       ) VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8)
+         organization_id, evidence_id, fact_key, resource_id, chunk_id, acl, origin, status,
+         confidence, observed_at, verified_at
+       ) VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11)
        ON CONFLICT (organization_id, evidence_id) DO UPDATE SET
          fact_key = EXCLUDED.fact_key,
          resource_id = EXCLUDED.resource_id,
          chunk_id = EXCLUDED.chunk_id,
          acl = EXCLUDED.acl,
          origin = EXCLUDED.origin,
-         status = EXCLUDED.status`,
+         status = EXCLUDED.status,
+         confidence = EXCLUDED.confidence,
+         observed_at = EXCLUDED.observed_at,
+         verified_at = EXCLUDED.verified_at`,
       [
         evidence.organizationId,
         evidence.evidenceId,
@@ -380,6 +412,9 @@ class PostgresKnowledgeGraphUnitOfWork implements KnowledgeGraphUnitOfWork {
         JSON.stringify(evidence.acl),
         evidence.origin,
         evidence.status,
+        evidence.confidence ?? null,
+        evidence.observedAt ?? null,
+        evidence.verifiedAt ?? null,
       ],
     );
   }
@@ -509,7 +544,16 @@ function resourceSelectSql(): string {
   return `SELECT r.*,
     ARRAY(SELECT ontology_node_id FROM kontext_resource_ontology_links l
           WHERE l.organization_id = r.organization_id AND l.resource_id = r.resource_id
-          ORDER BY ontology_node_id) AS ontology_node_ids
+          ORDER BY ontology_node_id) AS ontology_node_ids,
+    COALESCE((SELECT jsonb_agg(jsonb_build_object(
+      'ontologyNodeId', ontology_node_id,
+      'origin', origin,
+      'confidence', confidence,
+      'createdAt', created_at
+    ) ORDER BY ontology_node_id)
+      FROM kontext_resource_ontology_links l
+      WHERE l.organization_id = r.organization_id AND l.resource_id = r.resource_id), '[]'::jsonb)
+      AS ontology_links
     FROM kontext_resources r`;
 }
 
@@ -517,7 +561,16 @@ function chunkSelectSql(): string {
   return `SELECT c.*,
     ARRAY(SELECT ontology_node_id FROM kontext_chunk_ontology_links l
           WHERE l.organization_id = c.organization_id AND l.chunk_id = c.chunk_id
-          ORDER BY ontology_node_id) AS ontology_node_ids
+          ORDER BY ontology_node_id) AS ontology_node_ids,
+    COALESCE((SELECT jsonb_agg(jsonb_build_object(
+      'ontologyNodeId', ontology_node_id,
+      'origin', origin,
+      'confidence', confidence,
+      'createdAt', created_at
+    ) ORDER BY ontology_node_id)
+      FROM kontext_chunk_ontology_links l
+      WHERE l.organization_id = c.organization_id AND l.chunk_id = c.chunk_id), '[]'::jsonb)
+      AS ontology_links
     FROM kontext_chunks c`;
 }
 
@@ -528,13 +581,40 @@ async function insertOntologyLinks(
   organizationId: string,
   ownerId: string,
   ontologyNodeIds: readonly string[],
+  ontologyLinks: ResourceRecord["ontologyLinks"] | ChunkRecord["ontologyLinks"],
 ): Promise<void> {
-  if (ontologyNodeIds.length === 0) return;
+  const metadata = new Map((ontologyLinks ?? []).map((link) => [link.ontologyNodeId, link]));
+  const links = [...new Set(ontologyNodeIds)].map((ontologyNodeId) => ({
+    ontologyNodeId,
+    origin: metadata.get(ontologyNodeId)?.origin ?? null,
+    confidence: metadata.get(ontologyNodeId)?.confidence ?? null,
+    createdAt: metadata.get(ontologyNodeId)?.createdAt ?? null,
+  }));
+  if (links.length === 0) return;
   await client.query(
-    `INSERT INTO ${table} (organization_id, ${ownerColumn}, ontology_node_id)
-     SELECT $1, $2, unnest($3::text[])
-     ON CONFLICT DO NOTHING`,
-    [organizationId, ownerId, [...new Set(ontologyNodeIds)]],
+    `INSERT INTO ${table} (
+       organization_id, ${ownerColumn}, ontology_node_id, origin, confidence, created_at
+     )
+     SELECT $1, $2, item.ontology_node_id, item.origin, item.confidence, item.created_at
+     FROM jsonb_to_recordset($3::jsonb) AS item(
+       ontology_node_id text, origin text, confidence real, created_at timestamptz
+     )
+     ON CONFLICT (organization_id, ${ownerColumn}, ontology_node_id) DO UPDATE SET
+       origin = EXCLUDED.origin,
+       confidence = EXCLUDED.confidence,
+       created_at = EXCLUDED.created_at`,
+    [
+      organizationId,
+      ownerId,
+      JSON.stringify(
+        links.map((link) => ({
+          ontology_node_id: link.ontologyNodeId,
+          origin: link.origin,
+          confidence: link.confidence,
+          created_at: link.createdAt,
+        })),
+      ),
+    ],
   );
 }
 
@@ -552,6 +632,7 @@ function mapResource(row: QueryResultRow): ResourceRecord {
     contentObjectKey: String(row.content_object_key),
     acl: row.acl as AccessControlList,
     ontologyNodeIds: (row.ontology_node_ids ?? []) as string[],
+    ontologyLinks: mapOntologyLinks(row.ontology_links),
     status: row.status as ResourceRecord["status"],
     updatedAt: toIsoString(row.updated_at),
   };
@@ -568,6 +649,7 @@ function mapChunk(row: QueryResultRow): ChunkRecord {
     position: Number(row.position),
     acl: row.acl as AccessControlList,
     ontologyNodeIds: (row.ontology_node_ids ?? []) as string[],
+    ontologyLinks: mapOntologyLinks(row.ontology_links),
     status: row.status as ChunkRecord["status"],
   };
 }
@@ -579,6 +661,22 @@ function mapEntityMention(row: QueryResultRow): EntityMentionRecord {
     resourceId: String(row.resource_id),
     chunkId: String(row.chunk_id),
     status: row.status as EntityMentionRecord["status"],
+    extractionConfidence:
+      row.extraction_confidence === null || row.extraction_confidence === undefined
+        ? undefined
+        : Number(row.extraction_confidence),
+    extractorVersion:
+      row.extractor_version === null || row.extractor_version === undefined
+        ? undefined
+        : String(row.extractor_version),
+    origin:
+      row.origin === null || row.origin === undefined
+        ? undefined
+        : (row.origin as EntityMentionRecord["origin"]),
+    observedAt:
+      row.observed_at === null || row.observed_at === undefined
+        ? undefined
+        : toIsoString(row.observed_at),
   };
 }
 
@@ -604,6 +702,26 @@ function mapFact(row: QueryResultRow): FactRecord {
     singleValue: Boolean(row.single_value),
     status: row.status as FactRecord["status"],
     updatedAt: toIsoString(row.updated_at),
+    extractionConfidence:
+      row.extraction_confidence === null || row.extraction_confidence === undefined
+        ? undefined
+        : Number(row.extraction_confidence),
+    extractorVersion:
+      row.extractor_version === null || row.extractor_version === undefined
+        ? undefined
+        : String(row.extractor_version),
+    origin:
+      row.origin === null || row.origin === undefined
+        ? undefined
+        : (row.origin as FactRecord["origin"]),
+    observedAt:
+      row.observed_at === null || row.observed_at === undefined
+        ? undefined
+        : toIsoString(row.observed_at),
+    verifiedAt:
+      row.verified_at === null || row.verified_at === undefined
+        ? undefined
+        : toIsoString(row.verified_at),
   };
 }
 
@@ -617,7 +735,40 @@ function mapEvidence(row: QueryResultRow): EvidenceRecord {
     acl: row.acl as AccessControlList,
     origin: row.origin as EvidenceRecord["origin"],
     status: row.status as EvidenceRecord["status"],
+    confidence:
+      row.confidence === null || row.confidence === undefined ? undefined : Number(row.confidence),
+    observedAt:
+      row.observed_at === null || row.observed_at === undefined
+        ? undefined
+        : toIsoString(row.observed_at),
+    verifiedAt:
+      row.verified_at === null || row.verified_at === undefined
+        ? undefined
+        : toIsoString(row.verified_at),
   };
+}
+
+function mapOntologyLinks(value: unknown): OntologyLinkRecord[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const row = item as Record<string, unknown>;
+    if (typeof row.ontologyNodeId !== "string") return [];
+    return [
+      {
+        ontologyNodeId: row.ontologyNodeId,
+        ...(row.origin === null || row.origin === undefined
+          ? {}
+          : { origin: row.origin as OntologyLinkRecord["origin"] }),
+        ...(row.confidence === null || row.confidence === undefined
+          ? {}
+          : { confidence: Number(row.confidence) }),
+        ...(row.createdAt === null || row.createdAt === undefined
+          ? {}
+          : { createdAt: toIsoString(row.createdAt) }),
+      },
+    ];
+  });
 }
 
 function mapFactEvent(row: QueryResultRow): FactEvent {

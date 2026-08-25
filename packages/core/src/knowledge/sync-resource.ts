@@ -89,7 +89,11 @@ export class SyncResourceUseCase implements ResourceSyncUseCase {
           contentHash: snapshot.contentHash,
           contentObjectKey: objectKey,
           acl: snapshot.acl,
-          ontologyNodeIds: unique(snapshot.ontologyNodeIds ?? []),
+          ontologyNodeIds: unique([
+            ...(snapshot.ontologyNodeIds ?? []),
+            ...(snapshot.ontologyLinks ?? []).map((link) => link.ontologyNodeId),
+          ]),
+          ontologyLinks: snapshot.ontologyLinks,
           status: "active",
           updatedAt: now,
         });
@@ -107,7 +111,11 @@ export class SyncResourceUseCase implements ResourceSyncUseCase {
             contentObjectKey: objectKey,
             position: chunk.position,
             acl: chunk.acl ?? snapshot.acl,
-            ontologyNodeIds: unique(chunk.ontologyNodeIds ?? []),
+            ontologyNodeIds: unique([
+              ...(chunk.ontologyNodeIds ?? []),
+              ...(chunk.ontologyLinks ?? []).map((link) => link.ontologyNodeId),
+            ]),
+            ontologyLinks: chunk.ontologyLinks,
             status: "active",
           });
           await unitOfWork.saveEvidence({
@@ -118,10 +126,11 @@ export class SyncResourceUseCase implements ResourceSyncUseCase {
             acl: chunk.acl ?? snapshot.acl,
             origin: "derived",
             status: "active",
+            observedAt: now,
           });
         }
 
-        await this.replaceEntityMentions(unitOfWork, snapshot, resourceId, chunkIds);
+        await this.replaceEntityMentions(unitOfWork, snapshot, resourceId, chunkIds, now);
 
         for (const extracted of snapshot.facts ?? []) {
           if (extracted.evidenceChunkIds.length === 0) {
@@ -146,6 +155,11 @@ export class SyncResourceUseCase implements ResourceSyncUseCase {
             singleValue: extracted.singleValue ?? false,
             status: previous?.status ?? "active",
             updatedAt: now,
+            extractionConfidence: extracted.extractionConfidence,
+            extractorVersion: extracted.extractorVersion,
+            origin: extracted.origin ?? "derived",
+            observedAt: extracted.observedAt ?? now,
+            verifiedAt: extracted.verifiedAt,
           };
           await unitOfWork.saveFact(next);
           if (!previous) {
@@ -173,8 +187,11 @@ export class SyncResourceUseCase implements ResourceSyncUseCase {
               resourceId,
               chunkId,
               acl: snapshot.chunks.find((chunk) => chunk.id === sourceChunkId)?.acl ?? snapshot.acl,
-              origin: "derived",
+              origin: extracted.origin ?? "derived",
               status: "active",
+              confidence: extracted.extractionConfidence,
+              observedAt: extracted.observedAt ?? now,
+              verifiedAt: extracted.verifiedAt,
             };
             await unitOfWork.saveEvidence(evidence);
           }
@@ -285,6 +302,7 @@ export class SyncResourceUseCase implements ResourceSyncUseCase {
     snapshot: ResourceSnapshot,
     resourceId: string,
     chunkIds: ReadonlyMap<string, string>,
+    now: string,
   ): Promise<void> {
     for (const extracted of snapshot.entities ?? []) {
       const mayBeGlobal = extracted.scope === "global" && extracted.promotionEvidence !== undefined;
@@ -314,6 +332,10 @@ export class SyncResourceUseCase implements ResourceSyncUseCase {
           resourceId,
           chunkId,
           status: "active",
+          extractionConfidence: extracted.extractionConfidence,
+          extractorVersion: extracted.extractorVersion,
+          origin: extracted.origin ?? "derived",
+          observedAt: extracted.observedAt ?? now,
         });
       }
     }

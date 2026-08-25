@@ -268,6 +268,34 @@ idempotent extraction jobs, ontology deployments, proposals, and structured
 audit rows. `answer()` fails closed when no accessible active Evidence exists
 or the generated answer does not cite an Evidence ID.
 
+N-Layer traversal scoring is observation-based. Search adapters report lexical/vector ranks,
+neighbor-list fanout and rank, normalized query evidence, relationship provenance, ACL-filtered
+evidence counts, conflicts, and freshness. A versioned base profile plus an optional query-bound
+route policy turns those observations into priorities without branching on dataset or organization
+identity. Every result trace records the profile and feature-schema digests, missing signals,
+seed-provider counts, route decisions, path lengths, and a per-evidence score breakdown. PostgreSQL
+profiles support staged evaluation, full shadow traversal, deterministic canaries, activation, and
+atomic rollback:
+
+```typescript
+const staged = await runtime.scoringProfiles.stage("acme", candidateProfile, evaluationSummary);
+await runtime.scoringProfiles.setShadow("acme", staged.profileDigest);
+await runtime.scoringProfiles.setCanaryPercent("acme", 5);
+await runtime.scoringProfiles.activate("acme", staged.profileDigest);
+// await runtime.scoringProfiles.rollback("acme", previousProfileDigest);
+```
+
+See [ADR 0005](./docs/adr/0005-versioned-traversal-scoring.md),
+[ADR 0006](./docs/adr/0006-query-adaptive-route-scoring.md), the
+[adaptive evaluation](./bench/data/rag-eval-v2/adaptive-route-v3-reevaluation-2026-08-24.md), and
+the [raw direct-only ablation](./bench/data/rag-eval-v2/adaptive-route-v3-direct-only-ablation-2026-08-25.md).
+The subsequent [source-hydrated direct-only ablation](./bench/data/rag-eval-v2/source-hydrated-direct-only-ablation-2026-08-25.md)
+found a small aggregate graph recall gain paired with a precision regression and no strict
+two-dataset holdout win. Source-hydrated direct retrieval is therefore the current quality
+candidate; adaptive graph traversal remains an explicit recall-first experiment and must not be
+activated by default. See the [rollout runbook](./docs/runbooks/scoring-profile-rollout.md) for the
+remaining gates.
+
 `AdaptiveKnowledgeEnricher` is optional. When enabled, it examines literal
 source chunks—not corpus or dataset names—to select and dispatch
 identity-resolution, event, temporal, causal, and cross-chunk extraction

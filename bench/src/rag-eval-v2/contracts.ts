@@ -88,6 +88,13 @@ export interface RetrievalResult {
   readonly error: string | null;
   readonly frameworkVersion: string;
   readonly configDigest: string;
+  readonly scoringProfile?: {
+    readonly id: string;
+    readonly version: number;
+    readonly digest: string;
+  };
+  readonly featureSchemaVersion?: string;
+  readonly candidatePoolDigest?: string;
   readonly answerPolicy?: AnswerPolicy;
 }
 

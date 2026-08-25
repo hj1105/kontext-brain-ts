@@ -1,6 +1,8 @@
 import {
   ActivateOntologyUseCase,
   BidirectionalNLayerRetriever,
+  CalibratedTraversalScorePolicy,
+  DEFAULT_CALIBRATED_SCORING_PROFILE,
   InMemoryResourceContentStore,
   type OntologyCandidateValidator,
   type OntologyCompiler,
@@ -19,6 +21,7 @@ import {
   PostgresKnowledgeSearchGraph,
   PostgresOntologyDeploymentRepository,
   PostgresOntologyProposalQueue,
+  PostgresScoringProfileRepository,
   migratePostgres,
 } from "../src/index.js";
 
@@ -89,6 +92,65 @@ describe.runIf(pool !== null)("PostgreSQL adapters", () => {
     await expect(activate.execute({ organizationId: "acme", yaml: "invalid" })).rejects.toThrow();
 
     expect(await repository.getActive("acme")).toEqual(active);
+  });
+
+  it("stages and atomically activates versioned scoring profiles", async () => {
+    const profiles = new PostgresScoringProfileRepository(requiredPool(), 0);
+    const profile = {
+      ...DEFAULT_CALIBRATED_SCORING_PROFILE,
+      id: "test-calibrated",
+      version: 2,
+    };
+
+    const staged = await profiles.stage("acme", profile, {
+      split: "validation",
+      recallAt10: 1,
+      ndcgAt10: 1,
+    });
+    expect(staged).toMatchObject({ status: "staged", profile });
+    const active = await profiles.activate("acme", staged.profileDigest);
+    expect(active.status).toBe("active");
+    expect(await profiles.getActive("acme")).toMatchObject({
+      profileDigest: staged.profileDigest,
+      profile,
+    });
+
+    const shadow = await profiles.stage(
+      "acme",
+      {
+        ...DEFAULT_CALIBRATED_SCORING_PROFILE,
+        id: "test-shadow",
+        version: 1,
+      },
+      { split: "validation", recallAt10: 1, ndcgAt10: 1 },
+    );
+    await profiles.setShadow("acme", shadow.profileDigest);
+    expect((await profiles.getShadow("acme"))?.profileDigest).toBe(shadow.profileDigest);
+
+    const resolved = await profiles.resolve({
+      organizationId: "acme",
+      subjectId: "u1",
+      groupIds: [],
+    });
+    expect("descriptor" in resolved && resolved.descriptor.profileDigest).toBe(
+      staged.profileDigest,
+    );
+    await profiles.setCanaryPercent("acme", 0);
+    expect(
+      "descriptor" in
+        (await profiles.resolve({
+          organizationId: "acme",
+          subjectId: "u1",
+          groupIds: [],
+        })),
+    ).toBe(false);
+    await profiles.setCanaryPercent("acme", 100);
+
+    await profiles.activate("acme", shadow.profileDigest);
+    expect(await profiles.getShadow("acme")).toBeNull();
+    expect((await profiles.rollback("acme", staged.profileDigest)).profileDigest).toBe(
+      staged.profileDigest,
+    );
   });
 
   it("deduplicates and leases extraction jobs by resource, content, and ontology hashes", async () => {
@@ -177,6 +239,7 @@ describe.runIf(pool !== null)("PostgreSQL adapters", () => {
       });
       const retriever = new BidirectionalNLayerRetriever(
         new PostgresKnowledgeSearchGraph(countingPool, contents, [vectorIndex]),
+        new CalibratedTraversalScorePolicy(DEFAULT_CALIBRATED_SCORING_PROFILE),
       );
       const result = await retriever.retrieve({
         question: "Was order 42 paid?",
@@ -214,6 +277,7 @@ describe.runIf(pool !== null)("PostgreSQL adapters", () => {
     await deployments.activate("acme", "ontology-v1");
     const retriever = new BidirectionalNLayerRetriever(
       new PostgresKnowledgeSearchGraph(requiredPool(), contents),
+      new CalibratedTraversalScorePolicy(DEFAULT_CALIBRATED_SCORING_PROFILE),
     );
 
     const allowed = await retriever.retrieve({
