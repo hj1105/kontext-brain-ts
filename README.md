@@ -1,5 +1,7 @@
 # kontext-brain
 
+[English](./README.md) | [한국어](./README.ko.md)
+
 > N-layer ontology-graph RAG framework for AI agents — TypeScript / Node.js.
 
 [![node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
