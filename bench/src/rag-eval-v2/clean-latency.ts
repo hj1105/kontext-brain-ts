@@ -107,6 +107,7 @@ export interface CleanLatencyReport {
     readonly retrievalQueryConcurrency: 1;
     readonly answerConcurrency: 1;
     readonly judgeConcurrency: number;
+    readonly judgeTimeoutMs: number;
     readonly answerBatchSize: 1;
     readonly judgeBatchSize: 1;
     readonly maxRetries: 0;
@@ -291,6 +292,10 @@ export function cleanLatencyManifest(
       codexConcurrency: 1,
       judgeCodexConcurrency:
         backend === "anthropic-api" ? CLEAN_LATENCY_ANTHROPIC_JUDGE_CONCURRENCY : 1,
+      // The protocol rejects any latency above the tail limit, so a judge call
+      // that runs longer can never yield an acceptable measurement. Waiting
+      // beyond it only burns wall clock on a value that is already disqualified.
+      judgeTimeoutMs: CLEAN_LATENCY_TAIL_LIMIT_MS,
       maxRetries: 0,
     },
     models:
@@ -579,6 +584,7 @@ export function frozenConditions(
     answerConcurrency: 1,
     judgeConcurrency:
       manifest.benchmarkPolicy.judgeCodexConcurrency ?? manifest.benchmarkPolicy.codexConcurrency,
+    judgeTimeoutMs: manifest.benchmarkPolicy.judgeTimeoutMs ?? 1_800_000,
     answerBatchSize: 1,
     judgeBatchSize: 1,
     maxRetries: 0,

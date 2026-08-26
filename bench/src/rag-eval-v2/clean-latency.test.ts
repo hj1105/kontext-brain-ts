@@ -14,6 +14,7 @@ import {
   validateIndexSourceProvenance,
 } from "./clean-latency.js";
 import type { AnswerResult, JudgeResult, RetrievalResult } from "./contracts.js";
+import { DEFAULT_RAG_EVAL_MANIFEST } from "./manifest.js";
 
 const queryIds = ["q1", "q2"];
 
@@ -225,6 +226,15 @@ describe("clean latency protocol", () => {
     expect(anthropicConditions.judgeConcurrency).toBe(CLEAN_LATENCY_ANTHROPIC_JUDGE_CONCURRENCY);
     expect(codexConditions.judgeConcurrency).toBe(1);
     expect(anthropicConditions.maxRetries).toBe(codexConditions.maxRetries);
+  });
+
+  it("caps the judge timeout at the tail limit that already disqualifies a value", () => {
+    for (const backend of ["codex-exec", "anthropic-api"] as const) {
+      const manifest = cleanLatencyManifest(backend);
+      expect(manifest.benchmarkPolicy.judgeTimeoutMs).toBe(CLEAN_LATENCY_TAIL_LIMIT_MS);
+      expect(frozenConditions(backend, manifest).judgeTimeoutMs).toBe(CLEAN_LATENCY_TAIL_LIMIT_MS);
+    }
+    expect(DEFAULT_RAG_EVAL_MANIFEST.benchmarkPolicy.judgeTimeoutMs).toBeUndefined();
   });
 
   it("rejects unknown completion backends in the suite config", () => {

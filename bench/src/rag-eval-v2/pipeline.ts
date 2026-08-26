@@ -800,7 +800,7 @@ export async function judgeAnswers(
                 {
                   model: manifest.models.judge.model,
                   reasoningEffort: manifest.models.judge.reasoningEffort!,
-                  timeoutMs: 1_800_000,
+                  timeoutMs: manifest.benchmarkPolicy.judgeTimeoutMs ?? 1_800_000,
                 },
                 batch.map((query) => ({
                   query,

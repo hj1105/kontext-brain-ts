@@ -48,6 +48,7 @@ export interface RagEvalManifest {
     readonly judgeCodexBatchSize: number;
     readonly codexConcurrency: number;
     readonly judgeCodexConcurrency?: number;
+    readonly judgeTimeoutMs?: number;
     readonly humanAuditPerDataset: number;
     readonly maxRetries: number;
     readonly checkpointEvery: number;
@@ -371,6 +372,13 @@ export function assertValidManifest(manifest: RagEvalManifest): void {
       manifest.benchmarkPolicy.judgeCodexConcurrency <= 0)
   ) {
     throw new Error("judgeCodexConcurrency must be a positive integer when set");
+  }
+  if (
+    manifest.benchmarkPolicy.judgeTimeoutMs !== undefined &&
+    (!Number.isInteger(manifest.benchmarkPolicy.judgeTimeoutMs) ||
+      manifest.benchmarkPolicy.judgeTimeoutMs <= 0)
+  ) {
+    throw new Error("judgeTimeoutMs must be a positive integer when set");
   }
   if (manifest.models.embedding.provider !== "openai") {
     throw new Error("The shared embedding provider must be OpenAI");
