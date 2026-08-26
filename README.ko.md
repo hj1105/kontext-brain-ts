@@ -513,54 +513,38 @@ Python, Java, Rust build dependency가 없으며 Node 20과 pnpm만으로 실행
 
 ---
 
-## 제품화 로드맵: open-core → managed cloud
+## 제품 방향: self-hosted OSS와 선택적 managed deployment
 
-프레임워크는 무료 self-hostable 영역입니다. 제품은 **AI agent를 위한 통제된 지식 계층**입니다.
-Notion·Slack·GitHub을 연결하면 각 agent answer가 사용자 ACL을 준수하고, source Evidence를
-citation하며, grounding이 없으면 답변을 거부하도록 합니다. 수익화 대상은 raw retrieval이 아니라
-이 governance substrate입니다.
+이 저장소의 모든 runtime과 framework package는 Apache-2.0이며 self-host할 수 있습니다. 제품 방향은
+**AI agent를 위한 통제된 지식 계층**입니다. Notion·Slack·GitHub을 연결하면 각 agent answer가
+사용자 ACL을 준수하고, source Evidence를 citation하며, grounding이 없으면 답변을 거부합니다.
+향후 managed deployment는 동일한 open-source runtime에 운영·관리 기능을 더할 수 있습니다.
 
 ### 핵심 제안
 
 > 대부분의 RAG demo는 사용자가 접근할 수 없는 문서를 노출하고, 왜 그렇게 답했는지
 > 설명하지 못하며, 모를 때 hallucination합니다. kontext production path는 이 세 문제를
-> 해결하고, 이를 hosted governed service로 제공합니다.
+> 해결합니다. 동일한 runtime을 직접 self-host하거나 managed deployment로 운영할 수 있습니다.
 
-### 현재 구현과 cloud 계획
+### 현재 구현과 managed deployment에 필요한 운영 계층
 
 | Layer | 상태 | 위치 |
 |---|---|---|
 | Retrieval pipeline, ontology graph, pluggable retriever | ✅ | `@kontext-brain/core` Apache-2.0 |
-| MCP client/server, source adapter | ✅, real-server E2E 필요 | `@kontext-brain/mcp`, `tool-server` |
-| Multi-tenant KG, org RLS, ACL retrieval, Evidence, fail-closed `answer()` | ✅ | `@kontext-brain/postgres` BSL |
-| 압축 source-of-truth body store | ✅ | `@kontext-brain/object-storage` BSL |
-| Ontology proposal governance | ✅ | `@kontext-brain/github` BSL |
-| Control plane: signup, org provisioning, OAuth, metering, billing | ⬜ | Closed cloud repo |
-| Admin UI: source 연결, ontology/audit/ACL preview | ⬜ | Closed cloud repo |
+| MCP client/server, source adapter | ✅, real-server E2E 필요 | `@kontext-brain/mcp`, `tool-server` Apache-2.0 |
+| Multi-tenant KG, org RLS, ACL retrieval, Evidence, fail-closed `answer()` | ✅ | `@kontext-brain/postgres` Apache-2.0 |
+| 압축 source-of-truth body store | ✅ | `@kontext-brain/object-storage` Apache-2.0 |
+| Ontology proposal governance | ✅ | `@kontext-brain/github` Apache-2.0 |
+| Control plane: signup, org provisioning, OAuth, metering, billing | ⬜ | 향후 service layer |
+| Admin UI: source 연결, ontology/audit/ACL preview | ⬜ | 향후 service layer |
 | Hosted MCP + REST agent endpoint | ⬜ | `tool-server` + `postgres` wrapper |
 | SSO/SCIM, SOC2, on-prem installer | ⬜ | Enterprise phase |
-
-### 구축 단계
-
-| Phase | 주제 | 산출물 |
-|---|---|---|
-| **P0 (M0-M1)** | 위험 제거 | Licensing 결정, 실제 Notion/GitHub/Slack MCP E2E smoke test/demo, benchmark landing page |
-| **P1 (M2-M4)** | 채택 | npm publish, MCP registry, Claude Desktop/Cursor one-click install, HN/Reddit launch, LLM-as-judge harness |
-| **P2 (M5-M9)** | 매출 | Cloud MVP, usage metering/billing, 첫 3-5개 유료 팀 |
-| **P3 (M10-M18)** | 확장 | SSO/SCIM, audit UI, on-prem installer, SOC2, multi-hop/KG retrieval 개선 |
-
-Versioned RAG evaluation report는 top-of-funnel content, 무료 OSS core는 adoption engine, governance cloud는
-conversion target입니다. 의료·금융·법률처럼 ACL/audit이 중요한 산업이 enterprise 확장 대상입니다.
 
 ---
 
 ## 라이선스
 
-kontext-brain은 **open-core**입니다. 자세한 내용은 [`LICENSING.md`](./LICENSING.md)를 참고하세요.
-
-- **Apache-2.0**: `core`, `llm`, `mcp`, `loader`, `tool-server`. Production/commercial 포함 자유로운 사용.
-- **Business Source License 1.1**: `postgres`, `object-storage`, `github`. Multi-tenant, ACL-aware,
-  audited production substrate. 내부 및 비경쟁 production 사용은 무료이며 2030-08-23에 Apache-2.0으로
-  전환됩니다. 경쟁 hosted service로 제공하려면 commercial license가 필요합니다.
-
-Commercial license, hosted cloud, enterprise support는 maintainer에게 문의하세요.
+저장소와 8개 배포 package 전체를 **Apache License 2.0**으로 제공합니다. `postgres`,
+`object-storage`, `github`도 포함됩니다. 라이선스 조건에 따라 상업적 사용, 수정, 배포,
+self-hosting, hosted service 제공이 가능합니다. 자세한 내용은 [`LICENSE`](./LICENSE)와
+[`LICENSING.md`](./LICENSING.md)를 참고하세요.
