@@ -1608,7 +1608,10 @@ export class KontextBrainAdapter implements FrameworkAdapter {
             queryId: query.id,
             status: "ok",
             evidence,
-            latencyMs: performance.now() - startedAt + (expansion?.latencyMs ?? 0),
+            latencyMs:
+              performance.now() -
+              startedAt +
+              (expansion && !expansion.servedFromCache ? expansion.latencyMs : 0),
             inputTokens: Math.ceil(
               evidence.reduce((total, item) => total + item.text.length, 0) / 4,
             ),
@@ -1696,6 +1699,13 @@ interface MultiQueryExpansionCheckpoint extends MultiQueryExpansion {
   readonly policyVersion: typeof MULTI_QUERY_POLICY_VERSION;
   readonly queryId: string;
   readonly questionDigest: string;
+  /**
+   * In-memory only, never persisted: true when the expansion came from a
+   * checkpoint instead of an LLM call on this run. `latencyMs` then describes
+   * the run that originally produced the expansion, so charging it to this
+   * query would report wall clock that was never spent.
+   */
+  readonly servedFromCache?: boolean;
 }
 
 async function expandWithCheckpoint(
@@ -1720,7 +1730,7 @@ async function expandWithCheckpoint(
     questionDigest,
     cacheOnly,
   );
-  if (cached) return cached;
+  if (cached) return { ...cached, servedFromCache: true };
   if (readThroughDirectory && readThroughDirectory !== directory) {
     const source = loadMultiQueryExpansionCheckpoint(
       join(readThroughDirectory, checkpointName),
@@ -1731,7 +1741,7 @@ async function expandWithCheckpoint(
     );
     if (source) {
       writeJsonAtomic(checkpointPath, source);
-      return source;
+      return { ...source, servedFromCache: true };
     }
     throw new Error(
       `Required read-through multi-query expansion missing or invalid for ${queryId}`,
@@ -1750,7 +1760,7 @@ async function expandWithCheckpoint(
     ...expansion,
   };
   writeJsonAtomic(checkpointPath, checkpoint);
-  return checkpoint;
+  return { ...checkpoint, servedFromCache: false };
 }
 
 function loadMultiQueryExpansionCheckpoint(
