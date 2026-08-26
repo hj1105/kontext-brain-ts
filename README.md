@@ -2,17 +2,18 @@
 
 [English](./README.md) | [한국어](./README.ko.md)
 
-> N-layer ontology-graph RAG framework for AI agents — TypeScript / Node.js.
+> Evidence-backed N-layer knowledge-graph RAG for AI agents — TypeScript / Node.js.
 
 [![node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
 [![pnpm](https://img.shields.io/badge/pnpm-9-orange)](https://pnpm.io)
 [![typescript](https://img.shields.io/badge/typescript-5.x-blue)](https://www.typescriptlang.org/)
 
-A retrieval framework that organizes documents under a hierarchical ontology
-graph instead of a flat vector index. The included RAG evaluation harness uses
-the **v13 anchored-evidence stack** by default: original-query-anchored
-multi-query retrieval, graph/vector/BM25 fusion, coverage-aware reranking,
-source hydration, and evidence-needs-constrained answers. See
+A retrieval framework that structures multi-source knowledge as Resources,
+source-native Chunks, Entities, Facts, and ACL-aware Evidence instead of treating
+the corpus as a flat vector index. The included RAG evaluation harness uses the
+**v13 anchored-evidence stack** by default: original-query-anchored multi-query
+retrieval, graph/vector/BM25 fusion, coverage-aware reranking, source hydration,
+and evidence-needs-constrained answers. See
 [RAG evaluation v2](./bench/src/rag-eval-v2/README.md) and its
 [development report](./bench/data/rag-eval-v2/cross-framework-all-datasets-2026-08-23.md).
 The profile was iteratively tuned, some comparisons use a precomputed Kontext
@@ -20,13 +21,12 @@ KG, and the report's raw run directories are not committed, so these results
 are regression evidence rather than an independently reproducible final
 cross-framework benchmark.
 
-The idea: most production RAG indexes documents into a single semantic vector
-space. kontext routes queries first through a small **ontology graph** (e.g.
-"backend → REST APIs → JWT") and only then searches inside the matched
-subspace. This (a) prunes irrelevant docs early, (b) gives you a natural place
-to plug multiple data sources (Notion, Slack, GitHub) under one knowledge
-structure, and (c) lets you swap retrieval strategies per layer without
-rewriting the whole pipeline.
+The production path keeps external systems as the source of truth and maintains
+an evidence-backed derived index. A query can seed accessible Resources, Chunks,
+Entities, Facts, and optional Ontology anchors, then run bounded best-first
+**Lift → Expand → Ground** traversal. Only the source Chunks selected as Evidence
+are hydrated for answering. Ontology-first staged routing remains available for
+backward compatibility; it is not the definition of production N-layer retrieval.
 
 ---
 
@@ -47,58 +47,74 @@ A modular monorepo with eight published packages and a benchmark harness:
 
 There is no Python in the project — it is end-to-end TypeScript / Node.js.
 
-### Architecture in one diagram
+### Production architecture
 
+```text
+INGEST / STRUCTURE                          QUERY / ANSWER
+
+Notion · Slack · GitHub · MCP              question + Principal
+             │                                      │
+             ▼                                      ▼
+    normalize + synchronize              ACL/RLS-filtered seed fusion
+             │                           Resource | Chunk | Entity | Fact
+             ▼                                  | optional Ontology
+Resource ──contains──► Chunk                       │
+                         │                         ▼
+                         ├─mentions──► Entity   bounded best-first search
+                         │              │       Lift ↔ Expand ↔ Ground
+                         │              ▼                  │
+                         │             Fact                ▼
+                         │              ▲       ranked accessible Evidence
+                         └─grounds──► Evidence   + lazy Chunk hydration
+                               optional factKey             │
+                                                          ▼
+                                               final reasoning LLM
+                                                          │
+                                                          ▼
+                                               citation validation
+                                               or fail closed
+
+PostgreSQL: structured KG, ACL/RLS, scoring profiles
+Object storage: current Resource and Chunk content
 ```
-                    ┌─ Notion MCP ──┐
-   user query ─►    │  GitHub MCP   │ ──►  kontext.autoSetup()  ──►  ontology graph
-                    │  Slack MCP    │                                     │
-                    └─ ... ─────────┘                                     │
-                                                                          ▼
-                                                ┌─────── L1: route query to nodes ───────┐
-                                                │  KeywordMapping / VectorMapping /      │
-                                                │  LLMMapping / HybridMapping            │
-                                                └────────────────────┬───────────────────┘
-                                                                     ▼
-                                                ┌─────── L2: meta search per node ───────┐
-                                                │  ScoreBasedSelector / LLMSelector      │
-                                                └────────────────────┬───────────────────┘
-                                                                     ▼
-                                                ┌─────── L3: fetch + compress body ──────┐
-                                                │  Full body / BM25 top-N sentences /    │
-                                                │  ExtractiveRetriever (no LLM)          │
-                                                └────────────────────┬───────────────────┘
-                                                                     ▼
-                                                ┌─────── L4: final reasoning LLM ────────┐
-                                                │  RouterLLMAdapter (cheap+expensive)    │
-                                                └─────────────────────────────────────────┘
+
+Ingestion and querying are separate flows: `autoSetup()` or synchronization does
+not run for every question. The traversable node kinds are Ontology, Resource,
+Chunk, Entity, and Fact. Evidence is the terminal, ranked grounding record bound
+to a Resource and Chunk, optionally to a Fact; it is not another traversable node.
+ACL filtering is a hard precondition for seeds, edges, and Evidence. Source text
+is loaded only when an accessible Chunk is grounded, and the final reasoning LLM
+is a downstream consumer rather than a graph layer. Missing Evidence or missing
+Evidence-ID citations fail closed.
+
+The legacy local/file-store path remains available as a linear compatibility
+pipeline:
+
+```text
+Ontology routing → per-node meta search → body fetch/compression → final LLM
 ```
 
-Every layer is a port (TypeScript interface) with default implementations and
-a registry pattern, so you can plug in any embedding model, vector store, MCP
-server, chunker, or LLM without modifying core code.
-
-The diagram above is the backward-compatible staged pipeline. The production
-KG path uses a typed bidirectional graph instead: multi-source seeds can start
-at an Ontology Node, Resource, Chunk, Entity, or Fact; bounded best-first
-search then performs adaptive **Lift → Expand → Ground** until it has ranked,
-ACL-accessible Evidence. It does not assume a DAG or a fixed number of lifts.
+Its mapping, vector, metadata, content, chunking, and LLM components remain
+replaceable ports, but this fixed L1–L4 sequence must not be confused with the
+production Evidence KG. A source-grounded LLM Wiki is being evaluated as a
+future replacement for predeclared Ontology routing; it is not an active
+production route, and generated Wiki prose can never serve as answer Evidence.
 
 ---
 
 ## Why use it
 
-- **Multi-source from day one**: Notion + GitHub + Slack documents end up
-  organized under one ontology, not in three disconnected vector indexes.
-- **Predictable retrieval**: ontology routing is auditable — you can see
-  exactly which nodes a query matched, then which docs under those nodes.
+- **Multi-source from day one**: Notion, GitHub, and Slack synchronize into one
+  evidence-backed KG instead of three disconnected vector indexes.
+- **Auditable grounding**: each selected context carries its Evidence, Resource,
+  and Chunk identity plus the scored traversal path that reached it.
 - **Cost-tunable**: choose between extractive retrieval with no final LLM and
   richer LLM-generated answers per query.
 - **MCP-native**: built on the official Model Context Protocol SDK both as
   client (consume MCP servers) and as server (expose to AI agent hosts).
-- **Governed auto-setup**: the first setup session can build a small ontology.
-  Later unmatched documents enter a deduplicated proposal queue and draft PR;
-  they never mutate the active ontology directly.
+- **Governed optional Ontology path**: the first setup session can build a small
+  Ontology. Later unmatched documents enter a deduplicated proposal queue and
+  draft PR; they never mutate the active deployment directly.
 
 ### Where it fits
 

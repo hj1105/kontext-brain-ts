@@ -2,28 +2,29 @@
 
 [English](./README.md) | **한국어**
 
-> AI 에이전트를 위한 N-layer 온톨로지 그래프 RAG 프레임워크 - TypeScript / Node.js
+> AI 에이전트를 위한 Evidence 기반 N-layer 지식 그래프 RAG - TypeScript / Node.js
 
 [![node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
 [![pnpm](https://img.shields.io/badge/pnpm-9-orange)](https://pnpm.io)
 [![typescript](https://img.shields.io/badge/typescript-5.x-blue)](https://www.typescriptlang.org/)
 
-kontext-brain은 문서를 평면적인 벡터 인덱스가 아니라 계층적 온톨로지 그래프 아래에
-조직하는 검색 프레임워크입니다. 함께 제공되는 RAG 평가 하네스의 기본값은 **v13
-anchored-evidence stack**입니다. 원본 질문을 축으로 한 multi-query 검색,
-그래프/vector/BM25 fusion, coverage-aware reranking, source hydration, 근거 필요 조건을
-따르는 답변 생성을 포함합니다. 자세한 내용은 [RAG evaluation v2](./bench/src/rag-eval-v2/README.md)와
+kontext-brain은 여러 소스의 지식을 평면적인 벡터 인덱스로만 취급하지 않고 Resource,
+source-native Chunk, Entity, Fact, ACL-aware Evidence로 구조화하는 검색 프레임워크입니다.
+함께 제공되는 RAG 평가 하네스의 기본값은 **v13 anchored-evidence stack**입니다. 원본
+질문을 축으로 한 multi-query 검색, 그래프/vector/BM25 fusion, coverage-aware reranking,
+source hydration, 근거 필요 조건을 따르는 답변 생성을 포함합니다. 자세한 내용은
+[RAG evaluation v2](./bench/src/rag-eval-v2/README.md)와
 [development report](./bench/data/rag-eval-v2/cross-framework-all-datasets-2026-08-23.md)를 참고하세요.
 
 평가 프로파일은 보고된 데이터셋에서 반복적으로 조정됐고, 일부 비교는 미리 계산한
 Kontext KG를 사용하며, raw run directory는 커밋하지 않습니다. 따라서 이 결과는
 독립적으로 재현된 최종 리더보드가 아니라 **회귀 검증 근거**로 봐야 합니다.
 
-핵심 아이디어는 다음과 같습니다. 일반적인 RAG는 모든 문서를 하나의 의미 벡터 공간에
-인덱싱합니다. kontext는 질문을 먼저 작은 **온톨로지 그래프**로 라우팅한 뒤, 매칭된
-부분 공간 안에서만 검색합니다. 이를 통해 관련 없는 문서를 먼저 제거하고, Notion·Slack·GitHub
-같은 다중 소스를 하나의 지식 구조에 연결하며, 계층별 검색 전략을 독립적으로 교체할 수
-있습니다.
+Production 경로는 외부 시스템을 source of truth로 유지하면서 Evidence 기반 파생 인덱스를
+관리합니다. 질문은 접근 가능한 Resource, Chunk, Entity, Fact와 선택적 Ontology anchor에서
+시작할 수 있으며, bounded best-first **Lift → Expand → Ground** 탐색을 수행합니다. 답변에는
+Evidence로 선택된 source Chunk만 hydration합니다. Ontology-first staged routing은 하위 호환을
+위해 남아 있지만 production N-layer retrieval의 정의는 아닙니다.
 
 ---
 
@@ -44,39 +45,65 @@ Kontext KG를 사용하며, raw run directory는 커밋하지 않습니다. 따�
 
 프로젝트 런타임에 Python은 사용하지 않으며, 전체가 TypeScript / Node.js로 구현되어 있습니다.
 
-### 아키텍처
+### Production 아키텍처
 
 ```text
-                    ┌─ Notion MCP ──┐
-   user query ─►    │  GitHub MCP   │ ──►  kontext.autoSetup()  ──►  ontology graph
-                    │  Slack MCP    │                                     │
-                    └─ ... ────────┘                                     ▼
-                                                L1: ontology node routing
-                                                          ▼
-                                                L2: per-node meta search
-                                                          ▼
-                                                L3: body fetch + compression
-                                                          ▼
-                                                L4: final reasoning LLM
+동기화 / 구조화                              질문 / 답변
+
+Notion · Slack · GitHub · MCP              question + Principal
+             │                                      │
+             ▼                                      ▼
+      정규화 + 동기화                     ACL/RLS가 적용된 seed fusion
+             │                           Resource | Chunk | Entity | Fact
+             ▼                                  | 선택적 Ontology
+Resource ──포함──► Chunk                          │
+                    │                             ▼
+                    ├─언급──► Entity        bounded best-first search
+                    │          │            Lift ↔ Expand ↔ Ground
+                    │          ▼                       │
+                    │         Fact                     ▼
+                    │          ▲             접근 가능한 Evidence 순위화
+                    └─근거──► Evidence        + Chunk 본문 지연 로딩
+                           선택적 factKey               │
+                                                       ▼
+                                              final reasoning LLM
+                                                       │
+                                                       ▼
+                                              citation 검증
+                                              실패하면 답변 거부
+
+PostgreSQL: 구조화 KG, ACL/RLS, scoring profile
+Object storage: 현재 Resource와 Chunk 본문
 ```
 
-각 계층은 TypeScript interface로 정의된 port입니다. Embedding model, vector store, MCP server, chunker,
-LLM을 core 코드 수정 없이 교체할 수 있습니다.
+동기화와 질문 처리는 별도 흐름입니다. 질문마다 `autoSetup()`이나 동기화를 실행하지 않습니다.
+탐색 가능한 node 종류는 Ontology, Resource, Chunk, Entity, Fact입니다. Evidence는 Resource와
+Chunk에 연결되고 선택적으로 Fact를 지지하는 최종 순위화 grounding record이며, 탐색 node가
+아닙니다. Seed, edge, Evidence를 반환하기 전에 ACL을 반드시 적용합니다. 접근 가능한 Chunk에
+grounding된 뒤에만 source 본문을 불러오며, final reasoning LLM은 graph layer가 아니라 검색 결과를
+소비하는 downstream 단계입니다. Evidence가 없거나 답변이 Evidence ID를 citation하지 않으면
+fail-closed로 답변을 거부합니다.
 
-위 다이어그램은 하위 호환성을 위한 staged pipeline입니다. Production KG path는 typed
-bidirectional graph를 사용합니다. Seed는 Ontology Node, Resource, Chunk, Entity, Fact 중 어디서든
-시작할 수 있고, bounded best-first search가 ACL에 따라 접근 가능한 Evidence를 찾을 때까지
-**Lift → Expand → Ground**를 적응적으로 수행합니다. DAG이나 고정된 lift 횟수를 가정하지 않습니다.
+로컬/file-store용 legacy 경로는 다음과 같은 선형 호환 pipeline으로 남아 있습니다.
+
+```text
+Ontology routing → node별 meta search → 본문 fetch/compression → final LLM
+```
+
+Mapping, vector, metadata, content, chunking, LLM component는 계속 교체 가능한 port이지만, 이 고정
+L1-L4 순서를 production Evidence KG와 혼동하면 안 됩니다. Source-grounded LLM Wiki는 미리 선언한
+Ontology routing을 대체할 미래 방향으로 평가 중이지만 아직 active production route가 아닙니다.
+생성된 Wiki 본문 자체는 답변 Evidence가 될 수 없습니다.
 
 ---
 
 ## 왜 사용하는가
 
-- **처음부터 다중 소스**: Notion, GitHub, Slack 문서를 서로 단절된 벡터 인덱스가 아니라 하나의 온톨로지에 조직합니다.
-- **추적 가능한 검색**: 어떤 ontology node와 문서가 선택됐는지 확인할 수 있습니다.
+- **처음부터 다중 소스**: Notion, GitHub, Slack을 서로 단절된 벡터 인덱스가 아니라 하나의 Evidence 기반 KG로 동기화합니다.
+- **추적 가능한 grounding**: 선택된 context마다 Evidence, Resource, Chunk ID와 해당 항목에 도달한 탐색 경로·점수를 확인할 수 있습니다.
 - **비용 조절**: final LLM이 없는 extractive retrieval과 풍부한 LLM 답변을 질문별로 선택할 수 있습니다.
 - **MCP-native**: 공식 MCP SDK를 사용해 source server를 소비하고, 동시에 AI agent host에 kontext tool을 제공합니다.
-- **통제된 auto-setup**: 첫 setup은 작은 ontology를 만들 수 있지만, 이후 unmatched document는 active ontology를 즉시 변경하지 않고 deduplicated proposal queue와 draft PR로 전달합니다.
+- **통제된 선택적 Ontology 경로**: 첫 setup은 작은 Ontology를 만들 수 있지만, 이후 unmatched document는 active deployment를 즉시 변경하지 않고 deduplicated proposal queue와 draft PR로 전달합니다.
 
 ### 적용 위치
 
