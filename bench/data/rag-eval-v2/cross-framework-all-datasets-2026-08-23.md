@@ -36,13 +36,13 @@ and citation F1. On Novel, it raises both recall and correctness substantially.
 All rows completed 2,062/2,062 retrievals. Answer-bearing rows completed the
 same 200/200 answer and judgement sample with zero errors.
 
-| System | Recall@10 | nDCG@10 | Raw/package-sensitive CP | Correctness | Strict faith | Claim F1 | Citation F1 | Retrieval p95 | E2E p95 |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| **Kontext v15** | **0.891368** | 0.968907 | **0.580861** | **0.949917** | **0.961385** | **0.861159** | **0.958348** | 34.05 s | 94.29 s |
-| Kontext v13 | 0.892338 | 0.970428 | 0.580222 | 0.946127 | 0.953411 | 0.855016 | 0.954141 | 34.94 s | 104.24 s |
-| LightRAG 1.5.6 | 0.932590 | 0.999030* | 0.999030* | 0.893900 | 0.941683 | 0.857511 | 0.947662 | 377.92 s | 445.01 s |
-| Microsoft GraphRAG 3.1.1 | 0.830262 | 0.997090* | 0.997090* | 0.781650 | 0.873956 | 0.733552 | 0.851768 | 0.52 s | 107.26 s |
-| Vector + BM25-RRF | 0.706596 | 0.743378 | 0.381232 | 0.873801 | 0.895057 | 0.807975 | 0.899981 | 0.004 s | 178.22 s |
+| System | Recall@10 | nDCG@10 | Raw/package-sensitive CP | Correctness | Strict faith | Claim F1 | Citation F1 | Warm retrieval p95 | Query-to-answer p95 | Eval E2E p95 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| **Kontext v15** | **0.891368** | 0.968907 | **0.580861** | **0.949917** | **0.961385** | **0.861159** | **0.958348** | 7.77 s | 20.15 s | 97.65 s |
+| Kontext v13 | 0.892338 | 0.970428 | 0.580222 | 0.946127 | 0.953411 | 0.855016 | 0.954141 | 6.83 s | 18.60 s | 108.08 s† |
+| LightRAG 1.5.6 | 0.932590 | 0.999030* | 0.999030* | 0.893900 | 0.941683 | 0.857511 | 0.947662 | 6.00 s | 16.22 s | 123.02 s |
+| Microsoft GraphRAG 3.1.1 | 0.830262 | 0.997090* | 0.997090* | 0.781650 | 0.873956 | 0.733552 | 0.851768 | 0.28 s | 12.83 s | 123.08 s† |
+| Vector + BM25-RRF | 0.706596 | 0.743378 | 0.381232 | 0.873801 | 0.895057 | 0.807975 | 0.899981 | not re-measured | not re-measured | not re-measured |
 
 `*` LightRAG and Microsoft GraphRAG package a large native context as one
 evidence record. Their near-one nDCG/context precision values are
@@ -51,8 +51,21 @@ evidence windows.
 
 Relative to LightRAG, v15 has -0.041222 recall but +0.056017 correctness,
 +0.019702 strict faithfulness, +0.003649 claim F1, and +0.010686 citation F1.
-Its observed retrieval p95 is 11.1x lower and E2E p95 4.7x lower. Relative to
-Microsoft GraphRAG, v15 improves recall by 0.061106 and correctness by 0.168267.
+It is 1.3x slower on warm retrieval p95 and 1.2x slower on query-to-answer p95,
+and 1.3x faster on the judge-inclusive Eval E2E p95. Relative to Microsoft
+GraphRAG, v15 improves recall by 0.061106 and correctness by 0.168267 while
+being 27.8x slower on warm retrieval p95 and 1.6x slower on query-to-answer p95.
+
+An earlier revision of this report claimed v15's retrieval p95 was 11.1x lower
+than LightRAG's. That comparison came from queue-contended timings and its
+direction was wrong; under the clean protocol the two systems sit within 1.3x of
+each other. Kontext does not win on speed. Both make exactly one LLM round trip
+during retrieval — Kontext to rerank evidence, LightRAG to extract query
+keywords — and Kontext's is the larger prompt, which accounts for the remaining
+gap. Microsoft GraphRAG makes no retrieval LLM call at all, which is why it is
+an order of magnitude faster and also why it trails both on correctness. The
+accurate reading is that retrieval latency here tracks the number and size of
+LLM round trips, and that Kontext spends one to buy grounding accuracy.
 
 HippoRAG 2 is not assigned a score: its pinned native index path has no
 long-document chunker and the Medical source contains inputs beyond the
@@ -64,12 +77,12 @@ rather than silently adding a custom chunker.
 All rows completed 2,010/2,010 retrievals and the same 200/200 answer and
 judgement sample with zero errors.
 
-| System | Recall@10 | nDCG@10 | Raw/package-sensitive CP | Correctness | Strict faith | Claim F1 | Citation F1 | Retrieval p95 | E2E p95 |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| **Kontext v15** | **0.820896** | 0.934913 | **0.449236** | **0.856572** | **0.929011** | **0.823365** | 0.936913 | 972.11 s† | 1,009.84 s† |
-| Kontext v13 | 0.525871 | 0.666185 | 0.289687 | 0.465432 | 0.792182 | 0.518112 | 0.552107 | 37.29 s | 92.42 s |
-| LightRAG 1.5.6 | 0.856716 | 0.994527* | 0.994527* | 0.849765 | 0.927176 | 0.820114 | **0.940739** | 3,386.57 s† | 3,406.37 s† |
-| Microsoft GraphRAG 3.1.1 | 0.771642 | 0.981592* | 0.981592* | 0.766762 | 0.865095 | 0.743363 | 0.876322 | 0.47 s | 90.61 s |
+| System | Recall@10 | nDCG@10 | Raw/package-sensitive CP | Correctness | Strict faith | Claim F1 | Citation F1 | Warm retrieval p95 | Query-to-answer p95 | Eval E2E p95 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| **Kontext v15** | **0.820896** | 0.934913 | **0.449236** | **0.856572** | **0.929011** | **0.823365** | 0.936913 | 9.26 s | 20.15 s | 103.18 s |
+| Kontext v13 | 0.525871 | 0.666185 | 0.289687 | 0.465432 | 0.792182 | 0.518112 | 0.552107 | 10.13 s | 18.87 s | 83.62 s† |
+| LightRAG 1.5.6 | 0.856716 | 0.994527* | 0.994527* | 0.849765 | 0.927176 | 0.820114 | **0.940739** | 6.66 s | 17.88 s | 117.30 s |
+| Microsoft GraphRAG 3.1.1 | 0.771642 | 0.981592* | 0.981592* | 0.766762 | 0.865095 | 0.743363 | 0.876322 | 0.40 s | 10.97 s | 140.49 s† |
 
 v15 versus v13 improves recall by 0.295025 and correctness by 0.391141. It
 also edges LightRAG on correctness (+0.006807), strict faithfulness
@@ -77,9 +90,25 @@ also edges LightRAG on correctness (+0.006807), strict faithfulness
 citation F1 by 0.003826. It exceeds Microsoft GraphRAG on every reported
 quality metric except the incomparable packaged context precision.
 
-`†` v15 and LightRAG Novel retrievals overlapped other high-concurrency local
-Codex workloads. Their recorded per-query latency includes queue contention and
-must not be read as isolated throughput. Quality metrics remain valid.
+`†` marks a judge stage that did not complete all 200 queries, which
+disqualifies only that row's Eval E2E figure. Retrieval and query-to-answer
+latency are unaffected, because the judge never enters them.
+
+The three latency columns come from the 2026-08-24/27 clean latency campaign
+(protocol `clean-latency-v1.1`, artifacts under
+`runs/clean-latency-2026-08-24/`), which replaced the earlier queue-contended
+timings rather than adjusting them. Warm retrieval p95 excludes index
+construction; query-to-answer p95 adds the answer call and is the user-facing
+figure; Eval E2E p95 adds the judge and describes the evaluation pipeline only.
+Each row reuses its finished warm index with no build and no new embeddings,
+draws the same deterministic 200-query sample, runs alone on the host, and holds
+retrieval, answer, and judge at concurrency 1 with batch size 1 and no retries.
+A row is accepted only when retrieval and answer show no latency over 600 s, no
+queue or usage-limit error, and no inter-completion gap in the 10–20 minute
+throttle-wave band; rejected runs are preserved under `invalid-*`, `aborted-*`,
+and `pre-expansion-latency-fix/`. The Vector + BM25-RRF baseline was outside the
+campaign's eight-row matrix and is reported as not re-measured instead of
+carrying its contaminated figure forward. Quality metrics are unchanged.
 
 ### Answer metric components
 
@@ -257,9 +286,11 @@ unchanged v13 retrieval policy runs.
   exactly matches v13.
 - Answer/judge models are stochastic. Confidence intervals are reported for
   correctness; small paired differences should not be overstated.
-- Retrieval p95 excludes index construction. Index wall-clock time is not
+- Warm retrieval p95 excludes index construction. Index wall-clock time is not
   represented as a comparable score because framework-native builds expose
-  different stage boundaries.
+  different stage boundaries. The frozen conditions, per-stage validity, and
+  environment provenance for every latency figure are recorded per row in
+  `runs/clean-latency-2026-08-24/*/clean-latency-report.json`.
 - The current Novel v15 result is a development-set repair signal, not a clean
   held-out estimate. Medical and BEIR are the unchanged regression and public
   generalization gates.
