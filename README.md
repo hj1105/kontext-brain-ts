@@ -54,11 +54,13 @@ harnesses are not part of the current performance claim.
 
 All rows below use the frozen shared answer/judge contract. Retrieval is scored
 over the full dataset; answer quality uses the same deterministic 200-query
-sample. Higher is better.
+sample. Higher is better. Embedding API cost is the cost represented by the
+embeddings used in each row; when a run reused an existing cache, its newly
+incurred cost is shown separately.
 
 | Dataset | System | Recall@10 | nDCG@10 | Correctness | Strict faithfulness | Claim F1 | Citation F1 | Warm retrieval p95 | Query-to-answer p95 | Eval E2E p95 | Embedding API cost | Answer+judge LLM tokens/query (in/out) | LLM API-equivalent $/query |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Medical | **Kontext v15** | 0.8914 | 0.9689 | **0.9499** | **0.9614** | **0.8612** | **0.9583** | 7.77 s | 20.15 s | 97.65 s | **$0 incremental**‡ | 45,150 / 1,277 | ≈$0.1593§ |
+| Medical | **Kontext v15** | 0.8914 | 0.9689 | **0.9499** | **0.9614** | **0.8612** | **0.9583** | 7.77 s | 20.15 s | 97.65 s | **$0.008150 represented / $0 new**‡ | 45,150 / 1,277 | ≈$0.1593§ |
 | Medical | Kontext v13 default | 0.8923 | 0.9704 | 0.9461 | 0.9534 | 0.8550 | 0.9541 | 6.83 s | 18.60 s | 108.08 s† | $0.008150 | 45,148 / 1,344 | ≈$0.1606§ |
 | Medical | LightRAG 1.5.6 | **0.9326** | 0.9990* | 0.8939 | 0.9417 | 0.8575 | 0.9477 | 6.00 s | 16.22 s | 123.02 s | $0.015409 | 57,911 / 1,651 | ≈$0.2057§ |
 | Medical | Microsoft GraphRAG 3.1.1 | 0.8303 | 0.9971* | 0.7817 | 0.8740 | 0.7336 | 0.8518 | 0.28 s | 12.83 s | 123.08 s† | $0.013623 | 43,402 / 1,942 | ≈$0.1678§ |
@@ -73,10 +75,13 @@ context as one evidence record, while Kontext exposes separately scored evidence
 windows, so their raw ranking/noise values are not directly comparable. `†`
 marks a judge stage that did not complete all 200 queries, which disqualifies
 only that row's Eval E2E figure and never its retrieval or query-to-answer
-latency. `‡` is the v15 marginal run cost after reusing
-the $0.008150 v13 Medical embedding index. `¶` is the preserved pre-fix v15
-Novel run cost; its whole-batch cache invalidation was fixed but the benchmark
-was not rerun to manufacture a cheaper number. `§` is an API-equivalent estimate
+latency. `‡` means the Medical v15 row represents the same 407,518 embedding
+input tokens already paid for by the v13 run: 1,385 document, 2,062 query, and
+5,893 expanded-query vectors were reused, with zero new vectors or embedding
+input tokens. A fresh index or new query workload is not free. `¶` is the
+preserved pre-fix v15 Novel run cost; its whole-batch cache invalidation was
+fixed but the benchmark was not rerun to manufacture a cheaper number. `§` is
+an API-equivalent estimate
 from the preserved stage-specific tokens, treating all input as uncached: answer
 GPT-5.6 Terra at $2 input/$12 output and judge GPT-5.6 Sol at $4 input/$20 output
 per million tokens, using the
