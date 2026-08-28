@@ -7,6 +7,7 @@ import {
   assertValidManifest,
   loadFrozenRunManifest,
   manifestDigest,
+  manifestForRunDirectory,
 } from "./manifest.js";
 import { freezeRunManifest } from "./pipeline.js";
 
@@ -70,6 +71,21 @@ describe("rag eval manifest", () => {
     expect(loadFrozenRunManifest(join(directory, "run-manifest.json"))).toEqual(
       DEFAULT_RAG_EVAL_MANIFEST,
     );
+  });
+
+  it("resumes with the frozen manifest when later defaults change", () => {
+    const directory = temporaryDirectory();
+    freezeRunManifest(DEFAULT_RAG_EVAL_MANIFEST, directory);
+    const laterDefault = {
+      ...DEFAULT_RAG_EVAL_MANIFEST,
+      benchmarkPolicy: {
+        ...DEFAULT_RAG_EVAL_MANIFEST.benchmarkPolicy,
+        humanAuditPerDataset: 101,
+      },
+    };
+
+    expect(manifestForRunDirectory(laterDefault, directory)).toEqual(DEFAULT_RAG_EVAL_MANIFEST);
+    expect(manifestForRunDirectory(laterDefault, temporaryDirectory())).toEqual(laterDefault);
   });
 
   it("rejects malformed frozen run manifest envelopes", () => {

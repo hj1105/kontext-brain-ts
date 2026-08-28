@@ -241,6 +241,77 @@ describe("external framework doctor", () => {
 });
 
 describe("external framework retrieval", () => {
+  it("skips build and binds a strict warm index source", async () => {
+    process.env.RAG_EVAL_GRAPHRAG_COMMAND = JSON.stringify(["graphrag-adapter"]);
+    const framework = DEFAULT_RAG_EVAL_MANIFEST.frameworks.find(
+      (candidate) => candidate.id === "microsoft-graphrag",
+    );
+    if (!framework) throw new Error("Missing Microsoft GraphRAG manifest entry");
+    const workDirectory = mkdtempSync(join(tmpdir(), "rag-eval-external-warm-"));
+    const indexSourceDirectory = mkdtempSync(join(tmpdir(), "rag-eval-external-index-source-"));
+    temporaryDirectories.push(workDirectory, indexSourceDirectory);
+    const bundle: DatasetBundle = {
+      id: "graphrag-bench-medical",
+      track: "static-kb",
+      documents: [],
+      queries: [
+        {
+          id: "query-1",
+          text: "What happened?",
+          referenceAnswer: "An event happened.",
+          goldEvidenceIds: [],
+          goldEvidenceText: [],
+          answerable: true,
+          category: "test",
+          metadata: {},
+        },
+      ],
+      provenance: { source: "test", version: "1", license: "test" },
+    };
+    const calls: string[][] = [];
+    const runner: CommandRunner = async (_command, args) => {
+      calls.push([...args]);
+      const outputIndex = args.indexOf("--output");
+      if (outputIndex >= 0) {
+        const outputPath = args[outputIndex + 1];
+        if (!outputPath) throw new Error("Missing external adapter output path");
+        writeJsonLines(outputPath, [
+          {
+            datasetId: bundle.id,
+            frameworkId: framework.id,
+            queryId: "query-1",
+            status: "ok",
+            evidence: [],
+            latencyMs: 1,
+            inputTokens: null,
+            error: null,
+            frameworkVersion: framework.pinnedVersion ?? "unresolved",
+            configDigest: "adapter-digest",
+          },
+        ]);
+      }
+      return { exitCode: 0, stdout: "", stderr: "", durationMs: 1 };
+    };
+
+    await new ExternalCommandFrameworkAdapter(
+      framework,
+      DEFAULT_RAG_EVAL_MANIFEST,
+      runner,
+    ).retrieve(bundle, {
+      workDirectory,
+      topK: 10,
+      candidateK: 50,
+      queryConcurrency: 1,
+      indexSourceDirectory,
+      requireWarmIndex: true,
+    });
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toContain("retrieve");
+    expect(calls[0]).toContain("--index-source-dir");
+    expect(calls[0]?.[calls[0].indexOf("--query-concurrency") + 1]).toBe("1");
+  });
+
   it("accepts one result for every identical duplicate query row", async () => {
     process.env.RAG_EVAL_GRAPHRAG_COMMAND = JSON.stringify(["graphrag-adapter"]);
     const framework = DEFAULT_RAG_EVAL_MANIFEST.frameworks.find(

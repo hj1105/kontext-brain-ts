@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { DatasetId, FrameworkId } from "./contracts.js";
 import { defaultDatasetPaths } from "./datasets.js";
-import { DEFAULT_RAG_EVAL_MANIFEST } from "./manifest.js";
+import { DEFAULT_RAG_EVAL_MANIFEST, manifestForRunDirectory } from "./manifest.js";
 import { doctorBenchmark, runBenchmark } from "./pipeline.js";
 import { prepareFramesDataset } from "./prepare-frames.js";
 
@@ -36,7 +36,8 @@ async function main(): Promise<void> {
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
     return;
   }
-  const report = await runBenchmark(DEFAULT_RAG_EVAL_MANIFEST, {
+  const runManifest = manifestForRunDirectory(DEFAULT_RAG_EVAL_MANIFEST, options.workDirectory);
+  const report = await runBenchmark(runManifest, {
     workDirectory: options.workDirectory,
     stage: options.stage,
     datasetPaths,

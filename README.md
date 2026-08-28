@@ -13,13 +13,17 @@ source-native Chunks, Entities, Facts, and ACL-aware Evidence instead of treatin
 the corpus as a flat vector index. The included RAG evaluation harness uses the
 **v13 anchored-evidence stack** by default: original-query-anchored multi-query
 retrieval, graph/vector/BM25 fusion, coverage-aware reranking, source hydration,
-and evidence-needs-constrained answers. See
-[RAG evaluation v2](./bench/src/rag-eval-v2/README.md) and its
-[development report](./bench/data/rag-eval-v2/cross-framework-all-datasets-2026-08-23.md).
-The profile was iteratively tuned, some comparisons use a precomputed Kontext
-KG, and the report's raw run directories are not committed, so these results
-are regression evidence rather than an independently reproducible final
-cross-framework benchmark.
+and evidence-needs-constrained answers. The RAG evaluation harness selects v13
+when no experimental mode is configured. See
+[RAG evaluation v2](./bench/src/rag-eval-v2/README.md) for the frozen protocol
+and the
+[dataset-by-dataset cross-framework report](./bench/data/rag-eval-v2/cross-framework-all-datasets-2026-08-23.md);
+the superseded experiments are indexed in
+[Benchmark history](./bench/data/BENCHMARK_HISTORY.md), not presented as the
+primary quality claim. The profiles were iteratively tuned, some comparisons
+use a precomputed Kontext KG, and the report's raw run directories are not
+committed, so these results are regression evidence rather than an independently
+reproducible final cross-framework benchmark.
 
 The production path keeps external systems as the source of truth and maintains
 an evidence-backed derived index. A query can seed accessible Resources, Chunks,
@@ -30,9 +34,127 @@ backward compatibility; it is not the definition of production N-layer retrieval
 
 ---
 
+## Current benchmark snapshot
+
+This is the section to read for current performance. The old Round-by-Round
+research log lives separately in [Benchmark history](./bench/data/BENCHMARK_HISTORY.md).
+
+The public benchmark scope is deliberately narrow: **GraphRAG-Bench Medical,
+GraphRAG-Bench Novel, BEIR SciFact, and BEIR NFCorpus**. Medical and Novel carry
+the shared retrieval, answer, citation, and judge evaluation; SciFact and
+NFCorpus are public retrieval guardrails. Historical datasets and exploratory
+harnesses are not part of the current performance claim.
+
+- **Default, no configuration:** v13 anchored-evidence stack.
+- **Latest validated candidate:** v15, which keeps the v13 ranking and answer
+  policy but repairs missing original resources in incomplete precomputed KGs.
+- **Promotion status:** v15 is not silently made the default yet. Novel supplied
+  the development signal and SciFact recall moved slightly, so v13 remains the
+  conservative default until another held-out gate confirms the change.
+
+All rows below use the frozen shared answer/judge contract. Retrieval is scored
+over the full dataset; answer quality uses the same deterministic 200-query
+sample. Higher is better.
+
+| Dataset | System | Recall@10 | nDCG@10 | Correctness | Strict faithfulness | Claim F1 | Citation F1 | Warm retrieval p95 | Query-to-answer p95 | Eval E2E p95 | Embedding API cost | Answer+judge LLM tokens/query (in/out) | LLM API-equivalent $/query |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Medical | **Kontext v15** | 0.8914 | 0.9689 | **0.9499** | **0.9614** | **0.8612** | **0.9583** | 7.77 s | 20.15 s | 97.65 s | **$0 incremental**‡ | 45,150 / 1,277 | ≈$0.1593§ |
+| Medical | Kontext v13 default | 0.8923 | 0.9704 | 0.9461 | 0.9534 | 0.8550 | 0.9541 | 6.83 s | 18.60 s | 108.08 s† | $0.008150 | 45,148 / 1,344 | ≈$0.1606§ |
+| Medical | LightRAG 1.5.6 | **0.9326** | 0.9990* | 0.8939 | 0.9417 | 0.8575 | 0.9477 | 6.00 s | 16.22 s | 123.02 s | $0.015409 | 57,911 / 1,651 | ≈$0.2057§ |
+| Medical | Microsoft GraphRAG 3.1.1 | 0.8303 | 0.9971* | 0.7817 | 0.8740 | 0.7336 | 0.8518 | 0.28 s | 12.83 s | 123.08 s† | $0.013623 | 43,402 / 1,942 | ≈$0.1678§ |
+| Novel | **Kontext v15** | 0.8209 | 0.9349 | **0.8566** | **0.9290** | **0.8234** | 0.9369 | 9.26 s | 20.15 s | 103.18 s | $0.029414¶ | 47,690 / 1,374 | ≈$0.1688§ |
+| Novel | Kontext v13 default | 0.5259 | 0.6662 | 0.4654 | 0.7922 | 0.5181 | 0.5521 | 10.13 s | 18.87 s | 83.62 s† | $0.017840 | 47,508 / 1,088 | ≈$0.1629§ |
+| Novel | LightRAG 1.5.6 | **0.8567** | 0.9945* | 0.8498 | 0.9272 | 0.8201 | **0.9407** | 6.66 s | 17.88 s | 117.30 s | $0.049371 | 58,705 / 1,351 | ≈$0.2022§ |
+| Novel | Microsoft GraphRAG 3.1.1 | 0.7716 | 0.9816* | 0.7668 | 0.8651 | 0.7434 | 0.8763 | 0.40 s | 10.97 s | 140.49 s† | $0.088326 | 43,492 / 1,653 | ≈$0.1624§ |
+
+Context precision is deliberately omitted from this compact table. `*` marks
+package-sensitive nDCG: LightRAG and Microsoft GraphRAG package a large native
+context as one evidence record, while Kontext exposes separately scored evidence
+windows, so their raw ranking/noise values are not directly comparable. `†`
+marks a judge stage that did not complete all 200 queries, which disqualifies
+only that row's Eval E2E figure and never its retrieval or query-to-answer
+latency. `‡` is the v15 marginal run cost after reusing
+the $0.008150 v13 Medical embedding index. `¶` is the preserved pre-fix v15
+Novel run cost; its whole-batch cache invalidation was fixed but the benchmark
+was not rerun to manufacture a cheaper number. `§` is an API-equivalent estimate
+from the preserved stage-specific tokens, treating all input as uncached: answer
+GPT-5.6 Terra at $2 input/$12 output and judge GPT-5.6 Sol at $4 input/$20 output
+per million tokens, using the
+[official OpenAI model prices](https://developers.openai.com/api/docs/models/compare)
+on 2026-08-24. The benchmark actually used the local Codex CLI, so this is not an
+API invoice or a per-query Codex subscription charge. The token and cost columns
+cover answer+judge only; Kontext query expansion and reranking CLI tokens were
+not fully metered, so they must not be presented as total LLM compute cost. The
+detailed report includes confidence intervals and the public BEIR
+SciFact/NFCorpus retrieval guardrails:
+[cross-framework evaluation](./bench/data/rag-eval-v2/cross-framework-all-datasets-2026-08-23.md).
+
+#### How the three latency columns were measured
+
+The latency columns come from the 2026-08-24/27 clean latency campaign
+(protocol `clean-latency-v1.1`, artifacts under
+`bench/data/rag-eval-v2/runs/clean-latency-2026-08-24/`). They replace the
+earlier speed figures outright rather than adjusting them, because several of
+those were measured while other benchmarks shared one local Codex queue and so
+recorded other jobs' queue wait. Novel Kontext v15 previously read 972.11 s and
+Novel LightRAG 3,386.57 s; rows that had never been flagged as contaminated
+reproduced within 1.3–1.9x, which is the check that the protocol isolates
+contamination instead of moving every number.
+
+Every row reuses its finished warm index with no index build and no new
+embeddings, and a cache miss fails closed. All four systems draw the same
+deterministic 200-query sample per dataset (seed 20260814, one shared sample
+digest), one system runs at a time, and retrieval, answer, and judge each run at
+concurrency 1, batch size 1, with no retries. Percentiles are nearest-rank.
+
+- **Warm retrieval p95** is retrieval only. Index construction is excluded; its
+  cost and wall-clock time live in the Embedding API cost column and in
+  [Benchmark history](./bench/data/BENCHMARK_HISTORY.md).
+- **Query-to-answer p95** is retrieval plus answer latency. This is the
+  user-facing number: the judge is an evaluation step, not part of answering.
+- **Eval E2E p95** adds the judge call and describes the evaluation pipeline
+  only. It must not be read as user-perceived latency.
+
+A run is accepted only when its retrieval and answer stages carry no latency
+above 600 s, no queue, throttle, quota, or usage-limit error, and no
+inter-completion gap in the 10–20 minute throttle-wave band. Rejected and
+aborted runs are preserved beside the accepted ones under `invalid-*`,
+`aborted-*`, and `pre-expansion-latency-fix/` rather than deleted or blended.
+Two measurement bugs were found and fixed during the campaign: a cached
+multi-query expansion's stored latency was being added to each query's reported
+retrieval latency even though a cache hit spends no wall clock, and the judge
+waited 1,800 s before giving up on a call the protocol had already disqualified
+at 600 s. Both fixes are covered by unit tests. Quality columns are unchanged
+throughout: they come from the 2026-08-22/23 scored runs on the same sample, and
+this campaign re-measured latency only.
+
+### Official evaluation contract
+
+No single aggregate “overall score” is used. A system must report the layers
+separately so a retrieval gain cannot hide a grounding or abstention regression.
+
+| Layer | Primary metric | What it checks |
+|---|---|---|
+| Retrieval | Evidence Recall@K | Whether the evidence required for the answer was actually found |
+| Retrieval order | nDCG@K | Whether important evidence was ranked near the front |
+| Retrieval noise | Context Precision | What fraction of retrieved evidence is relevant |
+| Answer coverage | Claim Recall | Whether required answer claims were omitted |
+| Grounding | Strict Faithfulness / Claim Support Precision | Whether every generated claim is entailed by retrieved evidence |
+| Citations | Citation Precision / Recall / F1 | Whether citations support their claims and cover the claims that need them |
+| Out-of-scope handling | Answerable/Unanswerable Joint Accuracy | Whether the system answers supported questions and abstains outside the KB |
+| Stability | Robustness Drop | Performance loss after document-order, paraphrase, or distractor perturbations |
+| Writing quality | Clarity / Conciseness / Fluency | Whether the response is readable without unnecessary wording |
+
+Metrics that require labels or paired perturbations are reported as unavailable,
+not fabricated. Historical score files retain the fields available under their
+original frozen judge contract.
+
+---
+
 ## What this project is
 
-A modular monorepo with eight published packages and a benchmark harness:
+A modular monorepo with eight published packages and the RAG evaluation v2
+harness:
 
 | package | purpose |
 |---------|---------|
@@ -45,7 +167,9 @@ A modular monorepo with eight published packages and a benchmark harness:
 | `@kontext-brain/object-storage` | S3-compatible compressed Resource content storage |
 | `@kontext-brain/github` | accumulated ontology-proposal draft PR publisher |
 
-There is no Python in the project — it is end-to-end TypeScript / Node.js.
+The product packages are TypeScript / Node.js. The benchmark keeps pinned Python
+environments only for official LightRAG and Microsoft GraphRAG adapters, whose
+native implementations are Python.
 
 ### Production architecture
 
@@ -192,9 +316,27 @@ pnpm test            # unit, contract, and integration tests
 ```bash
 pnpm --filter @kontext-brain/example-basic start       # in-process toy
 pnpm --filter @kontext-brain/example-auto-setup start  # mock MCP servers + autoSetup
-bench/node_modules/.bin/tsx bench/src/rag-eval-v2/cli.ts doctor  # inspect evaluation prerequisites
-pnpm --filter @kontext-brain/bench start               # legacy local benchmark (needs Ollama)
 ```
+
+### Run the current benchmark harness
+
+The current public scope is explicit in the command so unrelated manifest
+tracks cannot be mixed into the comparison:
+
+```bash
+# Inspect model, data, and pinned-framework prerequisites.
+bench/node_modules/.bin/tsx bench/src/rag-eval-v2/cli.ts doctor
+
+# Medical + Novel quality evaluation and SciFact + NFCorpus retrieval gates.
+bench/node_modules/.bin/tsx bench/src/rag-eval-v2/cli.ts run \
+  --datasets graphrag-bench-medical,graphrag-bench-novel,beir-scifact,beir-nfcorpus \
+  --work-dir /absolute/path/to/rag-eval-v2-run
+```
+
+The exact dataset sample, model settings, framework versions, metrics, and
+checkpoint rules are frozen in
+[`bench/src/rag-eval-v2`](./bench/src/rag-eval-v2/README.md). Only output from
+that frozen harness is current benchmark evidence.
 
 ---
 
@@ -511,91 +653,6 @@ connector is skipped rather than interpreted as deleting all of its documents.
 
 ---
 
-## Performance (current retrieval candidate)
-
-The latest evaluation (2026-08-25) covers the full GraphRAG-Bench Medical
-(2,062 queries) and Novel (2,010 queries) retrieval sets. The current quality
-candidate is **source-hydrated direct hybrid retrieval**: vector and lexical
-candidates are fused and reranked, then hydrated into contiguous
-5,000-character source windows under a 36,000-character context cap. Graph
-traversal is disabled (`maxHops: 0`) because the matched graph ablation did
-not pass the default-promotion gate.
-
-| Dataset | Queries | Evidence recall@10 | Lift vs raw direct | p95 retrieval |
-|---|---:|---:|---:|---:|
-| Medical | 2,062 | **0.80892** | **+0.09360 (+9.36pp)** | **4.18 ms** |
-| Novel | 2,010 | **0.43980** | **+0.06915 (+6.92pp)** | **12.40 ms** |
-
-Evidence recall measures how much of the required gold evidence is present in
-the combined top-10 context. These are retrieval results, not answer accuracy
-or citation scores. They use frozen OpenAI `text-embedding-3-small`
-checkpoints, vector seeds 10, lexical seeds 5, and the same candidate and
-reranking settings on both datasets.
-
-`Context precision` is retained as a secondary diagnostic because its name is
-easy to confuse with answer precision. For each query, it is the fraction of
-returned source windows that individually cover at least 50% of a gold-evidence
-text. It is sensitive to window packaging and does not mean that only 35.7% or
-65.6% of answers are correct.
-
-| Dataset | Raw direct | Current candidate | Absolute improvement |
-|---|---:|---:|---:|
-| Medical | 0.37410 | **0.65641** | **+0.28230** |
-| Novel | 0.18483 | **0.35696** | **+0.17214** |
-
-### Cross-framework comparison
-
-The latest completed shared-protocol comparison uses the **Kontext v15**
-evaluation profile. It is separate from the newer source-hydrated direct
-candidate above, which has not yet been rerun against every external system.
-Retrieval covers all 2,062 Medical and 2,010 Novel queries; answer and judge
-metrics use the same deterministic 200-query sample per dataset.
-
-| Dataset | System | Recall@10 | Answer correctness | Strict faithfulness | Citation F1 |
-|---|---|---:|---:|---:|---:|
-| Medical | **Kontext v15** | 89.1% | **95.0%** | **96.1%** | **95.8%** |
-| Medical | LightRAG 1.5.6 | **93.3%** | 89.4% | 94.2% | 94.8% |
-| Medical | Microsoft GraphRAG 3.1.1 | 83.0% | 78.2% | 87.4% | 85.2% |
-| Medical | Vector + BM25-RRF | 70.7% | 87.4% | 89.5% | 90.0% |
-| Novel | **Kontext v15** | 82.1% | **85.7%** | **92.9%** | 93.7% |
-| Novel | LightRAG 1.5.6 | **85.7%** | 85.0% | 92.7% | **94.1%** |
-| Novel | Microsoft GraphRAG 3.1.1 | 77.2% | 76.7% | 86.5% | 87.6% |
-
-Kontext v15 does not have the highest retrieval recall—LightRAG leads both
-datasets—but it produces the best answer correctness and strict faithfulness
-in this run. On Novel, LightRAG retains a small citation-F1 lead.
-
-This is a provisional development comparison, not an independent leaderboard.
-Kontext uses a precomputed KG while the external systems build native indexes,
-so index-build cost is not equivalent. Historical adapter timings used
-different queue boundaries and are intentionally omitted. Packaged-context
-precision is also omitted because LightRAG and Microsoft GraphRAG return large
-native contexts as single evidence records, making that metric incomparable.
-See the
-[cross-framework report](./bench/data/rag-eval-v2/cross-framework-all-datasets-2026-08-23.md)
-for the full protocol, raw scores, limitations, and unsupported systems.
-
-### Matched graph-traversal ablation
-
-The latest graph-enabled treatment changes only `maxHops` from 0 to 8.
-
-| Dataset | Direct recall | Graph recall | Recall delta (95% CI) | Context-precision delta (95% CI) | p95 direct → graph |
-|---|---:|---:|---:|---:|---:|
-| Medical | 0.80892 | **0.81474** | +0.00582 [0.00048, 0.01115] | -0.00602 [-0.00934, -0.00269] | 4.18 → 24.41 ms |
-| Novel | 0.43980 | **0.44478** | +0.00498 [0.00100, 0.00896] | -0.00277 [-0.00508, -0.00048] | 12.40 → 43.09 ms |
-
-Graph traversal adds about 0.5 percentage points of aggregate recall while
-slightly reducing context precision and materially increasing retrieval
-latency. The recall gain did not become a strict win on both regression
-holdouts, so graph traversal remains an explicit recall-first option rather
-than the default.
-
-See the
-[source-hydrated direct-only ablation](./bench/data/rag-eval-v2/source-hydrated-direct-only-ablation-2026-08-25.md)
-for the protocol, confidence intervals, holdout results, and artifact paths.
-
----
-
 ## Auto-setup flow (the killer feature)
 
 When you don't yet have an ontology and just want to point kontext at MCP
@@ -652,8 +709,9 @@ kontext-brain-ts/
 │   └── auto-setup/                # mock Notion + Slack → autoSetup → query
 ├── tests/integration/             # vitest end-to-end
 └── bench/                         # versioned RAG evaluation and regression harness
-    ├── src/rag-eval-v2/           # datasets, adapters, metrics, and resumable runs
-    ├── data/rag-eval-v2/          # reviewed evaluation reports and manifests
+    ├── src/rag-eval-v2/           # frozen manifest, datasets, pipeline, metrics, CLI
+    ├── framework-adapters/        # pinned LightRAG and Microsoft GraphRAG bridges
+    ├── data/rag-eval-v2/          # reviewed reports and provenance-bound run artifacts
     └── src/run.ts                 # legacy local benchmark entry point
 ```
 
@@ -686,8 +744,17 @@ in the repo. Everything runs on a stock Node 20 install plus pnpm.
 - ✅ Core, llm, mcp, loader, tool-server packages: typecheck + build clean
 - ✅ Unit + integration coverage for retrieval, persistence, incremental MCP
   synchronization, graph traversal, entities, and the tool server
-- ✅ Versioned retrieval evaluation covers all 4,072 Medical and Novel queries
-- ✅ Latest source-hydrated direct candidate has a matched graph on/off ablation
+- ✅ RAG evaluation v2 freezes corpus provenance, framework/model settings,
+  deterministic samples, layered metrics, and resumable checkpoints
+- ✅ Medical and Novel completed the shared 200-query answer and LLM-judge
+  contract; SciFact and NFCorpus provide public BEIR retrieval guardrails
+- ✅ The current comparison reports retrieval, answer correctness, grounding,
+  citations, latency, tokens, and auditable embedding cost without an aggregate
+  score
+- ✅ Kontext v13 is the no-configuration evaluation default; v15 is retained as
+  an explicit corpus-completeness candidate rather than silently promoted
+- ✅ Versioned retrieval evaluation covers all 4,072 Medical and Novel queries;
+  the source-hydrated direct candidate also has a matched graph on/off ablation
 - ✅ `DEFAULT_PIPELINE` leaf-node bug fixed; original Kotlin codebase had
   the same issue
 - ⚠️ Real Notion / GitHub / Slack MCP servers not yet smoke-tested end-to-end

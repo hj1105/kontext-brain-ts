@@ -24,13 +24,23 @@ export type FrameworkId =
 
 export type MetricId =
   | "evidence-recall-at-k"
+  | "ndcg-at-k"
   | "context-precision"
   | "answer-correctness"
+  | "claim-recall"
+  | "claim-support-precision"
   | "claim-f1"
   | "strict-faithfulness"
+  | "citation-precision"
+  | "citation-recall"
   | "citation-f1"
   | "acceptable-abstention"
+  | "answerability-joint-accuracy"
   | "permutation-sensitivity"
+  | "robustness-drop"
+  | "clarity"
+  | "conciseness"
+  | "fluency"
   | "crag-truthfulness"
   | "latency-p95"
   | "input-tokens"
@@ -96,6 +106,9 @@ export interface RetrievalResult {
   readonly featureSchemaVersion?: string;
   readonly candidatePoolDigest?: string;
   readonly answerPolicy?: AnswerPolicy;
+  /** Optional wall-clock boundaries used by clean latency contamination checks. */
+  readonly startedAt?: string;
+  readonly completedAt?: string;
 }
 
 export type AnswerPolicy = "supported-evidence-needs";
@@ -118,6 +131,9 @@ export interface AnswerResult {
   readonly outputTokens: number | null;
   readonly error: string | null;
   readonly inputDigest: string;
+  /** Optional wall-clock boundaries used by clean latency contamination checks. */
+  readonly startedAt?: string;
+  readonly completedAt?: string;
 }
 
 export interface ClaimJudgement {
@@ -135,6 +151,10 @@ export interface JudgeContract {
   readonly citationPrecision: number;
   readonly citationRecall: number;
   readonly acceptableAbstention: boolean;
+  /** Present for judge-policy-v3 and later. Older preserved artifacts omit these fields. */
+  readonly clarity?: number;
+  readonly conciseness?: number;
+  readonly fluency?: number;
   readonly claims: readonly ClaimJudgement[];
 }
 
@@ -149,6 +169,9 @@ export interface JudgeResult {
   readonly outputTokens: number | null;
   readonly error: string | null;
   readonly inputDigest: string;
+  /** Optional wall-clock boundaries used by clean latency contamination checks. */
+  readonly startedAt?: string;
+  readonly completedAt?: string;
 }
 
 export interface FrameworkDoctorResult {

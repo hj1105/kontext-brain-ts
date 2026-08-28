@@ -3,6 +3,7 @@ import type {
   BenchmarkQuery,
   DatasetBundle,
   FrameworkId,
+  JudgeContract,
   JudgeResult,
   RetrievalResult,
   RetrievedEvidence,
@@ -28,18 +29,28 @@ export interface DatasetFrameworkScore {
   readonly unsupported: number;
   readonly errors: number;
   readonly evidenceRecallAtK: number | null;
+  readonly ndcgAtK: number | null;
   readonly contextPrecision: number | null;
   readonly answerCorrectness: number | null;
   readonly answerCorrectness95Ci: ConfidenceInterval | null;
   readonly claimPrecision: number | null;
   readonly claimRecall: number | null;
+  readonly claimSupportPrecision: number | null;
   readonly claimF1: number | null;
   readonly completeness: number | null;
   readonly strictFaithfulness: number | null;
+  readonly citationPrecision: number | null;
+  readonly citationRecall: number | null;
   readonly citationF1: number | null;
   readonly acceptableAbstention: number | null;
+  readonly answerabilityJointAccuracy: number | null;
+  readonly robustnessDrop: number | null;
+  readonly clarity: number | null;
+  readonly conciseness: number | null;
+  readonly fluency: number | null;
   readonly cragTruthfulness: number | null;
   readonly retrievalLatencyP95Ms: number | null;
+  readonly queryToAnswerLatencyP95Ms: number | null;
   readonly endToEndLatencyP95Ms: number | null;
   readonly averageInputTokens: number | null;
   readonly estimatedCostUsd: null;
@@ -50,8 +61,16 @@ export interface PairedFrameworkComparison {
   readonly rightFrameworkId: FrameworkId;
   readonly metric:
     | "evidence-recall-at-k"
+    | "ndcg-at-k"
     | "answer-correctness"
+    | "claim-recall"
+    | "claim-support-precision"
     | "strict-faithfulness"
+    | "citation-precision"
+    | "citation-recall"
+    | "clarity"
+    | "conciseness"
+    | "fluency"
     | "citation-f1";
   readonly pairedQueries: number;
   readonly meanDifferenceLeftMinusRight: number;
@@ -97,24 +116,54 @@ export function scoreDatasetFramework(
     );
     return score === null ? [] : [score];
   });
+  const ndcg = bundle.queries.flatMap((query) => {
+    const retrieval = retrievalByQuery.get(query.id);
+    if (!retrieval || retrieval.status !== "ok") return [];
+    const score = ndcgForQuery(query, retrieval.evidence);
+    return score === null ? [] : [score];
+  });
   const validJudgements = judgements.filter(hasJudgeOutput);
   const correctness = validJudgements.map((result) => result.output.answerCorrectness);
-  const claimPrecision = validJudgements.flatMap((result) => {
-    const precision = meanOrNull(result.output.claims.map((claim) => (claim.correct ? 1 : 0)));
-    return precision === null ? [] : [precision];
-  });
+  const claimPrecision = validJudgements.flatMap((result) =>
+    result.output.claims.length > 0
+      ? [binaryFraction(result.output.claims.map((claim) => claim.correct))]
+      : [],
+  );
+  const claimSupportPrecision = validJudgements.flatMap((result) =>
+    result.output.claims.length > 0
+      ? [binaryFraction(result.output.claims.map((claim) => claim.supported))]
+      : [],
+  );
   const completeness = validJudgements.map((result) => result.output.completeness);
   const claimF1 = validJudgements.flatMap((result) => {
-    const precision = meanOrNull(result.output.claims.map((claim) => (claim.correct ? 1 : 0)));
-    return precision === null ? [] : [harmonicMean(precision, result.output.completeness)];
+    if (result.output.claims.length === 0) return [];
+    const precision = binaryFraction(result.output.claims.map((claim) => claim.correct));
+    return [harmonicMean(precision, result.output.completeness)];
   });
   const faithfulness = validJudgements.map((result) => result.output.strictFaithfulness);
+  const citationPrecision = validJudgements.map((result) => result.output.citationPrecision);
+  const citationRecall = validJudgements.map((result) => result.output.citationRecall);
   const citationF1 = validJudgements.map((result) =>
     harmonicMean(result.output.citationPrecision, result.output.citationRecall),
   );
   const acceptableAbstention = validJudgements
     .filter((result) => queryById.get(result.queryId)?.answerable === false)
     .map((result) => (result.output.acceptableAbstention ? 1 : 0));
+  const answerabilityJointAccuracy = answerabilityJointAccuracyForResults(
+    evaluationQueries,
+    answerByQuery,
+    judgeByQuery,
+  );
+  const robustnessDrop = robustnessDropForQueries(evaluationQueries, judgeByQuery);
+  const clarity = validJudgements.flatMap((result) =>
+    result.output.clarity === undefined ? [] : [result.output.clarity],
+  );
+  const conciseness = validJudgements.flatMap((result) =>
+    result.output.conciseness === undefined ? [] : [result.output.conciseness],
+  );
+  const fluency = validJudgements.flatMap((result) =>
+    result.output.fluency === undefined ? [] : [result.output.fluency],
+  );
   const cragTruthfulness =
     bundle.id === "crag"
       ? bundle.queries.flatMap((query) => {
@@ -128,6 +177,12 @@ export function scoreDatasetFramework(
   const retrievalLatencies = retrievals
     .filter((result) => result.status === "ok")
     .map((result) => result.latencyMs);
+  const queryToAnswerLatencies = evaluationQueries.flatMap((query) => {
+    const retrieval = retrievalByQuery.get(query.id);
+    const answer = answerByQuery.get(query.id);
+    if (!retrieval || !answer || retrieval.status !== "ok" || answer.status !== "ok") return [];
+    return [retrieval.latencyMs + answer.latencyMs];
+  });
   const endToEndLatencies = evaluationQueries.flatMap((query) => {
     const retrieval = retrievalByQuery.get(query.id);
     const answer = answerByQuery.get(query.id);
@@ -156,20 +211,30 @@ export function scoreDatasetFramework(
     unsupported: statuses.filter((status) => status === "unsupported").length,
     errors: statuses.filter((status) => status === "error").length,
     evidenceRecallAtK: meanOrNull(evidenceRecall),
+    ndcgAtK: meanOrNull(ndcg),
     contextPrecision: meanOrNull(contextPrecision),
     answerCorrectness: meanOrNull(correctness),
     answerCorrectness95Ci:
       correctness.length > 0 ? bootstrapMean95Ci(correctness, 2_000, 42) : null,
     claimPrecision: meanOrNull(claimPrecision),
     claimRecall: meanOrNull(completeness),
+    claimSupportPrecision: meanOrNull(claimSupportPrecision),
     claimF1: meanOrNull(claimF1),
     completeness: meanOrNull(completeness),
     strictFaithfulness: meanOrNull(faithfulness),
+    citationPrecision: meanOrNull(citationPrecision),
+    citationRecall: meanOrNull(citationRecall),
     citationF1: meanOrNull(citationF1),
     acceptableAbstention: meanOrNull(acceptableAbstention),
+    answerabilityJointAccuracy,
+    robustnessDrop,
+    clarity: meanOrNull(clarity),
+    conciseness: meanOrNull(conciseness),
+    fluency: meanOrNull(fluency),
     cragTruthfulness: meanOrNull(cragTruthfulness),
-    retrievalLatencyP95Ms: percentileOrNull(retrievalLatencies, 0.95),
-    endToEndLatencyP95Ms: percentileOrNull(endToEndLatencies, 0.95),
+    retrievalLatencyP95Ms: nearestRankPercentileOrNull(retrievalLatencies, 0.95),
+    queryToAnswerLatencyP95Ms: nearestRankPercentileOrNull(queryToAnswerLatencies, 0.95),
+    endToEndLatencyP95Ms: nearestRankPercentileOrNull(endToEndLatencies, 0.95),
     averageInputTokens: meanOrNull(inputTokens),
     estimatedCostUsd: null,
   };
@@ -196,6 +261,11 @@ export function compareFrameworkPairs(
           if (leftRecall !== null && rightRecall !== null) {
             addPair(metricPairs, "evidence-recall-at-k", leftRecall, rightRecall);
           }
+          const leftNdcg = ndcgForQuery(query, leftRetrieval.evidence);
+          const rightNdcg = ndcgForQuery(query, rightRetrieval.evidence);
+          if (leftNdcg !== null && rightNdcg !== null) {
+            addPair(metricPairs, "ndcg-at-k", leftNdcg, rightNdcg);
+          }
         }
         const leftJudge = judgementByFramework.get(leftFrameworkId)?.get(query.id);
         const rightJudge = judgementByFramework.get(rightFrameworkId)?.get(query.id);
@@ -221,9 +291,53 @@ export function compareFrameworkPairs(
         );
         addPair(
           metricPairs,
+          "claim-recall",
+          leftJudge.output.completeness,
+          rightJudge.output.completeness,
+        );
+        if (leftJudge.output.claims.length > 0 && rightJudge.output.claims.length > 0) {
+          addPair(
+            metricPairs,
+            "claim-support-precision",
+            binaryFraction(leftJudge.output.claims.map((claim) => claim.supported)),
+            binaryFraction(rightJudge.output.claims.map((claim) => claim.supported)),
+          );
+        }
+        addPair(
+          metricPairs,
+          "citation-precision",
+          leftJudge.output.citationPrecision,
+          rightJudge.output.citationPrecision,
+        );
+        addPair(
+          metricPairs,
+          "citation-recall",
+          leftJudge.output.citationRecall,
+          rightJudge.output.citationRecall,
+        );
+        addPair(
+          metricPairs,
           "citation-f1",
           harmonicMean(leftJudge.output.citationPrecision, leftJudge.output.citationRecall),
           harmonicMean(rightJudge.output.citationPrecision, rightJudge.output.citationRecall),
+        );
+        addOptionalPair(
+          metricPairs,
+          "clarity",
+          leftJudge.output.clarity,
+          rightJudge.output.clarity,
+        );
+        addOptionalPair(
+          metricPairs,
+          "conciseness",
+          leftJudge.output.conciseness,
+          rightJudge.output.conciseness,
+        );
+        addOptionalPair(
+          metricPairs,
+          "fluency",
+          leftJudge.output.fluency,
+          rightJudge.output.fluency,
         );
       }
       for (const [metric, pairs] of metricPairs) {
@@ -269,6 +383,16 @@ function addPair(
   const pairs = output.get(metric) ?? [];
   pairs.push([left, right]);
   output.set(metric, pairs);
+}
+
+function addOptionalPair(
+  output: Map<PairedFrameworkComparison["metric"], [number, number][]>,
+  metric: PairedFrameworkComparison["metric"],
+  left: number | undefined,
+  right: number | undefined,
+): void {
+  if (left === undefined || right === undefined) return;
+  addPair(output, metric, left, right);
 }
 
 type CombinedStatus = "ok" | "blocked" | "unsupported" | "error";
@@ -338,6 +462,113 @@ export function contextPrecisionForQuery(
   return null;
 }
 
+/**
+ * Binary-relevance nDCG over the returned ranking. A retrieved item is relevant
+ * when its provenance matches a gold evidence ID, or when its text covers a
+ * gold evidence unit using the same threshold as context precision.
+ */
+export function ndcgForQuery(
+  query: BenchmarkQuery,
+  evidence: readonly RetrievedEvidence[],
+): number | null {
+  const relevantCount =
+    query.goldEvidenceText.length > 0
+      ? query.goldEvidenceText.length
+      : new Set(query.goldEvidenceIds).size;
+  if (relevantCount === 0) return null;
+  if (evidence.length === 0) return 0;
+
+  const ranked = [...evidence].sort(
+    (left, right) => left.rank - right.rank || left.id.localeCompare(right.id),
+  );
+  const coveredGold = new Set<string>();
+  const dcg = ranked.reduce((total, item, index) => {
+    const newlyCovered = matchingGoldUnits(query, item).filter((gold) => !coveredGold.has(gold));
+    for (const gold of newlyCovered) coveredGold.add(gold);
+    return total + newlyCovered.length / Math.log2(index + 2);
+  }, 0);
+  const idealRelevant = Math.min(relevantCount, ranked.length);
+  let idealDcg = 0;
+  for (let index = 0; index < idealRelevant; index += 1) idealDcg += 1 / Math.log2(index + 2);
+  return idealDcg === 0 ? 0 : Math.min(1, dcg / idealDcg);
+}
+
+/**
+ * Class-balanced handling accuracy. Answerable cases require a non-abstained,
+ * at-least-half-correct answer; unanswerable cases require an acceptable
+ * abstention. The metric is null unless both classes are represented.
+ */
+export function answerabilityJointAccuracyForResults(
+  queries: readonly BenchmarkQuery[],
+  answers: ReadonlyMap<string, AnswerResult>,
+  judgements: ReadonlyMap<string, JudgeResult>,
+): number | null {
+  const answerable: number[] = [];
+  const unanswerable: number[] = [];
+  for (const query of queries) {
+    const answer = answers.get(query.id);
+    const judgement = judgements.get(query.id);
+    if (answer?.status !== "ok" || judgement?.status !== "ok" || !judgement.output) continue;
+    if (query.answerable) {
+      answerable.push(
+        !answer.output.abstained && judgement.output.answerCorrectness >= 0.5 ? 1 : 0,
+      );
+    } else {
+      unanswerable.push(answer.output.abstained && judgement.output.acceptableAbstention ? 1 : 0);
+    }
+  }
+  if (answerable.length === 0 || unanswerable.length === 0) return null;
+  return (mean(answerable) + mean(unanswerable)) / 2;
+}
+
+/**
+ * Mean non-negative correctness drop for explicitly paired perturbations.
+ * Queries opt in with metadata.robustnessGroupId and metadata.robustnessRole
+ * (`baseline` or `perturbed`). Untagged datasets return null.
+ */
+export function robustnessDropForQueries(
+  queries: readonly BenchmarkQuery[],
+  judgements: ReadonlyMap<string, JudgeResult>,
+): number | null {
+  const groups = new Map<string, { baseline: number[]; perturbed: number[] }>();
+  for (const query of queries) {
+    const groupId = query.metadata.robustnessGroupId;
+    const role = query.metadata.robustnessRole;
+    if (typeof groupId !== "string" || (role !== "baseline" && role !== "perturbed")) continue;
+    const judgement = judgements.get(query.id);
+    if (judgement?.status !== "ok" || !judgement.output) continue;
+    const group = groups.get(groupId) ?? { baseline: [], perturbed: [] };
+    group[role].push(judgement.output.answerCorrectness);
+    groups.set(groupId, group);
+  }
+
+  const drops: number[] = [];
+  for (const [groupId, group] of groups) {
+    if (group.baseline.length !== 1) {
+      throw new Error(`Robustness group ${groupId} must have exactly one completed baseline`);
+    }
+    if (group.perturbed.length === 0) {
+      throw new Error(`Robustness group ${groupId} must have at least one completed perturbation`);
+    }
+    const baseline = requiredValue(group.baseline[0], `baseline for robustness group ${groupId}`);
+    for (const perturbed of group.perturbed) drops.push(Math.max(0, baseline - perturbed));
+  }
+  return meanOrNull(drops);
+}
+
+function matchingGoldUnits(query: BenchmarkQuery, item: RetrievedEvidence): string[] {
+  if (query.goldEvidenceText.length > 0) {
+    return query.goldEvidenceText
+      .map((gold, index) => ({ gold, key: `text:${index}` }))
+      .filter(({ gold }) => textCoverage(gold, normalize(item.text)) >= 0.5)
+      .map(({ key }) => key);
+  }
+  const gold = new Set(query.goldEvidenceIds);
+  return [
+    ...new Set([item.id, item.sourceId, ...(item.sourceIds ?? [])].filter((id) => gold.has(id))),
+  ];
+}
+
 function normalize(value: string): string {
   return value.toLowerCase().replace(/\s+/g, " ").trim();
 }
@@ -359,14 +590,31 @@ function harmonicMean(left: number, right: number): number {
   return left + right === 0 ? 0 : (2 * left * right) / (left + right);
 }
 
-function meanOrNull(values: readonly number[]): number | null {
-  return values.length === 0
-    ? null
-    : values.reduce((total, value) => total + value, 0) / values.length;
+function binaryFraction(values: readonly boolean[]): number {
+  if (values.length === 0) throw new Error("Cannot score an empty boolean set");
+  return values.filter(Boolean).length / values.length;
 }
 
-function percentileOrNull(values: readonly number[], percentile: number): number | null {
+function meanOrNull(values: readonly number[]): number | null {
+  return values.length === 0 ? null : mean(values);
+}
+
+function mean(values: readonly number[]): number {
+  if (values.length === 0) throw new Error("Cannot average an empty set");
+  return values.reduce((total, value) => total + value, 0) / values.length;
+}
+
+/**
+ * Nearest-rank percentile: sort ascending and select ceil(N * p), using a
+ * one-based rank. This is the frozen latency statistic for RAG evaluation.
+ */
+export function nearestRankPercentileOrNull(
+  values: readonly number[],
+  percentile: number,
+): number | null {
   if (values.length === 0) return null;
+  if (!Number.isFinite(percentile) || percentile <= 0 || percentile > 1)
+    throw new Error("percentile must be in (0, 1]");
   const sorted = [...values].sort((left, right) => left - right);
   return requiredAt(sorted, Math.max(0, Math.ceil(sorted.length * percentile) - 1), "percentile");
 }
@@ -419,4 +667,9 @@ function mulberry32(seed: number): () => number {
     output = (output + Math.imul(output ^ (output >>> 7), 61 | output)) ^ output;
     return ((output ^ (output >>> 14)) >>> 0) / 4294967296;
   };
+}
+
+function requiredValue<T>(value: T | undefined, name: string): T {
+  if (value === undefined) throw new Error(`Missing ${name}`);
+  return value;
 }

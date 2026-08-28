@@ -23,6 +23,7 @@ import { type EvaluationSampleManifest, createEvaluationSample } from "./evaluat
 import { type FrameworkAdapter, createFrameworkAdapters } from "./frameworks.js";
 import { createBlindHumanAuditSample } from "./human-audit.js";
 import { readJsonLines, writeJsonAtomic, writeJsonLines } from "./jsonl.js";
+import type { JsonLlmClient } from "./llm-json-client.js";
 import {
   type RagEvalManifest,
   assertValidManifest,
@@ -79,7 +80,8 @@ const EMPTY_ANSWER: AnswerContract = {
   abstentionReason: "benchmark stage unavailable",
 };
 const ANSWER_INPUT_DIGEST_VERSION = "answer-input-v2";
-const JUDGE_INPUT_DIGEST_VERSION = "judge-input-v2";
+// v3 adds clarity, conciseness, and fluency to the frozen judge contract.
+const JUDGE_INPUT_DIGEST_VERSION = "judge-input-v3";
 
 export async function doctorBenchmark(
   manifest: RagEvalManifest,
@@ -489,7 +491,7 @@ export async function answerQueries(
   retrievals: readonly RetrievalResult[],
   evaluationQueries: readonly BenchmarkQuery[],
   frameworkDirectory: string,
-  codexClient: CodexJsonClient,
+  codexClient: JsonLlmClient,
 ): Promise<AnswerResult[]> {
   const outputPath = join(frameworkDirectory, "answers.jsonl");
   const existing = existsSync(outputPath) ? readJsonLines<AnswerResult>(outputPath) : [];
@@ -569,6 +571,7 @@ export async function answerQueries(
   for (const wave of batches(answerBatches, manifest.benchmarkPolicy.codexConcurrency)) {
     const outcomes = await Promise.all(
       wave.map(async (batch) => {
+        const startedAt = new Date().toISOString();
         try {
           const result = await retry(
             () =>
@@ -589,9 +592,21 @@ export async function answerQueries(
               ),
             manifest.benchmarkPolicy.maxRetries,
           );
-          return { status: "ok", batch, result } as const;
+          return {
+            status: "ok",
+            batch,
+            result,
+            startedAt,
+            completedAt: new Date().toISOString(),
+          } as const;
         } catch (error) {
-          return { status: "error", batch, error: error as Error } as const;
+          return {
+            status: "error",
+            batch,
+            error: error as Error,
+            startedAt,
+            completedAt: new Date().toISOString(),
+          } as const;
         }
       }),
     );
@@ -621,6 +636,8 @@ export async function answerQueries(
             ),
             error: null,
             inputDigest: requiredMapValue(inputDigestByQuery, item.queryId),
+            startedAt: outcome.startedAt,
+            completedAt: outcome.completedAt,
           });
         });
         continue;
@@ -641,6 +658,8 @@ export async function answerQueries(
           outputTokens: null,
           error: outcome.error.message,
           inputDigest: requiredMapValue(inputDigestByQuery, query.id),
+          startedAt: outcome.startedAt,
+          completedAt: outcome.completedAt,
         });
       }
     }
@@ -657,7 +676,7 @@ export async function judgeAnswers(
   answers: readonly AnswerResult[],
   evaluationQueries: readonly BenchmarkQuery[],
   frameworkDirectory: string,
-  codexClient: CodexJsonClient,
+  codexClient: JsonLlmClient,
 ): Promise<JudgeResult[]> {
   const outputPath = join(frameworkDirectory, "judgements.jsonl");
   const existing = existsSync(outputPath) ? readJsonLines<JudgeResult>(outputPath) : [];
@@ -782,9 +801,13 @@ export async function judgeAnswers(
     "Judge model reasoning effort is required",
   );
   const judgeBatches = batches(pending, manifest.benchmarkPolicy.judgeCodexBatchSize);
-  for (const wave of batches(judgeBatches, manifest.benchmarkPolicy.codexConcurrency)) {
+  for (const wave of batches(
+    judgeBatches,
+    manifest.benchmarkPolicy.judgeCodexConcurrency ?? manifest.benchmarkPolicy.codexConcurrency,
+  )) {
     const outcomes = await Promise.all(
       wave.map(async (batch) => {
+        const startedAt = new Date().toISOString();
         try {
           const result = await retry(
             () =>
@@ -792,7 +815,7 @@ export async function judgeAnswers(
                 {
                   model: manifest.models.judge.model,
                   reasoningEffort: judgeReasoningEffort,
-                  timeoutMs: 1_800_000,
+                  timeoutMs: manifest.benchmarkPolicy.judgeTimeoutMs ?? 1_800_000,
                 },
                 batch.map((query) => {
                   const retrieval = requiredValue(
@@ -808,9 +831,21 @@ export async function judgeAnswers(
               ),
             manifest.benchmarkPolicy.maxRetries,
           );
-          return { status: "ok", batch, result } as const;
+          return {
+            status: "ok",
+            batch,
+            result,
+            startedAt,
+            completedAt: new Date().toISOString(),
+          } as const;
         } catch (error) {
-          return { status: "error", batch, error: error as Error } as const;
+          return {
+            status: "error",
+            batch,
+            error: error as Error,
+            startedAt,
+            completedAt: new Date().toISOString(),
+          } as const;
         }
       }),
     );
@@ -840,6 +875,8 @@ export async function judgeAnswers(
             ),
             error: null,
             inputDigest: requiredMapValue(inputDigestByQuery, item.queryId),
+            startedAt: outcome.startedAt,
+            completedAt: outcome.completedAt,
           });
         });
         continue;
@@ -860,6 +897,8 @@ export async function judgeAnswers(
           outputTokens: null,
           error: outcome.error.message,
           inputDigest: requiredMapValue(inputDigestByQuery, query.id),
+          startedAt: outcome.startedAt,
+          completedAt: outcome.completedAt,
         });
       }
     }

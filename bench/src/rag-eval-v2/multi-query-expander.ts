@@ -1,4 +1,5 @@
-import type { CodexJsonClient, CodexModelConfig } from "./codex-json.js";
+import type { CodexModelConfig } from "./codex-json.js";
+import type { JsonLlmClient } from "./llm-json-client.js";
 
 const MAX_EXPANDED_QUERIES = 3;
 
@@ -20,7 +21,7 @@ export interface MultiQueryExpansion {
  */
 export class MultiQueryExpander {
   constructor(
-    private readonly client: Pick<CodexJsonClient, "completeText">,
+    private readonly client: Pick<JsonLlmClient, "completeText">,
     private readonly model: CodexModelConfig,
   ) {}
 

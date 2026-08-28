@@ -4,6 +4,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type CommandResult, type CommandRunner, runCommand } from "./codex-json.js";
 import type {
+  BenchmarkQuery,
   CorpusDocument,
   DatasetBundle,
   FrameworkDoctorResult,
@@ -25,6 +26,14 @@ export interface FrameworkRunOptions {
   readonly workDirectory: string;
   readonly topK: number;
   readonly candidateK: number;
+  /** Query workers inside one framework. Clean latency runs freeze this at one. */
+  readonly queryConcurrency?: number;
+  /** Read-only, already-built native index used by strict warm latency runs. */
+  readonly indexSourceDirectory?: string;
+  /** Never build or embed index inputs; fail when the warm source is incomplete. */
+  readonly requireWarmIndex?: boolean;
+  /** Full query universe whose legacy embedding batches back the measured sample. */
+  readonly indexQueryUniverse?: readonly BenchmarkQuery[];
 }
 
 export interface FrameworkAdapter {
@@ -371,7 +380,12 @@ export class ExternalCommandFrameworkAdapter implements FrameworkAdapter {
       const command = commandParts(this.command, `${this.id} doctor command`);
       result = await this.commandRunner(
         command.executable,
-        [...command.args, "doctor"],
+        [
+          ...command.args,
+          "doctor",
+          "--completion-execution",
+          this.manifest.models.answer.execution ?? "codex-exec",
+        ],
         "",
         180_000,
       );
@@ -457,14 +471,22 @@ export class ExternalCommandFrameworkAdapter implements FrameworkAdapter {
       completionExecution,
       "--top-k",
       String(options.topK),
+      "--query-concurrency",
+      String(options.queryConcurrency ?? 1),
     ];
-    const build = await this.commandRunner(
-      command.executable,
-      [...command.args, "build", ...commonArgs],
-      "",
-      24 * 60 * 60 * 1000,
-    );
-    if (build.exitCode !== 0) throw new Error(`${this.id} build failed: ${build.stderr}`);
+    if (options.requireWarmIndex) {
+      if (!options.indexSourceDirectory)
+        throw new Error(`${this.id} strict warm retrieval requires indexSourceDirectory`);
+      commonArgs.push("--index-source-dir", resolve(options.indexSourceDirectory));
+    } else {
+      const build = await this.commandRunner(
+        command.executable,
+        [...command.args, "build", ...commonArgs],
+        "",
+        24 * 60 * 60 * 1000,
+      );
+      if (build.exitCode !== 0) throw new Error(`${this.id} build failed: ${build.stderr}`);
+    }
     const retrieve = await this.commandRunner(
       command.executable,
       [...command.args, "retrieve", ...commonArgs, "--output", outputPath],

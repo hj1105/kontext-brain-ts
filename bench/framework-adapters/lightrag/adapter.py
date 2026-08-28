@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+from datetime import datetime, timezone
 import hashlib
 import json
 import os
@@ -13,6 +14,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from typing import Any
 
@@ -32,12 +34,23 @@ PINNED_VERSION = "1.5.6"
 FRAMEWORK_ID = "lightrag"
 EMBEDDING_MODEL = "text-embedding-3-small"
 EMBEDDING_DIMENSIONS = 1536
+COMPLETION_EXECUTION_MODES = ("codex-exec", "anthropic-api")
+COMPLETION_MODELS = {
+    "codex-exec": "gpt-5.6-terra",
+    "anthropic-api": "claude-sonnet-5",
+}
+ANTHROPIC_TIMEOUT_SECONDS = 600.0
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="command", required=True)
-    subparsers.add_parser("doctor")
+    doctor_command = subparsers.add_parser("doctor")
+    doctor_command.add_argument(
+        "--completion-execution",
+        choices=COMPLETION_EXECUTION_MODES,
+        default="codex-exec",
+    )
     for name in ("build", "retrieve"):
         command = subparsers.add_parser(name)
         add_common_arguments(command)
@@ -45,7 +58,7 @@ def main() -> None:
             command.add_argument("--output", required=True)
     args = parser.parse_args()
     if args.command == "doctor":
-        doctor()
+        doctor(args.completion_execution)
     elif args.command == "build":
         asyncio.run(build(args))
     else:
@@ -59,16 +72,19 @@ def add_common_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--embedding-dimensions", required=True, type=int)
     parser.add_argument("--completion-model", required=True)
     parser.add_argument("--completion-reasoning-effort", required=True)
-    parser.add_argument("--completion-execution", required=True)
+    parser.add_argument(
+        "--completion-execution", required=True, choices=COMPLETION_EXECUTION_MODES
+    )
     parser.add_argument("--top-k", required=True, type=int)
+    parser.add_argument("--query-concurrency", required=True, type=int)
+    parser.add_argument("--index-source-dir")
 
 
-def doctor() -> None:
+def doctor(completion_execution: str = "codex-exec") -> None:
     issues: list[str] = []
     if LIGHTRAG_VERSION != PINNED_VERSION:
         issues.append(f"expected lightrag-hku {PINNED_VERSION}, found {LIGHTRAG_VERSION}")
-    if shutil.which("codex") is None:
-        issues.append("codex CLI is not on PATH")
+    issues.extend(completion_execution_issues(completion_execution))
     if not os.getenv("OPENAI_API_KEY"):
         issues.append("OPENAI_API_KEY is not set")
     print(json.dumps({
@@ -78,13 +94,38 @@ def doctor() -> None:
     }))
 
 
+def completion_execution_issues(completion_execution: str) -> list[str]:
+    issues: list[str] = []
+    if completion_execution == "anthropic-api":
+        if not os.getenv("ANTHROPIC_API_KEY"):
+            issues.append("ANTHROPIC_API_KEY is not set")
+        if not anthropic_package_available():
+            issues.append("anthropic package is not importable")
+    else:
+        if shutil.which("codex") is None:
+            issues.append("codex CLI is not on PATH")
+    return issues
+
+
+def anthropic_package_available() -> bool:
+    try:
+        import anthropic  # noqa: F401
+    except ImportError:
+        return False
+    return True
+
+
 def validate_shared_options(args: argparse.Namespace) -> None:
+    if args.completion_execution not in COMPLETION_MODELS:
+        raise ValueError(
+            f"completion_execution must be one of {sorted(COMPLETION_MODELS)}, "
+            f"found {args.completion_execution!r}"
+        )
     expected = {
         "embedding_model": EMBEDDING_MODEL,
         "embedding_dimensions": EMBEDDING_DIMENSIONS,
-        "completion_model": "gpt-5.6-terra",
+        "completion_model": COMPLETION_MODELS[args.completion_execution],
         "completion_reasoning_effort": "medium",
-        "completion_execution": "codex-exec",
     }
     for name, value in expected.items():
         if getattr(args, name) != value:
@@ -93,6 +134,8 @@ def validate_shared_options(args: argparse.Namespace) -> None:
 
 async def build(args: argparse.Namespace) -> None:
     validate_shared_options(args)
+    if args.index_source_dir:
+        raise ValueError("build does not accept --index-source-dir")
     dataset_dir = Path(args.dataset_dir)
     index_dir = Path(args.index_dir)
     corpus = read_jsonl(dataset_dir / "corpus.jsonl")
@@ -142,11 +185,17 @@ async def retrieve(args: argparse.Namespace) -> None:
     validate_shared_options(args)
     dataset_dir = Path(args.dataset_dir)
     index_dir = Path(args.index_dir)
+    if args.query_concurrency <= 0:
+        raise ValueError("query_concurrency must be positive")
+    if args.index_source_dir:
+        index_source_dir = Path(args.index_source_dir).resolve()
+        validate_warm_index(index_source_dir, read_jsonl(dataset_dir / "corpus.jsonl"))
+        prepare_warm_runtime(index_source_dir, index_dir)
     queries = read_jsonl(dataset_dir / "queries.jsonl")
-    rag = create_rag(index_dir, args)
+    rag = create_rag(index_dir, args, enable_llm_cache=not bool(args.index_source_dir))
     await rag.initialize_storages()
     try:
-        query_semaphore = asyncio.Semaphore(rag.llm_model_max_async)
+        query_semaphore = asyncio.Semaphore(args.query_concurrency)
         checkpoint_directory = retrieval_checkpoint_directory(index_dir, queries, args)
 
         async def retrieve_one(index: int, query: dict[str, Any]) -> dict[str, Any]:
@@ -158,6 +207,7 @@ async def retrieve(args: argparse.Namespace) -> None:
                 # Match the other adapters' service-latency boundary: queue
                 # admission is excluded, native retrieval work is included.
                 started = time.perf_counter()
+                started_at = datetime.now(timezone.utc).isoformat()
                 try:
                     context = await rag.aquery(
                         query["text"],
@@ -179,17 +229,17 @@ async def retrieve(args: argparse.Namespace) -> None:
                         "metadata": {"mode": "mix", "nativeContext": True},
                     }]
                     record = retrieval_record(
-                        args, query["id"], "ok", evidence, started, None
+                        args, query["id"], "ok", evidence, started, started_at, None
                     )
                 except Exception as error:  # preserve per-query failures
                     record = retrieval_record(
-                        args, query["id"], "error", [], started, str(error)
+                        args, query["id"], "error", [], started, started_at, str(error)
                     )
                 write_json_atomic(checkpoint_path, record)
                 return record
 
-        # asyncio.gather preserves the input query order while LightRAG's own
-        # default LLM concurrency (four in 1.5.6) controls resource use.
+        # asyncio.gather preserves input order; the harness freezes the worker
+        # count explicitly so clean latency runs never inherit a package default.
         records = await asyncio.gather(*(
             retrieve_one(index, query) for index, query in enumerate(queries)
         ))
@@ -209,7 +259,12 @@ def normalize_context(context: Any) -> str:
     return context
 
 
-def create_rag(index_dir: Path, args: argparse.Namespace) -> LightRAG:
+def create_rag(
+    index_dir: Path,
+    args: argparse.Namespace,
+    *,
+    enable_llm_cache: bool = True,
+) -> LightRAG:
     embedding_client = OpenAIEmbeddingClient(
         model=EMBEDDING_MODEL,
         dimensions=EMBEDDING_DIMENSIONS,
@@ -233,7 +288,12 @@ def create_rag(index_dir: Path, args: argparse.Namespace) -> LightRAG:
         history_messages: list[dict[str, str]] | None = None,
         **_kwargs: Any,
     ) -> str:
-        return await codex_complete(
+        complete_one = (
+            anthropic_complete
+            if args.completion_execution == "anthropic-api"
+            else codex_complete
+        )
+        return await complete_one(
             prompt=prompt,
             system_prompt=system_prompt,
             history_messages=history_messages or [],
@@ -246,6 +306,7 @@ def create_rag(index_dir: Path, args: argparse.Namespace) -> LightRAG:
         embedding_func=embed,
         llm_model_func=complete,
         llm_model_name=args.completion_model,
+        enable_llm_cache=enable_llm_cache,
         auto_manage_storages_states=False,
     )
 
@@ -311,12 +372,100 @@ def codex_complete_sync(
         return json.loads(output_path.read_text())["text"]
 
 
+async def anthropic_complete(
+    *,
+    prompt: str,
+    system_prompt: str | None,
+    history_messages: list[dict[str, str]],
+    model: str,
+    reasoning_effort: str,
+) -> str:
+    return await asyncio.to_thread(
+        anthropic_complete_sync,
+        prompt,
+        system_prompt,
+        history_messages,
+        model,
+        reasoning_effort,
+    )
+
+
+_anthropic_client: Any | None = None
+_anthropic_client_lock = threading.Lock()
+
+
+def anthropic_client() -> Any:
+    """Lazily build one in-process Anthropic client (reads ANTHROPIC_API_KEY).
+
+    Unlike the codex path, no environment scrubbing applies here: the call runs
+    in-process and must see ANTHROPIC_API_KEY in os.environ.
+    """
+    global _anthropic_client
+    with _anthropic_client_lock:
+        if _anthropic_client is None:
+            from anthropic import Anthropic
+
+            _anthropic_client = Anthropic(
+                max_retries=0, timeout=ANTHROPIC_TIMEOUT_SECONDS
+            )
+        return _anthropic_client
+
+
+def anthropic_request_messages(
+    prompt: str,
+    system_prompt: str | None,
+    history_messages: list[dict[str, str]],
+) -> tuple[str, list[dict[str, str]]]:
+    """Map LightRAG's prompt/system/history onto (system prompt, Anthropic messages)."""
+    system_parts: list[str] = [system_prompt] if system_prompt else []
+    chat: list[dict[str, str]] = []
+    for item in history_messages:
+        role = item.get("role", "user")
+        content = str(item.get("content", ""))
+        if role == "system":
+            system_parts.append(content)
+        elif role in ("user", "assistant"):
+            chat.append({"role": role, "content": content})
+        else:
+            raise ValueError(f"unsupported chat message role: {role!r}")
+    chat.append({"role": "user", "content": prompt})
+    return "\n".join(system_parts), chat
+
+
+def anthropic_complete_sync(
+    prompt: str,
+    system_prompt: str | None,
+    history_messages: list[dict[str, str]],
+    model: str,
+    reasoning_effort: str,
+) -> str:
+    system, chat = anthropic_request_messages(prompt, system_prompt, history_messages)
+    request: dict[str, Any] = {
+        "model": model,
+        "max_tokens": 16000,
+        "messages": chat,
+        "output_config": {"effort": reasoning_effort},
+    }
+    if system:
+        request["system"] = system
+    response = anthropic_client().messages.create(**request)
+    if response.stop_reason in ("refusal", "max_tokens"):
+        raise RuntimeError(
+            f"anthropic completion stopped early: stop_reason={response.stop_reason!r}"
+        )
+    return "".join(
+        block.text for block in response.content
+        if getattr(block, "type", None) == "text"
+    )
+
+
 def retrieval_record(
     args: argparse.Namespace,
     query_id: str,
     status: str,
     evidence: list[dict[str, Any]],
     started: float,
+    started_at: str,
     error: str | None,
 ) -> dict[str, Any]:
     dataset_id = Path(args.dataset_dir).parents[1].name
@@ -331,7 +480,51 @@ def retrieval_record(
         "error": error,
         "frameworkVersion": PINNED_VERSION,
         "configDigest": "set-by-parent-harness",
+        "startedAt": started_at,
+        "completedAt": datetime.now(timezone.utc).isoformat(),
     }
+
+
+def validate_warm_index(index_source_dir: Path, corpus: list[dict[str, Any]]) -> None:
+    marker_path = index_source_dir / "rag-eval-build.json"
+    if not marker_path.is_file():
+        raise RuntimeError(f"warm index marker missing: {marker_path}")
+    marker = json.loads(marker_path.read_text())
+    expected = {
+        "framework": FRAMEWORK_ID,
+        "version": PINNED_VERSION,
+        "corpusDigest": record_digest(corpus),
+        "embeddingModel": EMBEDDING_MODEL,
+        "embeddingDimensions": EMBEDDING_DIMENSIONS,
+    }
+    mismatches = [
+        f"{name}: expected {value!r}, found {marker.get(name)!r}"
+        for name, value in expected.items()
+        if marker.get(name) != value
+    ]
+    if mismatches:
+        raise RuntimeError("warm index marker mismatch: " + "; ".join(mismatches))
+
+
+def prepare_warm_runtime(index_source_dir: Path, index_dir: Path) -> None:
+    """Link immutable native stores into a clean, separately writable runtime."""
+    if index_source_dir == index_dir.resolve():
+        raise RuntimeError("warm index source and clean runtime must be different directories")
+    index_dir.mkdir(parents=True, exist_ok=True)
+    excluded = {
+        "kv_store_llm_response_cache.json",
+        "openai-embedding-usage.jsonl",
+        "retrieval-checkpoints",
+    }
+    for source in index_source_dir.iterdir():
+        if source.name in excluded:
+            continue
+        target = index_dir / source.name
+        if target.exists() or target.is_symlink():
+            if not target.is_symlink() or target.resolve() != source.resolve():
+                raise RuntimeError(f"clean runtime collision: {target}")
+            continue
+        target.symlink_to(source, target_is_directory=source.is_dir())
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:

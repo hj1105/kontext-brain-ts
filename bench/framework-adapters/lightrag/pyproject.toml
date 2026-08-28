@@ -5,6 +5,7 @@ requires-python = ">=3.12,<3.14"
 dependencies = [
   "lightrag-hku==1.5.6",
   "numpy>=2.0,<3",
+  "anthropic>=0.40",
 ]
 
 [tool.uv]

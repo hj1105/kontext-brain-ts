@@ -1068,6 +1068,43 @@ describe("KontextBrainAdapter bidirectional KG mode", () => {
     });
   });
 
+  it("never charges a cached expansion's historical latency to query latency", async () => {
+    const root = mkdtempSync(join(tmpdir(), "kontext-rag-eval-cached-expansion-latency-"));
+    temporaryDirectories.push(root);
+    const { dataDirectory, precomputedIndexDirectory } = await seedMedicalV13Cache(root);
+    const expansionDirectory = join(precomputedIndexDirectory, "multi-query-expansions");
+    const expansionName = readdirSync(expansionDirectory).find((name) => name.endsWith(".json"));
+    if (!expansionName) throw new Error("Missing cached expansion test fixture");
+    const expansionPath = join(expansionDirectory, expansionName);
+    const checkpoint = JSON.parse(readFileSync(expansionPath, "utf8")) as Record<string, unknown>;
+    // A cache hit spends no wall clock, so an absurd stored latency must not
+    // reach the reported number no matter how large it is.
+    const replayedLatencyMs = 3_600_000;
+    writeFileSync(
+      expansionPath,
+      `${JSON.stringify({ ...checkpoint, latencyMs: replayedLatencyMs })}\n`,
+      "utf8",
+    );
+    const adapter = new KontextBrainAdapter(DEFAULT_RAG_EVAL_MANIFEST, {
+      codexClient: new CodexJsonClient(async () => {
+        throw new Error("cache-only retrieval must not call Codex");
+      }),
+      embeddingClient: new ThrowingEmbeddingClient(),
+      retrievalMode: "v14a-anchored-deterministic-soft-coverage-stack",
+      benchmarkDataDirectory: dataDirectory,
+      precomputedIndexDirectory,
+    });
+
+    const [result] = await adapter.retrieve(testBundle(), {
+      workDirectory: join(root, "cached-expansion-latency-run"),
+      topK: 1,
+      candidateK: 1,
+    });
+
+    expect(result).toMatchObject({ status: "ok" });
+    expect(result?.latencyMs).toBeLessThan(replayedLatencyMs);
+  });
+
   it.each(["missing", "question-digest-mismatch"])(
     "keeps a %s cached expansion fail-closed without external calls",
     async (failure) => {

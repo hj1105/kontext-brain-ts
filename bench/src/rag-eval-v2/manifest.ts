@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   type DatasetId,
   type DatasetTrack,
@@ -9,11 +10,11 @@ import {
 } from "./contracts.js";
 
 export interface ModelManifest {
-  readonly provider: "openai" | "codex-cli";
+  readonly provider: "openai" | "codex-cli" | "anthropic";
   readonly model: string;
   readonly dimensions?: number;
   readonly reasoningEffort?: "low" | "medium" | "high" | "xhigh";
-  readonly execution?: "api" | "codex-exec";
+  readonly execution?: "api" | "codex-exec" | "anthropic-api";
 }
 
 export interface FrameworkManifest {
@@ -46,6 +47,8 @@ export interface RagEvalManifest {
     readonly answerCodexBatchSize: number;
     readonly judgeCodexBatchSize: number;
     readonly codexConcurrency: number;
+    readonly judgeCodexConcurrency?: number;
+    readonly judgeTimeoutMs?: number;
     readonly humanAuditPerDataset: number;
     readonly maxRetries: number;
     readonly checkpointEvery: number;
@@ -59,11 +62,28 @@ export interface RagEvalManifest {
   readonly datasets: readonly DatasetManifest[];
 }
 
-const RELIABILITY_METRICS = [
+const RETRIEVAL_METRICS = [
+  "evidence-recall-at-k",
+  "ndcg-at-k",
+  "context-precision",
+] as const satisfies readonly MetricId[];
+
+const ANSWER_QUALITY_METRICS = [
   "answer-correctness",
+  "claim-recall",
+  "claim-support-precision",
   "claim-f1",
   "strict-faithfulness",
+  "citation-precision",
+  "citation-recall",
   "citation-f1",
+  "clarity",
+  "conciseness",
+  "fluency",
+] as const satisfies readonly MetricId[];
+
+const RELIABILITY_METRICS = [
+  ...ANSWER_QUALITY_METRICS,
   "latency-p95",
   "input-tokens",
   "cost",
@@ -149,75 +169,89 @@ export const DEFAULT_RAG_EVAL_MANIFEST: RagEvalManifest = {
       id: "graphrag-bench-medical",
       displayName: "GraphRAG-Bench Medical",
       track: "static-kb",
-      metrics: ["evidence-recall-at-k", "context-precision", ...RELIABILITY_METRICS],
+      metrics: [...RETRIEVAL_METRICS, ...RELIABILITY_METRICS],
     },
     {
       id: "graphrag-bench-novel",
       displayName: "GraphRAG-Bench Novel",
       track: "static-kb",
-      metrics: ["evidence-recall-at-k", "context-precision", ...RELIABILITY_METRICS],
+      metrics: [...RETRIEVAL_METRICS, ...RELIABILITY_METRICS],
     },
     {
       id: "beir-scifact",
       displayName: "BEIR SciFact",
       track: "static-kb",
-      metrics: ["evidence-recall-at-k", "context-precision", "latency-p95", "input-tokens", "cost"],
+      metrics: [...RETRIEVAL_METRICS, "latency-p95", "input-tokens", "cost"],
       requiredDataPath: "beir-scifact",
     },
     {
       id: "beir-nfcorpus",
       displayName: "BEIR NFCorpus",
       track: "static-kb",
-      metrics: ["evidence-recall-at-k", "context-precision", "latency-p95", "input-tokens", "cost"],
+      metrics: [...RETRIEVAL_METRICS, "latency-p95", "input-tokens", "cost"],
       requiredDataPath: "beir-nfcorpus",
     },
     {
       id: "garage",
       displayName: "GaRAGe",
       track: "static-kb",
-      metrics: [...RELIABILITY_METRICS, "acceptable-abstention"],
+      metrics: [...RELIABILITY_METRICS, "acceptable-abstention", "answerability-joint-accuracy"],
       requiredDataPath: "garage",
     },
     {
       id: "frames",
       displayName: "FRAMES",
       track: "static-kb",
-      metrics: ["evidence-recall-at-k", ...RELIABILITY_METRICS],
+      metrics: [...RETRIEVAL_METRICS, ...RELIABILITY_METRICS],
       requiredDataPath: "frames",
     },
     {
       id: "uaeval-kontext",
       displayName: "UAEval4RAG-style kontext corpus boundary",
       track: "static-kb",
-      metrics: ["answer-correctness", "acceptable-abstention", "strict-faithfulness"],
+      metrics: [...ANSWER_QUALITY_METRICS, "acceptable-abstention", "answerability-joint-accuracy"],
       requiredDataPath: "uaeval-kontext",
     },
     {
       id: "stable-rag",
       displayName: "Stable-RAG perturbations",
       track: "static-kb",
-      metrics: ["answer-correctness", "strict-faithfulness", "permutation-sensitivity"],
+      metrics: [...ANSWER_QUALITY_METRICS, "permutation-sensitivity", "robustness-drop"],
       requiredDataPath: "stable-rag",
     },
     {
       id: "crag",
       displayName: "CRAG",
       track: "dynamic-api",
-      metrics: ["answer-correctness", "acceptable-abstention", "crag-truthfulness", "latency-p95"],
+      metrics: [
+        "answer-correctness",
+        "acceptable-abstention",
+        "answerability-joint-accuracy",
+        "crag-truthfulness",
+        "latency-p95",
+      ],
       requiredDataPath: "crag",
     },
     {
       id: "trec-rag",
       displayName: "TREC RAG",
       track: "large-corpus",
-      metrics: ["evidence-recall-at-k", "answer-correctness", "citation-f1", "latency-p95", "cost"],
+      metrics: [
+        ...RETRIEVAL_METRICS,
+        "answer-correctness",
+        "citation-precision",
+        "citation-recall",
+        "citation-f1",
+        "latency-p95",
+        "cost",
+      ],
       requiredDataPath: "trec-rag",
     },
     {
       id: "ragtime",
       displayName: "TREC RAGTIME",
       track: "multilingual-report",
-      metrics: ["claim-f1", "strict-faithfulness", "citation-f1", "latency-p95", "cost"],
+      metrics: [...ANSWER_QUALITY_METRICS, "latency-p95", "cost"],
       requiredDataPath: "ragtime",
     },
   ],
@@ -265,6 +299,16 @@ export function loadFrozenRunManifest(path: string): RagEvalManifest {
     );
   }
   return manifest;
+}
+
+export function manifestForRunDirectory(
+  defaultManifest: RagEvalManifest,
+  workDirectory: string,
+): RagEvalManifest {
+  const frozenManifestPath = join(workDirectory, "run-manifest.json");
+  return existsSync(frozenManifestPath)
+    ? loadFrozenRunManifest(frozenManifestPath)
+    : defaultManifest;
 }
 
 function isExactFrozenRunManifestEnvelope(
@@ -321,6 +365,20 @@ export function assertValidManifest(manifest: RagEvalManifest): void {
     manifest.benchmarkPolicy.codexConcurrency <= 0
   ) {
     throw new Error("codexConcurrency must be a positive integer");
+  }
+  if (
+    manifest.benchmarkPolicy.judgeCodexConcurrency !== undefined &&
+    (!Number.isInteger(manifest.benchmarkPolicy.judgeCodexConcurrency) ||
+      manifest.benchmarkPolicy.judgeCodexConcurrency <= 0)
+  ) {
+    throw new Error("judgeCodexConcurrency must be a positive integer when set");
+  }
+  if (
+    manifest.benchmarkPolicy.judgeTimeoutMs !== undefined &&
+    (!Number.isInteger(manifest.benchmarkPolicy.judgeTimeoutMs) ||
+      manifest.benchmarkPolicy.judgeTimeoutMs <= 0)
+  ) {
+    throw new Error("judgeTimeoutMs must be a positive integer when set");
   }
   if (manifest.models.embedding.provider !== "openai") {
     throw new Error("The shared embedding provider must be OpenAI");

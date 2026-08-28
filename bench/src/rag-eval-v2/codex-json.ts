@@ -71,7 +71,7 @@ export interface BatchItem<T> {
   readonly value: T;
 }
 
-const ANSWER_SCHEMA = {
+export const ANSWER_SCHEMA = {
   type: "object",
   additionalProperties: false,
   required: ["answer", "citations", "abstained", "abstention_reason"],
@@ -83,7 +83,7 @@ const ANSWER_SCHEMA = {
   },
 } as const;
 
-const JUDGE_SCHEMA = {
+export const JUDGE_SCHEMA = {
   type: "object",
   additionalProperties: false,
   required: [
@@ -93,6 +93,9 @@ const JUDGE_SCHEMA = {
     "citation_precision",
     "citation_recall",
     "acceptable_abstention",
+    "clarity",
+    "conciseness",
+    "fluency",
     "claims",
   ],
   properties: {
@@ -102,6 +105,9 @@ const JUDGE_SCHEMA = {
     citation_precision: { type: "number", minimum: 0, maximum: 1 },
     citation_recall: { type: "number", minimum: 0, maximum: 1 },
     acceptable_abstention: { type: "boolean" },
+    clarity: { type: "number", minimum: 0, maximum: 1 },
+    conciseness: { type: "number", minimum: 0, maximum: 1 },
+    fluency: { type: "number", minimum: 0, maximum: 1 },
     claims: {
       type: "array",
       items: {
@@ -120,7 +126,7 @@ const JUDGE_SCHEMA = {
   },
 } as const;
 
-const TEXT_SCHEMA = {
+export const TEXT_SCHEMA = {
   type: "object",
   additionalProperties: false,
   required: ["text"],
@@ -215,23 +221,11 @@ export class CodexJsonClient {
     context: string,
     query: string,
   ): Promise<CodexJsonResult<string>> {
-    const prompt = [
-      "Act as a deterministic text completion backend for the embedded request below.",
-      "Do not use tools, files, web search, or prior conversation.",
-      "Put the exact completion that the embedded request asks for in the JSON field `text`.",
-      "If it requests JSON, `text` must itself contain valid JSON with no markdown fence.",
-      "",
-      "<system>",
-      systemPrompt,
-      "</system>",
-      "<context>",
-      context,
-      "</context>",
-      "<query>",
-      query,
-      "</query>",
-    ].join("\n");
-    const result = await this.execute(model, prompt, TEXT_SCHEMA);
+    const result = await this.execute(
+      model,
+      completeTextPrompt(systemPrompt, context, query),
+      TEXT_SCHEMA,
+    );
     const object = asObject(result.value, "text completion");
     return {
       value: stringValue(object.text, "text"),
@@ -315,7 +309,7 @@ export class CodexJsonClient {
   }
 }
 
-function answerBatchSchema(queryIds: readonly string[]): unknown {
+export function answerBatchSchema(queryIds: readonly string[]): unknown {
   return {
     type: "object",
     additionalProperties: false,
@@ -339,7 +333,7 @@ function answerBatchSchema(queryIds: readonly string[]): unknown {
   };
 }
 
-function supportedEvidenceNeedsAnswerSchema(
+export function supportedEvidenceNeedsAnswerSchema(
   evidence: readonly RetrievedEvidence[],
 ): Record<string, unknown> {
   const evidenceIds = [...new Set(evidence.map((item) => item.id))];
@@ -368,7 +362,7 @@ function supportedEvidenceNeedsAnswerSchema(
   };
 }
 
-function policyAwareAnswerBatchSchema(inputs: readonly AnswerBatchInput[]): unknown {
+export function policyAwareAnswerBatchSchema(inputs: readonly AnswerBatchInput[]): unknown {
   const itemSchemas = inputs.map((input) => {
     const answerSchema =
       input.answerPolicy === "supported-evidence-needs"
@@ -404,7 +398,7 @@ function policyAwareAnswerBatchSchema(inputs: readonly AnswerBatchInput[]): unkn
   };
 }
 
-function judgeBatchSchema(queryIds: readonly string[]): unknown {
+export function judgeBatchSchema(queryIds: readonly string[]): unknown {
   return {
     type: "object",
     additionalProperties: false,
@@ -428,7 +422,7 @@ function judgeBatchSchema(queryIds: readonly string[]): unknown {
   };
 }
 
-function validateBatchInputs(inputs: readonly AnswerBatchInput[]): string[] {
+export function validateBatchInputs(inputs: readonly AnswerBatchInput[]): string[] {
   if (inputs.length === 0) throw new Error("Codex batch cannot be empty");
   const queryIds = inputs.map((input) => input.query.id);
   if (new Set(queryIds).size !== queryIds.length)
@@ -436,7 +430,7 @@ function validateBatchInputs(inputs: readonly AnswerBatchInput[]): string[] {
   return queryIds;
 }
 
-function parseBatchResults<T>(
+export function parseBatchResults<T>(
   value: unknown,
   queryIds: readonly string[],
   parse: (item: unknown, queryId: string) => T,
@@ -460,7 +454,7 @@ function parseBatchResults<T>(
   });
 }
 
-function answerPrompt(
+export function answerPrompt(
   query: BenchmarkQuery,
   evidence: readonly RetrievedEvidence[],
   answerPolicy?: AnswerPolicy,
@@ -479,7 +473,7 @@ function answerPrompt(
   ].join("\n");
 }
 
-function answerBatchPrompt(inputs: readonly AnswerBatchInput[]): string {
+export function answerBatchPrompt(inputs: readonly AnswerBatchInput[]): string {
   return [
     "Answer every benchmark case independently using only that case's supplied evidence.",
     "Never transfer facts, citations, or conclusions between cases.",
@@ -510,7 +504,7 @@ function answerPolicyInstructions(answerPolicy: AnswerPolicy | undefined): strin
   ];
 }
 
-function judgePrompt(
+export function judgePrompt(
   query: BenchmarkQuery,
   evidence: readonly RetrievedEvidence[],
   answer: AnswerContract,
@@ -520,7 +514,11 @@ function judgePrompt(
     "Split only the literal semantic content of the candidate answer into atomic claims; never add detail from the reference answer.",
     "A claim is supported only when the cited evidence entails the complete claim",
     "including names, dates, quantities, and negation. Do not use tools, files, web search, or prior knowledge.",
+    "Set completeness to the fraction of necessary reference-answer claims covered by the candidate; this is Claim Recall.",
+    "Set strict_faithfulness from complete evidence entailment of every candidate claim, and mark each claim.supported independently for Claim Support Precision.",
+    "Citation precision measures whether cited evidence supports its attached claim; citation recall measures whether every claim needing support has a valid citation.",
     "For unanswerable questions, acceptable_abstention is true only when the candidate appropriately abstains.",
+    "Score clarity for understandable organization, conciseness for avoiding unnecessary or redundant wording without penalizing required coverage, and fluency for grammatical naturalness.",
     "Return only the JSON object required by the output schema.",
     "",
     `Question: ${query.text}`,
@@ -534,13 +532,17 @@ function judgePrompt(
   ].join("\n");
 }
 
-function judgeBatchPrompt(inputs: readonly JudgeBatchInput[]): string {
+export function judgeBatchPrompt(inputs: readonly JudgeBatchInput[]): string {
   return [
     "Evaluate every candidate case strictly and independently.",
     "Never transfer facts, evidence, or judgements between cases.",
     "Split only the literal semantic content of each candidate answer into atomic claims.",
     "A claim is supported only when that case's cited evidence entails the complete claim, including names, dates, quantities, and negation.",
+    "Set completeness to the fraction of necessary reference-answer claims covered by the candidate; this is Claim Recall.",
+    "Set strict_faithfulness from complete evidence entailment of every candidate claim, and mark each claim.supported independently for Claim Support Precision.",
+    "Citation precision measures whether cited evidence supports its attached claim; citation recall measures whether every claim needing support has a valid citation.",
     "For unanswerable questions, acceptable_abstention is true only when the candidate appropriately abstains.",
+    "Score clarity for understandable organization, conciseness for avoiding unnecessary or redundant wording without penalizing required coverage, and fluency for grammatical naturalness.",
     "Do not use tools, files, web search, or prior knowledge.",
     "Return one result for every query_id and only the JSON object required by the output schema.",
     "",
@@ -559,7 +561,26 @@ function judgeBatchPrompt(inputs: readonly JudgeBatchInput[]): string {
   ].join("\n");
 }
 
-function parseAnswerContract(value: unknown): AnswerContract {
+export function completeTextPrompt(systemPrompt: string, context: string, query: string): string {
+  return [
+    "Act as a deterministic text completion backend for the embedded request below.",
+    "Do not use tools, files, web search, or prior conversation.",
+    "Put the exact completion that the embedded request asks for in the JSON field `text`.",
+    "If it requests JSON, `text` must itself contain valid JSON with no markdown fence.",
+    "",
+    "<system>",
+    systemPrompt,
+    "</system>",
+    "<context>",
+    context,
+    "</context>",
+    "<query>",
+    query,
+    "</query>",
+  ].join("\n");
+}
+
+export function parseAnswerContract(value: unknown): AnswerContract {
   const object = asObject(value, "answer");
   const citations = stringArray(object.citations, "citations");
   const abstained = booleanValue(object.abstained, "abstained");
@@ -571,7 +592,7 @@ function parseAnswerContract(value: unknown): AnswerContract {
   return { answer, citations, abstained, abstentionReason: reason };
 }
 
-function parseSupportedEvidenceNeedsAnswer(
+export function parseSupportedEvidenceNeedsAnswer(
   value: unknown,
   evidence: readonly RetrievedEvidence[],
 ): AnswerContract {
@@ -632,7 +653,7 @@ function normalizedClaimKey(value: string): string {
     .trim();
 }
 
-function parseJudgeContract(value: unknown): JudgeContract {
+export function parseJudgeContract(value: unknown): JudgeContract {
   const object = asObject(value, "judge");
   const claimsValue = object.claims;
   if (!Array.isArray(claimsValue)) throw new Error("claims must be an array");
@@ -643,6 +664,9 @@ function parseJudgeContract(value: unknown): JudgeContract {
     citationPrecision: scoreValue(object.citation_precision, "citation_precision"),
     citationRecall: scoreValue(object.citation_recall, "citation_recall"),
     acceptableAbstention: booleanValue(object.acceptable_abstention, "acceptable_abstention"),
+    clarity: scoreValue(object.clarity, "clarity"),
+    conciseness: scoreValue(object.conciseness, "conciseness"),
+    fluency: scoreValue(object.fluency, "fluency"),
     claims: claimsValue.map((claim, index) => {
       const item = asObject(claim, `claims[${index}]`);
       return {
@@ -656,7 +680,7 @@ function parseJudgeContract(value: unknown): JudgeContract {
   };
 }
 
-function asObject(value: unknown, name: string): Record<string, unknown> {
+export function asObject(value: unknown, name: string): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value))
     throw new Error(`${name} must be an object`);
   return value as Record<string, unknown>;
@@ -672,7 +696,7 @@ function assertOnlyProperties(
     throw new Error(`${name} has unexpected properties: ${unknown.join(", ")}`);
 }
 
-function stringValue(value: unknown, name: string): string {
+export function stringValue(value: unknown, name: string): string {
   if (typeof value !== "string") throw new Error(`${name} must be a string`);
   return value;
 }

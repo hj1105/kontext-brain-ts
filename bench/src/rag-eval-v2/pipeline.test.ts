@@ -368,6 +368,9 @@ describe("v13 answer policy", () => {
               citation_precision: 1,
               citation_recall: 1,
               acceptable_abstention: false,
+              clarity: 1,
+              conciseness: 1,
+              fluency: 1,
               claims: [
                 {
                   claim: `Judged call ${calls}`,

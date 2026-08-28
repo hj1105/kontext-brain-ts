@@ -52,6 +52,33 @@ It separates raw evidence precision from framework-native packaged-context
 precision and reports embedding cost only where an auditable usage artifact
 exists.
 
+## Clean latency protocol
+
+Latency publication uses a separate, resumable path from quality artifacts. It
+selects the same deterministic 200-query Medical or Novel evaluation sample,
+runs exactly one dataset/framework cell at a time, and freezes retrieval,
+answer, and judge concurrency at one. Every cell reads a completed native index
+through a read-only source path. Index construction and index embeddings are
+forbidden; a missing or mismatched warm artifact fails closed. Retrieval and
+answer/judge checkpoints are written only under a new clean-latency directory.
+
+The frozen statistic is nearest-rank p95 (`ceil(N * 0.95)` after ascending
+sort). Three latency fields remain separate:
+
+- `retrievalLatencyP95Ms`: warm retrieval only;
+- `queryToAnswerLatencyP95Ms`: retrieval plus answer generation, excluding the
+  judge, and therefore the user-facing score;
+- `endToEndLatencyP95Ms`: retrieval plus answer plus evaluation judge.
+
+The clean report records the sample digest, index source, source metadata digest
+before and after execution, git/environment provenance, concurrency, and every
+stage distribution. Any incomplete cell, source mutation, queue/quota error,
+latency above 600 seconds, or 10–20 minute completion-wave gap marks the attempt
+invalid. Invalid attempts remain preserved and are never substituted with an
+estimate. `clean-latency-suite.ts` validates the exact Medical/Novel × Kontext
+v15, Kontext v13, LightRAG 1.5.6, and Microsoft GraphRAG 3.1.1 eight-row matrix
+and executes it serially from a local source-map JSON file.
+
 ## Dataset tracks
 
 The primary static-KB track uses GraphRAG-Bench Medical, GraphRAG-Bench Novel,
@@ -92,10 +119,12 @@ export RAG_EVAL_HIPPORAG_COMMAND='["/absolute/path/to/hipporag-adapter"]'
 
 `doctor` must print JSON with `status`, the exact pinned `version`, and `detail`.
 `build` receives `--dataset-dir`, `--index-dir`, embedding model/dimensions,
-completion model/reasoning/execution, and top-k. The adapter must honor these
+completion model/reasoning/execution, top-k, and query concurrency. The adapter must honor these
 shared model settings while leaving every other indexing choice at the pinned
 framework's official default. `retrieve` receives the same arguments plus
-`--output`, and writes the common `RetrievalResult` JSONL contract. Missing commands, version mismatches,
+`--output`, and writes the common `RetrievalResult` JSONL contract. Strict warm
+latency retrieval additionally receives `--index-source-dir` and must skip
+`build`. Missing commands, version mismatches,
 unsupported dataset tracks, absent credentials, and resource failures remain
 visible as `blocked`, `unsupported`, or `error` records.
 
@@ -197,12 +226,34 @@ these calls because the evaluator forbids tools and external knowledge.
 
 ## Metrics and artifacts
 
-Retrieval metrics include evidence recall@k and context precision. Answer metrics
-include answer correctness, claim precision/recall/F1, strict faithfulness,
-citation precision/recall/F1, and acceptable abstention where a dataset supplies
-the required labels. Robustness tracks report permutation sensitivity. Resource
-metrics report p95 retrieval/end-to-end latency, tokens, and cost when the
-provider exposes it.
+The benchmark reports layers separately and never produces a combined overall
+score:
+
+| Layer | Metric | Availability rule |
+|---|---|---|
+| Retrieval coverage | Evidence Recall@K | Gold evidence text or IDs required |
+| Retrieval ordering | nDCG@K | Binary gold relevance; rank-discounted |
+| Retrieval noise | Context Precision | Gold evidence text or IDs required; raw value is package-sensitive |
+| Answer coverage | Claim Recall | Judge reference answer required |
+| Grounding | Strict Faithfulness and Claim Support Precision | Judge plus retrieved evidence required |
+| Citations | Citation Precision, Recall, and F1 | Cited answer and retrieved evidence required |
+| KB boundary | Answerable/Unanswerable Joint Accuracy | Both answerable and unanswerable labels must be present; class-balanced |
+| Robustness | Robustness Drop | One baseline and at least one paired perturbation per group required |
+| Writing quality | Clarity, Conciseness, and Fluency | Judge-policy-v3 or later required |
+
+Joint accuracy counts an answerable case as handled only when it does not
+abstain and reaches at least 0.5 correctness. An unanswerable case is handled
+only by an acceptable abstention. Robustness Drop is the mean non-negative
+answer-correctness loss from each tagged baseline to its document-order,
+paraphrase, or distractor perturbations; lower is better. Unsupported metrics
+are serialized as `null`, never imputed from another dataset or an older judge.
+Historical score files remain valid and simply lack judge-policy-v3 writing
+quality values.
+
+Resource metrics report warm retrieval p95, user-facing query-to-answer p95,
+judge-inclusive evaluation E2E p95, tokens, and cost when the provider exposes
+them. Indexing wall time and indexing/embedding cost are reported separately;
+they are never folded into warm query latency.
 
 Each dataset/framework directory contains `retrieval.jsonl`, `answers.jsonl`,
 `judgements.jsonl`, and `score.json`. Retrieval files cover the complete query
