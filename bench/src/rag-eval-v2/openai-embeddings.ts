@@ -63,7 +63,9 @@ export class OpenAIEmbeddingClient implements EmbeddingClient {
     this.batchSize = options.batchSize ?? 100;
     this.maxRetries = options.maxRetries ?? 8;
     this.fetchImplementation = options.fetchImplementation ?? fetch;
-    this.wait = options.wait ?? ((milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
+    this.wait =
+      options.wait ??
+      ((milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
     if (this.model !== "text-embedding-3-small") {
       throw new Error("Benchmark protocol requires text-embedding-3-small");
     }
@@ -84,7 +86,13 @@ export class OpenAIEmbeddingClient implements EmbeddingClient {
     for (let offset = 0; offset < inputs.length; offset += this.batchSize) {
       const batch = inputs.slice(offset, offset + this.batchSize);
       const values = await this.embedBatch(batch);
-      outputs.push(...batch.map((input, index) => ({ id: input.id, values: values[index]! })));
+      for (const [index, input] of batch.entries()) {
+        const embedding = values[index];
+        if (embedding === undefined) {
+          throw new Error(`Embedding output missing for input ${input.id}`);
+        }
+        outputs.push({ id: input.id, values: embedding });
+      }
     }
     return outputs;
   }
@@ -113,7 +121,9 @@ export class OpenAIEmbeddingClient implements EmbeddingClient {
       } catch (error) {
         if (attempt === this.maxRetries) {
           const message = error instanceof Error ? error.message : String(error);
-          throw new Error(`OpenAI embedding network request failed after ${attempt + 1} attempts: ${message}`);
+          throw new Error(
+            `OpenAI embedding network request failed after ${attempt + 1} attempts: ${message}`,
+          );
         }
         await this.wait(transientRetryDelayMilliseconds(attempt));
         continue;
@@ -125,7 +135,9 @@ export class OpenAIEmbeddingClient implements EmbeddingClient {
         );
         if (embeddings.length !== inputs.length) {
           if (attempt === this.maxRetries) {
-            throw new Error(`OpenAI returned ${embeddings.length} embeddings for ${inputs.length} inputs`);
+            throw new Error(
+              `OpenAI returned ${embeddings.length} embeddings for ${inputs.length} inputs`,
+            );
           }
           await this.wait(transientRetryDelayMilliseconds(attempt));
           continue;
@@ -135,7 +147,11 @@ export class OpenAIEmbeddingClient implements EmbeddingClient {
         );
         if (invalidIndex !== -1) {
           if (attempt === this.maxRetries) {
-            const actualDimensions = embeddings[invalidIndex]!.embedding?.length ?? 0;
+            const invalidEmbedding = embeddings[invalidIndex];
+            if (invalidEmbedding === undefined) {
+              throw new Error(`OpenAI embedding ${invalidIndex} is missing after validation`);
+            }
+            const actualDimensions = invalidEmbedding.embedding?.length ?? 0;
             throw new Error(
               `OpenAI embedding ${invalidIndex} has ${actualDimensions} dimensions; expected ${this.dimensions}`,
             );
@@ -143,7 +159,13 @@ export class OpenAIEmbeddingClient implements EmbeddingClient {
           await this.wait(transientRetryDelayMilliseconds(attempt));
           continue;
         }
-        const values = embeddings.map((embedding) => normalizeVector(embedding.embedding!));
+        const values = embeddings.map((embedding, index) => {
+          const vector = embedding.embedding;
+          if (vector === undefined || vector.length !== this.dimensions) {
+            throw new Error(`OpenAI embedding ${index} failed validation`);
+          }
+          return normalizeVector(vector);
+        });
         this.usage = {
           requests: this.usage.requests + 1,
           inputTokens: this.usage.inputTokens + (payload.usage?.prompt_tokens ?? 0),
@@ -151,7 +173,11 @@ export class OpenAIEmbeddingClient implements EmbeddingClient {
         };
         return values;
       }
-      const retryable = response.status === 408 || response.status === 409 || response.status === 429 || response.status >= 500;
+      const retryable =
+        response.status === 408 ||
+        response.status === 409 ||
+        response.status === 429 ||
+        response.status >= 500;
       if (!retryable || attempt === this.maxRetries) {
         throw new Error(
           `OpenAI embedding request failed (${response.status}): ${payload.error?.message ?? response.statusText}`,
@@ -165,7 +191,7 @@ export class OpenAIEmbeddingClient implements EmbeddingClient {
 
 async function readPayload(response: Response): Promise<OpenAIEmbeddingResponse> {
   try {
-    return await response.json() as OpenAIEmbeddingResponse;
+    return (await response.json()) as OpenAIEmbeddingResponse;
   } catch {
     return {};
   }
@@ -197,6 +223,13 @@ export function cosineSimilarity(left: ArrayLike<number>, right: ArrayLike<numbe
     throw new Error(`Vector dimension mismatch: ${left.length} != ${right.length}`);
   }
   let score = 0;
-  for (let index = 0; index < left.length; index += 1) score += left[index]! * right[index]!;
+  for (let index = 0; index < left.length; index += 1) {
+    const leftValue = left[index];
+    const rightValue = right[index];
+    if (leftValue === undefined || rightValue === undefined) {
+      throw new Error(`Vector element missing at index ${index}`);
+    }
+    score += leftValue * rightValue;
+  }
   return score;
 }

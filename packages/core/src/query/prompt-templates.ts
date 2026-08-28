@@ -80,6 +80,9 @@ Return JSON only:
 You are an expert who accurately answers questions based on the given context.
 The context consists of relevant documents selected through ontology graph traversal.
 Cite sources (Notion, Jira, GitHub, etc.) in your answer.
+When the context contains markers like "[Evidence <id>; Resource <id>; Chunk <id>]",
+you must cite the exact Evidence <id> value (copied verbatim) for every claim you make.
+If a marker includes "Fact status conflict", state explicitly that the evidence is in conflict.
   `.trim(),
 
   nodeClassifier:

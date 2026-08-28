@@ -37,10 +37,10 @@ export interface DatasetManifest {
 export interface RagEvalManifest {
   readonly schemaVersion: typeof RAG_EVAL_SCHEMA_VERSION;
   readonly benchmarkPolicy: {
-    readonly tuning: "official-defaults-only";
+    readonly tuning: "development-iterative";
     readonly aggregateAcrossDatasets: false;
     readonly commonAnswerContract: true;
-    readonly frameworkInternalChanges: false;
+    readonly frameworkInternalChanges: true;
     readonly retrievalQueryScope: "all";
     readonly answerJudgeSamplePerDataset: number;
     readonly answerJudgeSampleSeed: number;
@@ -92,10 +92,10 @@ const RELIABILITY_METRICS = [
 export const DEFAULT_RAG_EVAL_MANIFEST: RagEvalManifest = {
   schemaVersion: RAG_EVAL_SCHEMA_VERSION,
   benchmarkPolicy: {
-    tuning: "official-defaults-only",
+    tuning: "development-iterative",
     aggregateAcrossDatasets: false,
     commonAnswerContract: true,
-    frameworkInternalChanges: false,
+    frameworkInternalChanges: true,
     retrievalQueryScope: "all",
     answerJudgeSamplePerDataset: 200,
     answerJudgeSampleSeed: 20260814,

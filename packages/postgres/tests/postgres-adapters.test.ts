@@ -1,6 +1,8 @@
 import {
   ActivateOntologyUseCase,
   BidirectionalNLayerRetriever,
+  CalibratedTraversalScorePolicy,
+  DEFAULT_CALIBRATED_SCORING_PROFILE,
   InMemoryResourceContentStore,
   type OntologyCandidateValidator,
   type OntologyCompiler,
@@ -9,15 +11,17 @@ import {
   RetrieveFactsUseCase,
   SyncResourceUseCase,
 } from "@kontext-brain/core";
-import { Pool } from "pg";
+import { Pool, type PoolClient } from "pg";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import {
   PostgresAuthorizedKnowledgeGraphReader,
+  PostgresChunkVectorIndex,
   PostgresExtractionJobQueue,
   PostgresKnowledgeGraphRepository,
   PostgresKnowledgeSearchGraph,
   PostgresOntologyDeploymentRepository,
   PostgresOntologyProposalQueue,
+  PostgresScoringProfileRepository,
   migratePostgres,
 } from "../src/index.js";
 
@@ -90,6 +94,229 @@ describe.runIf(pool !== null)("PostgreSQL adapters", () => {
     expect(await repository.getActive("acme")).toEqual(active);
   });
 
+  it("stages and atomically activates versioned scoring profiles", async () => {
+    const profiles = new PostgresScoringProfileRepository(requiredPool(), 0);
+    const profile = {
+      ...DEFAULT_CALIBRATED_SCORING_PROFILE,
+      id: "test-calibrated",
+      version: 2,
+    };
+
+    const staged = await profiles.stage("acme", profile, {
+      split: "validation",
+      recallAt10: 1,
+      ndcgAt10: 1,
+    });
+    expect(staged).toMatchObject({ status: "staged", profile });
+    const active = await profiles.activate("acme", staged.profileDigest);
+    expect(active.status).toBe("active");
+    expect(await profiles.getActive("acme")).toMatchObject({
+      profileDigest: staged.profileDigest,
+      profile,
+    });
+
+    const shadow = await profiles.stage(
+      "acme",
+      {
+        ...DEFAULT_CALIBRATED_SCORING_PROFILE,
+        id: "test-shadow",
+        version: 1,
+      },
+      { split: "validation", recallAt10: 1, ndcgAt10: 1 },
+    );
+    await profiles.setShadow("acme", shadow.profileDigest);
+    expect((await profiles.getShadow("acme"))?.profileDigest).toBe(shadow.profileDigest);
+
+    const resolved = await profiles.resolve({
+      organizationId: "acme",
+      subjectId: "u1",
+      groupIds: [],
+    });
+    expect("descriptor" in resolved && resolved.descriptor.profileDigest).toBe(
+      staged.profileDigest,
+    );
+    await profiles.setCanaryPercent("acme", 0);
+    expect(
+      "descriptor" in
+        (await profiles.resolve({
+          organizationId: "acme",
+          subjectId: "u1",
+          groupIds: [],
+        })),
+    ).toBe(false);
+    await profiles.setCanaryPercent("acme", 100);
+
+    await profiles.activate("acme", shadow.profileDigest);
+    expect(await profiles.getShadow("acme")).toBeNull();
+    expect((await profiles.rollback("acme", staged.profileDigest)).profileDigest).toBe(
+      staged.profileDigest,
+    );
+  });
+
+  it("stages identical scoring content idempotently without changing the active profile", async () => {
+    const profiles = new PostgresScoringProfileRepository(requiredPool(), 0);
+    const profile = {
+      ...DEFAULT_CALIBRATED_SCORING_PROFILE,
+      id: "idempotent-stage",
+      version: 2,
+    };
+
+    const first = await profiles.stage("acme", profile, { run: "validation-1" });
+    const second = await profiles.stage("acme", profile, { run: "validation-2" });
+
+    expect(second).toMatchObject({
+      profileDigest: first.profileDigest,
+      status: "staged",
+      evaluationSummary: { run: "validation-2" },
+    });
+    expect(await profiles.getActive("acme")).toBeNull();
+  });
+
+  it("requires evaluation evidence unless activation explicitly uses break-glass", async () => {
+    const profiles = new PostgresScoringProfileRepository(requiredPool(), 0);
+    const staged = await profiles.stage("acme", {
+      ...DEFAULT_CALIBRATED_SCORING_PROFILE,
+      id: "unevaluated-profile",
+      version: 2,
+    });
+
+    await expect(profiles.activate("acme", staged.profileDigest)).rejects.toThrow(
+      `Scoring profile "${staged.profileDigest}" has no evaluation summary`,
+    );
+    expect(await profiles.getActive("acme")).toBeNull();
+
+    const activated = await profiles.activate("acme", staged.profileDigest, {
+      allowUnevaluated: true,
+    });
+    expect(activated.status).toBe("active");
+    expect((await profiles.getActive("acme"))?.profileDigest).toBe(staged.profileDigest);
+  });
+
+  it("never resolves the active or a failed scoring profile as shadow", async () => {
+    const profiles = new PostgresScoringProfileRepository(requiredPool(), 60_000);
+    const active = await profiles.stage(
+      "acme",
+      {
+        ...DEFAULT_CALIBRATED_SCORING_PROFILE,
+        id: "shadow-active",
+        version: 2,
+      },
+      { run: "validation" },
+    );
+    await profiles.activate("acme", active.profileDigest);
+    await expect(profiles.setShadow("acme", active.profileDigest)).rejects.toThrow(
+      "Shadow scoring profile must differ from the active profile",
+    );
+
+    const shadow = await profiles.stage(
+      "acme",
+      {
+        ...DEFAULT_CALIBRATED_SCORING_PROFILE,
+        id: "shadow-failed",
+        version: 2,
+      },
+      { run: "validation" },
+    );
+    await profiles.setShadow("acme", shadow.profileDigest);
+    const resolvedShadow = await profiles.resolveShadow({
+      organizationId: "acme",
+      subjectId: "user:1",
+      groupIds: [],
+    });
+    expect(resolvedShadow !== null && "descriptor" in resolvedShadow).toBe(true);
+
+    await profiles.markFailed("acme", shadow.profileDigest, "holdout regression");
+    expect(await profiles.getShadow("acme")).toBeNull();
+    expect(
+      await profiles.resolveShadow({
+        organizationId: "acme",
+        subjectId: "user:1",
+        groupIds: [],
+      }),
+    ).toBeNull();
+  });
+
+  it("restores the previous profile for every subject after rollback", async () => {
+    const profiles = new PostgresScoringProfileRepository(requiredPool(), 60_000);
+    const previous = await profiles.stage(
+      "acme",
+      {
+        ...DEFAULT_CALIBRATED_SCORING_PROFILE,
+        id: "rollback-previous",
+        version: 1,
+      },
+      { run: "validation" },
+    );
+    await profiles.activate("acme", previous.profileDigest);
+    const candidate = await profiles.stage(
+      "acme",
+      {
+        ...DEFAULT_CALIBRATED_SCORING_PROFILE,
+        id: "rollback-candidate",
+        version: 2,
+      },
+      { run: "validation" },
+    );
+    await profiles.activate("acme", candidate.profileDigest);
+    await profiles.setCanaryPercent("acme", 0);
+
+    await profiles.rollback("acme", previous.profileDigest);
+
+    expect((await profiles.getActive("acme"))?.profileDigest).toBe(previous.profileDigest);
+    const resolved = await profiles.resolve({
+      organizationId: "acme",
+      subjectId: "user:1",
+      groupIds: [],
+    });
+    expect("descriptor" in resolved ? resolved.descriptor.profileId : "legacy-v1").toBe(
+      "rollback-previous",
+    );
+  });
+
+  it("isolates scoring deployments and canary state between Organizations", async () => {
+    const profiles = new PostgresScoringProfileRepository(requiredPool(), 0);
+    const acme = await profiles.stage(
+      "acme",
+      {
+        ...DEFAULT_CALIBRATED_SCORING_PROFILE,
+        id: "acme-profile",
+        version: 2,
+      },
+      { run: "validation" },
+    );
+    const beta = await profiles.stage(
+      "beta",
+      {
+        ...DEFAULT_CALIBRATED_SCORING_PROFILE,
+        id: "beta-profile",
+        version: 2,
+      },
+      { run: "validation" },
+    );
+    await profiles.activate("acme", acme.profileDigest);
+    await profiles.activate("beta", beta.profileDigest);
+    await profiles.setCanaryPercent("acme", 0);
+
+    expect((await profiles.getActive("acme"))?.profile.id).toBe("acme-profile");
+    expect((await profiles.getActive("beta"))?.profile.id).toBe("beta-profile");
+    const acmeResolved = await profiles.resolve({
+      organizationId: "acme",
+      subjectId: "user:1",
+      groupIds: [],
+    });
+    const betaResolved = await profiles.resolve({
+      organizationId: "beta",
+      subjectId: "user:1",
+      groupIds: [],
+    });
+    expect("descriptor" in acmeResolved ? acmeResolved.descriptor.profileId : "legacy-v1").toBe(
+      "legacy-v1",
+    );
+    expect("descriptor" in betaResolved ? betaResolved.descriptor.profileId : "legacy-v1").toBe(
+      "beta-profile",
+    );
+  });
+
   it("deduplicates and leases extraction jobs by resource, content, and ontology hashes", async () => {
     const queue = new PostgresExtractionJobQueue(requiredPool());
     const key = {
@@ -120,6 +347,76 @@ describe.runIf(pool !== null)("PostgreSQL adapters", () => {
     expect(await queue.listOpen("acme")).toMatchObject([
       { occurrences: 2, resourceIds: ["notion:p1", "slack:t1"] },
     ]);
+
+    await queue.markPublished("acme", ["refund"]);
+    await queue.enqueue("acme", [
+      { suggestedNodeId: "refund", description: "Refunds", resourceIds: ["github:i1"] },
+    ]);
+    expect(await queue.listOpen("acme")).toEqual([]);
+    expect(await queue.listPending("acme")).toMatchObject([
+      { occurrences: 3, status: "published" },
+    ]);
+  });
+
+  it("uses a single pooled connection and transaction for retrieval and vector seeds", async () => {
+    const repository = new PostgresKnowledgeGraphRepository(requiredPool());
+    const contents = new InMemoryResourceContentStore();
+    await new SyncResourceUseCase(repository, contents).execute(snapshot("v1", "paid"));
+    const deployments = new PostgresOntologyDeploymentRepository<{
+      nodes: Array<{ id: string; description: string }>;
+      edges: Array<{ from: string; to: string; weight: number }>;
+    }>(requiredPool());
+    await deployments.stage({
+      organizationId: "acme",
+      contentHash: "ontology-v1",
+      yaml: "- id: order",
+      graph: { nodes: [{ id: "order", description: "Customer order" }], edges: [] },
+      status: "staged",
+      createdAt: new Date().toISOString(),
+    });
+    await deployments.activate("acme", "ontology-v1");
+
+    let checkouts = 0;
+    let begins = 0;
+    class CountingPool extends Pool {
+      override async connect(): Promise<never> {
+        if (checkouts > 0) throw new Error("Retrieval attempted a second pool checkout");
+        const client = await (super.connect() as Promise<PoolClient>);
+        checkouts++;
+        const query = client.query.bind(client) as PoolClient["query"];
+        // biome-ignore lint/suspicious/noExplicitAny: passthrough spy
+        (client as any).query = (...args: any[]) => {
+          const text = typeof args[0] === "string" ? args[0] : (args[0]?.text ?? "");
+          if (String(text).trimStart().toUpperCase().startsWith("BEGIN")) begins++;
+          // biome-ignore lint/suspicious/noExplicitAny: passthrough spy
+          return (query as any)(...args);
+        };
+        return client as never;
+      }
+    }
+    const countingPool = new CountingPool({ connectionString: databaseUrl, max: 1 });
+    try {
+      const vectorIndex = new PostgresChunkVectorIndex(countingPool, {
+        async embed() {
+          return new Array<number>(1536).fill(0);
+        },
+      });
+      const retriever = new BidirectionalNLayerRetriever(
+        new PostgresKnowledgeSearchGraph(countingPool, contents, [vectorIndex]),
+        new CalibratedTraversalScorePolicy(DEFAULT_CALIBRATED_SCORING_PROFILE),
+      );
+      const result = await retriever.retrieve({
+        question: "Was order 42 paid?",
+        principal: { organizationId: "acme", subjectId: "u1", groupIds: ["finance"] },
+      });
+
+      expect(result.trace.visited).toBeGreaterThan(1);
+      expect(checkouts).toBe(1);
+      expect(begins).toBe(1);
+      expect(countingPool.idleCount).toBe(1);
+    } finally {
+      await countingPool.end();
+    }
   });
 
   it("lifts and grounds through the PostgreSQL KG while filtering ACL before each edge", async () => {
@@ -144,6 +441,7 @@ describe.runIf(pool !== null)("PostgreSQL adapters", () => {
     await deployments.activate("acme", "ontology-v1");
     const retriever = new BidirectionalNLayerRetriever(
       new PostgresKnowledgeSearchGraph(requiredPool(), contents),
+      new CalibratedTraversalScorePolicy(DEFAULT_CALIBRATED_SCORING_PROFILE),
     );
 
     const allowed = await retriever.retrieve({

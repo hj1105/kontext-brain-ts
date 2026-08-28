@@ -310,6 +310,31 @@ describe("rag eval metrics", () => {
     expect(robustnessDropForQueries([baseline, perturbation], judgements)).toBeCloseTo(0.3);
   });
 
+  it("scores failed retrieval queries as zero instead of dropping them from averages", () => {
+    const secondQuery = { ...baseQuery, id: "q2" };
+    const expandedBundle = { ...bundle, queries: [baseQuery, secondQuery] };
+    const failedRetrieval: RetrievalResult = {
+      ...retrieval,
+      queryId: "q2",
+      status: "error",
+      evidence: [],
+      error: "failed",
+    };
+
+    const score = scoreDatasetFramework(
+      expandedBundle,
+      "kontext-brain",
+      [retrieval, failedRetrieval],
+      [answer],
+      [judgement],
+      [baseQuery],
+    );
+
+    expect(score.evidenceRecallAtK).toBe(0.5);
+    expect(score.contextPrecision).toBe(0.25);
+    expect(score.retrievalErrors).toBe(1);
+  });
+
   it("reports paired framework differences on shared completed queries", () => {
     const otherRetrieval = { ...retrieval, frameworkId: "vector-rag-reranker" as const };
     const otherJudgement = {

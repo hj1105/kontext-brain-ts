@@ -144,32 +144,26 @@ function windowAround(
   let start = anchorIndex;
   let end = anchorIndex;
   let characters = anchorChunk.text.length;
-  let distance = 1;
   while (characters < targetCharacters) {
     let added = false;
-    const left = anchorIndex - distance;
+    const left = start - 1;
     const leftChunk = chunks[left];
     if (leftChunk && characters + leftChunk.text.length <= targetCharacters) {
       start = left;
       characters += leftChunk.text.length;
       added = true;
     }
-    const right = anchorIndex + distance;
+    const right = end + 1;
     const rightChunk = chunks[right];
     if (rightChunk && characters + rightChunk.text.length <= targetCharacters) {
       end = right;
       characters += rightChunk.text.length;
       added = true;
     }
-    if (!added && left < 0 && right >= chunks.length) break;
-    if (!added) {
-      const candidates = [
-        leftChunk ? { index: left, length: leftChunk.text.length } : null,
-        rightChunk ? { index: right, length: rightChunk.text.length } : null,
-      ].filter((candidate): candidate is { index: number; length: number } => candidate !== null);
-      if (candidates.every((candidate) => characters + candidate.length > targetCharacters)) break;
-    }
-    distance += 1;
+    // A source window must stay contiguous. Never jump over an oversized
+    // adjacent chunk and then include a farther chunk, because the final slice
+    // would silently pull the skipped text back into the budget.
+    if (!added) break;
   }
   return { sourceId: anchorChunk.sourceId, start, end, anchors: [anchor] };
 }

@@ -30,7 +30,8 @@ export function createEvaluationSample(
   requested: number,
   seed: number,
 ): EvaluationSample {
-  if (!Number.isInteger(requested) || requested <= 0) throw new Error("requested sample size must be positive");
+  if (!Number.isInteger(requested) || requested <= 0)
+    throw new Error("requested sample size must be positive");
   if (!Number.isInteger(seed)) throw new Error("sample seed must be an integer");
   const target = Math.min(requested, bundle.queries.length);
   const byCategory = new Map<string, BenchmarkQuery[]>();
@@ -40,20 +41,24 @@ export function createEvaluationSample(
     values.push(query);
     byCategory.set(category, values);
   }
-  const categories = [...byCategory.keys()].sort();
+  const categoryEntries = [...byCategory.entries()].sort(([left], [right]) =>
+    left.localeCompare(right),
+  );
+  const categories = categoryEntries.map(([category]) => category);
   const allocation = allocateProportionally(
-    categories.map((category) => ({ category, population: byCategory.get(category)!.length })),
+    categoryEntries.map(([category, queries]) => ({ category, population: queries.length })),
     target,
     bundle.queries.length,
   );
   const selectedIds = new Set<string>();
-  for (const category of categories) {
-    const candidates = [...byCategory.get(category)!].sort((left, right) =>
+  for (const [category, categoryQueries] of categoryEntries) {
+    const candidates = [...categoryQueries].sort((left, right) =>
       stableKey(seed, bundle.id, category, left.id).localeCompare(
         stableKey(seed, bundle.id, category, right.id),
       ),
     );
-    for (const query of candidates.slice(0, allocation.get(category) ?? 0)) selectedIds.add(query.id);
+    for (const query of candidates.slice(0, allocation.get(category) ?? 0))
+      selectedIds.add(query.id);
   }
   const queries = bundle.queries.filter((query) => selectedIds.has(query.id));
   const queryIds = queries.map((query) => query.id);
@@ -64,15 +69,21 @@ export function createEvaluationSample(
     .update("\0")
     .update(bundle.id)
     .update("\0")
-    .update(queries.map((query) => JSON.stringify({
-      id: query.id,
-      text: query.text,
-      referenceAnswer: query.referenceAnswer,
-      goldEvidenceIds: query.goldEvidenceIds,
-      goldEvidenceText: query.goldEvidenceText,
-      answerable: query.answerable,
-      category: query.category,
-    })).join("\0"))
+    .update(
+      queries
+        .map((query) =>
+          JSON.stringify({
+            id: query.id,
+            text: query.text,
+            referenceAnswer: query.referenceAnswer,
+            goldEvidenceIds: query.goldEvidenceIds,
+            goldEvidenceText: query.goldEvidenceText,
+            answerable: query.answerable,
+            category: query.category,
+          }),
+        )
+        .join("\0"),
+    )
     .digest("hex");
   return {
     queries,
@@ -84,9 +95,9 @@ export function createEvaluationSample(
       requested,
       population: bundle.queries.length,
       selected: queries.length,
-      categories: categories.map((category) => ({
+      categories: categoryEntries.map(([category, categoryQueries]) => ({
         category,
-        population: byCategory.get(category)!.length,
+        population: categoryQueries.length,
         selected: allocation.get(category) ?? 0,
       })),
       queryIds,
@@ -112,12 +123,15 @@ function allocateProportionally(
   }
   while (remaining > 0) {
     const eligible = categories
-      .filter(({ category, population: categoryPopulation }) =>
-        (allocation.get(category) ?? 0) < categoryPopulation,
+      .filter(
+        ({ category, population: categoryPopulation }) =>
+          (allocation.get(category) ?? 0) < categoryPopulation,
       )
       .sort((left, right) => {
-        const leftGap = target * left.population / population - (allocation.get(left.category) ?? 0);
-        const rightGap = target * right.population / population - (allocation.get(right.category) ?? 0);
+        const leftGap =
+          (target * left.population) / population - (allocation.get(left.category) ?? 0);
+        const rightGap =
+          (target * right.population) / population - (allocation.get(right.category) ?? 0);
         return rightGap - leftGap || left.category.localeCompare(right.category);
       });
     const next = eligible[0];

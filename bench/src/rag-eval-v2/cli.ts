@@ -65,7 +65,8 @@ function parseCli(args: readonly string[]): CliOptions {
   }
   const values = new Map<string, string>();
   for (let index = 1; index < args.length; index += 1) {
-    const name = args[index]!;
+    const name = args[index];
+    if (name === undefined) throw new Error(`Missing argument at position ${index}`);
     if (!name.startsWith("--")) throw new Error(`Unexpected argument ${name}`);
     const value = args[index + 1];
     if (!value || value.startsWith("--")) throw new Error(`Missing value for ${name}`);

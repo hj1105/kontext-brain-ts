@@ -1,7 +1,7 @@
 # 유명 공개 RAG 평가셋 후보 조사
 
-작성일: 2026-08-21  
-범위: `kontext-brain-ts`의 정적 KB retrieval + answer/judge 평가에 추가할 수 있는 공개 데이터셋  
+작성일: 2026-08-21<br>
+범위: `kontext-brain-ts`의 정적 KB retrieval + answer/judge 평가에 추가할 수 있는 공개 데이터셋
 출처 원칙: 데이터셋 저자 논문, 공식 저장소, 공식 배포 페이지만 사용
 
 ## 결론

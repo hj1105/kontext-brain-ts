@@ -1,14 +1,17 @@
 # kontext-brain
 
-> N-layer ontology-graph RAG framework for AI agents — TypeScript / Node.js.
+[English](./README.md) | [한국어](./README.ko.md)
+
+> Evidence-backed N-layer knowledge-graph RAG for AI agents — TypeScript / Node.js.
 
 [![node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
 [![pnpm](https://img.shields.io/badge/pnpm-9-orange)](https://pnpm.io)
 [![typescript](https://img.shields.io/badge/typescript-5.x-blue)](https://www.typescriptlang.org/)
 
-A retrieval framework that organizes documents under a hierarchical ontology
-graph instead of a flat vector index. The current public evaluation profile is
-the **v13 anchored-evidence stack**: original-query-anchored multi-query
+A retrieval framework that structures multi-source knowledge as Resources,
+source-native Chunks, Entities, Facts, and ACL-aware Evidence instead of treating
+the corpus as a flat vector index. The included RAG evaluation harness uses the
+**v13 anchored-evidence stack** by default: original-query-anchored multi-query
 retrieval, graph/vector/BM25 fusion, coverage-aware reranking, source hydration,
 and evidence-needs-constrained answers. The RAG evaluation harness selects v13
 when no experimental mode is configured. See
@@ -17,15 +20,17 @@ and the
 [dataset-by-dataset cross-framework report](./bench/data/rag-eval-v2/cross-framework-all-datasets-2026-08-23.md);
 the superseded experiments are indexed in
 [Benchmark history](./bench/data/BENCHMARK_HISTORY.md), not presented as the
-primary quality claim.
+primary quality claim. The profiles were iteratively tuned, some comparisons
+use a precomputed Kontext KG, and the report's raw run directories are not
+committed, so these results are regression evidence rather than an independently
+reproducible final cross-framework benchmark.
 
-The idea: most production RAG indexes documents into a single semantic vector
-space. kontext routes queries first through a small **ontology graph** (e.g.
-"backend → REST APIs → JWT") and only then searches inside the matched
-subspace. This (a) prunes irrelevant docs early, (b) gives you a natural place
-to plug multiple data sources (Notion, Slack, GitHub) under one knowledge
-structure, and (c) lets you swap retrieval strategies per layer without
-rewriting the whole pipeline.
+The production path keeps external systems as the source of truth and maintains
+an evidence-backed derived index. A query can seed accessible Resources, Chunks,
+Entities, Facts, and optional Ontology anchors, then run bounded best-first
+**Lift → Expand → Ground** traversal. Only the source Chunks selected as Evidence
+are hydrated for answering. Ontology-first staged routing remains available for
+backward compatibility; it is not the definition of production N-layer retrieval.
 
 ---
 
@@ -166,59 +171,74 @@ The product packages are TypeScript / Node.js. The benchmark keeps pinned Python
 environments only for official LightRAG and Microsoft GraphRAG adapters, whose
 native implementations are Python.
 
-### Architecture in one diagram
+### Production architecture
 
+```text
+INGEST / STRUCTURE                          QUERY / ANSWER
+
+Notion · Slack · GitHub · MCP              question + Principal
+             │                                      │
+             ▼                                      ▼
+    normalize + synchronize              ACL/RLS-filtered seed fusion
+             │                           Resource | Chunk | Entity | Fact
+             ▼                                  | optional Ontology
+Resource ──contains──► Chunk                       │
+                         │                         ▼
+                         ├─mentions──► Entity   bounded best-first search
+                         │              │       Lift ↔ Expand ↔ Ground
+                         │              ▼                  │
+                         │             Fact                ▼
+                         │              ▲       ranked accessible Evidence
+                         └─grounds──► Evidence   + lazy Chunk hydration
+                               optional factKey             │
+                                                          ▼
+                                               final reasoning LLM
+                                                          │
+                                                          ▼
+                                               citation validation
+                                               or fail closed
+
+PostgreSQL: structured KG, ACL/RLS, scoring profiles
+Object storage: current Resource and Chunk content
 ```
-                    ┌─ Notion MCP ──┐
-   user query ─►    │  GitHub MCP   │ ──►  kontext.autoSetup()  ──►  ontology graph
-                    │  Slack MCP    │                                     │
-                    └─ ... ─────────┘                                     │
-                                                                          ▼
-                                                ┌─────── L1: route query to nodes ───────┐
-                                                │  KeywordMapping / VectorMapping /      │
-                                                │  LLMMapping / HybridMapping            │
-                                                └────────────────────┬───────────────────┘
-                                                                     ▼
-                                                ┌─────── L2: meta search per node ───────┐
-                                                │  ScoreBasedSelector / LLMSelector      │
-                                                └────────────────────┬───────────────────┘
-                                                                     ▼
-                                                ┌─────── L3: fetch + compress body ──────┐
-                                                │  Full body / BM25 top-N sentences /    │
-                                                │  ExtractiveRetriever (no LLM)          │
-                                                └────────────────────┬───────────────────┘
-                                                                     ▼
-                                                ┌─────── L4: final reasoning LLM ────────┐
-                                                │  RouterLLMAdapter (cheap+expensive)    │
-                                                └─────────────────────────────────────────┘
+
+Ingestion and querying are separate flows: `autoSetup()` or synchronization does
+not run for every question. The traversable node kinds are Ontology, Resource,
+Chunk, Entity, and Fact. Evidence is the terminal, ranked grounding record bound
+to a Resource and Chunk, optionally to a Fact; it is not another traversable node.
+ACL filtering is a hard precondition for seeds, edges, and Evidence. Source text
+is loaded only when an accessible Chunk is grounded, and the final reasoning LLM
+is a downstream consumer rather than a graph layer. Missing Evidence or missing
+Evidence-ID citations fail closed.
+
+The legacy local/file-store path remains available as a linear compatibility
+pipeline:
+
+```text
+Ontology routing → per-node meta search → body fetch/compression → final LLM
 ```
 
-Every layer is a port (TypeScript interface) with default implementations and
-a registry pattern, so you can plug in any embedding model, vector store, MCP
-server, chunker, or LLM without modifying core code.
-
-The diagram above is the backward-compatible staged pipeline. The production
-KG path uses a typed bidirectional graph instead: multi-source seeds can start
-at an Ontology Node, Resource, Chunk, Entity, or Fact; bounded best-first
-search then performs adaptive **Lift → Expand → Ground** until it has ranked,
-ACL-accessible Evidence. It does not assume a DAG or a fixed number of lifts.
+Its mapping, vector, metadata, content, chunking, and LLM components remain
+replaceable ports, but this fixed L1–L4 sequence must not be confused with the
+production Evidence KG. A source-grounded LLM Wiki is being evaluated as a
+future replacement for predeclared Ontology routing; it is not an active
+production route, and generated Wiki prose can never serve as answer Evidence.
 
 ---
 
 ## Why use it
 
-- **Multi-source from day one**: Notion + GitHub + Slack documents end up
-  organized under one ontology, not in three disconnected vector indexes.
-- **Predictable retrieval**: ontology routing is auditable — you can see
-  exactly which nodes a query matched, then which docs under those nodes.
-- **Cost-tunable**: choose between fast extractive (no final LLM, ~1ms
-  latency, ~200 char context) and richer LLM-generated answers (1-8s,
-  200–1700 char context) per query.
+- **Multi-source from day one**: Notion, GitHub, and Slack synchronize into one
+  evidence-backed KG instead of three disconnected vector indexes.
+- **Auditable grounding**: each selected context carries its Evidence, Resource,
+  and Chunk identity plus the scored traversal path that reached it.
+- **Cost-tunable**: choose between extractive retrieval with no final LLM and
+  richer LLM-generated answers per query.
 - **MCP-native**: built on the official Model Context Protocol SDK both as
   client (consume MCP servers) and as server (expose to AI agent hosts).
-- **Governed auto-setup**: the first setup session can build a small ontology.
-  Later unmatched documents enter a deduplicated proposal queue and draft PR;
-  they never mutate the active ontology directly.
+- **Governed optional Ontology path**: the first setup session can build a small
+  Ontology. Later unmatched documents enter a deduplicated proposal queue and
+  draft PR; they never mutate the active deployment directly.
 
 ### Where it fits
 
@@ -228,7 +248,7 @@ ACL-accessible Evidence. It does not assume a DAG or a fixed number of lifts.
 | Existing AI clients and coding agents | Run `@kontext-brain/tool-server`; clients call the six kontext MCP tools without embedding the library. |
 | A TypeScript application or service | Load a YAML configuration with `KontextLoader`, then call `retrieve()` for grounded context or `answer()` for a cited response. |
 | Local or small-team knowledge base | Use the filesystem-backed store and local Ollama providers; no PostgreSQL or hosted completion API is required. |
-| RAG research and regression testing | Use `bench/src/rag-eval-v2`; it freezes datasets, models, samples, metrics, manifests, and resumable checkpoints. |
+| RAG research and regression testing | Use `bench/src/rag-eval-v2`; it versions datasets, models, samples, metrics, manifests, and resumable checkpoints. |
 
 The production `KontextAgent` remains configuration-driven because company
 deployments have different stores, ACLs, models, and source connectors. The
@@ -251,7 +271,9 @@ configuration.
    atomic claim and one best citation per need (maximum eight claims).
 
 Dataset names, reference answers, gold evidence, and judge outputs are not
-available to these decisions. The newer v15 experiment adds corpus-completeness
+available to the runtime decisions. The v13/v15 policies were nevertheless
+selected through iterative development on reported datasets and are not an
+untouched holdout result. The newer v15 experiment adds corpus-completeness
 repair when a precomputed KG omitted original resources. It passed the Medical
 and public retrieval regression gates but remains an explicit candidate because
 Novel supplied the original development signal and SciFact moved slightly.
@@ -406,6 +428,34 @@ idempotent extraction jobs, ontology deployments, proposals, and structured
 audit rows. `answer()` fails closed when no accessible active Evidence exists
 or the generated answer does not cite an Evidence ID.
 
+N-Layer traversal scoring is observation-based. Search adapters report lexical/vector ranks,
+neighbor-list fanout and rank, normalized query evidence, relationship provenance, ACL-filtered
+evidence counts, conflicts, and freshness. A versioned base profile plus an optional query-bound
+route policy turns those observations into priorities without branching on dataset or organization
+identity. Every result trace records the profile and feature-schema digests, missing signals,
+seed-provider counts, route decisions, path lengths, and a per-evidence score breakdown. PostgreSQL
+profiles support staged evaluation, full shadow traversal, deterministic canaries, activation, and
+atomic rollback:
+
+```typescript
+const staged = await runtime.scoringProfiles.stage("acme", candidateProfile, evaluationSummary);
+await runtime.scoringProfiles.setShadow("acme", staged.profileDigest);
+await runtime.scoringProfiles.setCanaryPercent("acme", 5);
+await runtime.scoringProfiles.activate("acme", staged.profileDigest);
+// await runtime.scoringProfiles.rollback("acme", previousProfileDigest);
+```
+
+See [ADR 0005](./docs/adr/0005-versioned-traversal-scoring.md),
+[ADR 0006](./docs/adr/0006-query-adaptive-route-scoring.md), the
+[adaptive evaluation](./bench/data/rag-eval-v2/adaptive-route-v3-reevaluation-2026-08-24.md), and
+the [raw direct-only ablation](./bench/data/rag-eval-v2/adaptive-route-v3-direct-only-ablation-2026-08-25.md).
+The subsequent [source-hydrated direct-only ablation](./bench/data/rag-eval-v2/source-hydrated-direct-only-ablation-2026-08-25.md)
+found a small aggregate graph recall gain paired with a precision regression and no strict
+two-dataset holdout win. Source-hydrated direct retrieval is therefore the current quality
+candidate; adaptive graph traversal remains an explicit recall-first experiment and must not be
+activated by default. See the [rollout runbook](./docs/runbooks/scoring-profile-rollout.md) for the
+remaining gates.
+
 `AdaptiveKnowledgeEnricher` is optional. When enabled, it examines literal
 source chunks—not corpus or dataset names—to select and dispatch
 identity-resolution, event, temporal, causal, and cross-chunk extraction
@@ -496,8 +546,8 @@ const res = await agent.query("backend authentication");
 
 ### Pattern C — extractive (no LLM at query time)
 
-For tech-docs QA where answers are literal sentences and you need
-sub-millisecond latency:
+For document QA where answers are literal sentences and you want to avoid an
+LLM call at query time:
 
 ```typescript
 import { ExtractiveRetriever } from "@kontext-brain/core";
@@ -603,8 +653,6 @@ connector is skipped rather than interpreted as deleting all of its documents.
 
 ---
 
----
-
 ## Auto-setup flow (the killer feature)
 
 When you don't yet have an ontology and just want to point kontext at MCP
@@ -660,12 +708,11 @@ kontext-brain-ts/
 │   ├── basic/                     # programmatic toy
 │   └── auto-setup/                # mock Notion + Slack → autoSetup → query
 ├── tests/integration/             # vitest end-to-end
-└── bench/
+└── bench/                         # versioned RAG evaluation and regression harness
     ├── src/rag-eval-v2/           # frozen manifest, datasets, pipeline, metrics, CLI
     ├── framework-adapters/        # pinned LightRAG and Microsoft GraphRAG bridges
-    └── data/rag-eval-v2/
-        ├── cross-framework-all-datasets-2026-08-23.md
-        └── runs/                  # resumable, provenance-bound run artifacts
+    ├── data/rag-eval-v2/          # reviewed reports and provenance-bound run artifacts
+    └── src/run.ts                 # legacy local benchmark entry point
 ```
 
 ---
@@ -706,10 +753,16 @@ in the repo. Everything runs on a stock Node 20 install plus pnpm.
   score
 - ✅ Kontext v13 is the no-configuration evaluation default; v15 is retained as
   an explicit corpus-completeness candidate rather than silently promoted
+- ✅ Versioned retrieval evaluation covers all 4,072 Medical and Novel queries;
+  the source-hydrated direct candidate also has a matched graph on/off ablation
 - ✅ `DEFAULT_PIPELINE` leaf-node bug fixed; original Kotlin codebase had
   the same issue
 - ⚠️ Real Notion / GitHub / Slack MCP servers not yet smoke-tested end-to-end
   (incremental synchronization is covered with mock connectors)
+- ⚠️ Graph traversal remains opt-in because its recall gain trades away
+  precision and does not pass the strict two-dataset holdout gate
+- ⚠️ Answer-level faithfulness and citation evaluation is still required for
+  the latest retrieval candidate before production activation
 
 **Originally a Kotlin project**, ported to TypeScript because (a) the Model
 Context Protocol ecosystem is TypeScript-first, (b) AI-agent OSS gravity is
@@ -718,6 +771,70 @@ is preserved as `kb-clean/` in the parent directory.
 
 ---
 
+## Product direction: self-hosted OSS and optional managed deployment
+
+Every runtime and framework package in this repository is Apache-2.0 and
+self-hostable. The product direction is a **governed knowledge layer for AI
+agents**: point it at your Notion / Slack / GitHub, and every agent answer
+respects who can see what (ACL), cites its source (Evidence), and refuses when
+it has no grounding (fail-closed). A future managed deployment may package the
+same open-source runtime with hosted operations and administration.
+
+### The wedge, in one sentence
+
+> Most RAG demos leak documents a user can't access, can't tell you why they
+> answered, and hallucinate when they don't know. kontext's production path
+> already fixes all three. The same runtime can be self-hosted or operated as a
+> managed, governed deployment.
+
+### What already exists vs. what the cloud needs
+
+The repository-to-service boundary maps cleanly onto "runtime" vs "operations".
+The retrieval and governance logic remains Apache-2.0; a managed deployment is
+primarily a control-plane and operations wrapper around it.
+
+| Layer | Status | Where |
+|-------|--------|-------|
+| Retrieval pipelines, ontology graph, pluggable retrievers | ✅ built | `@kontext-brain/core` (Apache-2.0) |
+| MCP client + server, source adapters | ✅ built (⚠️ real-server E2E pending) | `@kontext-brain/mcp`, `tool-server` (Apache-2.0) |
+| Multi-tenant KG, org RLS, ACL retrieval, Evidence, fail-closed `answer()` | ✅ built | `@kontext-brain/postgres` (Apache-2.0) |
+| Compressed source-of-truth body storage | ✅ built | `@kontext-brain/object-storage` (Apache-2.0) |
+| Ontology-proposal governance (draft PRs) | ✅ built | `@kontext-brain/github` (Apache-2.0) |
+| **Control plane** (signup, org provisioning, connector OAuth, usage metering, billing) | ⬜ to build | future service layer |
+| **Admin UI** (connect sources, browse ontology, audit log, ACL preview) | ⬜ to build | future service layer |
+| **Agent endpoint** (hosted MCP server + REST per org) | ⬜ mostly wiring | wraps `tool-server` + `postgres` |
+| SSO / SCIM, SOC2, on-prem installer | ⬜ enterprise phase | — |
+
+### Managed-cloud architecture (target)
+
+```
+                         ┌──────────────────────────────────────────┐
+   Notion / Slack /      │              kontext cloud                │
+   GitHub / Jira  ──MCP──►  ┌────────────┐   ┌────────────────────┐  │
+                         │  │ control    │   │  per-org runtime    │  │
+   customer's agent      │  │ plane      │   │  (Apache-2.0):      │  │
+   (Claude, Cursor) ─────►  │ • auth/org │   │  createPostgres     │  │
+        (hosted MCP)     │  │ • connectors│  │   KnowledgeRuntime  │  │
+                         │  │ • metering │   │  • RLS retrieval     │  │
+   admin (browser) ──────►  │ • billing  │   │  • Evidence + ACL    │  │
+        (admin UI)       │  └────────────┘   │  • fail-closed answer│  │
+                         │       │           └─────────┬───────────┘  │
+                         │  Postgres/pgvector  ◄────────┘              │
+                         │  + S3 (object-storage)                     │
+                         └──────────────────────────────────────────┘
+```
+
+The per-org runtime is literally the code in this repo
+(`createPostgresKnowledgeRuntime` + `S3ResourceContentStore` +
+`KontextLoader`). A future managed service would add only the multi-tenant
+control plane and UI on top — no re-implementation of retrieval.
+
+---
+
 ## License
 
-TBD (currently unlicensed — request before production use).
+The repository and all eight published packages are licensed under
+**Apache License 2.0**. This includes `postgres`, `object-storage`, and `github`.
+Commercial use, modification, distribution, self-hosting, and hosted services
+are permitted subject to the license terms. See [`LICENSE`](./LICENSE) and
+[`LICENSING.md`](./LICENSING.md).

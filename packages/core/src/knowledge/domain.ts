@@ -22,6 +22,14 @@ export type RecordStatus = "active" | "stale" | "purged";
 export type FactStatus = "active" | "inactive" | "conflict";
 export type EvidenceOrigin = "derived" | "curated";
 export type EntityScope = "resource" | "global";
+export type OntologyLinkOrigin = "manual" | "automatic" | "deterministic";
+
+export interface OntologyLinkRecord {
+  readonly ontologyNodeId: string;
+  readonly origin?: OntologyLinkOrigin;
+  readonly confidence?: number;
+  readonly createdAt?: string;
+}
 
 export interface ResourceRecord {
   readonly organizationId: OrganizationId;
@@ -32,6 +40,7 @@ export interface ResourceRecord {
   readonly contentObjectKey: string;
   readonly acl: AccessControlList;
   readonly ontologyNodeIds: readonly string[];
+  readonly ontologyLinks?: readonly OntologyLinkRecord[];
   readonly status: RecordStatus;
   readonly updatedAt: string;
 }
@@ -46,6 +55,7 @@ export interface ChunkRecord {
   readonly position: number;
   readonly acl: AccessControlList;
   readonly ontologyNodeIds: readonly string[];
+  readonly ontologyLinks?: readonly OntologyLinkRecord[];
   readonly status: RecordStatus;
 }
 
@@ -59,6 +69,10 @@ export interface ExtractedEntity extends EntityRef {
   readonly type?: string;
   readonly mentionChunkIds: readonly string[];
   readonly promotionEvidence?: "deterministic" | "manual" | "resolved";
+  readonly extractionConfidence?: number;
+  readonly extractorVersion?: string;
+  readonly origin?: EvidenceOrigin;
+  readonly observedAt?: string;
 }
 
 export interface EntityRecord extends EntityRef {
@@ -75,6 +89,10 @@ export interface EntityMentionRecord {
   readonly resourceId: string;
   readonly chunkId: string;
   readonly status: RecordStatus;
+  readonly extractionConfidence?: number;
+  readonly extractorVersion?: string;
+  readonly origin?: EvidenceOrigin;
+  readonly observedAt?: string;
 }
 
 export type FactObject =
@@ -88,6 +106,11 @@ export interface ExtractedFact {
   readonly object: FactObject;
   readonly evidenceChunkIds: readonly string[];
   readonly singleValue?: boolean;
+  readonly extractionConfidence?: number;
+  readonly extractorVersion?: string;
+  readonly origin?: EvidenceOrigin;
+  readonly observedAt?: string;
+  readonly verifiedAt?: string;
 }
 
 export interface FactRecord {
@@ -99,6 +122,11 @@ export interface FactRecord {
   readonly singleValue: boolean;
   readonly status: FactStatus;
   readonly updatedAt: string;
+  readonly extractionConfidence?: number;
+  readonly extractorVersion?: string;
+  readonly origin?: EvidenceOrigin;
+  readonly observedAt?: string;
+  readonly verifiedAt?: string;
 }
 
 export type FactEventType =
@@ -125,6 +153,9 @@ export interface EvidenceRecord {
   readonly acl: AccessControlList;
   readonly origin: EvidenceOrigin;
   readonly status: RecordStatus;
+  readonly confidence?: number;
+  readonly observedAt?: string;
+  readonly verifiedAt?: string;
 }
 
 export interface ResourceChunkSnapshot {
@@ -133,6 +164,7 @@ export interface ResourceChunkSnapshot {
   readonly text: string;
   readonly position: number;
   readonly ontologyNodeIds?: readonly string[];
+  readonly ontologyLinks?: readonly OntologyLinkRecord[];
   readonly acl?: AccessControlList;
 }
 
@@ -144,6 +176,7 @@ export interface ResourceSnapshot {
   readonly body: string;
   readonly acl: AccessControlList;
   readonly ontologyNodeIds?: readonly string[];
+  readonly ontologyLinks?: readonly OntologyLinkRecord[];
   readonly chunks: readonly ResourceChunkSnapshot[];
   readonly entities?: readonly ExtractedEntity[];
   readonly facts?: readonly ExtractedFact[];

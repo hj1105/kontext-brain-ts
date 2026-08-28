@@ -14,6 +14,7 @@ import {
   judgeAnswers,
   judgeInputDigest,
   loadCompletedRetrieval,
+  retrievalCacheDigest,
 } from "./pipeline.js";
 
 const directories: string[] = [];
@@ -99,6 +100,55 @@ describe("retrieval completion cache", () => {
       expect(cached).toBeNull();
     },
   );
+
+  it("reuses records with a framework-specific config digest when cache metadata matches", () => {
+    const directory = mkdtempSync(join(tmpdir(), "rag-eval-stack-retrieval-cache-"));
+    directories.push(directory);
+    const bundle = checkpointBundle("Question?");
+    const retrievalPath = join(directory, "retrieval.jsonl");
+    const options = {
+      workDirectory: directory,
+      datasetPaths: defaultDatasetPaths(process.cwd()),
+      stage: "retrieval" as const,
+      topK: 10,
+      candidateK: 50,
+    };
+    const completed: RetrievalResult = {
+      datasetId: bundle.id,
+      frameworkId: "kontext-brain",
+      queryId: "q1",
+      status: "ok",
+      evidence: [],
+      latencyMs: 1,
+      inputTokens: null,
+      error: null,
+      frameworkVersion: "workspace-0.1.0+v13",
+      configDigest: "framework-specific-stack-digest",
+    };
+    writeFileSync(retrievalPath, `${JSON.stringify(completed)}\n`, "utf8");
+    writeFileSync(
+      join(directory, "retrieval-cache.json"),
+      JSON.stringify({
+        cacheDigest: retrievalCacheDigest(
+          bundle,
+          "kontext-brain",
+          options,
+          DEFAULT_RAG_EVAL_MANIFEST,
+        ),
+      }),
+      "utf8",
+    );
+
+    expect(
+      loadCompletedRetrieval(
+        "kontext-brain",
+        bundle,
+        options,
+        DEFAULT_RAG_EVAL_MANIFEST,
+        retrievalPath,
+      ),
+    ).toEqual([completed]);
+  });
 });
 
 describe("v13 answer policy", () => {

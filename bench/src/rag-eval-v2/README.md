@@ -1,12 +1,20 @@
 # RAG evaluation v2
 
-This harness compares retrieval frameworks at the same boundary: raw corpus in,
-ranked evidence out. A shared answer model then produces the final answer, and a
-separate shared judge scores it. Framework-native automatic indexing is kept;
-hand-authored ontologies, triples, and per-framework prompt tuning are forbidden
-in the baseline run.
+This harness supports versioned RAG development and regression comparisons. A
+shared answer model produces final answers and a separate shared judge scores
+them. External frameworks build native indexes from the raw corpus; the
+Kontext v13/v15 profiles may use a precomputed KG created during earlier
+development. Index construction cost and boundaries are therefore not directly
+comparable, and this checkout should not be presented as a neutral end-to-end
+benchmark.
 
-## Frozen baseline
+## Versioned development protocol
+
+The Kontext policy was iteratively tuned after inspecting Medical/Novel and
+fixed-sample results. The manifest records that fact. The Markdown result table
+does not include its referenced raw retrieval, answer, judgement, sample, and
+run-manifest directories, so it is a development record rather than an
+independently reproducible release claim.
 
 - Frameworks: kontext-brain, Vector RAG + BM25-RRF reranker, Microsoft GraphRAG
   3.1.1, LightRAG 1.5.6, and HippoRAG 2 2.0.0a4.
@@ -38,7 +46,7 @@ The machine-readable source of truth is `manifest.ts`. Its SHA-256 digest is
 written into each run report so a configuration change cannot silently mix with
 earlier results.
 
-The latest four-dataset, cross-framework result table is
+The latest provisional four-dataset, cross-framework result table is
 [`cross-framework-all-datasets-2026-08-23.md`](../../data/rag-eval-v2/cross-framework-all-datasets-2026-08-23.md).
 It separates raw evidence precision from framework-native packaged-context
 precision and reports embedding cost only where an auditable usage artifact

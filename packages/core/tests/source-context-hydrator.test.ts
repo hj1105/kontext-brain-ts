@@ -58,6 +58,24 @@ describe("SourceContextHydrator", () => {
     expect(result.map((item) => item.sourceId)).toEqual(["a", "b"]);
     expect(result.reduce((total, item) => total + item.text.length, 0)).toBeLessThanOrEqual(90);
   });
+
+  it("does not jump across an oversized adjacent chunk", () => {
+    const hydrator = new SourceContextHydrator(
+      [
+        chunk("c-0", "doc", 0, "far-left"),
+        chunk("c-1", "doc", 1, "x".repeat(100)),
+        chunk("c-2", "doc", 2, "anchor"),
+        chunk("c-3", "doc", 3, "right"),
+      ],
+      { windowCharacters: 40, maxContextCharacters: 40 },
+    );
+
+    const result = hydrator.hydrate([{ chunkId: "c-2", score: 1, rank: 1 }]);
+
+    expect(result[0]?.chunkIds).toEqual(["c-2", "c-3"]);
+    expect(result[0]?.text.length).toBeLessThanOrEqual(40);
+    expect(result[0]?.text).not.toContain("far-left");
+  });
 });
 
 function chunk(id: string, sourceId: string, ordinal: number, text: string): SourceChunk {

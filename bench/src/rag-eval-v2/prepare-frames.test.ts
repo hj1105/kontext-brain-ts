@@ -10,9 +10,11 @@ describe("FRAMES TSV parser", () => {
   });
 
   it("expands malformed cells containing multiple comma-separated URLs", () => {
-    expect(splitWikipediaLinks(
-      "https://en.wikipedia.org/wiki/Tim_Salmon, https://en.wikipedia.org/wiki/Troy_Glaus, ",
-    )).toEqual([
+    expect(
+      splitWikipediaLinks(
+        "https://en.wikipedia.org/wiki/Tim_Salmon, https://en.wikipedia.org/wiki/Troy_Glaus, ",
+      ),
+    ).toEqual([
       "https://en.wikipedia.org/wiki/Tim_Salmon",
       "https://en.wikipedia.org/wiki/Troy_Glaus",
     ]);

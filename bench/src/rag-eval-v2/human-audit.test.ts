@@ -32,6 +32,8 @@ describe("human audit sampling", () => {
     const answers: AnswerResult[] = [];
     for (const frameworkId of frameworks) {
       for (const query of queries) {
+        const goldEvidenceId = query.goldEvidenceIds[0];
+        if (!goldEvidenceId) throw new Error(`Query ${query.id} is missing fixture evidence`);
         retrievals.push({
           datasetId: bundle.id,
           frameworkId,
@@ -39,7 +41,7 @@ describe("human audit sampling", () => {
           status: "ok",
           evidence: [
             {
-              id: query.goldEvidenceIds[0]!,
+              id: goldEvidenceId,
               sourceId: "s",
               text: "evidence",
               score: 1,
@@ -60,7 +62,7 @@ describe("human audit sampling", () => {
           status: "ok",
           output: {
             answer: "answer",
-            citations: [query.goldEvidenceIds[0]!],
+            citations: [goldEvidenceId],
             abstained: false,
             abstentionReason: null,
           },

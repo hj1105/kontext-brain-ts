@@ -295,7 +295,8 @@ describe("AdaptiveKnowledgeEnricher", () => {
     const enricher = new AdaptiveKnowledgeEnricher(llm, {
       chunksPerWindow: 2,
       overlapChunks: 0,
-      maxWindowCharacters: 75,
+      maxWindowCharacters: 150,
+      concurrency: 1,
       maxExtractionAttempts: 1,
     });
 
@@ -310,7 +311,7 @@ describe("AdaptiveKnowledgeEnricher", () => {
     expect(llm.contexts.every((context) => !context.includes("chunk-1"))).toBe(true);
   });
 
-  it("rejects quotes from the unseen suffix of a truncated chunk", async () => {
+  it("rejects an oversized chunk instead of silently extracting only its prefix", async () => {
     const llm = new RecordingLlm([
       selection([]),
       extraction({
@@ -331,8 +332,178 @@ describe("AdaptiveKnowledgeEnricher", () => {
           ["chunk-0", "Visible prefix is followed much later by UNSEEN_SUFFIX."],
         ]),
       ),
-    ).rejects.toThrow("quote is not present");
-    expect(llm.contexts.every((context) => !context.includes("UNSEEN_SUFFIX"))).toBe(true);
+    ).rejects.toThrow("exceeds maxWindowCharacters");
+    expect(llm.contexts).toEqual([]);
+  });
+
+  it("processes every chunk when the character budget fits fewer chunks than chunksPerWindow", async () => {
+    const llm = new RecordingLlm([
+      selection([]),
+      extraction({ entities: [], claims: [] }),
+      selection([]),
+      extraction({ entities: [], claims: [] }),
+      selection([]),
+      extraction({ entities: [], claims: [] }),
+    ]);
+
+    const result = await new AdaptiveKnowledgeEnricher(llm, {
+      chunksPerWindow: 3,
+      overlapChunks: 0,
+      maxWindowCharacters: 120,
+      concurrency: 1,
+    }).enrich(
+      snapshot("resource-a", [
+        ["chunk-0", "First source chunk."],
+        ["chunk-1", "Second source chunk."],
+        ["chunk-2", "Third source chunk."],
+      ]),
+    );
+
+    expect(result.processedWindows).toBe(3);
+    for (const chunkId of ["chunk-0", "chunk-1", "chunk-2"]) {
+      expect(llm.contexts.some((context) => context.includes(chunkId))).toBe(true);
+    }
+  });
+
+  it("never places chunks from different effective ACLs in one extraction window", async () => {
+    const llm = new RecordingLlm([
+      selection(["identity-resolution", "cross-chunk-consolidation"]),
+      extraction({
+        entities: [
+          entity("captain", "Captain Vale", "person", [
+            ["public", "he"],
+            ["private", "Captain Vale"],
+          ]),
+        ],
+        claims: [],
+      }),
+    ]);
+
+    await expect(
+      new AdaptiveKnowledgeEnricher(llm, {
+        chunksPerWindow: 2,
+        overlapChunks: 0,
+        concurrency: 1,
+        maxExtractionAttempts: 1,
+      }).enrich(
+        snapshot("resource-a", [
+          ["public", "Yesterday he arrived.", { organizationWide: true }],
+          ["private", "Captain Vale arrived.", { subjectIds: ["admin"] }],
+        ]),
+      ),
+    ).rejects.toThrow("unknown chunks: private");
+    expect(
+      llm.contexts.every((context) => !(context.includes("public") && context.includes("private"))),
+    ).toBe(true);
+  });
+
+  it("treats reordered and duplicated ACL grants as the same visibility domain", async () => {
+    const llm = new RecordingLlm([
+      selection(["identity-resolution", "cross-chunk-consolidation"]),
+      extraction({
+        entities: [
+          entity("captain", "Captain Vale", "person", [
+            ["chunk-0", "Captain Vale"],
+            ["chunk-1", "Vale"],
+          ]),
+        ],
+        claims: [],
+      }),
+    ]);
+
+    const result = await new AdaptiveKnowledgeEnricher(llm).enrich(
+      snapshot("resource-a", [
+        ["chunk-0", "Captain Vale arrived.", { subjectIds: ["alice", "bob", "alice"] }],
+        ["chunk-1", "Vale departed.", { subjectIds: ["bob", "alice"] }],
+      ]),
+    );
+
+    expect(result.processedWindows).toBe(1);
+    expect(result.snapshot.entities?.[0]?.mentionChunkIds).toEqual(["chunk-0", "chunk-1"]);
+  });
+
+  it("rejects an Entity collision that would merge Mention ACL domains", async () => {
+    const first = await new AdaptiveKnowledgeEnricher(
+      new RecordingLlm([
+        selection([]),
+        extraction({
+          entities: [entity("alex", "Alex", "person", [["public", "Alex"]])],
+          claims: [],
+        }),
+      ]),
+    ).enrich(snapshot("resource-a", [["public", "Alex arrived.", { organizationWide: true }]]));
+    const existing = first.snapshot.entities?.[0];
+    if (!existing) throw new Error("Expected an extracted Entity");
+
+    const input = snapshot("resource-a", [
+      ["public", "Alex arrived.", { organizationWide: true }],
+      ["private", "", { subjectIds: ["admin"] }],
+    ]);
+    await expect(
+      new AdaptiveKnowledgeEnricher(
+        new RecordingLlm([
+          selection([]),
+          extraction({
+            entities: [entity("alex", "Alex", "person", [["public", "Alex"]])],
+            claims: [],
+          }),
+        ]),
+      ).enrich({
+        ...input,
+        entities: [{ ...existing, mentionChunkIds: ["private"] }],
+      }),
+    ).rejects.toThrow(`Entity "${existing.entityId}" crosses visibility domains`);
+  });
+
+  it("rejects a Fact collision that would merge evidence ACL domains", async () => {
+    const responses = () => [
+      selection([]),
+      extraction({
+        entities: [entity("alex", "Alex", "person", [["public", "Alex"]])],
+        claims: [
+          claim("alex", "has_attribute", { kind: "literal", value: "owner" }, [
+            ["public", "Alex is owner"],
+          ]),
+        ],
+      }),
+      verification(1),
+    ];
+    const first = await new AdaptiveKnowledgeEnricher(new RecordingLlm(responses())).enrich(
+      snapshot("resource-a", [["public", "Alex is owner.", { organizationWide: true }]]),
+    );
+    const existing = first.snapshot.facts?.[0];
+    if (!existing) throw new Error("Expected an extracted Fact");
+
+    const input = snapshot("resource-a", [
+      ["public", "Alex is owner.", { organizationWide: true }],
+      ["private", "", { subjectIds: ["admin"] }],
+    ]);
+    await expect(
+      new AdaptiveKnowledgeEnricher(new RecordingLlm(responses())).enrich({
+        ...input,
+        facts: [{ ...existing, evidenceChunkIds: ["private"] }],
+      }),
+    ).rejects.toThrow(`Fact "${existing.factKey}" crosses visibility domains`);
+  });
+
+  it("stops scheduling new windows after the first concurrent extraction fails", async () => {
+    const llm = new FailFastLlm();
+
+    await expect(
+      new AdaptiveKnowledgeEnricher(llm, {
+        chunksPerWindow: 1,
+        overlapChunks: 0,
+        concurrency: 2,
+        maxExtractionAttempts: 1,
+      }).enrich(
+        snapshot("resource-a", [
+          ["chunk-0", "Fail immediately."],
+          ["chunk-1", "Already in flight."],
+          ["chunk-2", "Must never be scheduled."],
+        ]),
+      ),
+    ).rejects.toThrow("failed validation");
+    expect(llm.contexts.some((context) => context.includes("chunk-2"))).toBe(false);
   });
 
   it("requires exact source quotes for every Mention and explicit Claim", async () => {
@@ -430,6 +601,21 @@ class RecordingLlm implements LLMAdapter {
   }
 }
 
+class FailFastLlm implements LLMAdapter {
+  readonly contexts: string[] = [];
+
+  async complete(systemPrompt: string, context: string): Promise<string> {
+    this.contexts.push(context);
+    if (context.includes("chunk-0")) throw new Error("synthetic extraction failure");
+    if (context.includes("chunk-1")) {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    return systemPrompt.includes("Select extraction capabilities")
+      ? selection([])
+      : extraction({ entities: [], claims: [] });
+  }
+}
+
 function selection(capabilities: readonly string[]): string {
   return JSON.stringify({ capabilities });
 }
@@ -485,7 +671,7 @@ function claim(
 
 function snapshot(
   externalId: string,
-  chunks: readonly (readonly [id: string, text: string])[],
+  chunks: readonly (readonly [id: string, text: string, acl?: ResourceSnapshot["acl"]])[],
 ): ResourceSnapshot {
   return {
     organizationId: "acme",
@@ -494,11 +680,12 @@ function snapshot(
     contentHash: `${externalId}-hash`,
     body: chunks.map((chunk) => chunk[1]).join("\n"),
     acl: { organizationWide: true },
-    chunks: chunks.map(([id, text], position) => ({
+    chunks: chunks.map(([id, text, acl], position) => ({
       id,
       text,
       position,
       contentHash: `${externalId}-${position}`,
+      acl,
     })),
   };
 }

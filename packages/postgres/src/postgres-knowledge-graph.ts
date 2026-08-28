@@ -11,11 +11,13 @@ import type {
   FactRecord,
   KnowledgeGraphRepository,
   KnowledgeGraphUnitOfWork,
+  OntologyLinkRecord,
   Principal,
   ResourceRecord,
   ResourceSource,
 } from "@kontext-brain/core";
 import type { Pool, PoolClient, QueryResultRow } from "pg";
+import { aclPredicate, toConnectionError, toIsoString } from "./postgres-value-utils.js";
 
 type Queryable = Pick<PoolClient, "query">;
 
@@ -76,24 +78,32 @@ export class PostgresKnowledgeGraphRepository implements KnowledgeGraphRepositor
   }
 
   async listFactEvents(organizationId: string, factKey: string): Promise<readonly FactEvent[]> {
-    return withOrganizationTransaction(this.pool, organizationId, async (client) => {
-      const result = await client.query(
-        `SELECT organization_id, fact_key, event_type, occurred_at, resource_id
-         FROM kontext_fact_events
-         WHERE organization_id = $1 AND fact_key = $2
-         ORDER BY event_id`,
-        [organizationId, factKey],
-      );
-      return result.rows.map(mapFactEvent);
-    });
+    return withOrganizationTransaction(
+      this.pool,
+      organizationId,
+      async (client) => {
+        const result = await client.query(
+          `SELECT organization_id, fact_key, event_type, occurred_at, resource_id
+           FROM kontext_fact_events
+           WHERE organization_id = $1 AND fact_key = $2
+           ORDER BY event_id`,
+          [organizationId, factKey],
+        );
+        return result.rows.map(mapFactEvent);
+      },
+      { readOnly: true },
+    );
   }
 
   private async read<T>(
     organizationId: string,
     work: (unitOfWork: KnowledgeGraphUnitOfWork) => Promise<T>,
   ): Promise<T> {
-    return withOrganizationTransaction(this.pool, organizationId, (client) =>
-      work(new PostgresKnowledgeGraphUnitOfWork(client, organizationId)),
+    return withOrganizationTransaction(
+      this.pool,
+      organizationId,
+      (client) => work(new PostgresKnowledgeGraphUnitOfWork(client, organizationId)),
+      { readOnly: true },
     );
   }
 }
@@ -165,6 +175,7 @@ class PostgresKnowledgeGraphUnitOfWork implements KnowledgeGraphUnitOfWork {
       resource.organizationId,
       resource.resourceId,
       resource.ontologyNodeIds,
+      resource.ontologyLinks,
     );
   }
 
@@ -217,6 +228,7 @@ class PostgresKnowledgeGraphUnitOfWork implements KnowledgeGraphUnitOfWork {
       chunk.organizationId,
       chunk.chunkId,
       chunk.ontologyNodeIds,
+      chunk.ontologyLinks,
     );
   }
 
@@ -256,7 +268,8 @@ class PostgresKnowledgeGraphUnitOfWork implements KnowledgeGraphUnitOfWork {
 
   async listEntityMentions(resourceId: string): Promise<readonly EntityMentionRecord[]> {
     const result = await this.client.query(
-      `SELECT organization_id, entity_id, resource_id, chunk_id, status
+      `SELECT organization_id, entity_id, resource_id, chunk_id, status,
+              extraction_confidence, extractor_version, origin, observed_at
        FROM kontext_entity_mentions
        WHERE organization_id = $1 AND resource_id = $2`,
       [this.organizationId, resourceId],
@@ -268,24 +281,34 @@ class PostgresKnowledgeGraphUnitOfWork implements KnowledgeGraphUnitOfWork {
     assertOrganization(this.organizationId, mention.organizationId);
     await this.client.query(
       `INSERT INTO kontext_entity_mentions (
-         organization_id, entity_id, resource_id, chunk_id, status
-       ) VALUES ($1,$2,$3,$4,$5)
+         organization_id, entity_id, resource_id, chunk_id, status,
+         extraction_confidence, extractor_version, origin, observed_at
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
        ON CONFLICT (organization_id, entity_id, chunk_id) DO UPDATE SET
          resource_id = EXCLUDED.resource_id,
-         status = EXCLUDED.status`,
+         status = EXCLUDED.status,
+         extraction_confidence = EXCLUDED.extraction_confidence,
+         extractor_version = EXCLUDED.extractor_version,
+         origin = EXCLUDED.origin,
+         observed_at = EXCLUDED.observed_at`,
       [
         mention.organizationId,
         mention.entityId,
         mention.resourceId,
         mention.chunkId,
         mention.status,
+        mention.extractionConfidence ?? null,
+        mention.extractorVersion ?? null,
+        mention.origin ?? null,
+        mention.observedAt ?? null,
       ],
     );
   }
 
   async getFact(factKey: string): Promise<FactRecord | null> {
     const result = await this.client.query(
-      `SELECT organization_id, fact_key, subject, predicate, object, single_value, status, updated_at
+      `SELECT organization_id, fact_key, subject, predicate, object, single_value, status,
+              updated_at, extraction_confidence, extractor_version, origin, observed_at, verified_at
        FROM kontext_facts
        WHERE organization_id = $1 AND fact_key = $2`,
       [this.organizationId, factKey],
@@ -295,7 +318,8 @@ class PostgresKnowledgeGraphUnitOfWork implements KnowledgeGraphUnitOfWork {
 
   async listFacts(): Promise<readonly FactRecord[]> {
     const result = await this.client.query(
-      `SELECT organization_id, fact_key, subject, predicate, object, single_value, status, updated_at
+      `SELECT organization_id, fact_key, subject, predicate, object, single_value, status,
+              updated_at, extraction_confidence, extractor_version, origin, observed_at, verified_at
        FROM kontext_facts
        WHERE organization_id = $1`,
       [this.organizationId],
@@ -307,15 +331,21 @@ class PostgresKnowledgeGraphUnitOfWork implements KnowledgeGraphUnitOfWork {
     assertOrganization(this.organizationId, fact.organizationId);
     await this.client.query(
       `INSERT INTO kontext_facts (
-         organization_id, fact_key, subject, predicate, object, single_value, status, updated_at
-       ) VALUES ($1,$2,$3::jsonb,$4,$5::jsonb,$6,$7,$8)
+         organization_id, fact_key, subject, predicate, object, single_value, status, updated_at,
+         extraction_confidence, extractor_version, origin, observed_at, verified_at
+       ) VALUES ($1,$2,$3::jsonb,$4,$5::jsonb,$6,$7,$8,$9,$10,$11,$12,$13)
        ON CONFLICT (organization_id, fact_key) DO UPDATE SET
          subject = EXCLUDED.subject,
          predicate = EXCLUDED.predicate,
          object = EXCLUDED.object,
          single_value = EXCLUDED.single_value,
          status = EXCLUDED.status,
-         updated_at = EXCLUDED.updated_at`,
+         updated_at = EXCLUDED.updated_at,
+         extraction_confidence = EXCLUDED.extraction_confidence,
+         extractor_version = EXCLUDED.extractor_version,
+         origin = EXCLUDED.origin,
+         observed_at = EXCLUDED.observed_at,
+         verified_at = EXCLUDED.verified_at`,
       [
         fact.organizationId,
         fact.factKey,
@@ -325,13 +355,19 @@ class PostgresKnowledgeGraphUnitOfWork implements KnowledgeGraphUnitOfWork {
         fact.singleValue,
         fact.status,
         fact.updatedAt,
+        fact.extractionConfidence ?? null,
+        fact.extractorVersion ?? null,
+        fact.origin ?? null,
+        fact.observedAt ?? null,
+        fact.verifiedAt ?? null,
       ],
     );
   }
 
   async listEvidenceForResource(resourceId: string): Promise<readonly EvidenceRecord[]> {
     const result = await this.client.query(
-      `SELECT organization_id, evidence_id, fact_key, resource_id, chunk_id, acl, origin, status
+      `SELECT organization_id, evidence_id, fact_key, resource_id, chunk_id, acl, origin, status,
+              confidence, observed_at, verified_at
        FROM kontext_evidence
        WHERE organization_id = $1 AND resource_id = $2`,
       [this.organizationId, resourceId],
@@ -341,7 +377,8 @@ class PostgresKnowledgeGraphUnitOfWork implements KnowledgeGraphUnitOfWork {
 
   async listEvidenceForFact(factKey: string): Promise<readonly EvidenceRecord[]> {
     const result = await this.client.query(
-      `SELECT organization_id, evidence_id, fact_key, resource_id, chunk_id, acl, origin, status
+      `SELECT organization_id, evidence_id, fact_key, resource_id, chunk_id, acl, origin, status,
+              confidence, observed_at, verified_at
        FROM kontext_evidence
        WHERE organization_id = $1 AND fact_key = $2`,
       [this.organizationId, factKey],
@@ -353,15 +390,19 @@ class PostgresKnowledgeGraphUnitOfWork implements KnowledgeGraphUnitOfWork {
     assertOrganization(this.organizationId, evidence.organizationId);
     await this.client.query(
       `INSERT INTO kontext_evidence (
-         organization_id, evidence_id, fact_key, resource_id, chunk_id, acl, origin, status
-       ) VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8)
+         organization_id, evidence_id, fact_key, resource_id, chunk_id, acl, origin, status,
+         confidence, observed_at, verified_at
+       ) VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11)
        ON CONFLICT (organization_id, evidence_id) DO UPDATE SET
          fact_key = EXCLUDED.fact_key,
          resource_id = EXCLUDED.resource_id,
          chunk_id = EXCLUDED.chunk_id,
          acl = EXCLUDED.acl,
          origin = EXCLUDED.origin,
-         status = EXCLUDED.status`,
+         status = EXCLUDED.status,
+         confidence = EXCLUDED.confidence,
+         observed_at = EXCLUDED.observed_at,
+         verified_at = EXCLUDED.verified_at`,
       [
         evidence.organizationId,
         evidence.evidenceId,
@@ -371,6 +412,9 @@ class PostgresKnowledgeGraphUnitOfWork implements KnowledgeGraphUnitOfWork {
         JSON.stringify(evidence.acl),
         evidence.origin,
         evidence.status,
+        evidence.confidence ?? null,
+        evidence.observedAt ?? null,
+        evidence.verifiedAt ?? null,
       ],
     );
   }
@@ -393,9 +437,12 @@ export class PostgresAuthorizedKnowledgeGraphReader implements AuthorizedKnowled
     principal: Principal,
     factKeys?: readonly string[],
   ): Promise<readonly AuthorizedEvidenceMetadata[]> {
-    return withOrganizationTransaction(this.pool, principal.organizationId, async (client) => {
-      const result = await client.query(
-        `SELECT
+    return withOrganizationTransaction(
+      this.pool,
+      principal.organizationId,
+      async (client) => {
+        const result = await client.query(
+          `SELECT
            row_to_json(f) AS fact_record,
            row_to_json(e) AS evidence_record,
            row_to_json(r) AS resource_record,
@@ -421,51 +468,75 @@ export class PostgresAuthorizedKnowledgeGraphReader implements AuthorizedKnowled
            AND ${aclPredicate("r")}
            AND ${aclPredicate("c")}
          ORDER BY f.fact_key, e.evidence_id`,
-        [
-          principal.organizationId,
-          principal.subjectId,
-          [...principal.groupIds],
-          factKeys ? [...factKeys] : null,
-        ],
-      );
-      return result.rows.map((row) => ({
-        fact: mapFact(row.fact_record),
-        evidence: mapEvidence(row.evidence_record),
-        resource: mapResource({
-          ...row.resource_record,
-          ontology_node_ids: row.resource_ontology_node_ids,
-        }),
-        chunk: mapChunk({
-          ...row.chunk_record,
-          ontology_node_ids: row.chunk_ontology_node_ids,
-        }),
-      }));
-    });
+          [
+            principal.organizationId,
+            principal.subjectId,
+            [...principal.groupIds],
+            factKeys ? [...factKeys] : null,
+          ],
+        );
+        return result.rows.map((row) => ({
+          fact: mapFact(row.fact_record),
+          evidence: mapEvidence(row.evidence_record),
+          resource: mapResource({
+            ...row.resource_record,
+            ontology_node_ids: row.resource_ontology_node_ids,
+          }),
+          chunk: mapChunk({
+            ...row.chunk_record,
+            ontology_node_ids: row.chunk_ontology_node_ids,
+          }),
+        }));
+      },
+      { readOnly: true },
+    );
   }
+}
+
+export interface OrganizationTransactionOptions {
+  /**
+   * Read-only work must not provision the organization row. Skipping the write
+   * keeps retrieval usable on read replicas and prevents a mistyped/unknown
+   * organizationId from being silently created by a mere lookup.
+   */
+  readonly readOnly?: boolean;
 }
 
 export async function withOrganizationTransaction<T>(
   pool: Pool,
   organizationId: string,
   work: (client: PoolClient) => Promise<T>,
+  options: OrganizationTransactionOptions = {},
 ): Promise<T> {
   const client = await pool.connect();
+  let released = false;
   try {
-    await client.query("BEGIN");
-    await client.query(
-      `INSERT INTO kontext_organizations (organization_id) VALUES ($1)
-       ON CONFLICT (organization_id) DO NOTHING`,
-      [organizationId],
-    );
+    await client.query(options.readOnly ? "BEGIN READ ONLY" : "BEGIN");
+    if (!options.readOnly) {
+      await client.query(
+        `INSERT INTO kontext_organizations (organization_id) VALUES ($1)
+         ON CONFLICT (organization_id) DO NOTHING`,
+        [organizationId],
+      );
+    }
     await client.query("SELECT set_config('kontext.organization_id', $1, true)", [organizationId]);
     const result = await work(client);
     await client.query("COMMIT");
     return result;
   } catch (error) {
-    await client.query("ROLLBACK").catch(() => undefined);
+    try {
+      await client.query("ROLLBACK");
+    } catch (rollbackError) {
+      released = true;
+      client.release(toConnectionError(rollbackError));
+      throw new AggregateError(
+        [error, rollbackError],
+        "PostgreSQL transaction and rollback both failed",
+      );
+    }
     throw error;
   } finally {
-    client.release();
+    if (!released) client.release();
   }
 }
 
@@ -473,7 +544,16 @@ function resourceSelectSql(): string {
   return `SELECT r.*,
     ARRAY(SELECT ontology_node_id FROM kontext_resource_ontology_links l
           WHERE l.organization_id = r.organization_id AND l.resource_id = r.resource_id
-          ORDER BY ontology_node_id) AS ontology_node_ids
+          ORDER BY ontology_node_id) AS ontology_node_ids,
+    COALESCE((SELECT jsonb_agg(jsonb_build_object(
+      'ontologyNodeId', ontology_node_id,
+      'origin', origin,
+      'confidence', confidence,
+      'createdAt', created_at
+    ) ORDER BY ontology_node_id)
+      FROM kontext_resource_ontology_links l
+      WHERE l.organization_id = r.organization_id AND l.resource_id = r.resource_id), '[]'::jsonb)
+      AS ontology_links
     FROM kontext_resources r`;
 }
 
@@ -481,17 +561,17 @@ function chunkSelectSql(): string {
   return `SELECT c.*,
     ARRAY(SELECT ontology_node_id FROM kontext_chunk_ontology_links l
           WHERE l.organization_id = c.organization_id AND l.chunk_id = c.chunk_id
-          ORDER BY ontology_node_id) AS ontology_node_ids
+          ORDER BY ontology_node_id) AS ontology_node_ids,
+    COALESCE((SELECT jsonb_agg(jsonb_build_object(
+      'ontologyNodeId', ontology_node_id,
+      'origin', origin,
+      'confidence', confidence,
+      'createdAt', created_at
+    ) ORDER BY ontology_node_id)
+      FROM kontext_chunk_ontology_links l
+      WHERE l.organization_id = c.organization_id AND l.chunk_id = c.chunk_id), '[]'::jsonb)
+      AS ontology_links
     FROM kontext_chunks c`;
-}
-
-function aclPredicate(alias: string): string {
-  return `(COALESCE((${alias}.acl->>'organizationWide')::boolean, false)
-    OR COALESCE(${alias}.acl->'subjectIds', '[]'::jsonb) ? $2
-    OR EXISTS (
-      SELECT 1 FROM jsonb_array_elements_text(COALESCE(${alias}.acl->'groupIds', '[]'::jsonb)) g(id)
-      WHERE g.id = ANY($3::text[])
-    ))`;
 }
 
 async function insertOntologyLinks(
@@ -501,13 +581,40 @@ async function insertOntologyLinks(
   organizationId: string,
   ownerId: string,
   ontologyNodeIds: readonly string[],
+  ontologyLinks: ResourceRecord["ontologyLinks"] | ChunkRecord["ontologyLinks"],
 ): Promise<void> {
-  if (ontologyNodeIds.length === 0) return;
+  const metadata = new Map((ontologyLinks ?? []).map((link) => [link.ontologyNodeId, link]));
+  const links = [...new Set(ontologyNodeIds)].map((ontologyNodeId) => ({
+    ontologyNodeId,
+    origin: metadata.get(ontologyNodeId)?.origin ?? null,
+    confidence: metadata.get(ontologyNodeId)?.confidence ?? null,
+    createdAt: metadata.get(ontologyNodeId)?.createdAt ?? null,
+  }));
+  if (links.length === 0) return;
   await client.query(
-    `INSERT INTO ${table} (organization_id, ${ownerColumn}, ontology_node_id)
-     SELECT $1, $2, unnest($3::text[])
-     ON CONFLICT DO NOTHING`,
-    [organizationId, ownerId, [...new Set(ontologyNodeIds)]],
+    `INSERT INTO ${table} (
+       organization_id, ${ownerColumn}, ontology_node_id, origin, confidence, created_at
+     )
+     SELECT $1, $2, item.ontology_node_id, item.origin, item.confidence, item.created_at
+     FROM jsonb_to_recordset($3::jsonb) AS item(
+       ontology_node_id text, origin text, confidence real, created_at timestamptz
+     )
+     ON CONFLICT (organization_id, ${ownerColumn}, ontology_node_id) DO UPDATE SET
+       origin = EXCLUDED.origin,
+       confidence = EXCLUDED.confidence,
+       created_at = EXCLUDED.created_at`,
+    [
+      organizationId,
+      ownerId,
+      JSON.stringify(
+        links.map((link) => ({
+          ontology_node_id: link.ontologyNodeId,
+          origin: link.origin,
+          confidence: link.confidence,
+          created_at: link.createdAt,
+        })),
+      ),
+    ],
   );
 }
 
@@ -525,6 +632,7 @@ function mapResource(row: QueryResultRow): ResourceRecord {
     contentObjectKey: String(row.content_object_key),
     acl: row.acl as AccessControlList,
     ontologyNodeIds: (row.ontology_node_ids ?? []) as string[],
+    ontologyLinks: mapOntologyLinks(row.ontology_links),
     status: row.status as ResourceRecord["status"],
     updatedAt: toIsoString(row.updated_at),
   };
@@ -541,6 +649,7 @@ function mapChunk(row: QueryResultRow): ChunkRecord {
     position: Number(row.position),
     acl: row.acl as AccessControlList,
     ontologyNodeIds: (row.ontology_node_ids ?? []) as string[],
+    ontologyLinks: mapOntologyLinks(row.ontology_links),
     status: row.status as ChunkRecord["status"],
   };
 }
@@ -552,6 +661,22 @@ function mapEntityMention(row: QueryResultRow): EntityMentionRecord {
     resourceId: String(row.resource_id),
     chunkId: String(row.chunk_id),
     status: row.status as EntityMentionRecord["status"],
+    extractionConfidence:
+      row.extraction_confidence === null || row.extraction_confidence === undefined
+        ? undefined
+        : Number(row.extraction_confidence),
+    extractorVersion:
+      row.extractor_version === null || row.extractor_version === undefined
+        ? undefined
+        : String(row.extractor_version),
+    origin:
+      row.origin === null || row.origin === undefined
+        ? undefined
+        : (row.origin as EntityMentionRecord["origin"]),
+    observedAt:
+      row.observed_at === null || row.observed_at === undefined
+        ? undefined
+        : toIsoString(row.observed_at),
   };
 }
 
@@ -577,6 +702,26 @@ function mapFact(row: QueryResultRow): FactRecord {
     singleValue: Boolean(row.single_value),
     status: row.status as FactRecord["status"],
     updatedAt: toIsoString(row.updated_at),
+    extractionConfidence:
+      row.extraction_confidence === null || row.extraction_confidence === undefined
+        ? undefined
+        : Number(row.extraction_confidence),
+    extractorVersion:
+      row.extractor_version === null || row.extractor_version === undefined
+        ? undefined
+        : String(row.extractor_version),
+    origin:
+      row.origin === null || row.origin === undefined
+        ? undefined
+        : (row.origin as FactRecord["origin"]),
+    observedAt:
+      row.observed_at === null || row.observed_at === undefined
+        ? undefined
+        : toIsoString(row.observed_at),
+    verifiedAt:
+      row.verified_at === null || row.verified_at === undefined
+        ? undefined
+        : toIsoString(row.verified_at),
   };
 }
 
@@ -590,7 +735,40 @@ function mapEvidence(row: QueryResultRow): EvidenceRecord {
     acl: row.acl as AccessControlList,
     origin: row.origin as EvidenceRecord["origin"],
     status: row.status as EvidenceRecord["status"],
+    confidence:
+      row.confidence === null || row.confidence === undefined ? undefined : Number(row.confidence),
+    observedAt:
+      row.observed_at === null || row.observed_at === undefined
+        ? undefined
+        : toIsoString(row.observed_at),
+    verifiedAt:
+      row.verified_at === null || row.verified_at === undefined
+        ? undefined
+        : toIsoString(row.verified_at),
   };
+}
+
+function mapOntologyLinks(value: unknown): OntologyLinkRecord[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const row = item as Record<string, unknown>;
+    if (typeof row.ontologyNodeId !== "string") return [];
+    return [
+      {
+        ontologyNodeId: row.ontologyNodeId,
+        ...(row.origin === null || row.origin === undefined
+          ? {}
+          : { origin: row.origin as OntologyLinkRecord["origin"] }),
+        ...(row.confidence === null || row.confidence === undefined
+          ? {}
+          : { confidence: Number(row.confidence) }),
+        ...(row.createdAt === null || row.createdAt === undefined
+          ? {}
+          : { createdAt: toIsoString(row.createdAt) }),
+      },
+    ];
+  });
 }
 
 function mapFactEvent(row: QueryResultRow): FactEvent {
@@ -601,10 +779,6 @@ function mapFactEvent(row: QueryResultRow): FactEvent {
     occurredAt: toIsoString(row.occurred_at),
     resourceId: row.resource_id === null ? undefined : String(row.resource_id),
   };
-}
-
-function toIsoString(value: unknown): string {
-  return value instanceof Date ? value.toISOString() : new Date(String(value)).toISOString();
 }
 
 function assertOrganization(expected: string, received: string): void {

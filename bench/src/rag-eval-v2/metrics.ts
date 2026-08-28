@@ -102,14 +102,18 @@ export function scoreDatasetFramework(
 
   const evidenceRecall = bundle.queries.flatMap((query) => {
     const retrieval = retrievalByQuery.get(query.id);
-    if (!retrieval || retrieval.status !== "ok") return [];
-    const score = evidenceRecallForQuery(query, retrieval.evidence);
+    const score = evidenceRecallForQuery(
+      query,
+      retrieval?.status === "ok" ? retrieval.evidence : [],
+    );
     return score === null ? [] : [score];
   });
   const contextPrecision = bundle.queries.flatMap((query) => {
     const retrieval = retrievalByQuery.get(query.id);
-    if (!retrieval || retrieval.status !== "ok") return [];
-    const score = contextPrecisionForQuery(query, retrieval.evidence);
+    const score = contextPrecisionForQuery(
+      query,
+      retrieval?.status === "ok" ? retrieval.evidence : [],
+    );
     return score === null ? [] : [score];
   });
   const ndcg = bundle.queries.flatMap((query) => {
@@ -118,10 +122,7 @@ export function scoreDatasetFramework(
     const score = ndcgForQuery(query, retrieval.evidence);
     return score === null ? [] : [score];
   });
-  const validJudgements = judgements.filter(
-    (result): result is JudgeResult & { readonly output: JudgeContract } =>
-      result.status === "ok" && result.output !== null,
-  );
+  const validJudgements = judgements.filter(hasJudgeOutput);
   const correctness = validJudgements.map((result) => result.output.answerCorrectness);
   const claimPrecision = validJudgements.flatMap((result) =>
     result.output.claims.length > 0
@@ -248,10 +249,8 @@ export function compareFrameworkPairs(
   const retrievalByFramework = groupByFrameworkAndQuery(retrievals);
   const judgementByFramework = groupByFrameworkAndQuery(judgements);
   const output: PairedFrameworkComparison[] = [];
-  for (let leftIndex = 0; leftIndex < frameworkIds.length; leftIndex += 1) {
-    for (let rightIndex = leftIndex + 1; rightIndex < frameworkIds.length; rightIndex += 1) {
-      const leftFrameworkId = requiredValue(frameworkIds[leftIndex], "left framework");
-      const rightFrameworkId = requiredValue(frameworkIds[rightIndex], "right framework");
+  for (const [leftIndex, leftFrameworkId] of frameworkIds.entries()) {
+    for (const rightFrameworkId of frameworkIds.slice(leftIndex + 1)) {
       const metricPairs = new Map<PairedFrameworkComparison["metric"], [number, number][]>();
       for (const query of bundle.queries) {
         const leftRetrieval = retrievalByFramework.get(leftFrameworkId)?.get(query.id);
@@ -344,12 +343,14 @@ export function compareFrameworkPairs(
       for (const [metric, pairs] of metricPairs) {
         if (pairs.length === 0) continue;
         const differences = pairs.map(([left, right]) => left - right);
+        const meanDifference = meanOrNull(differences);
+        if (meanDifference === null) continue;
         output.push({
           leftFrameworkId,
           rightFrameworkId,
           metric,
           pairedQueries: pairs.length,
-          meanDifferenceLeftMinusRight: mean(differences),
+          meanDifferenceLeftMinusRight: meanDifference,
           difference95Ci: bootstrapMean95Ci(differences, 2_000, 42),
         });
       }
@@ -395,6 +396,12 @@ function addOptionalPair(
 }
 
 type CombinedStatus = "ok" | "blocked" | "unsupported" | "error";
+
+type JudgeResultWithOutput = JudgeResult & { readonly output: NonNullable<JudgeResult["output"]> };
+
+function hasJudgeOutput(result: JudgeResult): result is JudgeResultWithOutput {
+  return result.status === "ok" && result.output !== null;
+}
 
 function combinedStatus(
   retrieval: RetrievalResult | undefined,
@@ -609,7 +616,7 @@ export function nearestRankPercentileOrNull(
   if (!Number.isFinite(percentile) || percentile <= 0 || percentile > 1)
     throw new Error("percentile must be in (0, 1]");
   const sorted = [...values].sort((left, right) => left - right);
-  return sorted.at(Math.max(0, Math.ceil(sorted.length * percentile) - 1)) ?? null;
+  return requiredAt(sorted, Math.max(0, Math.ceil(sorted.length * percentile) - 1), "percentile");
 }
 
 export function bootstrapMean95Ci(
@@ -618,24 +625,38 @@ export function bootstrapMean95Ci(
   seed: number,
 ): ConfidenceInterval {
   if (values.length === 0) throw new Error("Cannot bootstrap an empty sample");
+  if (!Number.isInteger(samples) || samples <= 0) {
+    throw new Error("Bootstrap sample count must be a positive integer");
+  }
   const random = mulberry32(seed);
   const means: number[] = [];
   for (let sample = 0; sample < samples; sample += 1) {
     let total = 0;
     for (let index = 0; index < values.length; index += 1) {
-      total += requiredValue(values[Math.floor(random() * values.length)], "bootstrap value");
+      total += requiredAt(values, Math.floor(random() * values.length), "bootstrap source");
     }
     means.push(total / values.length);
   }
   means.sort((left, right) => left - right);
   return {
-    low: requiredValue(means[Math.floor(samples * 0.025)], "bootstrap lower bound"),
-    high: requiredValue(
-      means[Math.min(samples - 1, Math.ceil(samples * 0.975) - 1)],
+    low: requiredAt(means, Math.floor(samples * 0.025), "bootstrap lower bound"),
+    high: requiredAt(
+      means,
+      Math.min(samples - 1, Math.ceil(samples * 0.975) - 1),
       "bootstrap upper bound",
     ),
     samples,
   };
+}
+
+function requiredAt<T>(values: readonly T[], index: number, description: string): T {
+  const value = values[index];
+  if (value === undefined) {
+    throw new RangeError(
+      `${description} index ${index} is outside a collection of ${values.length}`,
+    );
+  }
+  return value;
 }
 
 function mulberry32(seed: number): () => number {

@@ -1,6 +1,8 @@
 import {
   ActivateOntologyUseCase,
   BidirectionalNLayerRetriever,
+  CalibratedTraversalScorePolicy,
+  DEFAULT_CALIBRATED_SCORING_PROFILE,
   type OntologyReindexer,
   type ResourceContentStore,
   type ResourceSnapshotEnricher,
@@ -17,6 +19,7 @@ import { PostgresKnowledgeSearchGraph } from "./postgres-knowledge-search-graph.
 import type { StoredOntologyGraph } from "./postgres-knowledge-search-graph.js";
 import { PostgresOntologyDeploymentRepository } from "./postgres-ontology-deployments.js";
 import { PostgresOntologyProposalQueue } from "./postgres-ontology-proposal-queue.js";
+import { PostgresScoringProfileRepository } from "./postgres-scoring-profiles.js";
 
 export function createPostgresKnowledgeRuntime(
   pool: Pool,
@@ -30,12 +33,19 @@ export function createPostgresKnowledgeRuntime(
   const searchGraph = new PostgresKnowledgeSearchGraph(pool, contentStore);
   const ontologyProposalQueue = new PostgresOntologyProposalQueue(pool);
   const ontologyDeployments = new PostgresOntologyDeploymentRepository<StoredOntologyGraph>(pool);
+  const scoringProfiles = new PostgresScoringProfileRepository(
+    pool,
+    5_000,
+    () => new CalibratedTraversalScorePolicy(DEFAULT_CALIBRATED_SCORING_PROFILE),
+  );
   return {
     repository,
     authorizedReader: new PostgresAuthorizedKnowledgeGraphReader(pool),
     resourceSync,
     searchGraph,
-    knowledgeRetriever: new BidirectionalNLayerRetriever(searchGraph),
+    // With no active profile the resolver preserves legacy-v1. Activating a
+    // staged profile switches future requests by organization without restart.
+    knowledgeRetriever: new BidirectionalNLayerRetriever(searchGraph, scoringProfiles),
     mcpKnowledgeSynchronizer: new MCPKnowledgeSynchronizer(
       resourceSync,
       mcpAdapters,
@@ -43,6 +53,7 @@ export function createPostgresKnowledgeRuntime(
     ),
     ontologyProposalQueue,
     ontologyDeployments,
+    scoringProfiles,
     ontologyActivation: {
       async activate(input: {
         organizationId: string;

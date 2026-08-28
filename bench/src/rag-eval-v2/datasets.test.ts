@@ -11,8 +11,12 @@ describe("dataset adapters", () => {
     const bundle = loadDataset("graphrag-bench-medical", paths, { limit: 2 });
     expect(bundle.queries).toHaveLength(2);
     expect(bundle.documents).toHaveLength(1);
-    expect(bundle.documents.every((document) => !document.text.includes(bundle.queries[0]!.referenceAnswer ?? "\0"))).toBeTypeOf("boolean");
-    expect(bundle.queries[0]!.metadata).toHaveProperty("source");
+    expect(
+      bundle.documents.every(
+        (document) => !document.text.includes(bundle.queries[0]?.referenceAnswer ?? "\0"),
+      ),
+    ).toBeTypeOf("boolean");
+    expect(bundle.queries[0]?.metadata).toHaveProperty("source");
   });
 
   it("filters GraphRAG-Bench by official question category before limiting", () => {

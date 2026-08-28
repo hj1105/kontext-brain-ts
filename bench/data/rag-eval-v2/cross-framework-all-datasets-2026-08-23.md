@@ -1,6 +1,13 @@
 # Cross-framework RAG evaluation (2026-08-23)
 
-## Decision
+> **Status: provisional development report.** The raw retrieval, answer,
+> judgement, evaluation-sample, score, and run-manifest directories referenced
+> below are not committed in this repository. Kontext policies were iteratively
+> selected after observing reported datasets, Microsoft GraphRAG BEIR rows are
+> incomplete, and historical timing boundaries differ across adapters. Do not
+> cite these tables as an independently reproduced final benchmark.
+
+## Development decision
 
 The no-configuration evaluation default remains **Kontext v13 anchored evidence
 answer stack**. The v15 corpus-completeness correction is validated as a
@@ -11,14 +18,16 @@ promoted in this release because Novel was the registered development signal
 and SciFact recall moved from 0.9600 to 0.9533. No per-dataset branch or
 score-driven parameter change was introduced.
 
-The strongest result is not a precision/recall trade: on Medical, v15 keeps
-recall within 0.001 of v13 while improving correctness, faithfulness, claim F1,
-and citation F1. On Novel, it raises both recall and correctness substantially.
+Within these development runs, v15 keeps Medical recall within 0.001 of v13
+while improving correctness, faithfulness, claim F1, and citation F1. On Novel,
+it raises both recall and correctness substantially; Novel also supplied the
+development signal, so this is not a held-out estimate.
 
 ## Frozen comparison boundary
 
-- Every framework receives the same raw corpus and questions and builds its
-  native automatic index.
+- External frameworks receive the raw corpus and build native automatic
+  indexes. Kontext v13 uses a precomputed KG and v15 supplements it for corpus
+  completeness; their index-build boundary and cost are not equivalent.
 - Embeddings use OpenAI `text-embedding-3-small`, 1,536 dimensions. Answer and
   judge calls use the local Codex CLI with the frozen models and do not use the
   supplied OpenAI API key.
@@ -296,6 +305,9 @@ unchanged v13 retrieval policy runs.
   generalization gates.
 
 ## Primary artifact directories
+
+These operator-local directories were not committed with this report and are
+listed only to identify the original run locations.
 
 - `openai-small-kontext-v15-corpus-complete-medical-2026-08-23`
 - `openai-small-kontext-v15-corpus-complete-novel-2026-08-23`

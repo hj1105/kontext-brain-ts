@@ -1,10 +1,5 @@
 import { createHash } from "node:crypto";
-import type {
-  AnswerResult,
-  DatasetBundle,
-  FrameworkId,
-  RetrievalResult,
-} from "./contracts.js";
+import type { AnswerResult, DatasetBundle, FrameworkId, RetrievalResult } from "./contracts.js";
 
 export interface HumanAuditLabels {
   readonly correctness: 0 | 1 | null;
@@ -74,7 +69,9 @@ export function createBlindHumanAuditSample(
   for (const frameworkId of frameworkIds) {
     const quota = baseQuota + (remainder > 0 ? 1 : 0);
     remainder = Math.max(0, remainder - 1);
-    const frameworkCandidates = candidates.filter((candidate) => candidate.frameworkId === frameworkId);
+    const frameworkCandidates = candidates.filter(
+      (candidate) => candidate.frameworkId === frameworkId,
+    );
     selected.push(...stratifiedTake(frameworkCandidates, quota, seed));
   }
 
@@ -111,7 +108,11 @@ export function createBlindHumanAuditSample(
   return { rows, mapping };
 }
 
-function stratifiedTake(candidates: readonly Candidate[], quota: number, seed: string): Candidate[] {
+function stratifiedTake(
+  candidates: readonly Candidate[],
+  quota: number,
+  seed: string,
+): Candidate[] {
   const byCategory = new Map<string, Candidate[]>();
   for (const candidate of candidates) {
     const values = byCategory.get(candidate.query.category) ?? [];

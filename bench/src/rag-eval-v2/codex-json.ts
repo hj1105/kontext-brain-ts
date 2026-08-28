@@ -447,7 +447,11 @@ export function parseBatchResults<T>(
   }
   const missing = queryIds.filter((queryId) => !byQuery.has(queryId));
   if (missing.length > 0) throw new Error(`Missing batch query IDs: ${missing.join(", ")}`);
-  return queryIds.map((queryId) => ({ queryId, value: byQuery.get(queryId)! }));
+  return queryIds.map((queryId) => {
+    const result = byQuery.get(queryId);
+    if (result === undefined) throw new Error(`Missing batch query ID ${queryId}`);
+    return { queryId, value: result };
+  });
 }
 
 export function answerPrompt(
@@ -761,8 +765,12 @@ export async function runCommand(
     }, timeoutMs);
     child.stdout.setEncoding("utf8");
     child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (chunk: string) => (stdout += chunk));
-    child.stderr.on("data", (chunk: string) => (stderr += chunk));
+    child.stdout.on("data", (chunk: string) => {
+      stdout += chunk;
+    });
+    child.stderr.on("data", (chunk: string) => {
+      stderr += chunk;
+    });
     child.on("error", (error) => {
       settle(() => reject(error));
     });

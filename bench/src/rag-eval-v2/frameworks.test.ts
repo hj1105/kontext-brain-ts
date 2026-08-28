@@ -20,8 +20,7 @@ const originalPrecomputedIndex = process.env.KONTEXT_RAG_EVAL_PRECOMPUTED_INDEX;
 const temporaryDirectories: string[] = [];
 
 afterEach(() => {
-  if (originalCommand === undefined) delete process.env.RAG_EVAL_GRAPHRAG_COMMAND;
-  else process.env.RAG_EVAL_GRAPHRAG_COMMAND = originalCommand;
+  restoreEnvironment("RAG_EVAL_GRAPHRAG_COMMAND", originalCommand);
   restoreEnvironment("OPENAI_API_KEY", originalOpenAiApiKey);
   restoreEnvironment("KONTEXT_RAG_EVAL_MODE", originalKontextMode);
   restoreEnvironment("KONTEXT_RAG_EVAL_PRECOMPUTED_INDEX", originalPrecomputedIndex);
@@ -30,6 +29,14 @@ afterEach(() => {
 });
 
 describe("kontext cache-only coverage modes", () => {
+  it("rejects an unknown retrieval mode instead of silently using legacy", () => {
+    process.env.KONTEXT_RAG_EVAL_MODE = "v13-typo";
+
+    expect(() => createFrameworkAdapters(DEFAULT_RAG_EVAL_MANIFEST)).toThrow(
+      "Unsupported KONTEXT_RAG_EVAL_MODE: v13-typo",
+    );
+  });
+
   it("uses the promoted v13 stack when no retrieval mode is configured", async () => {
     restoreEnvironment("OPENAI_API_KEY", undefined);
     restoreEnvironment("KONTEXT_RAG_EVAL_MODE", undefined);
@@ -41,6 +48,31 @@ describe("kontext cache-only coverage modes", () => {
     await expect(adapter?.doctor()).resolves.toMatchObject({
       status: "blocked",
       version: "workspace-0.1.0+v13-anchored-evidence-answer-stack",
+    });
+  });
+
+  it.each([
+    [
+      "bidirectional-kg-direct-only-ablation",
+      "workspace-0.1.0+bidirectional-kg-v5-direct-only-ablation",
+    ],
+    ["bidirectional-kg-consensus-direct", "workspace-0.1.0+bidirectional-kg-v6-consensus-direct"],
+    ["source-hydrated-stack", "workspace-0.1.0+v4-source-hydrated-stack"],
+    [
+      "source-hydrated-direct-only-ablation",
+      "workspace-0.1.0+v4-source-hydrated-direct-only-ablation",
+    ],
+  ])("allows %s to run from embedding checkpoints without an API key", async (mode, version) => {
+    restoreEnvironment("OPENAI_API_KEY", undefined);
+    process.env.KONTEXT_RAG_EVAL_MODE = mode;
+
+    const adapter = createFrameworkAdapters(DEFAULT_RAG_EVAL_MANIFEST).find(
+      (candidate) => candidate.id === "kontext-brain",
+    );
+
+    await expect(adapter?.doctor()).resolves.toMatchObject({
+      status: "ready",
+      version,
     });
   });
 
@@ -155,17 +187,22 @@ class FakeEmbeddingClient {
 }
 
 function restoreEnvironment(name: string, value: string | undefined): void {
-  // biome-ignore lint/performance/noDelete: tests must restore an originally absent variable.
   if (value === undefined) delete process.env[name];
   else process.env[name] = value;
+}
+
+function microsoftGraphRagFramework() {
+  const framework = DEFAULT_RAG_EVAL_MANIFEST.frameworks.find(
+    (candidate) => candidate.id === "microsoft-graphrag",
+  );
+  if (!framework) throw new Error("Missing Microsoft GraphRAG manifest entry");
+  return framework;
 }
 
 describe("external framework doctor", () => {
   it("reports a doctor command failure as a blocked framework", async () => {
     process.env.RAG_EVAL_GRAPHRAG_COMMAND = JSON.stringify(["graphrag-adapter"]);
-    const framework = DEFAULT_RAG_EVAL_MANIFEST.frameworks.find(
-      (candidate) => candidate.id === "microsoft-graphrag",
-    )!;
+    const framework = microsoftGraphRagFramework();
     const runner: CommandRunner = async () => {
       throw new Error("doctor timed out");
     };
@@ -183,9 +220,7 @@ describe("external framework doctor", () => {
 
   it("requires the exact official pinned version", async () => {
     process.env.RAG_EVAL_GRAPHRAG_COMMAND = JSON.stringify(["graphrag-adapter"]);
-    const framework = DEFAULT_RAG_EVAL_MANIFEST.frameworks.find(
-      (candidate) => candidate.id === "microsoft-graphrag",
-    )!;
+    const framework = microsoftGraphRagFramework();
     const runner: CommandRunner = async () => ({
       exitCode: 0,
       stdout: JSON.stringify({ status: "ready", version: "3.0.0", detail: "installed" }),

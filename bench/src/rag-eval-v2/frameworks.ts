@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { type CommandRunner, runCommand } from "./codex-json.js";
+import { type CommandResult, type CommandRunner, runCommand } from "./codex-json.js";
 import type {
   BenchmarkQuery,
   CorpusDocument,
@@ -13,7 +13,7 @@ import type {
   RetrievedEvidence,
 } from "./contracts.js";
 import { readJsonLines, writeJsonAtomic, writeJsonLines } from "./jsonl.js";
-import { KontextBrainAdapter } from "./kontext-framework.js";
+import { KontextBrainAdapter, type KontextRetrievalMode } from "./kontext-framework.js";
 import type { FrameworkManifest, RagEvalManifest } from "./manifest.js";
 import { manifestDigest } from "./manifest.js";
 import {
@@ -125,14 +125,22 @@ export class VectorRagRerankerAdapter implements FrameworkAdapter {
       const queryVector = queryVectors.get(query.id);
       if (!queryVector) throw new Error(`Missing query embedding ${query.id}`);
       const vectorRanking = rankVectors(index.vectors, queryVector, options.candidateK);
-      const candidates = vectorRanking.map((item) => index.documents[item.index]!);
+      const vectorCandidates = vectorRanking.map((item) => ({
+        ...item,
+        document: requiredArrayItem(
+          index.documents,
+          item.index,
+          `Vector index document ${item.index}`,
+        ),
+      }));
+      const candidates = vectorCandidates.map((item) => item.document);
       const lexicalRanking = rankBm25(candidates, query.text);
       const lexicalRankById = new Map(
         lexicalRanking.map((document, rank) => [document.id, rank + 1]),
       );
-      const evidence = vectorRanking
+      const evidence = vectorCandidates
         .map((item, vectorRank) => {
-          const document = index.documents[item.index]!;
+          const document = item.document;
           const lexicalRank = lexicalRankById.get(document.id) ?? candidates.length + 1;
           return {
             document,
@@ -177,6 +185,10 @@ export class VectorRagRerankerAdapter implements FrameworkAdapter {
     bundle: DatasetBundle,
     directory: string,
   ): Promise<{ documents: StoredDocument[]; vectors: Float32Array; embeddingInputTokens: number }> {
+    const dimensions = requiredPositiveInteger(
+      this.manifest.models.embedding.dimensions,
+      "Embedding dimensions",
+    );
     mkdirSync(directory, { recursive: true });
     const metadataPath = join(directory, "index.json");
     const documentsPath = join(directory, "documents.jsonl");
@@ -191,7 +203,7 @@ export class VectorRagRerankerAdapter implements FrameworkAdapter {
         metadata.datasetId === bundle.id &&
         metadata.documentDigest === expectedDigest &&
         metadata.model === this.manifest.models.embedding.model &&
-        metadata.dimensions === this.manifest.models.embedding.dimensions
+        metadata.dimensions === dimensions
       ) {
         const documents = readJsonLines<StoredDocument>(documentsPath);
         const buffer = readFileSync(vectorsPath);
@@ -208,6 +220,7 @@ export class VectorRagRerankerAdapter implements FrameworkAdapter {
       chunkedDocuments,
       join(directory, "embedding-batches"),
       expectedDigest,
+      dimensions,
     );
     const documents = chunkedDocuments.map<StoredDocument>((document) => ({
       id: document.id,
@@ -219,7 +232,7 @@ export class VectorRagRerankerAdapter implements FrameworkAdapter {
     const metadata: VectorIndexMetadata = {
       schemaVersion: 1,
       model: this.manifest.models.embedding.model,
-      dimensions: this.manifest.models.embedding.dimensions!,
+      dimensions,
       count: documents.length,
       datasetId: bundle.id,
       documentDigest: expectedDigest,
@@ -239,10 +252,11 @@ export class VectorRagRerankerAdapter implements FrameworkAdapter {
     documents: readonly CorpusDocument[],
     batchDirectory: string,
     documentDigest: string,
+    dimensions: number,
   ): Promise<{ vectors: Float32Array; inputTokens: number }> {
     const batchSize = 100;
-    const dimensions = this.manifest.models.embedding.dimensions!;
     const model = this.manifest.models.embedding.model;
+    const embeddingClient = requiredValue(this.embeddingClient, "Vector adapter embedding client");
     const vectors = new Float32Array(documents.length * dimensions);
     let inputTokens = 0;
     mkdirSync(batchDirectory, { recursive: true });
@@ -268,12 +282,12 @@ export class VectorRagRerankerAdapter implements FrameworkAdapter {
         continue;
       }
 
-      const usageBefore = this.embeddingClient!.getUsage();
-      const embeddings = await this.embeddingClient!.embed(
+      const usageBefore = embeddingClient.getUsage();
+      const embeddings = await embeddingClient.embed(
         batch.map((document) => ({ id: document.id, text: document.text, title: document.title })),
         "RETRIEVAL_DOCUMENT",
       );
-      const usageAfter = this.embeddingClient!.getUsage();
+      const usageAfter = embeddingClient.getUsage();
       const batchInputTokens = usageAfter.inputTokens - usageBefore.inputTokens;
       const batchVectors = new Float32Array(embeddings.length * dimensions);
       embeddings.forEach((embedding, index) =>
@@ -361,12 +375,13 @@ export class ExternalCommandFrameworkAdapter implements FrameworkAdapter {
         detail: `${this.framework.commandEnv} is not configured as a JSON command array`,
       };
     }
-    let result;
+    let result: CommandResult;
     try {
+      const command = commandParts(this.command, `${this.id} doctor command`);
       result = await this.commandRunner(
-        this.command[0]!,
+        command.executable,
         [
-          ...this.command.slice(1),
+          ...command.args,
           "doctor",
           "--completion-execution",
           this.manifest.models.answer.execution ?? "codex-exec",
@@ -418,6 +433,19 @@ export class ExternalCommandFrameworkAdapter implements FrameworkAdapter {
 
   async retrieve(bundle: DatasetBundle, options: FrameworkRunOptions): Promise<RetrievalResult[]> {
     if (!this.command) throw new Error(`${this.framework.commandEnv} is not configured`);
+    const command = commandParts(this.command, `${this.id} command`);
+    const embeddingDimensions = requiredPositiveInteger(
+      this.manifest.models.embedding.dimensions,
+      "Embedding dimensions",
+    );
+    const completionReasoningEffort = requiredValue(
+      this.manifest.models.answer.reasoningEffort,
+      "Completion reasoning effort",
+    );
+    const completionExecution = requiredValue(
+      this.manifest.models.answer.execution,
+      "Completion execution",
+    );
     const frameworkDirectory = join(options.workDirectory, bundle.id, this.id);
     const datasetDirectory = join(frameworkDirectory, "dataset");
     const indexDirectory = join(frameworkDirectory, "index");
@@ -434,13 +462,13 @@ export class ExternalCommandFrameworkAdapter implements FrameworkAdapter {
       "--embedding-model",
       this.manifest.models.embedding.model,
       "--embedding-dimensions",
-      String(this.manifest.models.embedding.dimensions),
+      String(embeddingDimensions),
       "--completion-model",
       this.manifest.models.answer.model,
       "--completion-reasoning-effort",
-      this.manifest.models.answer.reasoningEffort!,
+      completionReasoningEffort,
       "--completion-execution",
-      this.manifest.models.answer.execution!,
+      completionExecution,
       "--top-k",
       String(options.topK),
       "--query-concurrency",
@@ -452,16 +480,16 @@ export class ExternalCommandFrameworkAdapter implements FrameworkAdapter {
       commonArgs.push("--index-source-dir", resolve(options.indexSourceDirectory));
     } else {
       const build = await this.commandRunner(
-        this.command[0]!,
-        [...this.command.slice(1), "build", ...commonArgs],
+        command.executable,
+        [...command.args, "build", ...commonArgs],
         "",
         24 * 60 * 60 * 1000,
       );
       if (build.exitCode !== 0) throw new Error(`${this.id} build failed: ${build.stderr}`);
     }
     const retrieve = await this.commandRunner(
-      this.command[0]!,
-      [...this.command.slice(1), "retrieve", ...commonArgs, "--output", outputPath],
+      command.executable,
+      [...command.args, "retrieve", ...commonArgs, "--output", outputPath],
       "",
       24 * 60 * 60 * 1000,
     );
@@ -474,6 +502,36 @@ export class ExternalCommandFrameworkAdapter implements FrameworkAdapter {
     const digest = manifestDigest(this.manifest);
     return records.map((record) => ({ ...record, configDigest: digest }));
   }
+}
+
+function commandParts(
+  command: readonly string[],
+  label: string,
+): { readonly executable: string; readonly args: readonly string[] } {
+  const executable = requiredArrayItem(command, 0, label);
+  if (!executable.trim()) throw new Error(`${label} executable must not be empty`);
+  return { executable, args: command.slice(1) };
+}
+
+function requiredArrayItem<T>(values: readonly T[], index: number, label: string): T {
+  if (!Number.isInteger(index) || index < 0 || index >= values.length) {
+    throw new Error(`${label} is out of bounds`);
+  }
+  const value = values[index];
+  if (value === undefined) throw new Error(`${label} is missing`);
+  return value;
+}
+
+function requiredPositiveInteger(value: number | undefined, label: string): number {
+  if (value === undefined || !Number.isInteger(value) || value <= 0) {
+    throw new Error(`${label} must be a positive integer`);
+  }
+  return value;
+}
+
+function requiredValue<T>(value: T | null | undefined, label: string): T {
+  if (value === null || value === undefined) throw new Error(`${label} is required`);
+  return value;
 }
 
 function addNativeContextProvenance(evidence: RetrievedEvidence): RetrievedEvidence {
@@ -529,6 +587,12 @@ export function createFrameworkAdapters(manifest: RagEvalManifest): FrameworkAda
         retrievalMode: kontextRetrievalMode(process.env.KONTEXT_RAG_EVAL_MODE),
         benchmarkDataDirectory: process.env.KONTEXT_RAG_EVAL_BENCH_DATA_DIR,
         precomputedIndexDirectory: process.env.KONTEXT_RAG_EVAL_PRECOMPUTED_INDEX,
+        directVectorSeedCount: optionalPositiveInteger(
+          process.env.KONTEXT_DIRECT_VECTOR_SEED_COUNT,
+        ),
+        directLexicalSeedCount: optionalPositiveInteger(
+          process.env.KONTEXT_DIRECT_LEXICAL_SEED_COUNT,
+        ),
       });
     }
     if (framework.id === "vector-rag-reranker") {
@@ -538,30 +602,15 @@ export function createFrameworkAdapters(manifest: RagEvalManifest): FrameworkAda
   });
 }
 
-function kontextRetrievalMode(
-  value: string | undefined,
-):
-  | "legacy"
-  | "bidirectional-kg"
-  | "max-existing-stack"
-  | "source-hydrated-stack"
-  | "source-hydrated-llm-stack"
-  | "source-hydrated-llm-recall-safe-stack"
-  | "source-hydrated-llm-candidate-safe-stack"
-  | "source-hydrated-llm-coverage-aware-stack"
-  | "multi-query-standard-rerank-stack"
-  | "multi-query-coverage-aware-stack"
-  | "multi-query-plan-aware-coverage-stack"
-  | "multi-query-anchored-evidence-answer-stack"
-  | "corpus-complete-anchored-evidence-answer-stack"
-  | "v14a-anchored-deterministic-soft-coverage-stack"
-  | "v14b-anchored-deterministic-quota-coverage-stack"
-  | "adaptive-eece-stack" {
+function kontextRetrievalMode(value: string | undefined): KontextRetrievalMode {
   if (!value?.trim()) return "multi-query-anchored-evidence-answer-stack";
   if (
     value === "bidirectional-kg" ||
+    value === "bidirectional-kg-direct-only-ablation" ||
+    value === "bidirectional-kg-consensus-direct" ||
     value === "max-existing-stack" ||
     value === "source-hydrated-stack" ||
+    value === "source-hydrated-direct-only-ablation" ||
     value === "source-hydrated-llm-stack" ||
     value === "source-hydrated-llm-recall-safe-stack" ||
     value === "source-hydrated-llm-candidate-safe-stack" ||
@@ -577,7 +626,13 @@ function kontextRetrievalMode(
   ) {
     return value;
   }
-  return "legacy";
+  throw new Error(`Unsupported KONTEXT_RAG_EVAL_MODE: ${value}`);
+}
+
+function optionalPositiveInteger(value: string | undefined): number | undefined {
+  if (!value?.trim()) return undefined;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
 function parseCommand(raw: string | undefined): readonly string[] | null {
@@ -587,7 +642,7 @@ function parseCommand(raw: string | undefined): readonly string[] | null {
     if (
       !Array.isArray(parsed) ||
       parsed.length === 0 ||
-      parsed.some((item) => typeof item !== "string")
+      parsed.some((item) => typeof item !== "string" || !item.trim())
     ) {
       return null;
     }
@@ -673,7 +728,7 @@ export function rankBm25(documents: readonly StoredDocument[], query: string): S
     }
   }
   const scores = documents.map((document, index) => {
-    const tokens = tokenized[index]!;
+    const tokens = requiredArrayItem(tokenized, index, `BM25 token list ${index}`);
     const frequencies = new Map<string, number>();
     for (const token of tokens) frequencies.set(token, (frequencies.get(token) ?? 0) + 1);
     let score = 0;

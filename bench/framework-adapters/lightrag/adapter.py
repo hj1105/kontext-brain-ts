@@ -147,8 +147,16 @@ async def build(args: argparse.Namespace) -> None:
             marker.get("corpusDigest") == digest
             and marker.get("embeddingModel") == EMBEDDING_MODEL
             and marker.get("embeddingDimensions") == EMBEDDING_DIMENSIONS
+            and marker.get("completionModel") == args.completion_model
+            and marker.get("completionReasoningEffort") == args.completion_reasoning_effort
+            and marker.get("completionExecution") == args.completion_execution
         ):
             return
+    # The index directory is owned by this adapter. A different corpus or model
+    # must start from an empty native store; inserting into the old store leaves
+    # removed documents, entities, and cached completions reachable.
+    if index_dir.exists():
+        shutil.rmtree(index_dir)
     index_dir.mkdir(parents=True, exist_ok=True)
     rag = create_rag(index_dir, args)
     await rag.initialize_storages()
@@ -165,8 +173,9 @@ async def build(args: argparse.Namespace) -> None:
             "embeddingModel": EMBEDDING_MODEL,
             "embeddingDimensions": EMBEDDING_DIMENSIONS,
             "embeddingMode": "symmetric OpenAI embedding",
-            "completionExecution": args.completion_execution,
             "completionModel": args.completion_model,
+            "completionReasoningEffort": args.completion_reasoning_effort,
+            "completionExecution": args.completion_execution,
         })
     finally:
         await rag.finalize_storages()
@@ -195,7 +204,8 @@ async def retrieve(args: argparse.Namespace) -> None:
             if checkpoint is not None:
                 return checkpoint
             async with query_semaphore:
-                # Measure service latency, not time spent waiting for an in-process worker.
+                # Match the other adapters' service-latency boundary: queue
+                # admission is excluded, native retrieval work is included.
                 started = time.perf_counter()
                 started_at = datetime.now(timezone.utc).isoformat()
                 try:
@@ -540,9 +550,25 @@ def retrieval_checkpoint_directory(
 ) -> Path:
     digest = hashlib.sha256()
     digest.update(record_digest(queries).encode())
+    marker_path = index_dir / "rag-eval-build.json"
+    if not marker_path.exists():
+        raise RuntimeError("LightRAG index marker is missing; run build before retrieve")
+    marker = json.loads(marker_path.read_text())
     digest.update(b"\0")
-    digest.update(str(args.top_k).encode())
-    digest.update(b"\0mix\0rerank=false")
+    digest.update(json.dumps(marker, sort_keys=True, separators=(",", ":")).encode())
+    for value in (
+        PINNED_VERSION,
+        args.embedding_model,
+        str(args.embedding_dimensions),
+        args.completion_model,
+        args.completion_reasoning_effort,
+        args.completion_execution,
+        str(args.top_k),
+        "mix",
+        "rerank=false",
+    ):
+        digest.update(b"\0")
+        digest.update(value.encode())
     directory = index_dir / "retrieval-checkpoints" / digest.hexdigest()
     directory.mkdir(parents=True, exist_ok=True)
     return directory
@@ -572,10 +598,11 @@ def read_retrieval_checkpoint(
 def record_digest(records: list[dict[str, Any]]) -> str:
     digest = hashlib.sha256()
     for record in records:
-        digest.update(record["id"].encode())
-        digest.update(b"\0")
-        digest.update(record["text"].encode())
-        digest.update(b"\0")
+        for key in ("id", "sourceId", "title", "text"):
+            digest.update(key.encode())
+            digest.update(b"\0")
+            digest.update(str(record.get(key, "")).encode())
+            digest.update(b"\0")
     return digest.hexdigest()
 
 

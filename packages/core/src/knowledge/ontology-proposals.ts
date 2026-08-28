@@ -74,7 +74,10 @@ export class InMemoryOntologyProposalQueue implements OntologyProposalQueue {
         description: draft.description,
         resourceIds: Array.from(new Set([...(previous?.resourceIds ?? []), ...draft.resourceIds])),
         occurrences: (previous?.occurrences ?? 0) + 1,
-        status: previous?.status === "accepted" ? "accepted" : "open",
+        // Preserve an existing lifecycle status (published/accepted/rejected); only
+        // brand-new proposals start as "open". Re-observing an unmapped node must not
+        // resurrect a proposal that is already published or decided.
+        status: previous?.status ?? "open",
         updatedAt: new Date().toISOString(),
       });
     }
@@ -109,9 +112,10 @@ export class InMemoryOntologyProposalQueue implements OntologyProposalQueue {
   }
 }
 
-function normalizeProposalKey(value: string): string {
+/** Canonical proposal-key normalization shared by every OntologyProposalQueue backend. */
+export function normalizeProposalKey(value: string): string {
   return value
     .trim()
-    .toLocaleLowerCase()
+    .toLowerCase()
     .replace(/[^a-z0-9가-힣_-]+/g, "-");
 }

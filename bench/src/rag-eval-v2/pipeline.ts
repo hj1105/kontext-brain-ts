@@ -294,7 +294,7 @@ export async function runBenchmark(
         (score) =>
           score.retrievalCompleted === score.retrievalQueries && score.completed === score.queries,
       );
-    reports.push({
+    const datasetReport: DatasetRunReport = {
       datasetId: dataset.id,
       status: allCompleted ? "completed" : hasCompleted ? "partial" : "blocked",
       detail: `${bundle.documents.length} documents, ${bundle.queries.length} retrieval queries, ${evaluationSample.queries.length} answer/judge queries`,
@@ -305,8 +305,9 @@ export async function runBenchmark(
         allRetrievals,
         allJudgements,
       ),
-    });
-    logProgress(`dataset complete dataset=${dataset.id} status=${reports.at(-1)!.status}`);
+    };
+    reports.push(datasetReport);
+    logProgress(`dataset complete dataset=${dataset.id} status=${datasetReport.status}`);
   }
 
   const report: BenchmarkRunReport = {
@@ -424,26 +425,25 @@ export function loadCompletedRetrieval(
           record.datasetId !== bundle.id ||
           record.frameworkId !== frameworkId ||
           record.queryId !== expectedIds[index] ||
-          record.status === "error" ||
-          record.status === "blocked" ||
-          record.configDigest !== manifestDigest(manifest),
+          record.status !== "ok" ||
+          typeof record.configDigest !== "string" ||
+          record.configDigest.length === 0,
       )
     ) {
       return null;
     }
     const metadataPath = join(dirname(retrievalPath), "retrieval-cache.json");
-    if (existsSync(metadataPath)) {
-      const metadata = JSON.parse(readFileSync(metadataPath, "utf8")) as { cacheDigest?: string };
-      if (metadata.cacheDigest !== retrievalCacheDigest(bundle, frameworkId, options, manifest))
-        return null;
-    }
+    if (!existsSync(metadataPath)) return null;
+    const metadata = JSON.parse(readFileSync(metadataPath, "utf8")) as { cacheDigest?: string };
+    if (metadata.cacheDigest !== retrievalCacheDigest(bundle, frameworkId, options, manifest))
+      return null;
     return records;
   } catch {
     return null;
   }
 }
 
-function retrievalCacheDigest(
+export function retrievalCacheDigest(
   bundle: ReturnType<typeof loadDataset>,
   frameworkId: FrameworkId,
   options: BenchmarkRunOptions,
@@ -563,6 +563,10 @@ export async function answerQueries(
       !prerequisiteIdentityError(bundle.id, expectedFrameworkId, query.id, retrieval)
     );
   });
+  const answerReasoningEffort = requiredValue(
+    manifest.models.answer.reasoningEffort,
+    "Answer model reasoning effort is required",
+  );
   const answerBatches = batches(pending, manifest.benchmarkPolicy.answerCodexBatchSize);
   for (const wave of batches(answerBatches, manifest.benchmarkPolicy.codexConcurrency)) {
     const outcomes = await Promise.all(
@@ -574,7 +578,7 @@ export async function answerQueries(
               codexClient.answerBatch(
                 {
                   model: manifest.models.answer.model,
-                  reasoningEffort: manifest.models.answer.reasoningEffort!,
+                  reasoningEffort: answerReasoningEffort,
                 },
                 batch.map((query) => {
                   const retrieval = retrievalById.get(query.id);
@@ -609,7 +613,10 @@ export async function answerQueries(
     for (const outcome of outcomes) {
       if (outcome.status === "ok") {
         outcome.result.value.forEach((item, index) => {
-          const retrieval = retrievalById.get(item.queryId)!;
+          const retrieval = requiredValue(
+            retrievalById.get(item.queryId),
+            `Retrieval result missing for ${item.queryId}`,
+          );
           byQuery.set(item.queryId, {
             datasetId: bundle.id,
             frameworkId: retrieval.frameworkId,
@@ -636,9 +643,13 @@ export async function answerQueries(
         continue;
       }
       for (const query of outcome.batch) {
+        const retrieval = requiredValue(
+          retrievalById.get(query.id),
+          `Retrieval result missing for ${query.id}`,
+        );
         byQuery.set(query.id, {
           datasetId: bundle.id,
-          frameworkId: retrievalById.get(query.id)!.frameworkId,
+          frameworkId: retrieval.frameworkId,
           queryId: query.id,
           status: "error",
           output: EMPTY_ANSWER,
@@ -785,6 +796,10 @@ export async function judgeAnswers(
       )
     );
   });
+  const judgeReasoningEffort = requiredValue(
+    manifest.models.judge.reasoningEffort,
+    "Judge model reasoning effort is required",
+  );
   const judgeBatches = batches(pending, manifest.benchmarkPolicy.judgeCodexBatchSize);
   for (const wave of batches(
     judgeBatches,
@@ -799,14 +814,20 @@ export async function judgeAnswers(
               codexClient.judgeBatch(
                 {
                   model: manifest.models.judge.model,
-                  reasoningEffort: manifest.models.judge.reasoningEffort!,
+                  reasoningEffort: judgeReasoningEffort,
                   timeoutMs: manifest.benchmarkPolicy.judgeTimeoutMs ?? 1_800_000,
                 },
-                batch.map((query) => ({
-                  query,
-                  evidence: retrievalById.get(query.id)!.evidence,
-                  answer: answerById.get(query.id)!.output,
-                })),
+                batch.map((query) => {
+                  const retrieval = requiredValue(
+                    retrievalById.get(query.id),
+                    `Retrieval result missing for ${query.id}`,
+                  );
+                  const answer = requiredValue(
+                    answerById.get(query.id),
+                    `Answer result missing for ${query.id}`,
+                  );
+                  return { query, evidence: retrieval.evidence, answer: answer.output };
+                }),
               ),
             manifest.benchmarkPolicy.maxRetries,
           );
@@ -831,7 +852,10 @@ export async function judgeAnswers(
     for (const outcome of outcomes) {
       if (outcome.status === "ok") {
         outcome.result.value.forEach((item, index) => {
-          const answer = answerById.get(item.queryId)!;
+          const answer = requiredValue(
+            answerById.get(item.queryId),
+            `Answer result missing for ${item.queryId}`,
+          );
           byQuery.set(item.queryId, {
             datasetId: bundle.id,
             frameworkId: answer.frameworkId,
@@ -858,7 +882,10 @@ export async function judgeAnswers(
         continue;
       }
       for (const query of outcome.batch) {
-        const answer = answerById.get(query.id)!;
+        const answer = requiredValue(
+          answerById.get(query.id),
+          `Answer result missing for ${query.id}`,
+        );
         byQuery.set(query.id, {
           datasetId: bundle.id,
           frameworkId: answer.frameworkId,
@@ -986,8 +1013,11 @@ function prerequisiteIdentityError(
 }
 
 function requiredMapValue<K, V>(values: ReadonlyMap<K, V>, key: K): V {
-  const value = values.get(key);
-  if (value === undefined) throw new Error("Required checkpoint digest is missing");
+  return requiredValue(values.get(key), "Required checkpoint digest is missing");
+}
+
+function requiredValue<T>(value: T | undefined, message: string): T {
+  if (value === undefined) throw new Error(message);
   return value;
 }
 

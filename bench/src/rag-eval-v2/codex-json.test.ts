@@ -7,6 +7,14 @@ import {
   runCommand,
 } from "./codex-json.js";
 
+function requiredOptionValue(args: readonly string[], option: string): string {
+  const optionIndex = args.indexOf(option);
+  if (optionIndex < 0) throw new Error(`Missing command option ${option}`);
+  const value = args[optionIndex + 1];
+  if (!value) throw new Error(`Missing value for command option ${option}`);
+  return value;
+}
+
 describe("CodexJsonClient", () => {
   it("removes provider API keys from Codex CLI child processes", () => {
     expect(
@@ -48,9 +56,8 @@ describe("CodexJsonClient", () => {
       receivedArgs = args;
       receivedPrompt = stdin;
       receivedEnvironment = environment;
-      const outputIndex = args.indexOf("--output-last-message");
       writeFileSync(
-        args[outputIndex + 1]!,
+        requiredOptionValue(args, "--output-last-message"),
         JSON.stringify({
           answer: "The answer.",
           citations: ["e1"],
@@ -106,11 +113,9 @@ describe("CodexJsonClient", () => {
     let receivedSchema = "";
     const runner: CommandRunner = async (_command, args, stdin) => {
       receivedPrompt = stdin;
-      const schemaIndex = args.indexOf("--output-schema");
-      receivedSchema = readFileSync(args[schemaIndex + 1]!, "utf8");
-      const outputIndex = args.indexOf("--output-last-message");
+      receivedSchema = readFileSync(requiredOptionValue(args, "--output-schema"), "utf8");
       writeFileSync(
-        args[outputIndex + 1]!,
+        requiredOptionValue(args, "--output-last-message"),
         JSON.stringify({
           results: [
             {

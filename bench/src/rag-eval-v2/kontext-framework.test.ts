@@ -1155,7 +1155,26 @@ describe("KontextBrainAdapter bidirectional KG mode", () => {
     },
   );
 
-  it("routes retrieval through KontextAgent's evidence-backed branch", async () => {
+  it.each([
+    {
+      mode: "bidirectional-kg",
+      frameworkVersion: "workspace-0.1.0+bidirectional-kg-v5-adaptive-route-evidence",
+      resultMode: "bidirectional",
+      maxHops: 8,
+    },
+    {
+      mode: "bidirectional-kg-direct-only-ablation",
+      frameworkVersion: "workspace-0.1.0+bidirectional-kg-v5-direct-only-ablation",
+      resultMode: "bidirectional-direct-only-ablation",
+      maxHops: 0,
+    },
+    {
+      mode: "bidirectional-kg-consensus-direct",
+      frameworkVersion: "workspace-0.1.0+bidirectional-kg-v6-consensus-direct",
+      resultMode: "bidirectional-consensus-direct",
+      maxHops: 0,
+    },
+  ] as const)("routes $mode through KontextAgent's evidence-backed branch", async (scenario) => {
     const root = mkdtempSync(join(tmpdir(), "kontext-rag-eval-kg-"));
     temporaryDirectories.push(root);
     const dataDirectory = join(root, "data");
@@ -1177,7 +1196,7 @@ describe("KontextBrainAdapter bidirectional KG mode", () => {
 
     const adapter = new KontextBrainAdapter(DEFAULT_RAG_EVAL_MANIFEST, {
       embeddingClient: new FakeEmbeddingClient(),
-      retrievalMode: "bidirectional-kg",
+      retrievalMode: scenario.mode,
       benchmarkDataDirectory: dataDirectory,
     });
     const results = await adapter.retrieve(testBundle(), { workDirectory, topK: 1, candidateK: 1 });
@@ -1185,14 +1204,36 @@ describe("KontextBrainAdapter bidirectional KG mode", () => {
     expect(results).toHaveLength(1);
     expect(results[0]).toMatchObject({
       status: "ok",
-      frameworkVersion: "workspace-0.1.0+bidirectional-kg-v2",
+      frameworkVersion: scenario.frameworkVersion,
+      scoringProfile: {
+        id: "adaptive-route-v3",
+        version: 2,
+      },
+      featureSchemaVersion: "n-layer-adaptive-routing-v1",
       evidence: [
         {
           id: "chunk:med-0",
           text: "Alpha evidence establishes the requested fact.",
-          metadata: { retrievalMode: "bidirectional", chunkId: "med-0" },
+          metadata: { retrievalMode: scenario.resultMode, chunkId: "med-0", path: "" },
         },
       ],
+    });
+    const config = JSON.parse(
+      readFileSync(
+        join(
+          workDirectory,
+          "graphrag-bench-medical",
+          "kontext-brain",
+          "index",
+          "bidirectional-kg",
+          "kontext-kg-config.json",
+        ),
+        "utf8",
+      ),
+    );
+    expect(config).toMatchObject({
+      retrievalMode: scenario.resultMode,
+      searchBudget: { maxHops: scenario.maxHops },
     });
   });
 
@@ -1261,7 +1302,20 @@ describe("KontextBrainAdapter bidirectional KG mode", () => {
     );
   });
 
-  it("keeps source-hydrated retrieval in a separate v4 index and returns source windows", async () => {
+  it.each([
+    {
+      mode: "source-hydrated-stack",
+      resultMode: "v4-source-hydrated-stack",
+      frameworkVersion: "workspace-0.1.0+v4-source-hydrated-stack",
+      maxHops: 8,
+    },
+    {
+      mode: "source-hydrated-direct-only-ablation",
+      resultMode: "v4-source-hydrated-direct-only-ablation",
+      frameworkVersion: "workspace-0.1.0+v4-source-hydrated-direct-only-ablation",
+      maxHops: 0,
+    },
+  ] as const)("keeps $mode in a separate index and returns source windows", async (scenario) => {
     const root = mkdtempSync(join(tmpdir(), "kontext-rag-eval-source-hydrated-"));
     temporaryDirectories.push(root);
     const dataDirectory = join(root, "data");
@@ -1298,39 +1352,39 @@ describe("KontextBrainAdapter bidirectional KG mode", () => {
 
     const adapter = new KontextBrainAdapter(DEFAULT_RAG_EVAL_MANIFEST, {
       embeddingClient: new FakeEmbeddingClient(),
-      retrievalMode: "source-hydrated-stack",
+      retrievalMode: scenario.mode,
       benchmarkDataDirectory: dataDirectory,
     });
     const results = await adapter.retrieve(testBundle(), { workDirectory, topK: 1, candidateK: 1 });
 
     expect(results[0]).toMatchObject({
       status: "ok",
-      frameworkVersion: "workspace-0.1.0+v4-source-hydrated-stack",
+      frameworkVersion: scenario.frameworkVersion,
       evidence: [
         {
           id: "source-window:med:0-1",
           sourceId: "med",
           metadata: {
-            retrievalMode: "v4-source-hydrated-stack",
+            retrievalMode: scenario.resultMode,
             anchorChunkIds: "med-0",
             sourceChunkIds: "med-0,med-1",
           },
         },
       ],
     });
-    expect(
-      readFileSync(
-        join(
-          workDirectory,
-          "graphrag-bench-medical",
-          "kontext-brain",
-          "index",
-          "v4-source-hydrated-stack",
-          "kontext-kg-config.json",
-        ),
-        "utf8",
+    const config = readFileSync(
+      join(
+        workDirectory,
+        "graphrag-bench-medical",
+        "kontext-brain",
+        "index",
+        scenario.resultMode,
+        "kontext-kg-config.json",
       ),
-    ).toContain('"windowCharacters": 5000');
+      "utf8",
+    );
+    expect(config).toContain('"windowCharacters": 5000');
+    expect(JSON.parse(config)).toMatchObject({ graphBudget: { maxHops: scenario.maxHops } });
   });
 
   it("runs the same source/chunk stack on a canonical static corpus without dataset branches", async () => {

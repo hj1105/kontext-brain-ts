@@ -5,7 +5,8 @@ import type { BenchmarkQuery, CorpusDocument, DatasetBundle } from "./contracts.
 import { writePreparedDataset } from "./datasets.js";
 import { readJsonLines } from "./jsonl.js";
 
-const FRAMES_TSV_URL = "https://huggingface.co/datasets/google/frames-benchmark/resolve/main/test.tsv";
+const FRAMES_TSV_URL =
+  "https://huggingface.co/datasets/google/frames-benchmark/resolve/main/test.tsv";
 const FRAMES_TSV_REVISION = "cea20270ebb661d0ee1cdb15598c2c8fcba31025";
 
 interface WikipediaPage {
@@ -49,10 +50,12 @@ export async function prepareFramesDataset(outputDirectory: string): Promise<Dat
   const tsv = await downloadText(FRAMES_TSV_URL);
   writeFileSync(tsvPath, tsv, "utf8");
   const rows = parseDelimited(tsv, "\t");
-  if (rows.length !== 825) throw new Error(`Expected FRAMES header + 824 rows, found ${rows.length}`);
+  if (rows.length !== 825)
+    throw new Error(`Expected FRAMES header + 824 rows, found ${rows.length}`);
   const [header, ...dataRows] = rows;
-  const columns = new Map(header!.map((name, index) => [name, index]));
-  const linkColumns = header!
+  if (header === undefined) throw new Error("FRAMES header is missing");
+  const columns = new Map(header.map((name, index) => [name, index]));
+  const linkColumns = header
     .map((name, index) => ({ name, index }))
     .filter(({ name }) => name.startsWith("wikipedia_link_"));
   const linksByRow = dataRows.map((row) =>
@@ -71,12 +74,16 @@ export async function prepareFramesDataset(outputDirectory: string): Promise<Dat
   const idByLink = new Map<string, string>();
   const documentById = new Map<string, CorpusDocument>();
   for (const link of uniqueLinks) {
-    const requestedTitle = titleByLink.get(link)!;
+    const requestedTitle = titleByLink.get(link);
+    if (requestedTitle === undefined) {
+      throw new Error(`Wikipedia title missing for ${link}`);
+    }
     const cachedPage = pagesByTitle.get(requestedTitle);
     const text = cachedPage?.page.extract?.trim();
     if (!cachedPage || !text) continue;
     const page = cachedPage.page;
-    const canonicalKey = page.pageid === undefined ? page.title ?? requestedTitle : String(page.pageid);
+    const canonicalKey =
+      page.pageid === undefined ? (page.title ?? requestedTitle) : String(page.pageid);
     const id = `wikipedia:${createHash("sha256").update(canonicalKey).digest("hex").slice(0, 24)}`;
     idByLink.set(link, id);
     if (!documentById.has(id)) {
@@ -89,12 +96,17 @@ export async function prepareFramesDataset(outputDirectory: string): Promise<Dat
       });
     }
   }
-  const documents = [...documentById.values()].sort((left, right) => left.id.localeCompare(right.id));
+  const documents = [...documentById.values()].sort((left, right) =>
+    left.id.localeCompare(right.id),
+  );
   const promptColumn = requiredColumn(columns, "Prompt");
   const answerColumn = requiredColumn(columns, "Answer");
   const reasoningColumn = requiredColumn(columns, "reasoning_types");
   const queries: BenchmarkQuery[] = dataRows.map((row, index) => {
-    const links = linksByRow[index]!;
+    const links = linksByRow[index];
+    if (links === undefined) {
+      throw new Error(`Wikipedia links missing for FRAMES row ${index}`);
+    }
     const goldEvidenceIds = links.flatMap((link) => {
       const id = idByLink.get(link);
       return id ? [id] : [];
@@ -135,7 +147,7 @@ export function parseDelimited(input: string, delimiter: string): string[][] {
   let field = "";
   let quoted = false;
   for (let index = 0; index < input.length; index += 1) {
-    const character = input[index]!;
+    const character = input.charAt(index);
     if (character === '"') {
       if (quoted && input[index + 1] === '"') {
         field += '"';
@@ -198,10 +210,13 @@ async function wikipediaTitle(link: string): Promise<string> {
 }
 
 function normalizeWikipediaLink(link: string): string {
-  link = link.replace(/\s+\(NOT REQUIRED, BUT HELPFUL\)\s*$/i, "").replace(/,\s*$/, "").trim();
-  if (/^https?:\/\//i.test(link)) return link;
-  if (/^(?:en\.)?wikipedia\.org\//i.test(link)) return `https://${link}`;
-  throw new Error(`Invalid Wikipedia link: ${link}`);
+  const normalizedLink = link
+    .replace(/\s+\(NOT REQUIRED, BUT HELPFUL\)\s*$/i, "")
+    .replace(/,\s*$/, "")
+    .trim();
+  if (/^https?:\/\//i.test(normalizedLink)) return normalizedLink;
+  if (/^(?:en\.)?wikipedia\.org\//i.test(normalizedLink)) return `https://${normalizedLink}`;
+  throw new Error(`Invalid Wikipedia link: ${normalizedLink}`);
 }
 
 export function splitWikipediaLinks(value: string): string[] {
@@ -232,9 +247,11 @@ async function fetchWikipediaPages(
   const cached = existsSync(cachePath) ? readJsonLines<CachedWikipediaPage>(cachePath) : [];
   const requestedTitles = new Set(titles);
   const output = new Map(
-    cached.flatMap((record) => requestedTitles.has(record.requestedTitle) && record.page.contentFormat === "wikitext"
-      ? [[record.requestedTitle, record] as const]
-      : []),
+    cached.flatMap((record) =>
+      requestedTitles.has(record.requestedTitle) && record.page.contentFormat === "wikitext"
+        ? [[record.requestedTitle, record] as const]
+        : [],
+    ),
   );
   const missingTitles = titles.filter((title) => !output.has(title));
   if (missingTitles.length > 0) {
@@ -278,29 +295,43 @@ async function fetchWikipediaPages(
       (payload.query?.pages ?? []).flatMap((page) => {
         if (!page.title) return [];
         const content = page.revisions?.[0]?.slots?.main?.content;
-        return [[page.title, {
-          pageid: page.pageid,
-          title: page.title,
-          extract: content,
-          contentFormat: "wikitext" as const,
-          missing: page.missing || !content,
-        }] as const];
+        return [
+          [
+            page.title,
+            {
+              pageid: page.pageid,
+              title: page.title,
+              extract: content,
+              contentFormat: "wikitext" as const,
+              missing: page.missing || !content,
+            },
+          ] as const,
+        ];
       }),
     );
     const records: CachedWikipediaPage[] = [];
     for (const requested of batch) {
       let resolved = requested;
-      for (let hop = 0; hop < 3 && aliases.has(resolved); hop += 1) resolved = aliases.get(resolved)!;
-      const page = pages.get(resolved) ?? pages.get(requested) ?? {
-        title: resolved,
-        contentFormat: "wikitext" as const,
-        missing: true,
-      };
+      for (let hop = 0; hop < 3; hop += 1) {
+        const alias = aliases.get(resolved);
+        if (alias === undefined) break;
+        resolved = alias;
+      }
+      const page = pages.get(resolved) ??
+        pages.get(requested) ?? {
+          title: resolved,
+          contentFormat: "wikitext" as const,
+          missing: true,
+        };
       const record = { requestedTitle: requested, page, fetchedAt: new Date().toISOString() };
       output.set(requested, record);
       records.push(record);
     }
-    appendFileSync(cachePath, `${records.map((record) => JSON.stringify(record)).join("\n")}\n`, "utf8");
+    appendFileSync(
+      cachePath,
+      `${records.map((record) => JSON.stringify(record)).join("\n")}\n`,
+      "utf8",
+    );
     const completed = Math.min(offset + batch.length, missingTitles.length);
     if (completed === missingTitles.length || completed % 50 === 0) {
       process.stderr.write(
@@ -321,7 +352,7 @@ async function retry<T>(operation: () => Promise<T>, maxRetries: number): Promis
       lastError = error;
       if (attempt < maxRetries) {
         const exponentialDelay = Math.min(30_000, 1_000 * 2 ** attempt);
-        const retryAfter = error instanceof HttpStatusError ? error.retryAfterMs ?? 0 : 0;
+        const retryAfter = error instanceof HttpStatusError ? (error.retryAfterMs ?? 0) : 0;
         const delayMs = Math.min(55_000, Math.max(exponentialDelay, retryAfter));
         process.stderr.write(
           `${(error as Error).message}; retrying in ${Math.ceil(delayMs / 1_000)}s (${attempt + 1}/${maxRetries})\n`,

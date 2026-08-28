@@ -1,6 +1,7 @@
 import type { OntologyDeployment, OntologyDeploymentRepository } from "@kontext-brain/core";
 import type { Pool, QueryResultRow } from "pg";
 import { withOrganizationTransaction } from "./postgres-knowledge-graph.js";
+import { toIsoString } from "./postgres-value-utils.js";
 
 export class PostgresOntologyDeploymentRepository<TGraph>
   implements OntologyDeploymentRepository<TGraph>
@@ -8,18 +9,23 @@ export class PostgresOntologyDeploymentRepository<TGraph>
   constructor(private readonly pool: Pool) {}
 
   async getActive(organizationId: string): Promise<OntologyDeployment<TGraph> | null> {
-    return withOrganizationTransaction(this.pool, organizationId, async (client) => {
-      const result = await client.query(
-        `SELECT d.*
-         FROM kontext_organization_runtime runtime
-         JOIN kontext_ontology_deployments d
-           ON d.organization_id = runtime.organization_id
-          AND d.content_hash = runtime.active_ontology_hash
-         WHERE runtime.organization_id = $1`,
-        [organizationId],
-      );
-      return result.rows[0] ? mapDeployment<TGraph>(result.rows[0]) : null;
-    });
+    return withOrganizationTransaction(
+      this.pool,
+      organizationId,
+      async (client) => {
+        const result = await client.query(
+          `SELECT d.*
+           FROM kontext_organization_runtime runtime
+           JOIN kontext_ontology_deployments d
+             ON d.organization_id = runtime.organization_id
+            AND d.content_hash = runtime.active_ontology_hash
+           WHERE runtime.organization_id = $1`,
+          [organizationId],
+        );
+        return result.rows[0] ? mapDeployment<TGraph>(result.rows[0]) : null;
+      },
+      { readOnly: true },
+    );
   }
 
   async stage(candidate: OntologyDeployment<TGraph>): Promise<void> {
@@ -104,10 +110,7 @@ function mapDeployment<TGraph>(row: QueryResultRow): OntologyDeployment<TGraph> 
     graph: row.graph_data as TGraph,
     gitCommit: row.git_commit === null ? undefined : String(row.git_commit),
     status: row.status as OntologyDeployment<TGraph>["status"],
-    createdAt:
-      row.created_at instanceof Date
-        ? row.created_at.toISOString()
-        : new Date(String(row.created_at)).toISOString(),
+    createdAt: toIsoString(row.created_at),
     failure: row.failure === null ? undefined : String(row.failure),
   };
 }
