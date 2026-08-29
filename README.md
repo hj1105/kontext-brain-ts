@@ -54,28 +54,28 @@ harnesses are not part of the current performance claim.
 
 All rows below use the frozen shared answer/judge contract. Retrieval is scored
 over the full dataset; answer quality uses the same deterministic 200-query
-sample. Higher is better. Embedding API cost is the cost represented by the
-embeddings used in each row; when a run reused an existing cache, its newly
-incurred cost is shown separately.
+sample. Higher is better. Embedding API cost is the total represented embedding
+usage available for each row (index plus measured query-time embeddings), not
+an index-only cost; when a run reused an existing cache, its newly incurred
+cost is shown separately. The detailed report splits index-build time and cost
+from query-time usage where the native framework recorded both boundaries.
 
 | Dataset | System | Recall@10 | nDCG@10 | Correctness | Strict faithfulness | Claim F1 | Citation F1 | Warm retrieval p95 | Query-to-answer p95 | Eval E2E p95 | Embedding API cost | Answer+judge LLM tokens/query (in/out) | LLM API-equivalent $/query |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Medical | **Kontext v15** | 0.8914 | 0.9689 | **0.9499** | **0.9614** | **0.8612** | **0.9583** | 7.77 s | 20.15 s | 97.65 s | **$0.008150 represented / $0 new**‡ | 45,150 / 1,277 | ≈$0.1593§ |
-| Medical | Kontext v13 default | 0.8923 | 0.9704 | 0.9461 | 0.9534 | 0.8550 | 0.9541 | 6.83 s | 18.60 s | 108.08 s† | $0.008150 | 45,148 / 1,344 | ≈$0.1606§ |
+| Medical | **Kontext v15** | 0.8914 | 0.9689 | **0.9499** | **0.9614** | **0.8612** | **0.9583** | 7.30 s | 19.20 s | 124.86 s | **$0.008150 represented / $0 new**‡ | 45,150 / 1,277 | ≈$0.1593§ |
+| Medical | Kontext v13 default | 0.8923 | 0.9704 | 0.9461 | 0.9534 | 0.8550 | 0.9541 | 6.83 s | 18.60 s | 107.71 s | $0.008150 | 45,148 / 1,344 | ≈$0.1606§ |
 | Medical | LightRAG 1.5.6 | **0.9326** | 0.9990* | 0.8939 | 0.9417 | 0.8575 | 0.9477 | 6.00 s | 16.22 s | 123.02 s | $0.015409 | 57,911 / 1,651 | ≈$0.2057§ |
-| Medical | Microsoft GraphRAG 3.1.1 | 0.8303 | 0.9971* | 0.7817 | 0.8740 | 0.7336 | 0.8518 | 0.28 s | 12.83 s | 123.08 s† | $0.013623 | 43,402 / 1,942 | ≈$0.1678§ |
-| Novel | **Kontext v15** | 0.8209 | 0.9349 | **0.8566** | **0.9290** | **0.8234** | 0.9369 | 9.26 s | 20.15 s | 103.18 s | $0.029414¶ | 47,690 / 1,374 | ≈$0.1688§ |
-| Novel | Kontext v13 default | 0.5259 | 0.6662 | 0.4654 | 0.7922 | 0.5181 | 0.5521 | 10.13 s | 18.87 s | 83.62 s† | $0.017840 | 47,508 / 1,088 | ≈$0.1629§ |
+| Medical | Microsoft GraphRAG 3.1.1 | 0.8303 | 0.9971* | 0.7817 | 0.8740 | 0.7336 | 0.8518 | 0.28 s | 12.83 s | 113.19 s | $0.013623 | 43,402 / 1,942 | ≈$0.1678§ |
+| Novel | **Kontext v15** | 0.8209 | 0.9349 | **0.8566** | **0.9290** | **0.8234** | 0.9369 | 8.54 s | 20.11 s | 97.68 s | $0.029414¶ | 47,690 / 1,374 | ≈$0.1688§ |
+| Novel | Kontext v13 default | 0.5259 | 0.6662 | 0.4654 | 0.7922 | 0.5181 | 0.5521 | 9.89 s | 19.37 s | 83.51 s | $0.017840 | 47,508 / 1,088 | ≈$0.1629§ |
 | Novel | LightRAG 1.5.6 | **0.8567** | 0.9945* | 0.8498 | 0.9272 | 0.8201 | **0.9407** | 6.66 s | 17.88 s | 117.30 s | $0.049371 | 58,705 / 1,351 | ≈$0.2022§ |
-| Novel | Microsoft GraphRAG 3.1.1 | 0.7716 | 0.9816* | 0.7668 | 0.8651 | 0.7434 | 0.8763 | 0.40 s | 10.97 s | 140.49 s† | $0.088326 | 43,492 / 1,653 | ≈$0.1624§ |
+| Novel | Microsoft GraphRAG 3.1.1 | 0.7716 | 0.9816* | 0.7668 | 0.8651 | 0.7434 | 0.8763 | 0.40 s | 10.97 s | 136.36 s | $0.088326 | 43,492 / 1,653 | ≈$0.1624§ |
 
 Context precision is deliberately omitted from this compact table. `*` marks
 package-sensitive nDCG: LightRAG and Microsoft GraphRAG package a large native
 context as one evidence record, while Kontext exposes separately scored evidence
-windows, so their raw ranking/noise values are not directly comparable. `†`
-marks a judge stage that did not complete all 200 queries, which disqualifies
-only that row's Eval E2E figure and never its retrieval or query-to-answer
-latency. `‡` means the Medical v15 row represents the same 407,518 embedding
+windows, so their raw ranking/noise values are not directly comparable. `‡`
+means the Medical v15 row represents the same 407,518 embedding
 input tokens already paid for by the v13 run: 1,385 document, 2,062 query, and
 5,893 expanded-query vectors were reused, with zero new vectors or embedding
 input tokens. A fresh index or new query workload is not free. `¶` is the
@@ -96,9 +96,10 @@ SciFact/NFCorpus retrieval guardrails:
 
 #### How the three latency columns were measured
 
-The latency columns come from the 2026-08-24/27 clean latency campaign
-(protocol `clean-latency-v1.1`, artifacts under
-`bench/data/rag-eval-v2/runs/clean-latency-2026-08-24/`). They replace the
+The latency columns come from the 2026-08-24/29 clean latency campaign
+(protocol `clean-latency-v1.1`; accepted composite suite under
+`bench/data/rag-eval-v2/runs/clean-latency-corrective-attempt6-2026-08-28/`).
+Earlier invalid attempts remain preserved beside it. These values replace the
 earlier speed figures outright rather than adjusting them, because several of
 those were measured while other benchmarks shared one local Codex queue and so
 recorded other jobs' queue wait. Novel Kontext v15 previously read 972.11 s and
@@ -112,9 +113,9 @@ deterministic 200-query sample per dataset (seed 20260814, one shared sample
 digest), one system runs at a time, and retrieval, answer, and judge each run at
 concurrency 1, batch size 1, with no retries. Percentiles are nearest-rank.
 
-- **Warm retrieval p95** is retrieval only. Index construction is excluded; its
-  cost and wall-clock time live in the Embedding API cost column and in
-  [Benchmark history](./bench/data/BENCHMARK_HISTORY.md).
+- **Warm retrieval p95** is retrieval only. Index construction is excluded;
+  recorded index-build time and cost are reported separately in the detailed
+  comparison rather than folded into request latency.
 - **Query-to-answer p95** is retrieval plus answer latency. This is the
   user-facing number: the judge is an evaluation step, not part of answering.
 - **Eval E2E p95** adds the judge call and describes the evaluation pipeline
