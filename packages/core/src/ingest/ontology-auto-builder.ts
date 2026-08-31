@@ -26,6 +26,23 @@ export const emptyOntologyBuildResult: OntologyBuildResult = {
   docCount: 0,
 };
 
+const MIN_AUTO_NODE_COUNT = 3;
+const MAX_AUTO_NODE_COUNT = 20;
+
+function inferTargetNodeCount(documentCount: number, categoryCount: number): number {
+  const maxUsefulNodeCount = Math.min(MAX_AUTO_NODE_COUNT, documentCount);
+  const minUsefulNodeCount = Math.min(MIN_AUTO_NODE_COUNT, maxUsefulNodeCount);
+  // Grow sublinearly with corpus size, while allowing diverse extracted topics
+  // to raise the target. Two related raw categories can share one ontology node.
+  const corpusSizeEstimate = Math.ceil(Math.sqrt(documentCount));
+  const topicDiversityEstimate = Math.ceil(categoryCount / 2);
+
+  return Math.min(
+    maxUsefulNodeCount,
+    Math.max(minUsefulNodeCount, corpusSizeEstimate, topicDiversityEstimate),
+  );
+}
+
 /**
  * Auto-builds an ontology (nodes + edges) from document sources.
  *
@@ -38,7 +55,7 @@ export const emptyOntologyBuildResult: OntologyBuildResult = {
 export class OntologyAutoBuilder {
   constructor(
     private readonly adapter: LLMAdapter,
-    private readonly targetNodeCount = 10,
+    private readonly targetNodeCount?: number,
     private readonly batchSize = 20,
     private readonly templates: PromptTemplates = DefaultPromptTemplates,
   ) {}
@@ -81,7 +98,11 @@ export class OntologyAutoBuilder {
     );
 
     try {
-      const clean = response.trim().replace(/^```json/, "").replace(/```$/, "").trim();
+      const clean = response
+        .trim()
+        .replace(/^```json/, "")
+        .replace(/```$/, "")
+        .trim();
       const parsed = JSON.parse(clean);
       if (Array.isArray(parsed)) return parsed.map((x) => String(x));
     } catch {
@@ -94,17 +115,26 @@ export class OntologyAutoBuilder {
     docs: readonly SourceDocument[],
     rawCategories: readonly string[],
   ): Promise<OntologyNode[]> {
-    const docTitles = docs.slice(0, 100).map((d) => `- ${d.title}`).join("\n");
+    const targetNodeCount =
+      this.targetNodeCount ?? inferTargetNodeCount(docs.length, rawCategories.length);
+    const docTitles = docs
+      .slice(0, 100)
+      .map((d) => `- ${d.title}`)
+      .join("\n");
     const catList = rawCategories.join(", ");
 
     const response = await this.adapter.complete(
-      this.templates.nodeDesign(this.targetNodeCount),
+      this.templates.nodeDesign(targetNodeCount),
       `Documents:\n${docTitles}\n\nExtracted categories: ${catList}`,
       "Design ontology nodes.",
     );
 
     try {
-      const clean = response.trim().replace(/^```json/, "").replace(/```$/, "").trim();
+      const clean = response
+        .trim()
+        .replace(/^```json/, "")
+        .replace(/```$/, "")
+        .trim();
       const parsed: unknown = JSON.parse(clean);
       if (typeof parsed !== "object" || parsed === null || !("nodes" in parsed)) return [];
       const rawNodes = (parsed as { nodes: unknown }).nodes;
@@ -116,8 +146,7 @@ export class OntologyAutoBuilder {
           description: String(n.description ?? ""),
           weight: typeof n.weight === "number" ? n.weight : 0.8,
           level: typeof n.level === "number" ? n.level : 0,
-          parentId:
-            parentId && parentId !== "null" && parentId !== null ? String(parentId) : null,
+          parentId: parentId && parentId !== "null" && parentId !== null ? String(parentId) : null,
         });
       });
     } catch {
@@ -136,7 +165,11 @@ export class OntologyAutoBuilder {
     );
 
     try {
-      const clean = response.trim().replace(/^```json/, "").replace(/```$/, "").trim();
+      const clean = response
+        .trim()
+        .replace(/^```json/, "")
+        .replace(/```$/, "")
+        .trim();
       const parsed: unknown = JSON.parse(clean);
       if (typeof parsed !== "object" || parsed === null || !("edges" in parsed)) return [];
       const rawEdges = (parsed as { edges: unknown }).edges;

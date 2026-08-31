@@ -272,7 +272,7 @@ export class KontextAgent {
       return emptySyncResult;
     }
     if (this.ontologySchemaGraph.nodes.size === 0) {
-      const setup = await this.autoSetupUnlocked(10, targets);
+      const setup = await this.autoSetupUnlocked(undefined, targets);
       return {
         connectorsSynced: targets.length,
         resourcesAdded: setup.documentsClassified + setup.documentsUnmapped,
@@ -439,12 +439,12 @@ export class KontextAgent {
 
   // ── autoSetup ───────────────────────────────────────────────
 
-  async autoSetup(targetNodeCount = 10): Promise<AutoSetupResult> {
+  async autoSetup(targetNodeCount?: number): Promise<AutoSetupResult> {
     return this.runMutation(() => this.autoSetupUnlocked(targetNodeCount));
   }
 
   private async autoSetupUnlocked(
-    targetNodeCount = 10,
+    targetNodeCount: number | undefined,
     connectors: readonly MCPConnector[] = this.mcpConnectors,
   ): Promise<AutoSetupResult> {
     const resourceInfos = await this.collectAllResources(connectors);

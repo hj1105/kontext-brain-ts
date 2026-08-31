@@ -116,10 +116,12 @@ export class KontextToolServer {
         targetNodeCount: z
           .number()
           .optional()
-          .describe("Target number of ontology nodes if built from scratch (default 10)"),
+          .describe(
+            "Optional target node-count override; omit to infer it from corpus size and topic diversity",
+          ),
       },
       async ({ targetNodeCount }) => {
-        const result = await this.agent.autoSetup(targetNodeCount ?? 10);
+        const result = await this.agent.autoSetup(targetNodeCount);
         const text = [
           "Auto-setup complete",
           `  Nodes created:    ${result.nodesCreated}`,
