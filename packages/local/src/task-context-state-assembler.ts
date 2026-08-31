@@ -42,7 +42,7 @@ export function assembleCurrentTaskContextState(
     input.evidence,
     resolution.effective.map((record) => record.revision),
   );
-  const logicPlans = normalizeLogicPlans(input.logicPlans);
+  const logicPlans = normalizeLogicPlans(input.taskId, input.logicPlans);
   const effectiveScopes = uniqueScopes([
     ...(input.baseScopes ?? []),
     ...resolution.effective.map((record) => record.revision.scope),
@@ -132,7 +132,10 @@ function normalizeEvidence(
   );
 }
 
-function normalizeLogicPlans(plans: readonly LogicWorkPlan[]): readonly LogicWorkPlan[] {
+function normalizeLogicPlans(
+  taskId: string,
+  plans: readonly LogicWorkPlan[],
+): readonly LogicWorkPlan[] {
   const keys = new Set<string>();
   return plans
     .map((plan) => {
@@ -142,10 +145,51 @@ function normalizeLogicPlans(plans: readonly LogicWorkPlan[]): readonly LogicWor
       if (plannedSymbolIds.length === 0 || allowedPaths.length === 0) {
         throw new Error(`Logic Work Item "${plan.workItemId}" requires symbols and paths`);
       }
-      const key = JSON.stringify([plan.workItemId, plannedSymbolIds]);
+      const plannedSymbols = plan.plannedSymbols
+        ? [...plan.plannedSymbols]
+            .map((record) => {
+              if (record.taskId !== taskId) {
+                throw new Error(
+                  `Planned Symbol "${record.plannedSymbolId}" belongs to another Task`,
+                );
+              }
+              requireNonEmpty(record.plannedSymbolId, "Planned Symbol ID");
+              requireNonEmpty(record.responsibility, "Planned Symbol responsibility");
+              return {
+                ...record,
+                intendedIdentity: {
+                  ...record.intendedIdentity,
+                  relativePath: record.intendedIdentity.relativePath
+                    ? normalizeAllowedPath(record.intendedIdentity.relativePath)
+                    : undefined,
+                },
+              };
+            })
+            .sort((left, right) => left.plannedSymbolId.localeCompare(right.plannedSymbolId))
+        : undefined;
+      if (
+        plannedSymbols &&
+        JSON.stringify(plannedSymbols.map((record) => record.plannedSymbolId)) !==
+          JSON.stringify(plannedSymbolIds)
+      ) {
+        throw new Error(
+          `Logic Work Item "${plan.workItemId}" must describe every Planned Symbol ID exactly once`,
+        );
+      }
+      const key = plan.workItemId;
       if (keys.has(key)) throw new Error(`Duplicate Logic Work Item plan: ${plan.workItemId}`);
       keys.add(key);
-      return { workItemId: plan.workItemId, plannedSymbolIds, allowedPaths };
+      return {
+        workItemId: plan.workItemId,
+        plannedSymbolIds,
+        plannedSymbols,
+        allowedPaths,
+        dependsOn: uniqueSorted(plan.dependsOn ?? []),
+        requiredVerifiers: [...(plan.requiredVerifiers ?? [])].sort(
+          (left, right) => left.kind.localeCompare(right.kind) || left.ref.localeCompare(right.ref),
+        ),
+        capabilityId: plan.capabilityId,
+      };
     })
     .sort((left, right) => left.workItemId.localeCompare(right.workItemId));
 }

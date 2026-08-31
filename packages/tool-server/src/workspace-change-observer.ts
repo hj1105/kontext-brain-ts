@@ -16,6 +16,13 @@ export interface WorkspaceObservationSnapshot {
   readonly files: readonly WorkspaceFileState[];
 }
 
+export interface WorkspacePatchObservation {
+  readonly patchDigest: string;
+  readonly changedPaths: readonly string[];
+  readonly beforeRevision: string;
+  readonly afterRevision: string;
+}
+
 const maxGitOutputBytes = 64 * 1024 * 1024;
 const maxObservedFiles = 50_000;
 
@@ -49,6 +56,29 @@ export function changedPathsBetween(
   return Array.from(new Set([...previous.keys(), ...current.keys()]))
     .filter((filePath) => stableJson(previous.get(filePath)) !== stableJson(current.get(filePath)))
     .sort((left, right) => left.localeCompare(right));
+}
+
+export function observeWorkspacePatch(
+  before: WorkspaceObservationSnapshot,
+  after: WorkspaceObservationSnapshot,
+): WorkspacePatchObservation {
+  if (before.workspacePath !== after.workspacePath) {
+    throw new Error("Workspace patch observation requires the same workspace");
+  }
+  const previous = new Map(before.files.map((file) => [file.path, file] as const));
+  const current = new Map(after.files.map((file) => [file.path, file] as const));
+  const changedPaths = changedPathsBetween(before, after);
+  const changes = changedPaths.map((changedPath) => ({
+    path: changedPath,
+    before: previous.get(changedPath) ?? null,
+    after: current.get(changedPath) ?? null,
+  }));
+  return {
+    patchDigest: `sha256:${sha256(stableJson(changes))}`,
+    changedPaths,
+    beforeRevision: before.revision,
+    afterRevision: after.revision,
+  };
 }
 
 async function listGitFiles(workspacePath: string): Promise<readonly string[]> {

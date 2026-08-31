@@ -18,6 +18,7 @@ import {
   FileWriteAuthorizationEventStore,
   InMemoryWriteAuthorizationBindingStore,
   LocalPostWriteObserver,
+  captureWorkspaceCodeSymbols,
   captureWorkspaceSnapshot,
 } from "../src/index.js";
 
@@ -99,6 +100,11 @@ describe("LocalPostWriteObserver", () => {
     const prepared = new InMemoryPreparedTaskContextStore();
     await prepared.put({ contract, snapshot, additionalRequiredEvidenceIds: [] });
     const baseline = await captureWorkspaceSnapshot(workspacePath, ["src/handler.ts"]);
+    const symbolBaseline = await captureWorkspaceCodeSymbols(
+      workspacePath,
+      ["src/handler.ts"],
+      baseline,
+    );
     const bindings = new InMemoryWriteAuthorizationBindingStore();
     await bindings.put(workspacePath, {
       request: {
@@ -112,7 +118,9 @@ describe("LocalPostWriteObserver", () => {
       },
       allowedPaths: [path.join(workspacePath, "src", "handler.ts")],
       receipt,
+      initialBaseline: baseline,
       baseline,
+      symbolBaseline,
     });
     const events = new FileWriteAuthorizationEventStore(root);
     await events.put({

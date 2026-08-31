@@ -40,13 +40,11 @@ describe("KontextCompletionToolRouter", () => {
       workItemId: "work-item:handler",
       workspacePath: "/workspace",
       tier: "targeted",
-      affectedSymbolIds: ["symbol:handler"],
-      codeRevision: "commit:result",
-      contextDigest,
       observedAt: "2026-08-28T11:00:00.000Z",
       nextAttemptAt: "2026-08-28T11:01:00.000Z",
     });
     await router.submitChangeBundle({
+      workspacePath: "/workspace",
       bundle: {
         taskId,
         workItemId: "work-item:handler",
@@ -64,25 +62,6 @@ describe("KontextCompletionToolRouter", () => {
         unresolved: [],
         submittedAt: "2026-08-28T11:02:00.000Z",
       },
-      observedPatch: {
-        patchDigest: "sha256:patch",
-        changedPaths: ["src/handler.ts"],
-        changedSymbolIds: ["symbol:handler"],
-      },
-      receipts: [
-        {
-          receiptId: "context-receipt:handler",
-          taskId,
-          workItemId: "work-item:handler",
-          plannedSymbolIds: ["symbol:handler"],
-          allowedPaths: ["src/handler.ts"],
-          contextDigest,
-          normativeRevisions: [],
-          evidenceIds: ["evidence:decision"],
-          issuedAt: "2026-08-28T11:00:00.000Z",
-          expiresAt: "2026-08-28T12:00:00.000Z",
-        },
-      ],
     });
 
     expect(operations.checked?.tier).toBe("targeted");
@@ -90,12 +69,18 @@ describe("KontextCompletionToolRouter", () => {
 
     await expect(
       router.submitChangeBundle({
+        workspacePath: "/workspace",
         bundle: {
           ...operations.submitted?.bundle,
           bundleId: "change-bundle:caller-forged",
         },
-        observedPatch: operations.submitted?.observedPatch,
-        receipts: operations.submitted?.receipts,
+      }),
+    ).rejects.toThrow();
+    await expect(
+      router.submitChangeBundle({
+        workspacePath: "/workspace",
+        bundle: operations.submitted?.bundle,
+        observedPatch: { patchDigest: "caller:forged" },
       }),
     ).rejects.toThrow();
   });
@@ -108,7 +93,6 @@ describe("KontextCompletionToolRouter", () => {
       currentState: "in_progress",
       workStarted: true,
       completionRequested: true,
-      currentCodeRevision: "commit:result",
       context: { status: "current", contextDigest },
       evidence: [],
       invariantEvaluations: [],

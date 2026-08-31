@@ -132,7 +132,7 @@ describe("Codex plugin bundle", () => {
           optionalEvidenceTokenBudget: 1_000,
         },
       });
-      expect(begun.structuredContent).toMatchObject({
+      expect(begun.structuredContent, JSON.stringify(begun)).toMatchObject({
         status: "current",
         editingAllowed: true,
         receipt: { allowedPaths: ["src/handler.ts"] },
