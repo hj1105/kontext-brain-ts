@@ -3,6 +3,7 @@ import {
   type KontextRuntimeOperations,
   KontextRuntimeToolRouter,
   type ScheduleLogicRequest,
+  applyRiskProviderPolicy,
 } from "../src/index.js";
 
 describe("KontextRuntimeToolRouter", () => {
@@ -12,6 +13,11 @@ describe("KontextRuntimeToolRouter", () => {
     await router.inspectRuntimes({});
     await router.getSchedule({ jobId: "runtime-schedule:one" });
     await router.cancelSchedule({ jobId: "runtime-schedule:one" });
+    await router.integrateSchedule({
+      jobId: "runtime-schedule:one",
+      observedAt: "2026-08-31T03:00:00.000Z",
+      nextAttemptAt: "2026-08-31T03:05:00.000Z",
+    });
     await router.scheduleLogic({
       taskId: "task:runtime",
       repositoryPath: "/repository",
@@ -33,6 +39,7 @@ describe("KontextRuntimeToolRouter", () => {
     expect(operations.inspections).toBe(1);
     expect(operations.requestedJobId).toBe("runtime-schedule:one");
     expect(operations.cancelledJobId).toBe("runtime-schedule:one");
+    expect(operations.integratedJobId).toBe("runtime-schedule:one");
     expect(operations.scheduled).toEqual(
       expect.objectContaining({
         taskId: "task:runtime",
@@ -59,11 +66,39 @@ describe("KontextRuntimeToolRouter", () => {
   });
 });
 
+describe("risk-based provider policy", () => {
+  const work = [
+    { eligibleProviders: ["codex", "claude"] as const },
+    { eligibleProviders: ["codex", "claude"] as const },
+  ];
+
+  it("keeps one implementation provider available for a different medium-risk reviewer", () => {
+    expect(applyRiskProviderPolicy(work, "medium")).toEqual([
+      { eligibleProviders: ["codex"], pinnedProvider: "codex" },
+      { eligibleProviders: ["codex"], pinnedProvider: "codex" },
+    ]);
+  });
+
+  it("uses Claude implementation for Codex-led high-risk planning and rejects a Codex pin", () => {
+    expect(applyRiskProviderPolicy(work, "high")).toEqual([
+      { eligibleProviders: ["claude"], pinnedProvider: "claude" },
+      { eligibleProviders: ["claude"], pinnedProvider: "claude" },
+    ]);
+    expect(() =>
+      applyRiskProviderPolicy(
+        [{ eligibleProviders: ["codex", "claude"] as const, pinnedProvider: "codex" as const }],
+        "high",
+      ),
+    ).toThrow("provider policy");
+  });
+});
+
 class RecordingRuntimeOperations implements KontextRuntimeOperations {
   inspections = 0;
   scheduled?: ScheduleLogicRequest;
   requestedJobId?: string;
   cancelledJobId?: string;
+  integratedJobId?: string;
 
   async inspectRuntimes(): Promise<unknown> {
     this.inspections += 1;
@@ -83,5 +118,10 @@ class RecordingRuntimeOperations implements KontextRuntimeOperations {
   async cancelSchedule(request: { readonly jobId: string }): Promise<unknown> {
     this.cancelledJobId = request.jobId;
     return { jobId: request.jobId, status: "cancelling" };
+  }
+
+  async integrateSchedule(request: { readonly jobId: string }): Promise<unknown> {
+    this.integratedJobId = request.jobId;
+    return { jobId: request.jobId, resultRevision: "workspace:integrated" };
   }
 }

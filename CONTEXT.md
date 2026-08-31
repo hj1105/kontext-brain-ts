@@ -158,7 +158,7 @@ An observed verifier result bound to one code revision and one Task Context Snap
 
 ## Review Finding
 
-An independently reported concern that binds a code location or Code Symbol to an acceptance criterion, normative rule, or Evidence item. The agent whose change caused a Review Finding cannot approve its own resolution.
+An independently reported concern that binds a code location or Code Symbol to an acceptance criterion, normative rule, or Evidence item. Its author and reviewer runtime provenance is retained, and a runtime whose change caused a Review Finding cannot report or approve its resolution.
 
 ## Accuracy Manifest
 

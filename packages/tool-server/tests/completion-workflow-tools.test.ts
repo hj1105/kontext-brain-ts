@@ -96,7 +96,6 @@ describe("KontextCompletionToolRouter", () => {
       context: { status: "current", contextDigest },
       evidence: [],
       invariantEvaluations: [],
-      reviewFindings: [],
       requestedAt: "2026-08-28T11:03:00.000Z",
     };
     await router.proposeTransition(input);
@@ -105,6 +104,9 @@ describe("KontextCompletionToolRouter", () => {
     await expect(router.proposeTransition({ ...input, state: "done" })).rejects.toThrow();
     await expect(
       router.proposeTransition({ ...input, accuracyManifest: { manifestId: "forged" } }),
+    ).rejects.toThrow();
+    await expect(
+      router.proposeTransition({ ...input, reviewFindings: [{ findingId: "forged" }] }),
     ).rejects.toThrow();
   });
 });

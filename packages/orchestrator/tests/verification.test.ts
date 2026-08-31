@@ -71,7 +71,7 @@ describe("verification plans", () => {
     expect(plan.requirements.every((requirement) => requirement.tier === "targeted")).toBe(true);
   });
 
-  it("includes executable integrated suites, acceptance, Invariants, and review in full", () => {
+  it("includes executable integrated suites, acceptance, and Invariants for low risk", () => {
     const plan = createFullVerificationPlan({
       contract,
       boundInvariantVerifiers: [{ kind: "query", ref: "invariant:no-egress" }],
@@ -83,7 +83,6 @@ describe("verification plans", () => {
         { kind: "test", ref: "workspace:test" },
         { kind: "build", ref: "workspace:build" },
         { kind: "lint", ref: "workspace:lint" },
-        { kind: "manual_review", ref: "kontext:independent-review" },
         { kind: "test", ref: "example:test" },
         { kind: "query", ref: "invariant:no-egress" },
       ]),
@@ -93,6 +92,23 @@ describe("verification plans", () => {
         verifier: { kind: "query", ref: "kontext:manifest-audit" },
       }),
     );
+    expect(plan.requirements).not.toContainEqual(
+      expect.objectContaining({
+        verifier: { kind: "manual_review", ref: "kontext:independent-review" },
+      }),
+    );
+  });
+
+  it("adds independent review to medium and high risk full verification", () => {
+    for (const risk of ["medium", "high"] as const) {
+      expect(
+        createFullVerificationPlan({ contract: { ...contract, risk } }).requirements,
+      ).toContainEqual(
+        expect.objectContaining({
+          verifier: { kind: "manual_review", ref: "kontext:independent-review" },
+        }),
+      );
+    }
   });
 });
 

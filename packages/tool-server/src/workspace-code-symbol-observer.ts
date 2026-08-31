@@ -30,9 +30,8 @@ export async function captureWorkspaceCodeSymbols(
   targetPaths: readonly string[],
   observedWorkspace?: WorkspaceObservationSnapshot,
 ): Promise<WorkspaceCodeSymbolSnapshot> {
-  const workspace = await realpath(path.resolve(workspacePath)).catch(() =>
-    path.resolve(workspacePath),
-  );
+  const requestedWorkspace = path.resolve(workspacePath);
+  const workspace = await realpath(requestedWorkspace).catch(() => requestedWorkspace);
   const workspaceSnapshot =
     observedWorkspace ?? (await captureWorkspaceSnapshot(workspace, targetPaths));
   if (path.resolve(workspaceSnapshot.workspacePath) !== workspace) {
@@ -59,7 +58,7 @@ export async function captureWorkspaceCodeSymbols(
   const sourcePathSet = new Set(sourcePaths);
   const targets = uniqueSorted(
     targetPaths
-      .map((targetPath) => canonicalRelativePath(workspace, targetPath))
+      .map((targetPath) => canonicalRelativePath(requestedWorkspace, workspace, targetPath))
       .filter((targetPath) => codeExtension.test(targetPath) && sourcePathSet.has(targetPath)),
   );
   const codebaseId = await resolveCodebaseId(workspace);
@@ -140,9 +139,25 @@ function runGit(workspacePath: string, args: readonly string[]): Promise<string>
   });
 }
 
-function canonicalRelativePath(workspacePath: string, value: string): string {
-  const relative = path.isAbsolute(value) ? path.relative(workspacePath, value) : value;
+function canonicalRelativePath(
+  requestedWorkspacePath: string,
+  canonicalWorkspacePath: string,
+  value: string,
+): string {
+  if (!path.isAbsolute(value)) return canonicalPath(value);
+  const requestedRelative = canonicalPath(path.relative(requestedWorkspacePath, value));
+  const relative = isSafeRelativePath(requestedRelative)
+    ? requestedRelative
+    : path.relative(canonicalWorkspacePath, value);
   return relative.replaceAll("\\", "/").replace(/^\.\//, "");
+}
+
+function canonicalPath(value: string): string {
+  return value.replaceAll("\\", "/").replace(/^\.\//, "");
+}
+
+function isSafeRelativePath(value: string): boolean {
+  return value.length > 0 && value !== ".." && !value.startsWith("../") && !path.isAbsolute(value);
 }
 
 function compareSymbolState(

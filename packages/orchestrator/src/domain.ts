@@ -13,6 +13,7 @@ import type {
   VerificationTier,
   VerifierRef,
 } from "@kontext-brain/spec";
+import type { RuntimeProvider } from "./runtime.js";
 
 export interface VerificationRequirement {
   readonly tier: VerificationTier;
@@ -240,6 +241,63 @@ export interface TaskCompletionArtifactStore {
   ): Promise<readonly VerificationRun[]>;
   listChangeBundles(taskId: string): Promise<readonly ChangeBundle[]>;
   putChangeBundle(bundle: ChangeBundle): Promise<ChangeBundle>;
+  listReviewFindings(taskId: string): Promise<readonly ReviewFinding[]>;
+  putReviewFindings(
+    taskId: string,
+    findings: readonly ReviewFinding[],
+  ): Promise<readonly ReviewFinding[]>;
   getAccuracyManifest(taskId: string): Promise<AccuracyManifest | undefined>;
   putAccuracyManifest(manifest: AccuracyManifest): Promise<AccuracyManifest>;
+}
+
+export interface ScheduledBundleAuthor {
+  readonly workItemId: string;
+  readonly provider: RuntimeProvider;
+}
+
+export interface PlanChangeBundleIntegrationInput {
+  readonly taskId: string;
+  readonly workItems: readonly LogicWorkItem[];
+  readonly changeBundles: readonly ChangeBundle[];
+  readonly authors: readonly ScheduledBundleAuthor[];
+}
+
+export interface ChangeBundleIntegrationPlan {
+  readonly taskId: string;
+  readonly orderedChangeBundles: readonly ChangeBundle[];
+  readonly changedPaths: readonly string[];
+  readonly changedSymbolIds: readonly string[];
+  readonly authorProviders: readonly RuntimeProvider[];
+}
+
+export interface ChangeBundleIntegrationPatch {
+  readonly bundleId: string;
+  readonly workItemId: string;
+  readonly sourceWorkspacePath: string;
+  readonly baseRevision: string;
+  readonly changedPaths: readonly string[];
+}
+
+export interface ChangeBundleIntegrationWorkspace {
+  readonly workspacePath: string;
+  readonly branchName: string;
+  readonly baseRevision: string;
+}
+
+export interface ChangeBundleIntegrationResult extends ChangeBundleIntegrationWorkspace {
+  readonly gitCommit: string;
+  readonly appliedBundleIds: readonly string[];
+}
+
+export interface ChangeBundleIntegrationPort {
+  prepare(input: {
+    readonly taskId: string;
+    readonly scheduleJobId: string;
+    readonly baseRevision: string;
+  }): Promise<ChangeBundleIntegrationWorkspace>;
+  apply(
+    workspace: ChangeBundleIntegrationWorkspace,
+    patches: readonly ChangeBundleIntegrationPatch[],
+  ): Promise<ChangeBundleIntegrationResult>;
+  diff(workspace: ChangeBundleIntegrationWorkspace): Promise<string>;
 }

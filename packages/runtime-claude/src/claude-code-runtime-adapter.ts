@@ -123,7 +123,7 @@ export class ClaudeCodeRuntimeAdapter implements AgentRuntimePort {
         "--output-format",
         "json",
         "--permission-mode",
-        "acceptEdits",
+        input.executionRole === "independent_review" ? "plan" : "acceptEdits",
         "--max-turns",
         String(this.maxTurns),
         "--session-id",
@@ -222,6 +222,19 @@ export class ClaudeCodeRuntimeAdapter implements AgentRuntimePort {
 }
 
 function workerPrompt(input: RuntimeWorkInput): string {
+  if (input.executionRole === "independent_review") {
+    return [
+      input.prompt,
+      "",
+      "Kontext independent review contract:",
+      `- Task: ${input.taskId}`,
+      `- Context digest: ${input.contextDigest}`,
+      `- Integrated code revision: ${input.codeRevision}`,
+      "- Work read-only. Do not edit, commit, merge, or invoke implementation agents.",
+      "- Judge the diff against the supplied acceptance criteria, normative revisions, Evidence, and verifier output.",
+      "- Return only the requested JSON object. Do not wrap it in Markdown.",
+    ].join("\n");
+  }
   return [
     input.prompt,
     "",

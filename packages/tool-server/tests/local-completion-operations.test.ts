@@ -194,7 +194,6 @@ describe("LocalKontextCompletionOperations", () => {
         },
       ],
       invariantEvaluations: [],
-      reviewFindings: [],
       requestedAt: "2026-08-28T13:06:00.000Z",
     })) as {
       readonly state: string;

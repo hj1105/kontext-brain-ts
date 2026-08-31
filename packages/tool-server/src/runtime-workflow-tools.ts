@@ -4,25 +4,32 @@ import type { PreparedTaskContextStore, TaskContextStateProvider } from "@kontex
 import { FileRuntimeLeaseStore, GitRuntimeWorktreeManager } from "@kontext-brain/local";
 import {
   type AgentRuntimePort,
+  type DurableVerificationCoordinator,
   RuntimeDoctor,
   type RuntimeProvider,
   WorkItemScheduler,
 } from "@kontext-brain/orchestrator";
+import type { QuarantineStore, TaskCompletionArtifactStore } from "@kontext-brain/orchestrator";
 import type { LogicWorkItem } from "@kontext-brain/spec";
 import { z } from "zod";
+import type { IntegratedTaskStateStore } from "./file-integrated-task-state-store.js";
 import {
   FileRuntimeScheduleJobStore,
   RuntimeScheduleJobManager,
 } from "./file-runtime-schedule-job-store.js";
+import { LocalScheduleIntegrator } from "./local-schedule-integrator.js";
 import {
   type CancelScheduleRequest,
   type GetScheduleRequest,
+  type IntegrateScheduleRequest,
   type ScheduleLogicRequest,
   cancelScheduleToolShape,
   getScheduleToolShape,
   inspectRuntimesToolShape,
+  integrateScheduleToolShape,
   scheduleLogicRequestSchema,
 } from "./runtime-schedule-contract.js";
+import type { SidecarChangeEvidenceProvider } from "./sidecar-change-evidence.js";
 import {
   type KontextTaskWorkflowOperations,
   KontextTaskWorkflowToolRouter,
@@ -34,6 +41,7 @@ export interface KontextRuntimeOperations {
   scheduleLogic(request: ScheduleLogicRequest): Promise<unknown>;
   getSchedule(request: GetScheduleRequest): Promise<unknown>;
   cancelSchedule(request: CancelScheduleRequest): Promise<unknown>;
+  integrateSchedule(request: IntegrateScheduleRequest): Promise<unknown>;
 }
 
 export class KontextRuntimeToolRouter {
@@ -55,6 +63,12 @@ export class KontextRuntimeToolRouter {
   async cancelSchedule(input: unknown): Promise<unknown> {
     return this.operations.cancelSchedule(z.object(cancelScheduleToolShape).strict().parse(input));
   }
+
+  async integrateSchedule(input: unknown): Promise<unknown> {
+    return this.operations.integrateSchedule(
+      z.object(integrateScheduleToolShape).strict().parse(input),
+    );
+  }
 }
 
 export class LocalKontextRuntimeOperations implements KontextRuntimeOperations {
@@ -68,6 +82,11 @@ export class LocalKontextRuntimeOperations implements KontextRuntimeOperations {
     private readonly bindings: WriteAuthorizationBindingStore,
     private readonly dataDirectory: string,
     private readonly runtimes: readonly AgentRuntimePort[],
+    private readonly artifacts: TaskCompletionArtifactStore,
+    private readonly quarantine: QuarantineStore,
+    private readonly verification: DurableVerificationCoordinator,
+    private readonly changeEvidence: SidecarChangeEvidenceProvider,
+    private readonly integratedTasks: IntegratedTaskStateStore,
     private readonly now: () => Date = () => new Date(),
   ) {
     this.leases = new FileRuntimeLeaseStore(dataDirectory);
@@ -97,7 +116,7 @@ export class LocalKontextRuntimeOperations implements KontextRuntimeOperations {
       current.evidence,
       prepared.snapshot.requiredEvidenceIds,
     );
-    const work = request.work.map((requested) => {
+    const requestedWork = request.work.map((requested) => {
       const plan = current.logicPlans.find(
         (candidate) => candidate.workItemId === requested.workItemId,
       );
@@ -124,6 +143,7 @@ export class LocalKontextRuntimeOperations implements KontextRuntimeOperations {
         receiptTtlSeconds: requested.receiptTtlSeconds,
       };
     });
+    const work = applyRiskProviderPolicy(requestedWork, prepared.contract.risk);
     const scheduler = new WorkItemScheduler(this.runtimes, manager, this.leases, this.now, {
       prepare: async (input) => {
         const compiled = await contextRouter.beginLogic({
@@ -167,6 +187,65 @@ export class LocalKontextRuntimeOperations implements KontextRuntimeOperations {
   async cancelSchedule(request: CancelScheduleRequest): Promise<unknown> {
     return this.scheduleJobs.cancel(request.jobId);
   }
+
+  async integrateSchedule(request: IntegrateScheduleRequest): Promise<unknown> {
+    const job = await this.scheduleJobs.get(request.jobId);
+    return new LocalScheduleIntegrator(
+      this.currentState,
+      this.preparedTasks,
+      this.artifacts,
+      this.quarantine,
+      this.verification,
+      this.changeEvidence,
+      this.integratedTasks,
+      this.runtimes,
+      this.dataDirectory,
+      this.now,
+    ).integrate(job, request);
+  }
+}
+
+export function applyRiskProviderPolicy<
+  T extends {
+    readonly eligibleProviders: readonly RuntimeProvider[];
+    readonly pinnedProvider?: RuntimeProvider;
+  },
+>(work: readonly T[], risk: "low" | "medium" | "high"): readonly T[] {
+  if (risk === "low") return work;
+  const requiredProvider: RuntimeProvider | undefined =
+    risk === "high" ? "claude" : chooseSharedImplementationProvider(work);
+  if (!requiredProvider) {
+    throw new Error(
+      `${risk} risk requires one shared implementation provider and a separate reviewer`,
+    );
+  }
+  return work.map((item) => {
+    if (
+      !item.eligibleProviders.includes(requiredProvider) ||
+      (item.pinnedProvider !== undefined && item.pinnedProvider !== requiredProvider)
+    ) {
+      throw new Error(
+        `${risk} risk provider policy cannot assign ${requiredProvider} to every Logic Work Item`,
+      );
+    }
+    return { ...item, eligibleProviders: [requiredProvider], pinnedProvider: requiredProvider };
+  });
+}
+
+function chooseSharedImplementationProvider(
+  work: readonly {
+    readonly eligibleProviders: readonly RuntimeProvider[];
+    readonly pinnedProvider?: RuntimeProvider;
+  }[],
+): RuntimeProvider | undefined {
+  const pinned = Array.from(
+    new Set(work.flatMap((item) => (item.pinnedProvider ? [item.pinnedProvider] : []))),
+  );
+  if (pinned.length > 1) return undefined;
+  const candidates: readonly RuntimeProvider[] = pinned.length === 1 ? pinned : ["codex", "claude"];
+  return candidates.find((provider) =>
+    work.every((item) => item.eligibleProviders.includes(provider)),
+  );
 }
 
 function logicWorkItem(

@@ -229,6 +229,29 @@ describe("Change Bundle validation", () => {
 });
 
 describe("Accuracy Manifest assembly", () => {
+  it("keeps worker-revision bundle proof while binding completion proof to the integrated revision", () => {
+    const integratedRevision = "workspace-revision:integrated";
+    const integratedRuns = [...completionVerificationRuns, manifestAuditRun].map((run) => ({
+      ...run,
+      verificationRunId: `${run.verificationRunId}:integrated`,
+      codeRevision: integratedRevision,
+    }));
+    const manifest = assembleAccuracyManifest({
+      contract,
+      snapshot,
+      currentCodeRevision: integratedRevision,
+      changeBundles: [bundle()],
+      verificationRuns: [...bundleVerificationRuns, ...integratedRuns],
+      reviewFindings: [],
+      createdAt: "2026-08-28T09:40:00.000Z",
+    });
+
+    expect(manifest.resultCodeRevision).toBe(integratedRevision);
+    expect(manifest.verificationRunIds).toEqual(
+      [...bundleVerificationRuns, ...integratedRuns].map((run) => run.verificationRunId).sort(),
+    );
+  });
+
   it("audits every candidate condition except the audit run's own evidence edge", () => {
     const audit = auditAccuracyManifestCandidate({
       contract,

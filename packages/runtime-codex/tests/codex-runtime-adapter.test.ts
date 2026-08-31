@@ -80,6 +80,33 @@ describe("CodexRuntimeAdapter", () => {
     );
     await expect(adapter.start(workInput())).rejects.toThrow("not been explicitly allowed");
   });
+
+  it("runs independent review in a read-only sandbox", async () => {
+    const runner = new RecordingRunner([
+      {
+        exitCode: 0,
+        stdout: "",
+        stderr: "",
+        lines: [
+          JSON.stringify({ type: "thread.started", thread_id: "codex-review-1" }),
+          JSON.stringify({
+            type: "item.completed",
+            item: {
+              type: "agent_message",
+              text: '{"verdict":"passed","findings":[]}',
+            },
+          }),
+        ],
+      },
+    ]);
+    const adapter = new CodexRuntimeAdapter({ runner, environment: {} });
+
+    await adapter.start({ ...workInput(), executionRole: "independent_review" });
+
+    expect(runner.inputs[0]?.args).toContain("read-only");
+    expect(runner.inputs[0]?.stdin).toContain("Work read-only");
+    expect(runner.inputs[0]?.stdin).not.toContain("Change Bundle to the main orchestrator");
+  });
 });
 
 class RecordingRunner implements RuntimeCommandRunner {

@@ -19,8 +19,11 @@ const FULL_VERIFIERS: readonly VerifierRef[] = [
   { kind: "test", ref: "workspace:test" },
   { kind: "build", ref: "workspace:build" },
   { kind: "lint", ref: "workspace:lint" },
-  { kind: "manual_review", ref: "kontext:independent-review" },
 ];
+const INDEPENDENT_REVIEW: VerifierRef = {
+  kind: "manual_review",
+  ref: "kontext:independent-review",
+};
 
 export function createFastVerificationPlan(input: FastVerificationPlanInput): VerificationPlan {
   return plan("fast", FAST_VERIFIERS, input.affectedSymbolIds);
@@ -41,6 +44,7 @@ export function createFullVerificationPlan(input: FullVerificationPlanInput): Ve
     "full",
     [
       ...FULL_VERIFIERS,
+      ...(input.contract.risk === "low" ? [] : [INDEPENDENT_REVIEW]),
       ...input.contract.acceptance.map((criterion) => criterion.verifier),
       ...(input.boundInvariantVerifiers ?? []),
     ],

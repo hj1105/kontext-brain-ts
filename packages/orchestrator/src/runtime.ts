@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
-import type { LogicWorkItem } from "@kontext-brain/spec";
+import type { AgentRuntimeProvider, LogicWorkItem } from "@kontext-brain/spec";
 
-export type RuntimeProvider = "codex" | "claude";
+export type RuntimeProvider = AgentRuntimeProvider;
 export type RuntimeBillingPath = "subscription" | "api" | "unknown";
 
 export interface RuntimeCapabilitySnapshot {
@@ -45,6 +45,7 @@ export interface RuntimeWorkInput {
   readonly prompt: string;
   readonly codeRevision: string;
   readonly contextDigest: string;
+  readonly executionRole?: "implementation" | "independent_review";
   readonly checkpoint?: RuntimeCheckpoint;
   readonly signal?: AbortSignal;
 }

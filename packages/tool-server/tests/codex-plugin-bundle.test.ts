@@ -43,6 +43,7 @@ describe("Codex plugin bundle", () => {
         "kontext_check_change",
         "kontext_get_schedule",
         "kontext_inspect_runtimes",
+        "kontext_integrate_schedule",
         "kontext_prepare_task",
         "kontext_propose_transition",
         "kontext_refresh_task_context",

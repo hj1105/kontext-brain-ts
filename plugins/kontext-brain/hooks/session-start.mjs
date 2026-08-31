@@ -13,7 +13,7 @@ const context = [
   "If context is stale, conflicting, inaccessible, or unavailable, do not edit; refresh or resolve it first.",
   "Provider write hooks permit only exact sidecar-owned paths in a current, unexpired Context Receipt; post-write observation quarantines bypasses.",
   "After each behavior-bearing symbol call kontext_check_change fast; at its Work Item checkpoint call targeted and submit an ID-free draft through kontext_submit_change_bundle.",
-  "After integration run kontext_check_change full and use kontext_propose_transition; never claim done directly or supply your own Accuracy Manifest.",
+  "After a completed schedule call kontext_integrate_schedule, then use kontext_propose_transition with commit/approval Evidence and Invariant evaluations; never claim done directly or supply Review Findings or an Accuracy Manifest.",
 ].join(" ");
 
 process.stdout.write(
