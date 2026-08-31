@@ -1,0 +1,43 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/hooks/session-start.mjs\"",
+            "timeout": 10,
+            "statusMessage": "Loading Kontext Brain workflow"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "^apply_patch$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/server.mjs\" --authorize-write-hook",
+            "timeout": 30,
+            "statusMessage": "Checking Kontext Context Receipt"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "^(apply_patch|Bash)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/server.mjs\" --observe-write-hook",
+            "timeout": 60,
+            "statusMessage": "Reconciling observed workspace changes"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -17,6 +17,7 @@ export interface OntologyProposalQueue {
   listOpen(organizationId: string): Promise<readonly OntologyProposal[]>;
   listPending(organizationId: string): Promise<readonly OntologyProposal[]>;
   markPublished(organizationId: string, proposalKeys: readonly string[]): Promise<void>;
+  markAccepted(organizationId: string, proposalKeys: readonly string[]): Promise<void>;
 }
 
 export interface OntologyYamlUpdater {
@@ -105,6 +106,20 @@ export class InMemoryOntologyProposalQueue implements OntologyProposalQueue {
         this.proposals.set(key, {
           ...proposal,
           status: "published",
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    }
+  }
+
+  async markAccepted(organizationId: string, proposalKeys: readonly string[]): Promise<void> {
+    for (const proposalKey of proposalKeys) {
+      const key = `${organizationId}\u0000${proposalKey}`;
+      const proposal = this.proposals.get(key);
+      if (proposal && proposal.status !== "rejected") {
+        this.proposals.set(key, {
+          ...proposal,
+          status: "accepted",
           updatedAt: new Date().toISOString(),
         });
       }

@@ -1,8 +1,31 @@
 import type { OntologyProposal } from "@kontext-brain/core";
 import { describe, expect, it } from "vitest";
-import { GitHubOntologyProposalPublisher } from "../src/index.js";
+import { GitHubCanonicalOntologySource, GitHubOntologyProposalPublisher } from "../src/index.js";
 
 describe("GitHubOntologyProposalPublisher", () => {
+  it("reads the canonical ontology and exposes its blob revision", async () => {
+    const fakeFetch: typeof fetch = async () =>
+      response(200, {
+        sha: "ontology-sha",
+        encoding: "base64",
+        content: Buffer.from("ontology:\n  - id: engineering\n").toString("base64"),
+      });
+    const source = new GitHubCanonicalOntologySource(
+      {
+        owner: "acme",
+        repository: "ontology",
+        token: "secret",
+        ontologyPath: "config/kontext.yaml",
+      },
+      fakeFetch,
+    );
+
+    await expect(source.read()).resolves.toEqual({
+      revision: "ontology-sha",
+      yaml: "ontology:\n  - id: engineering\n",
+    });
+  });
+
   it("creates a stable proposal branch, updates YAML, and opens one draft PR", async () => {
     const requests: Array<{ url: string; init?: RequestInit }> = [];
     const responses = [

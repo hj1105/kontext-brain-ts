@@ -15,25 +15,47 @@ describe("MCPKnowledgeSynchronizer", () => {
       new SyncResourceUseCase(repository, new InMemoryResourceContentStore()),
       [new GenericMCPResourceSnapshotAdapter("notion", "notion", { organizationWide: true })],
     );
+    let body = "Order 42 was paid";
+    let metadata: Record<string, string> = { channel: "orders", team: "acme" };
     const connector: MCPConnector = {
       name: "notion",
       async listResources() {
         return [];
       },
       async fetchResource(resourceId) {
-        return { resourceId, content: "Order 42 was paid", metadata: {}, fetchedAt: new Date() };
+        return { resourceId, content: body, metadata, fetchedAt: new Date() };
       },
       async search() {
         return [];
       },
     };
 
-    await synchronizer.sync(
+    const created = await synchronizer.sync(
       "acme",
       connector,
       { id: "page-1", name: "Order page", description: "" },
       ["order", "payment"],
     );
+    expect(created.changed).toBe(true);
+
+    metadata = { team: "acme", channel: "orders" };
+    const unchanged = await synchronizer.sync(
+      "acme",
+      connector,
+      { id: "page-1", name: "Order page", description: "" },
+      ["order", "payment"],
+    );
+    expect(unchanged.changed).toBe(false);
+
+    body = "Order 42 was refunded";
+    const updated = await synchronizer.sync(
+      "acme",
+      connector,
+      { id: "page-1", name: "Order page", description: "" },
+      ["order", "payment"],
+    );
+    expect(updated.changed).toBe(true);
+    expect(updated.contentHash).not.toBe(created.contentHash);
 
     const resource = await repository.getResourceBySource("acme", {
       connectorId: "notion",

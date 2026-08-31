@@ -5,6 +5,7 @@ import {
   RecursiveChunkingStrategy,
   type ResourceSnapshot,
   type ResourceSnapshotEnricher,
+  type ResourceSyncResult,
   type ResourceSyncUseCase,
 } from "@kontext-brain/core";
 import type { MCPConnector, MCPData, MCPResource } from "./mcp-connector.js";
@@ -23,6 +24,25 @@ export interface MCPResourceSnapshotAdapter {
   normalize(input: MCPNormalizationInput): Promise<ResourceSnapshot>;
 }
 
+export interface MCPKnowledgeSyncResult extends ResourceSyncResult {
+  readonly contentHash: string;
+}
+
+export function computeMCPResourceContentHash(resource: MCPResource, data: MCPData): string {
+  return createHash("sha256")
+    .update(
+      JSON.stringify({
+        title: resource.name,
+        description: resource.description,
+        body: data.content,
+        metadata: Object.fromEntries(
+          Object.entries(data.metadata).sort(([left], [right]) => left.localeCompare(right)),
+        ),
+      }),
+    )
+    .digest("hex");
+}
+
 /** Fallback for sources that expose only a flat body through standard MCP. */
 export class GenericMCPResourceSnapshotAdapter implements MCPResourceSnapshotAdapter {
   constructor(
@@ -34,16 +54,7 @@ export class GenericMCPResourceSnapshotAdapter implements MCPResourceSnapshotAda
 
   async normalize(input: MCPNormalizationInput): Promise<ResourceSnapshot> {
     const chunks = this.chunker.split(input.data.content);
-    const contentHash = createHash("sha256")
-      .update(
-        JSON.stringify({
-          title: input.resource.name,
-          description: input.resource.description,
-          body: input.data.content,
-          metadata: input.data.metadata,
-        }),
-      )
-      .digest("hex");
+    const contentHash = computeMCPResourceContentHash(input.resource, input.data);
     return {
       organizationId: input.organizationId,
       source: {
@@ -83,7 +94,7 @@ export class MCPKnowledgeSynchronizer {
     connector: MCPConnector,
     resource: MCPResource,
     ontologyNodeIds: readonly string[],
-  ): Promise<void> {
+  ): Promise<MCPKnowledgeSyncResult> {
     const adapter = this.adapters.get(connector.name);
     if (!adapter) throw new Error(`No MCP ResourceSnapshot adapter for "${connector.name}"`);
     const data = await connector.fetchResource(resource.id);
@@ -94,7 +105,8 @@ export class MCPKnowledgeSynchronizer {
       data,
       ontologyNodeIds,
     });
-    await this.resourceSync.execute(normalized, this.snapshotEnricher);
+    const result = await this.resourceSync.execute(normalized, this.snapshotEnricher);
+    return { ...result, contentHash: normalized.contentHash };
   }
 
   async remove(

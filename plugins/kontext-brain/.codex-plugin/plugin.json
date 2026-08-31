@@ -1,0 +1,22 @@
+{
+  "name": "kontext-brain",
+  "version": "0.1.0",
+  "description": "Compile provenance-backed context and enforce verified Change Bundles for each behavior-bearing logic unit.",
+  "author": {
+    "name": "Kontext Brain"
+  },
+  "repository": "https://github.com/hj1105/kontext-brain-ts",
+  "license": "MIT",
+  "keywords": ["code-context", "provenance", "ontology", "codex"],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Kontext Brain",
+    "shortDescription": "Provenance-backed context for accurate code edits.",
+    "longDescription": "Freezes task context, compiles mandatory domain and evidence context per behavior-bearing symbol, guards exact paths with Context Receipts, validates tiered proof and Change Bundles, schedules eligible Codex or Claude workers in isolated worktrees, and computes completion from an audited Accuracy Manifest.",
+    "developerName": "Kontext Brain",
+    "category": "Developer Tools",
+    "capabilities": ["Read", "Write"],
+    "defaultPrompt": "Implement this change with Kontext Brain context for every behavior-bearing logic unit."
+  }
+}

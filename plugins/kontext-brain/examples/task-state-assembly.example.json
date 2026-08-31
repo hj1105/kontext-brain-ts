@@ -1,0 +1,83 @@
+{
+  "taskId": "task:example",
+  "organizationId": "personal:owner",
+  "codeRevision": "replace-with-current-git-revision",
+  "baseScopes": [
+    {
+      "kind": "personal",
+      "subjectId": "user:owner"
+    },
+    {
+      "kind": "workspace",
+      "workspaceId": "workspace:example"
+    }
+  ],
+  "localManifest": {
+    "schemaVersion": 1,
+    "organizationId": "personal:owner",
+    "revisions": [
+      {
+        "kind": "decision",
+        "organizationId": "personal:owner",
+        "recordId": "decision:context-before-edit",
+        "revisionId": "revision:context-before-edit:1",
+        "scope": {
+          "kind": "workspace",
+          "workspaceId": "workspace:example"
+        },
+        "evidence": [
+          {
+            "evidenceId": "evidence:session:decision-1",
+            "sourceSpan": "user confirmation"
+          }
+        ],
+        "egress": {
+          "dataClassification": "internal",
+          "allowedRuntimeProviders": ["codex", "claude"]
+        },
+        "authoredBy": "user:owner",
+        "authoredAt": "2026-08-28T00:00:00.000Z",
+        "statement": "Obtain current Kontext context before editing each behavior-bearing symbol."
+      }
+    ],
+    "activations": [
+      {
+        "organizationId": "personal:owner",
+        "kind": "decision",
+        "recordId": "decision:context-before-edit",
+        "revisionId": "revision:context-before-edit:1",
+        "scope": {
+          "kind": "workspace",
+          "workspaceId": "workspace:example"
+        },
+        "state": "accepted_local",
+        "acceptedBy": "user:owner",
+        "acceptedAt": "2026-08-28T00:01:00.000Z"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "evidenceId": "evidence:session:decision-1",
+      "text": "The user confirmed that every logic unit must consult Kontext Brain.",
+      "sourceSpan": "user confirmation",
+      "availability": "current",
+      "allowedRuntimeProviders": ["codex", "claude"]
+    }
+  ],
+  "logicPlans": [
+    {
+      "workItemId": "work-item:example-handler",
+      "plannedSymbolIds": ["planned-symbol:example-handler"],
+      "allowedPaths": ["src/example-handler.ts"],
+      "dependsOn": [],
+      "requiredVerifiers": [
+        {
+          "kind": "test",
+          "ref": "example-handler:test"
+        }
+      ],
+      "capabilityId": "capability:example-handler"
+    }
+  ]
+}

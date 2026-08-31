@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "kontext_brain": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/server.mjs"],
+      "env": {
+        "KONTEXT_PLUGIN_ROOT": "${CLAUDE_PLUGIN_ROOT}"
+      }
+    }
+  }
+}

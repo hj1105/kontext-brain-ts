@@ -56,6 +56,10 @@ export interface SerializableResourceRecord {
   readonly source: DataSource;
   readonly nodeIds: readonly string[];
   readonly signature: string;
+  /** Ontology revision used for the last classification attempt. Optional for legacy snapshots. */
+  readonly classifiedOntologySignature?: string;
+  /** Hash of source content from the last successful refresh. Optional for legacy snapshots. */
+  readonly contentSignature?: string;
   readonly lastSeenAt: string;
 }
 

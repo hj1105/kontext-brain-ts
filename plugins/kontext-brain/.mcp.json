@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "kontext_brain": {
+      "command": "node",
+      "args": ["./server.mjs"],
+      "cwd": ".",
+      "env_vars": [
+        "HOME",
+        "USERPROFILE",
+        "LOCALAPPDATA",
+        "APPDATA",
+        "XDG_DATA_HOME",
+        "KONTEXT_PLUGIN_DATA"
+      ],
+      "startup_timeout_sec": 10,
+      "tool_timeout_sec": 60
+    }
+  }
+}

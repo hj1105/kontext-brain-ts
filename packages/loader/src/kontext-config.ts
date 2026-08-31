@@ -27,6 +27,41 @@ export const MCPConfigSchema = z.object({
 
 export type MCPConfigDto = z.infer<typeof MCPConfigSchema>;
 
+export const PeriodicSyncConfigSchema = z.object({
+  enabled: z.boolean().default(true),
+  intervalSeconds: z.number().int().min(30).default(300),
+  runOnStart: z.boolean().default(true),
+});
+
+export type PeriodicSyncConfig = z.infer<typeof PeriodicSyncConfigSchema>;
+
+export const GitHubOntologyUpdatesConfigSchema = z.object({
+  owner: z.string().min(1),
+  repository: z.string().min(1),
+  ontologyPath: z.string().min(1).default("kontext.yaml"),
+  tokenEnv: z.string().min(1).default("GITHUB_TOKEN"),
+  baseBranch: z.string().min(1).default("main"),
+  proposalBranch: z.string().min(1).default("kontext/ontology-proposals"),
+  apiUrl: z.string().url().optional(),
+});
+
+export const OntologyUpdatesConfigSchema = z
+  .object({
+    enabled: z.boolean().default(false),
+    github: GitHubOntologyUpdatesConfigSchema.optional(),
+  })
+  .superRefine((value, context) => {
+    if (value.enabled && !value.github) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["github"],
+        message: "GitHub configuration is required when ontology updates are enabled",
+      });
+    }
+  });
+
+export type OntologyUpdatesConfig = z.infer<typeof OntologyUpdatesConfigSchema>;
+
 export const RelationSchema = z.object({
   to: z.string(),
   weight: z.number().default(1.0),
@@ -75,6 +110,11 @@ export const GraphConfigDtoSchema = z.object({
   strategy: z.string().default("WEIGHTED_DFS"),
 });
 
+export const OntologyDocumentSchema = z.object({
+  ontology: z.array(OntologyNodeConfigSchema),
+  graph: GraphConfigDtoSchema.default({}),
+});
+
 export const PipelineStepDtoSchema = z.object({
   depth: z.number(),
   type: z.string(),
@@ -92,6 +132,8 @@ export const KontextConfigSchema = z.object({
   graph: GraphConfigDtoSchema.default({}),
   pipeline: z.array(PipelineStepDtoSchema).nullable().optional(),
   language: z.string().default("en"),
+  sync: PeriodicSyncConfigSchema.default({}),
+  ontologyUpdates: OntologyUpdatesConfigSchema.default({}),
 });
 
 export type KontextConfig = z.infer<typeof KontextConfigSchema>;

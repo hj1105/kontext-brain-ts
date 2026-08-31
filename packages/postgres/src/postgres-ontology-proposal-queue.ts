@@ -94,6 +94,19 @@ export class PostgresOntologyProposalQueue implements OntologyProposalQueue {
       );
     });
   }
+
+  async markAccepted(organizationId: string, proposalKeys: readonly string[]): Promise<void> {
+    if (proposalKeys.length === 0) return;
+    await withOrganizationTransaction(this.pool, organizationId, async (client) => {
+      await client.query(
+        `UPDATE kontext_ontology_proposals
+         SET status = 'accepted', updated_at = now()
+         WHERE organization_id = $1 AND proposal_key = ANY($2::text[])
+           AND status IN ('open', 'published')`,
+        [organizationId, [...proposalKeys]],
+      );
+    });
+  }
 }
 
 function mapProposal(row: QueryResultRow): OntologyProposal {

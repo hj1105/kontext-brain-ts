@@ -1,0 +1,47 @@
+{
+  "description": "Require current Kontext receipts for Claude file edits and reconcile writes with sidecar state.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs"],
+            "timeout": 10,
+            "statusMessage": "Loading Kontext Brain workflow"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/server.mjs", "--authorize-write-hook"],
+            "timeout": 30,
+            "statusMessage": "Checking Kontext Context Receipt"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/server.mjs", "--observe-write-hook"],
+            "timeout": 60,
+            "statusMessage": "Reconciling observed workspace changes"
+          }
+        ]
+      }
+    ]
+  }
+}
