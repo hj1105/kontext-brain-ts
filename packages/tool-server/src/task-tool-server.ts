@@ -98,7 +98,7 @@ export function registerTaskWorkflowTools(
     );
     server.tool(
       "kontext_get_schedule",
-      "Read queued, running, cancelling, completed, failed, interrupted, or cancelled durable schedule state and terminal result.",
+      "Read durable schedule progress and state; after restart, revalidate and automatically resume an eligible interrupted schedule.",
       getScheduleToolShape,
       async (input) => workflowToolResult(await runtime.getSchedule(input)),
     );

@@ -15,8 +15,10 @@ import { z } from "zod";
 import type { IntegratedTaskStateStore } from "./file-integrated-task-state-store.js";
 import {
   FileRuntimeScheduleJobStore,
+  type RuntimeScheduleExecution,
   RuntimeScheduleJobManager,
 } from "./file-runtime-schedule-job-store.js";
+import { assessCurrentContext } from "./local-completion-operations.js";
 import { LocalScheduleIntegrator } from "./local-schedule-integrator.js";
 import {
   type CancelScheduleRequest,
@@ -101,9 +103,67 @@ export class LocalKontextRuntimeOperations implements KontextRuntimeOperations {
   }
 
   async scheduleLogic(request: ScheduleLogicRequest): Promise<unknown> {
+    const prepared = await this.prepareScheduleExecution(request);
+    return this.scheduleJobs.enqueue(
+      request,
+      prepared.codeRevision,
+      prepared.contextDigest,
+      prepared.execute,
+    );
+  }
+
+  async getSchedule(request: GetScheduleRequest): Promise<unknown> {
+    const current = await this.scheduleJobs.get(request.jobId);
+    if (current.status !== "interrupted" || current.cancellationRequestedAt) return current;
+    try {
+      return await this.scheduleJobs.resume(request.jobId, async (job) => {
+        const prepared = await this.prepareScheduleExecution(job.request, {
+          codeRevision: job.codeRevision,
+          contextDigest: job.contextDigest,
+          requireAvailableProviders: true,
+          settledWorkItemIds: new Set(
+            job.progress?.results.map((result) => result.workItemId) ?? [],
+          ),
+        });
+        return prepared.execute;
+      });
+    } catch (error) {
+      return {
+        ...current,
+        resumeBlocked: true,
+        resumeDiagnostic: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  private async prepareScheduleExecution(
+    request: ScheduleLogicRequest,
+    resume?: {
+      readonly codeRevision: string;
+      readonly contextDigest: string;
+      readonly requireAvailableProviders: boolean;
+      readonly settledWorkItemIds: ReadonlySet<string>;
+    },
+  ): Promise<{
+    readonly codeRevision: string;
+    readonly contextDigest: string;
+    readonly execute: RuntimeScheduleExecution;
+  }> {
     const prepared = await this.preparedTasks.get(request.taskId);
     if (!prepared) throw new Error(`Task "${request.taskId}" has no prepared context`);
     const current = await this.currentState.getCurrent(request.taskId);
+    if (resume) {
+      const assessment = assessCurrentContext(prepared, current);
+      if (
+        assessment.status !== "current" ||
+        current.codeRevision !== resume.codeRevision ||
+        prepared.snapshot.contextDigest !== resume.contextDigest
+      ) {
+        throw new Error(
+          `Automatic resume requires the original current revision and context digest; observed ${assessment.status}`,
+        );
+      }
+    }
     const repositoryPath = path.resolve(request.repositoryPath);
     const worktreeRoot = path.join(
       this.dataDirectory,
@@ -144,6 +204,51 @@ export class LocalKontextRuntimeOperations implements KontextRuntimeOperations {
       };
     });
     const work = applyRiskProviderPolicy(requestedWork, prepared.contract.risk);
+    const unsettled = resume
+      ? work.filter((item) => !resume.settledWorkItemIds.has(item.workItem.workItemId))
+      : [];
+    if (resume && unsettled.length > 0) {
+      const activeLeases = await this.leases.listActive(this.now().toISOString());
+      const blockingLease = activeLeases.find((lease) =>
+        unsettled.some(
+          (item) =>
+            (lease.taskId === request.taskId && lease.workItemId === item.workItem.workItemId) ||
+            lease.symbolIds.some((symbolId) => item.workItem.plannedSymbolIds.includes(symbolId)) ||
+            lease.paths.some((allowedPath) => item.workItem.allowedPaths.includes(allowedPath)),
+        ),
+      );
+      if (blockingLease) {
+        throw new Error(
+          `Automatic resume is waiting for write lease ${blockingLease.leaseId} to release or expire at ${blockingLease.expiresAt}`,
+        );
+      }
+    }
+    if (resume?.requireAvailableProviders) {
+      const capabilities =
+        unsettled.length === 0
+          ? []
+          : await Promise.all(this.runtimes.map((runtime) => runtime.inspectCapabilities()));
+      const available = new Set(
+        capabilities
+          .filter(
+            (capability) =>
+              capability.installed &&
+              capability.authenticated &&
+              capability.billingPath === "subscription" &&
+              capability.supports.structuredOutput &&
+              capability.supports.workspaceSandbox,
+          )
+          .map((capability) => capability.provider),
+      );
+      const unavailable = unsettled.find(
+        (item) => !item.eligibleProviders.some((provider) => available.has(provider)),
+      );
+      if (unavailable) {
+        throw new Error(
+          `No authenticated subscription runtime is currently available for ${unavailable.workItem.workItemId}`,
+        );
+      }
+    }
     const scheduler = new WorkItemScheduler(this.runtimes, manager, this.leases, this.now, {
       prepare: async (input) => {
         const compiled = await contextRouter.beginLogic({
@@ -165,23 +270,21 @@ export class LocalKontextRuntimeOperations implements KontextRuntimeOperations {
         }
       },
     });
-    return this.scheduleJobs.enqueue(
-      request,
-      current.codeRevision,
-      prepared.snapshot.contextDigest,
-      (signal) =>
+    return {
+      codeRevision: current.codeRevision,
+      contextDigest: prepared.snapshot.contextDigest,
+      execute: (signal, initialResults, onProgress, initialCapabilities) =>
         scheduler.run({
           taskId: request.taskId,
           work,
+          initialCapabilities,
+          initialResults,
+          onProgress,
           maxConcurrency: request.maxConcurrency,
           maxRetries: request.maxRetries,
           signal,
         }),
-    );
-  }
-
-  async getSchedule(request: GetScheduleRequest): Promise<unknown> {
-    return this.scheduleJobs.get(request.jobId);
+    };
   }
 
   async cancelSchedule(request: CancelScheduleRequest): Promise<unknown> {

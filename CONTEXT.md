@@ -144,6 +144,14 @@ The immutable set of applicable Decision, Domain Term, Invariant, source-freshne
 
 A schedulable unit of work over one behavior-bearing Code Symbol or a tightly coupled group of Code Symbols. Logic Work Items form a dependency graph and carry bounded write authority.
 
+## Runtime Schedule
+
+The private, digest-checked sidecar record that executes a set of Logic Work Items asynchronously. It retains the frozen revision and context digest, bounded provider authority, durable Work Item progress, cancellation intent, and recovery history without exposing worker prompts in its public view.
+
+## Runtime Checkpoint
+
+Durable recovery proof for a Runtime Schedule attempt, bound to one Logic Work Item, workspace, code revision, context digest, and runtime provider. Recovery may reuse the workspace and completed Work Item result, but always starts a fresh provider session after a process interruption.
+
 ## Context Receipt
 
 Proof that a Logic Work Item received a particular Task Context Snapshot slice before changing its target Code Symbols. It identifies the governing revisions and Evidence without replacing their canonical content.

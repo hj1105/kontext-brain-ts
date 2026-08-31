@@ -116,6 +116,115 @@ describe("RuntimeScheduleJobManager", () => {
     });
   });
 
+  it("resumes an orphan from durable Work Item progress without rerunning completed work", async () => {
+    const directory = await temporaryDirectory();
+    const store = new FileRuntimeScheduleJobStore(directory);
+    await store.create({
+      jobId: "runtime-schedule:resume",
+      taskId: request.taskId,
+      request,
+      codeRevision: "commit:resume",
+      contextDigest: "sha256:resume",
+      status: "queued",
+      requestedAt: "2026-08-31T01:00:00.000Z",
+      ownerInstanceId: "runtime-scheduler:stopped",
+      ownerProcessId: 4242,
+    });
+    await store.update("runtime-schedule:resume", "queued", (job) => ({
+      ...job,
+      status: "running",
+      startedAt: "2026-08-31T01:00:01.000Z",
+    }));
+    const progress: WorkItemScheduleResult = {
+      capabilities: [],
+      results: [
+        {
+          workItemId: "work-item:handler",
+          status: "completed",
+          attempts: 1,
+          checkpoints: [],
+          diagnostics: [],
+        },
+      ],
+    };
+    await store.recordProgress("runtime-schedule:resume", progress);
+    const restarted = new RuntimeScheduleJobManager(
+      store,
+      () => new Date("2026-08-31T01:05:00.000Z"),
+      undefined,
+      5252,
+      () => false,
+    );
+    let receivedInitial: readonly unknown[] = [];
+
+    await expect(
+      restarted.resume("runtime-schedule:resume", async () => {
+        return async (_signal, initialResults, onProgress) => {
+          receivedInitial = initialResults;
+          await onProgress(progress);
+          return progress;
+        };
+      }),
+    ).resolves.toMatchObject({
+      status: "queued",
+      resumeCount: 1,
+      lastResumedAt: "2026-08-31T01:05:00.000Z",
+    });
+    await expect(
+      waitForStatus(restarted, "runtime-schedule:resume", "completed"),
+    ).resolves.toMatchObject({
+      result: progress,
+      progress,
+      resumeCount: 1,
+    });
+    expect(receivedInitial).toEqual(progress.results);
+  });
+
+  it("stops automatic recovery after two interrupted resume attempts", async () => {
+    const directory = await temporaryDirectory();
+    const store = new FileRuntimeScheduleJobStore(directory);
+    await store.create({
+      jobId: "runtime-schedule:resume-limit",
+      taskId: request.taskId,
+      request,
+      codeRevision: "commit:resume-limit",
+      contextDigest: "sha256:resume-limit",
+      status: "queued",
+      requestedAt: "2026-08-31T01:00:00.000Z",
+      ownerInstanceId: "runtime-scheduler:stopped",
+      ownerProcessId: 4242,
+      resumeCount: 2,
+      lastResumedAt: "2026-08-31T01:02:00.000Z",
+    });
+    await store.update("runtime-schedule:resume-limit", "queued", (job) => ({
+      ...job,
+      status: "running",
+      startedAt: "2026-08-31T01:02:00.000Z",
+    }));
+    const restarted = new RuntimeScheduleJobManager(
+      store,
+      () => new Date("2026-08-31T01:05:00.000Z"),
+      undefined,
+      5252,
+      () => false,
+    );
+    let prepared = false;
+
+    await expect(
+      restarted.resume("runtime-schedule:resume-limit", async () => {
+        prepared = true;
+        return async () => ({ capabilities: [], results: [] });
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        status: "interrupted",
+        resumeBlocked: true,
+        resumeDiagnostic: "Automatic resume limit of 2 was reached",
+      }),
+    );
+    expect(prepared).toBe(false);
+  });
+
   it("persists execution failure as a terminal diagnostic", async () => {
     const directory = await temporaryDirectory();
     const manager = new RuntimeScheduleJobManager(
