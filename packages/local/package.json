@@ -1,0 +1,28 @@
+{
+  "name": "@kontext-brain/local",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "kontext-sidecar": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@kontext-brain/context": "workspace:*",
+    "@kontext-brain/orchestrator": "workspace:*",
+    "@kontext-brain/spec": "workspace:*",
+    "zod": "^3.24.1"
+  }
+}

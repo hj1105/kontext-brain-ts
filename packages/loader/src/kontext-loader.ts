@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import {
   type BidirectionalNLayerRetriever,
@@ -54,34 +53,14 @@ import {
 } from "./kontext-config.js";
 import type { OntologyNodeConfig } from "./kontext-config.js";
 import {
+  type KnowledgeOntologyActivationPort,
+  computeOntologyContentHash,
+} from "./ontology-activation.js";
+import {
   OntologyEmbedder,
   OntologyGraphBuilder,
   validateOntologyConfiguration,
 } from "./ontology-graph-builder.js";
-
-export function computeOntologyContentHash(ontology: readonly OntologyNodeConfig[]): string {
-  return createHash("sha256").update(JSON.stringify(ontology)).digest("hex");
-}
-
-export interface KnowledgeOntologyActivationPort {
-  activate(input: {
-    readonly organizationId: string;
-    readonly yaml: string;
-    readonly graph: {
-      readonly nodes: ReadonlyArray<{
-        readonly id: string;
-        readonly description: string;
-        readonly parentId?: string | null;
-      }>;
-      readonly edges: ReadonlyArray<{
-        readonly from: string;
-        readonly to: string;
-        readonly weight: number;
-        readonly type?: string;
-      }>;
-    };
-  }): Promise<void>;
-}
 
 function resolvePromptTemplates(_language: string): PromptTemplates {
   return DefaultPromptTemplates;
@@ -380,6 +359,9 @@ export class KontextLoader {
       knowledgeRetriever: this.knowledgeRuntime?.knowledgeRetriever,
       mcpKnowledgeSynchronizer: this.knowledgeRuntime?.mcpKnowledgeSynchronizer,
       ontologyProposalQueue: this.knowledgeRuntime?.ontologyProposalQueue,
+      mcpRefresh: config.sync,
+      ontologyUpdates: config.ontologyUpdates,
+      ontologyActivation: this.knowledgeRuntime?.ontologyActivation,
     });
     await agent.initialize();
     return agent;

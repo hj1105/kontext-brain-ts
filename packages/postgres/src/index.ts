@@ -8,3 +8,5 @@ export * from "./postgres-runtime.js";
 export * from "./postgres-chunk-vector-index.js";
 export * from "./postgres-scoring-profiles.js";
 export { runPostgresSearchRead } from "./postgres-search-session.js";
+export * from "./postgres-normative-projection.js";
+export * from "./postgres-task-completion-projection.js";

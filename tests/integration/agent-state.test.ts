@@ -8,6 +8,7 @@ import {
   FileOntologyStore,
   InMemoryKnowledgeGraphRepository,
   InMemoryMetaIndexStore,
+  InMemoryOntologyProposalQueue,
   InMemoryOntologyStore,
   InMemoryResourceContentStore,
   InMemoryVectorStore,
@@ -37,7 +38,7 @@ import {
   MCPLayerAdapterFactory,
   type MCPResource,
 } from "@kontext-brain/mcp";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 const temporaryDirectories: string[] = [];
 
@@ -50,6 +51,7 @@ afterEach(async () => {
 class MutableConnector implements MCPConnector {
   readonly name = "notion";
   resources: MCPResource[] = [];
+  readonly bodies = new Map<string, string>();
   shouldFail = false;
 
   async listResources(): Promise<MCPResource[]> {
@@ -60,7 +62,7 @@ class MutableConnector implements MCPConnector {
   async fetchResource(resourceId: string): Promise<MCPData> {
     return {
       resourceId,
-      content: `Body for ${resourceId}`,
+      content: this.bodies.get(resourceId) ?? `Body for ${resourceId}`,
       metadata: {},
       fetchedAt: new Date(),
     };
@@ -126,6 +128,48 @@ function buildGraph(): OntologyGraph {
 }
 
 describe("KontextAgent state boundaries", () => {
+  it("defaults periodic source refreshes to startup plus five-minute polling", () => {
+    const config = KontextConfigSchema.parse({
+      llm: {
+        traversal: { provider: "test", model: "test" },
+        reasoning: { provider: "test", model: "test" },
+      },
+    });
+
+    expect(config.sync).toEqual({
+      enabled: true,
+      intervalSeconds: 300,
+      runOnStart: true,
+    });
+    expect(config.ontologyUpdates).toEqual({ enabled: false });
+    expect(() =>
+      KontextConfigSchema.parse({
+        llm: config.llm,
+        sync: { intervalSeconds: 29 },
+      }),
+    ).toThrow();
+    expect(() =>
+      KontextConfigSchema.parse({
+        llm: config.llm,
+        ontologyUpdates: { enabled: true },
+      }),
+    ).toThrow("GitHub configuration is required");
+    expect(
+      KontextConfigSchema.parse({
+        llm: config.llm,
+        ontologyUpdates: {
+          enabled: true,
+          github: { owner: "acme", repository: "ontology" },
+        },
+      }).ontologyUpdates.github,
+    ).toMatchObject({
+      ontologyPath: "kontext.yaml",
+      tokenEnv: "GITHUB_TOKEN",
+      baseBranch: "main",
+      proposalBranch: "kontext/ontology-proposals",
+    });
+  });
+
   it("classifies incremental MCP resources once and removes deleted resources", async () => {
     const connector = new MutableConnector();
     connector.resources = [
@@ -186,6 +230,28 @@ describe("KontextAgent state boundaries", () => {
     expect(unchanged.resourcesUpdated).toBe(0);
     expect(llm.classificationCalls).toBe(1);
 
+    const initialContentHash = (
+      await knowledgeRepository.getResourceBySource("acme", {
+        connectorId: "notion",
+        externalId: "notion://api",
+        type: "notion",
+      })
+    )?.contentHash;
+    connector.bodies.set("notion://api", "Body changed without a title or description change");
+    const bodyUpdated = await agent.syncMCP();
+    expect(bodyUpdated.resourcesUpdated).toBe(1);
+    expect(bodyUpdated.resourcesClassified).toBe(0);
+    expect(llm.classificationCalls).toBe(1);
+    expect(
+      (
+        await knowledgeRepository.getResourceBySource("acme", {
+          connectorId: "notion",
+          externalId: "notion://api",
+          type: "notion",
+        })
+      )?.contentHash,
+    ).not.toBe(initialContentHash);
+
     const persisted = await store.load("test-agent");
     expect(persisted.resources).toHaveLength(1);
     expect(persisted.metaDocuments?.backend).toHaveLength(1);
@@ -214,7 +280,12 @@ describe("KontextAgent state boundaries", () => {
     expect(llm.classificationCalls).toBe(2);
 
     connector.resources = [];
+    const removeSpy = vi
+      .spyOn(knowledgeSync, "remove")
+      .mockRejectedValueOnce(new Error("remove unavailable"));
+    await expect(agent.syncMCP()).rejects.toThrow("remove unavailable");
     const removed = await agent.syncMCP();
+    expect(removeSpy).toHaveBeenCalledTimes(2);
     expect(removed.resourcesRemoved).toBe(1);
     expect(await metaIndex.list("backend")).toEqual([]);
     expect((await store.load("test-agent")).resources).toEqual([]);
@@ -227,6 +298,112 @@ describe("KontextAgent state boundaries", () => {
         })
       )?.status,
     ).toBe("stale");
+  });
+
+  it("activates a merged ontology proposal and reclassifies its previously unmapped resource", async () => {
+    const connector = new MutableConnector();
+    connector.resources = [
+      {
+        id: "notion://benefits",
+        name: "Employee benefits",
+        description: "HR benefits and vacation policy",
+      },
+    ];
+    const llm: LLMAdapter = {
+      async complete(systemPrompt, context) {
+        if (systemPrompt.includes("Classify each document")) {
+          return context.includes("HR:")
+            ? JSON.stringify({ mappings: { HR: [0] }, unmapped: [] })
+            : JSON.stringify({ mappings: {}, unmapped: [0] });
+        }
+        if (systemPrompt.includes("don't fit into any existing ontology node")) {
+          return JSON.stringify({
+            nodes: [{ id: "HR", description: "benefits vacation people policy" }],
+            mappings: { HR: [0] },
+          });
+        }
+        return JSON.stringify({ nodes: [], edges: [] });
+      },
+    };
+    const adapter = MCPLayerAdapterFactory.notion(connector);
+    const fetchers = new ContentFetcherRegistry();
+    fetchers.register(new MCPContentFetcherBridge(adapter));
+    const store = new InMemoryOntologyStore();
+    const proposals = new InMemoryOntologyProposalQueue();
+    const metaIndex = new InMemoryMetaIndexStore();
+    const vectorStore = new InMemoryVectorStore(async () => new Float32Array([1, 0]));
+    const activation = vi.fn(async () => undefined);
+    const engineeringOntology = [
+      { id: "engineering", description: "software api incidents issues" },
+    ];
+    const agent = new KontextAgent({
+      ontologySchemaGraph: new OntologyGraph(
+        new Map([
+          [
+            "engineering",
+            createNode({ id: "engineering", description: "software api incidents issues" }),
+          ],
+        ]),
+        [],
+        { maxDepth: 2, maxTokens: 2000, strategy: TraversalStrategy.WEIGHTED_DFS },
+      ),
+      router: new RouterLLMAdapter(llm, llm),
+      mcpConnectors: [connector],
+      mcpLayerAdapters: [adapter],
+      metaIndexStore: metaIndex,
+      fetcherRegistry: fetchers,
+      vectorStore,
+      mappingStrategy: new KeywordMappingStrategy(),
+      metaSelector: new ScoreBasedSelector(),
+      ingestPipeline: new IngestPipeline(llm, store, vectorStore),
+      legacySnapshotStore: store,
+      organizationId: "acme",
+      ontologyProposalQueue: proposals,
+      ontologyContentHash: computeOntologyContentHash(engineeringOntology),
+      ontologyActivation: { activate: activation },
+    });
+
+    const first = await agent.syncMCP();
+    expect(first.resourcesUnmapped).toBe(1);
+    expect((await proposals.listOpen("acme")).map((proposal) => proposal.suggestedNodeId)).toEqual([
+      "HR",
+    ]);
+
+    const unchangedBeforeMerge = await agent.syncMCP();
+    expect(unchangedBeforeMerge.resourcesUpdated).toBe(0);
+    expect(unchangedBeforeMerge.resourcesClassified).toBe(0);
+    expect(unchangedBeforeMerge.resourcesUnmapped).toBe(0);
+    expect((await proposals.listOpen("acme"))[0]?.occurrences).toBe(1);
+
+    const publication = await agent.publishOntologyProposals(
+      [
+        "ontology:",
+        "  - id: engineering",
+        "    description: software api incidents issues",
+        "graph:",
+        "  maxDepth: 2",
+        "  maxTokens: 2000",
+        "  strategy: WEIGHTED_DFS",
+      ].join("\n"),
+      {
+        async upsert(input) {
+          return { url: `https://github.test/pr?size=${input.yaml.length}` };
+        },
+      },
+    );
+    expect((await proposals.listPending("acme"))[0]?.status).toBe("published");
+
+    const activated = await agent.activateOntologyYaml(publication.yaml);
+    expect(activated.changed).toBe(true);
+    expect(agent.ontologyGraph.nodes.has("HR")).toBe(true);
+    expect(activation).toHaveBeenCalledOnce();
+    expect(await proposals.listPending("acme")).toEqual([]);
+
+    const reclassified = await agent.syncMCP();
+    expect(reclassified.resourcesClassified).toBe(1);
+    expect((await metaIndex.list("HR")).map((document) => document.id)).toEqual([
+      "notion://benefits",
+    ]);
   });
 
   it("applies manual ingest to the ontology schema cache and its legacy snapshot", async () => {

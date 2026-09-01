@@ -26,11 +26,13 @@ import {
   OntologyGraph,
   type OntologyNode,
   type OntologyProposal,
+  type OntologyProposalPublisher,
   type OntologyProposalQueue,
   type OntologyStore,
   type PipelineStep,
   type Principal,
   type PromptTemplates,
+  PublishOntologyProposalsUseCase,
   type RouterLLMAdapter,
   type SerializableResourceRecord,
   type TokenEstimator,
@@ -45,7 +47,20 @@ import {
   type MCPKnowledgeSynchronizer,
   type MCPLayerAdapter,
   type MCPResource,
+  computeMCPResourceContentHash,
 } from "@kontext-brain/mcp";
+import { parse as parseYaml } from "yaml";
+import {
+  OntologyDocumentSchema,
+  type OntologyUpdatesConfig,
+  type PeriodicSyncConfig,
+} from "./kontext-config.js";
+import {
+  type KnowledgeOntologyActivationPort,
+  computeOntologyContentHash,
+} from "./ontology-activation.js";
+import { OntologyEmbedder, OntologyGraphBuilder } from "./ontology-graph-builder.js";
+import { YamlOntologyProposalUpdater } from "./ontology-proposal-yaml-updater.js";
 
 export interface AutoSetupResult {
   readonly nodesCreated: number;
@@ -62,6 +77,14 @@ export interface SyncMCPResult {
   readonly resourcesRemoved: number;
   readonly resourcesClassified: number;
   readonly resourcesUnmapped: number;
+}
+
+export type MCPRefreshConfiguration = PeriodicSyncConfig;
+
+export interface OntologyActivationResult {
+  readonly changed: boolean;
+  readonly contentHash: string;
+  readonly nodeCount: number;
 }
 
 export interface KontextAgentDeps {
@@ -89,6 +112,9 @@ export interface KontextAgentDeps {
   knowledgeRetriever?: BidirectionalNLayerRetriever;
   mcpKnowledgeSynchronizer?: MCPKnowledgeSynchronizer;
   answerValidator?: AnswerGroundingValidator;
+  mcpRefresh?: MCPRefreshConfiguration;
+  ontologyUpdates?: OntologyUpdatesConfig;
+  ontologyActivation?: KnowledgeOntologyActivationPort;
 }
 
 /**
@@ -117,10 +143,13 @@ export class KontextAgent {
   private readonly stateId: string;
   private readonly organizationId: string;
   private readonly ontologyProposalQueue: OntologyProposalQueue;
-  private readonly ontologyContentHash?: string;
+  private ontologyContentHash?: string;
   private readonly knowledgeRetriever?: BidirectionalNLayerRetriever;
   private readonly mcpKnowledgeSynchronizer?: MCPKnowledgeSynchronizer;
   private readonly answerValidator: AnswerGroundingValidator;
+  private readonly mcpRefresh: MCPRefreshConfiguration;
+  private readonly ontologyUpdates: OntologyUpdatesConfig;
+  private readonly ontologyActivation?: KnowledgeOntologyActivationPort;
   private readonly mcpResourceCache = new Map<string, SerializableResourceRecord>();
   private mutationQueue: Promise<void> = Promise.resolve();
   private queryPipeline: LayeredQueryPipeline;
@@ -147,6 +176,13 @@ export class KontextAgent {
     this.knowledgeRetriever = deps.knowledgeRetriever;
     this.mcpKnowledgeSynchronizer = deps.mcpKnowledgeSynchronizer;
     this.answerValidator = deps.answerValidator ?? new CitationAnswerValidator();
+    this.mcpRefresh = deps.mcpRefresh ?? {
+      enabled: true,
+      intervalSeconds: 300,
+      runOnStart: true,
+    };
+    this.ontologyUpdates = deps.ontologyUpdates ?? { enabled: false };
+    this.ontologyActivation = deps.ontologyActivation;
     for (const record of deps.mcpResourceCacheEntries ?? []) {
       this.mcpResourceCache.set(resourceKey(record.connectorName, record.resourceId), record);
     }
@@ -159,6 +195,22 @@ export class KontextAgent {
 
   get activePipeline(): readonly PipelineStep[] {
     return this.pipeline;
+  }
+
+  get mcpRefreshConfiguration(): MCPRefreshConfiguration {
+    return this.mcpRefresh;
+  }
+
+  get ontologyUpdateConfiguration(): OntologyUpdatesConfig {
+    return this.ontologyUpdates;
+  }
+
+  get activeOntologyContentHash(): string | undefined {
+    return this.ontologyContentHash;
+  }
+
+  get activeOntologyNodeCount(): number {
+    return this.ontologySchemaGraph.nodes.size;
   }
 
   private buildQueryPipeline(): LayeredQueryPipeline {
@@ -286,6 +338,9 @@ export class KontextAgent {
     const toClassify: MCPResourceInfo[] = [];
     const previousByResource = new Map<string, SerializableResourceRecord>();
     const removed: SerializableResourceRecord[] = [];
+    const currentKeys: string[] = [];
+    const addedKeys = new Set<string>();
+    const metadataUpdatedKeys = new Set<string>();
     let connectorsSynced = 0;
     let resourcesAdded = 0;
     let resourcesUpdated = 0;
@@ -309,18 +364,23 @@ export class KontextAgent {
       for (const record of existing) {
         if (!currentIds.has(record.resourceId)) {
           removed.push(record);
-          this.mcpResourceCache.delete(resourceKey(record.connectorName, record.resourceId));
         }
       }
 
       for (const resource of resources) {
         const key = resourceKey(connector.name, resource.id);
+        currentKeys.push(key);
         const previous = this.mcpResourceCache.get(key);
         const nextSignature = resourceSignature(resource.name, resource.description, source);
+        const ontologyChangedForUnmapped =
+          previous?.nodeIds.length === 0 &&
+          previous.classifiedOntologySignature !== this.currentOntologyClassificationSignature();
         if (!previous) {
           resourcesAdded++;
-        } else if (previous.signature !== nextSignature || previous.nodeIds.length === 0) {
+          addedKeys.add(key);
+        } else if (previous.signature !== nextSignature || ontologyChangedForUnmapped) {
           resourcesUpdated++;
+          metadataUpdatedKeys.add(key);
           previousByResource.set(key, previous);
         } else {
           this.mcpResourceCache.set(key, { ...previous, lastSeenAt: seenAt });
@@ -342,7 +402,6 @@ export class KontextAgent {
 
     let resourcesClassified = 0;
     let resourcesUnmapped = 0;
-    const changedRecords: SerializableResourceRecord[] = [];
     if (toClassify.length > 0) {
       const classifier = new DocumentClassifier(this.router.traversalAdapter, this.templates);
       const classification = await classifier.classify(toClassify, this.ontologySchemaGraph.nodes);
@@ -367,20 +426,32 @@ export class KontextAgent {
           source: resource.source,
           nodeIds,
           signature,
+          classifiedOntologySignature: this.currentOntologyClassificationSignature(),
+          contentSignature: previous?.contentSignature,
           lastSeenAt: now,
         };
         this.mcpResourceCache.set(key, record);
-        changedRecords.push(record);
         if (assignedNodeIds !== undefined) resourcesClassified++;
         else resourcesUnmapped++;
       }
     }
 
+    const currentRecords = currentKeys
+      .map((key) => this.mcpResourceCache.get(key))
+      .filter((record): record is SerializableResourceRecord => record !== undefined);
+    const contentChangedRecords = await this.refreshKnowledgeResources(currentRecords, removed);
+    for (const record of removed) {
+      this.mcpResourceCache.delete(resourceKey(record.connectorName, record.resourceId));
+    }
+    for (const record of contentChangedRecords) {
+      const key = resourceKey(record.connectorName, record.resourceId);
+      if (!addedKeys.has(key) && !metadataUpdatedKeys.has(key)) resourcesUpdated++;
+    }
+
     await this.rebuildMetaIndex();
     if (this.hasVectorStep()) {
-      await this.embedResourceContent(changedRecords);
+      await this.embedResourceContent(contentChangedRecords);
     }
-    await this.syncKnowledgeResources(changedRecords, removed);
     await this.persistOrchestrationSnapshot();
 
     return {
@@ -437,6 +508,75 @@ export class KontextAgent {
     return this.ontologyProposalQueue.listOpen(this.organizationId);
   }
 
+  async listPendingOntologyProposals(): Promise<readonly OntologyProposal[]> {
+    return this.ontologyProposalQueue.listPending(this.organizationId);
+  }
+
+  async publishOntologyProposals(
+    activeYaml: string,
+    publisher: OntologyProposalPublisher,
+  ): Promise<{ readonly changed: boolean; readonly yaml: string; readonly url?: string }> {
+    return new PublishOntologyProposalsUseCase(
+      this.ontologyProposalQueue,
+      new YamlOntologyProposalUpdater(),
+      publisher,
+    ).execute(this.organizationId, activeYaml);
+  }
+
+  async activateOntologyYaml(yaml: string): Promise<OntologyActivationResult> {
+    const document = OntologyDocumentSchema.parse(parseYaml(yaml));
+    const contentHash = computeOntologyContentHash(document.ontology);
+    const graph = await new OntologyGraphBuilder(
+      new OntologyEmbedder(this.vectorStore ?? NoopVectorStore),
+    ).build(document.ontology, document.graph);
+
+    return this.runMutation(async () => {
+      if (this.ontologyContentHash === contentHash) {
+        await this.acceptIncludedOntologyProposals(graph);
+        return { changed: false, contentHash, nodeCount: graph.nodes.size };
+      }
+
+      await this.ontologyActivation?.activate({
+        organizationId: this.organizationId,
+        yaml,
+        graph: {
+          nodes: Array.from(graph.nodes.values()).map((node) => ({
+            id: node.id,
+            description: node.description,
+            parentId: node.parentId,
+          })),
+          edges: graph.edges.map((edge) => ({
+            from: edge.from,
+            to: edge.to,
+            weight: edge.weight,
+            type: edge.type,
+          })),
+        },
+      });
+
+      this.ontologySchemaGraph = graph;
+      this.ontologyContentHash = contentHash;
+      for (const [key, record] of this.mcpResourceCache) {
+        this.mcpResourceCache.set(key, {
+          ...record,
+          nodeIds: record.nodeIds.filter((nodeId) => graph.nodes.has(nodeId)),
+        });
+      }
+      this.queryPipeline = this.buildQueryPipeline();
+      await this.rebuildMetaIndex();
+      await this.acceptIncludedOntologyProposals(graph);
+      await this.persistOrchestrationSnapshot();
+      return { changed: true, contentHash, nodeCount: graph.nodes.size };
+    });
+  }
+
+  private async acceptIncludedOntologyProposals(graph: OntologyGraph): Promise<void> {
+    const included = (await this.ontologyProposalQueue.listPending(this.organizationId))
+      .filter((proposal) => graph.nodes.has(proposal.suggestedNodeId))
+      .map((proposal) => proposal.proposalKey);
+    await this.ontologyProposalQueue.markAccepted(this.organizationId, included);
+  }
+
   // ── autoSetup ───────────────────────────────────────────────
 
   async autoSetup(targetNodeCount?: number): Promise<AutoSetupResult> {
@@ -490,30 +630,22 @@ export class KontextAgent {
         source: resource.source,
         nodeIds: assignments.get(key) ?? [],
         signature: resourceSignature(resource.title, resource.description, resource.source),
+        classifiedOntologySignature: this.currentOntologyClassificationSignature(),
         lastSeenAt: now,
       });
     }
 
-    await this.rebuildMetaIndex();
-    const classifiedRecords = resourceInfos
+    const allRecords = resourceInfos
       .map((resource) =>
         this.mcpResourceCache.get(resourceKey(resource.connectorName, resource.id)),
       )
-      .filter(
-        (record): record is SerializableResourceRecord =>
-          record !== undefined && record.nodeIds.length > 0,
-      );
+      .filter((record): record is SerializableResourceRecord => record !== undefined);
+    const refreshedRecords = await this.refreshKnowledgeResources(allRecords, []);
+    await this.rebuildMetaIndex();
+    const classifiedRecords = refreshedRecords.filter((record) => record.nodeIds.length > 0);
     if (this.hasVectorStep()) {
       await this.embedResourceContent(classifiedRecords);
     }
-    await this.syncKnowledgeResources(
-      resourceInfos
-        .map((resource) =>
-          this.mcpResourceCache.get(resourceKey(resource.connectorName, resource.id)),
-        )
-        .filter((record): record is SerializableResourceRecord => record !== undefined),
-      [],
-    );
     await this.persistOrchestrationSnapshot();
 
     const { OntologyYamlWriter } = await import("./ontology-yaml-writer.js");
@@ -704,35 +836,48 @@ export class KontextAgent {
     }
   }
 
-  private async syncKnowledgeResources(
-    changed: readonly SerializableResourceRecord[],
+  private async refreshKnowledgeResources(
+    current: readonly SerializableResourceRecord[],
     removed: readonly SerializableResourceRecord[],
-  ): Promise<void> {
+  ): Promise<readonly SerializableResourceRecord[]> {
     const synchronizer = this.mcpKnowledgeSynchronizer;
-    if (!synchronizer) return;
-    for (const record of changed) {
+    if (synchronizer) {
+      for (const record of removed) {
+        await synchronizer.remove(this.organizationId, record.connectorName, record.resourceId);
+      }
+    }
+
+    const changed: SerializableResourceRecord[] = [];
+    for (const record of current) {
       const connector = this.mcpConnectors.find(
         (candidate) => candidate.name === record.connectorName,
       );
       if (!connector) continue;
-      await synchronizer.sync(
-        this.organizationId,
-        connector,
-        {
-          id: record.resourceId,
-          name: record.title,
-          description: record.description,
-        },
-        record.nodeIds,
-      );
+      const resource = {
+        id: record.resourceId,
+        name: record.title,
+        description: record.description,
+      };
+      const contentSignature = synchronizer
+        ? (await synchronizer.sync(this.organizationId, connector, resource, record.nodeIds))
+            .contentHash
+        : computeMCPResourceContentHash(resource, await connector.fetchResource(record.resourceId));
+      const refreshed = { ...record, contentSignature };
+      this.mcpResourceCache.set(resourceKey(record.connectorName, record.resourceId), refreshed);
+      if (record.contentSignature !== contentSignature) changed.push(refreshed);
     }
-    for (const record of removed) {
-      await synchronizer.remove(this.organizationId, record.connectorName, record.resourceId);
-    }
+    return changed;
   }
 
   private hasVectorStep(): boolean {
     return this.pipeline.some((pipelineStep) => pipelineStep.type === DepthType.VECTOR);
+  }
+
+  private currentOntologyClassificationSignature(): string {
+    return (
+      this.ontologyContentHash ??
+      Array.from(this.ontologySchemaGraph.nodes.keys()).sort().join("\u0000")
+    );
   }
 
   /**
@@ -774,6 +919,19 @@ const emptySyncResult: SyncMCPResult = {
   resourcesRemoved: 0,
   resourcesClassified: 0,
   resourcesUnmapped: 0,
+};
+
+const NoopVectorStore: VectorStore = {
+  async embed() {
+    return new Float32Array(0);
+  },
+  async upsert() {},
+  async similaritySearch() {
+    return [];
+  },
+  async similaritySearchWithPrefix() {
+    return [];
+  },
 };
 
 function resourceKey(connectorName: string, resourceId: string): string {

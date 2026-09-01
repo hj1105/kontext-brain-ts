@@ -20,6 +20,7 @@
   "dependencies": {
     "@kontext-brain/core": "workspace:*",
     "@kontext-brain/mcp": "workspace:*",
+    "@kontext-brain/spec": "workspace:*",
     "pg": "^8.16.3"
   },
   "devDependencies": {

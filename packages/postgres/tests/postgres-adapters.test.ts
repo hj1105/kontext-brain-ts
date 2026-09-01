@@ -356,6 +356,8 @@ describe.runIf(pool !== null)("PostgreSQL adapters", () => {
     expect(await queue.listPending("acme")).toMatchObject([
       { occurrences: 3, status: "published" },
     ]);
+    await queue.markAccepted("acme", ["refund"]);
+    expect(await queue.listPending("acme")).toEqual([]);
   });
 
   it("uses a single pooled connection and transaction for retrieval and vector seeds", async () => {

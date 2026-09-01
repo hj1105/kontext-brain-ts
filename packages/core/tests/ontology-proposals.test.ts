@@ -68,6 +68,20 @@ describe("ontology proposal flow", () => {
     ]);
   });
 
+  it("marks a published proposal accepted after its node reaches the canonical ontology", async () => {
+    const queue = new InMemoryOntologyProposalQueue();
+    await queue.enqueue("acme", [
+      { suggestedNodeId: "refund", description: "Refunds", resourceIds: ["notion:p1"] },
+    ]);
+    await queue.markPublished("acme", ["refund"]);
+    expect(await queue.listPending("acme")).toHaveLength(1);
+
+    await queue.markAccepted("acme", ["refund"]);
+
+    expect(await queue.listPending("acme")).toEqual([]);
+    expect(await queue.listOpen("acme")).toEqual([]);
+  });
+
   it("publishes all open proposals as one YAML update and marks them published afterward", async () => {
     const queue = new InMemoryOntologyProposalQueue();
     await queue.enqueue("acme", [

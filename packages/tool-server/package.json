@@ -6,7 +6,8 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "kontext-tool-server": "./dist/cli.js"
+    "kontext-tool-server": "./dist/cli.js",
+    "kontext-task-tool-server": "./dist/task-cli.js"
   },
   "exports": {
     ".": {
@@ -17,12 +18,20 @@
   "files": ["dist"],
   "scripts": {
     "build": "tsup",
+    "build:codex-plugin": "tsup --config tsup.plugin.config.ts",
     "typecheck": "tsc --noEmit",
     "start": "node dist/cli.js"
   },
   "dependencies": {
+    "@kontext-brain/context": "workspace:*",
     "@kontext-brain/core": "workspace:*",
+    "@kontext-brain/github": "workspace:*",
+    "@kontext-brain/local": "workspace:*",
     "@kontext-brain/loader": "workspace:*",
+    "@kontext-brain/orchestrator": "workspace:*",
+    "@kontext-brain/runtime-claude": "workspace:*",
+    "@kontext-brain/runtime-codex": "workspace:*",
+    "@kontext-brain/spec": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.0.4",
     "zod": "^3.24.1"
   }

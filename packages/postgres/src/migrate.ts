@@ -1,13 +1,13 @@
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import type { Pool } from "pg";
 
 export async function migratePostgres(pool: Pool): Promise<void> {
-  for (const filename of [
-    "0001_knowledge_graph.sql",
-    "0002_scoring_profiles_and_observations.sql",
-  ]) {
-    const migrationUrl = new URL(`../migrations/${filename}`, import.meta.url);
-    const sql = await readFile(migrationUrl, "utf8");
+  const migrationsUrl = new URL("../migrations/", import.meta.url);
+  const migrationNames = (await readdir(migrationsUrl))
+    .filter((name) => /^\d+_[a-z0-9_]+\.sql$/.test(name))
+    .sort();
+  for (const migrationName of migrationNames) {
+    const sql = await readFile(new URL(migrationName, migrationsUrl), "utf8");
     await pool.query(sql);
   }
 }

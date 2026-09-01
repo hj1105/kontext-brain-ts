@@ -485,6 +485,24 @@ mcp:
   - { name: notion-docs,  url: http://localhost:8101, type: notion,    transport: sse }
   - { name: github-issues, command: "npx", args: ["@modelcontextprotocol/server-github"], transport: stdio }
 
+# The MCP tool server refreshes every connected source on startup and then every 5 minutes.
+sync:
+  enabled: true
+  intervalSeconds: 300
+  runOnStart: true
+
+# Optional governed ontology evolution. The token is read from the environment,
+# never from this file.
+ontologyUpdates:
+  enabled: true
+  github:
+    owner: acme
+    repository: knowledge-platform
+    ontologyPath: kontext.yaml
+    tokenEnv: GITHUB_TOKEN
+    baseBranch: main
+    proposalBranch: kontext/ontology-proposals
+
 # ontology can be omitted — autoSetup() will build one
 ontology:
   - { id: backend,  description: REST API server database JWT, weight: 0.9 }
@@ -588,7 +606,7 @@ Register with Claude Desktop (`~/Library/Application Support/Claude/claude_deskt
 }
 ```
 
-The server exposes 6 tools to the host agent:
+The server exposes 8 tools to the host agent:
 
 | tool | input | output |
 |------|-------|--------|
@@ -598,6 +616,25 @@ The server exposes 6 tools to the host agent:
 | `kontext_describe` | `{}` | dumps ontology / pipeline / MCP adapters |
 | `kontext_sync` | `{ connectorName? }` | incrementally classify additions/changes and remove deleted resources |
 | `kontext_auto_setup` | `{ targetNodeCount? }` | infers ontology size (or uses an override), builds it, and classifies docs |
+| `kontext_ontology_status` | `{}` | active revision, queued proposals, and GitHub maintenance status |
+| `kontext_publish_ontology_proposals` | `{}` | manually update the configured draft proposal PR |
+
+The tool server keeps Notion, Slack, GitHub, and other MCP resources fresh in
+the background. The defaults are `enabled: true`, `runOnStart: true`, and a
+300-second interval. Each poll rechecks resource content, so body-only edits
+are updated without re-running ontology classification; unchanged content is
+an idempotent no-op. Set `sync.enabled: false` when an external scheduler or
+webhook owns synchronization.
+
+Governed ontology updates are disabled by default. When `ontologyUpdates` is
+enabled, every source refresh first polls the configured GitHub base branch.
+A newly merged ontology revision is validated and activated before resources
+are classified. Documents that do not fit the active graph become deduplicated
+proposals; after the refresh they are written to one stable draft pull request.
+Once that PR is reviewed and merged, the next poll activates the new nodes,
+marks their proposals accepted, and reclassifies the previously unmapped
+resources. Set the configured token environment variable to a repository token
+that can read/write the ontology file and create or update pull requests.
 
 ---
 

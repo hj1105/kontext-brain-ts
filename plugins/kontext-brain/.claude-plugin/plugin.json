@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "kontext-brain",
+  "displayName": "Kontext Brain",
+  "version": "0.1.0",
+  "description": "Compile provenance-backed context and enforce verified Change Bundles for each behavior-bearing logic unit.",
+  "author": {
+    "name": "Kontext Brain"
+  },
+  "repository": "https://github.com/hj1105/kontext-brain-ts",
+  "license": "MIT",
+  "keywords": ["code-context", "provenance", "ontology", "claude-code"],
+  "skills": "./skills/",
+  "hooks": "./hooks/claude-hooks.json",
+  "mcpServers": "./.claude.mcp.json"
+}

@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "verifiers": [
+    {
+      "kind": "test",
+      "ref": "example-handler:test",
+      "command": "pnpm",
+      "args": ["exec", "vitest", "run", "src/example-handler.test.ts"],
+      "timeoutMilliseconds": 120000
+    }
+  ]
+}
