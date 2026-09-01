@@ -17,6 +17,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@kontext-brain/code": "workspace:*",
     "@kontext-brain/spec": "workspace:*"
   }
 }

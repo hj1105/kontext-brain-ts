@@ -108,6 +108,9 @@ importers:
 
   packages/context:
     dependencies:
+      '@kontext-brain/code':
+        specifier: workspace:*
+        version: link:../code
       '@kontext-brain/spec':
         specifier: workspace:*
         version: link:../spec
@@ -240,6 +243,9 @@ importers:
 
   packages/tool-server:
     dependencies:
+      '@kontext-brain/code':
+        specifier: workspace:*
+        version: link:../code
       '@kontext-brain/context':
         specifier: workspace:*
         version: link:../context

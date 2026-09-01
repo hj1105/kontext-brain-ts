@@ -23,6 +23,7 @@
     "start": "node dist/cli.js"
   },
   "dependencies": {
+    "@kontext-brain/code": "workspace:*",
     "@kontext-brain/context": "workspace:*",
     "@kontext-brain/core": "workspace:*",
     "@kontext-brain/github": "workspace:*",

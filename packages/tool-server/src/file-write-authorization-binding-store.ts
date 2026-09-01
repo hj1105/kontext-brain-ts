@@ -7,6 +7,64 @@ import type {
   WriteAuthorizationBindingStore,
 } from "./task-workflow-tools.js";
 
+const workspaceSnapshotSchema = z
+  .object({
+    workspacePath: z.string().min(1),
+    revision: z.string().min(1),
+    files: z.array(
+      z
+        .object({
+          path: z.string().min(1),
+          kind: z.enum(["file", "symlink", "missing"]),
+          contentDigest: z.string().min(1),
+        })
+        .strict(),
+    ),
+  })
+  .strict();
+
+const codeSymbolIdentitySchema = z
+  .object({
+    codebaseId: z.string().min(1),
+    relativePath: z.string().min(1),
+    language: z.enum(["typescript", "javascript"]),
+    kind: z.enum([
+      "module",
+      "class",
+      "interface",
+      "type",
+      "enum",
+      "function",
+      "method",
+      "constructor",
+      "getter",
+      "setter",
+      "named_arrow",
+      "field",
+      "constant",
+    ]),
+    qualifiedName: z.string().min(1),
+    signatureDiscriminator: z.string(),
+  })
+  .strict();
+
+const codeSymbolSnapshotSchema = z
+  .object({
+    codebaseId: z.string().min(1),
+    workspaceRevision: z.string().min(1),
+    symbols: z.array(
+      z
+        .object({
+          symbolId: z.string().min(1),
+          identity: codeSymbolIdentitySchema,
+          behaviorBearing: z.boolean(),
+          contentHash: z.string().min(1),
+        })
+        .strict(),
+    ),
+  })
+  .strict();
+
 const bindingSchema = z
   .object({
     request: z
@@ -48,27 +106,15 @@ const bindingSchema = z
         expiresAt: z.string().datetime(),
       })
       .strict(),
-    baseline: z
-      .object({
-        workspacePath: z.string().min(1),
-        revision: z.string().min(1),
-        files: z.array(
-          z
-            .object({
-              path: z.string().min(1),
-              kind: z.enum(["file", "symlink", "missing"]),
-              contentDigest: z.string().min(1),
-            })
-            .strict(),
-        ),
-      })
-      .strict(),
+    initialBaseline: workspaceSnapshotSchema,
+    baseline: workspaceSnapshotSchema,
+    symbolBaseline: codeSymbolSnapshotSchema,
   })
   .strict();
 
 const envelopeSchema = z
   .object({
-    schemaVersion: z.literal(1),
+    schemaVersion: z.literal(2),
     workspacePath: z.string().min(1),
     payloadDigest: z.string().min(1),
     binding: bindingSchema,
@@ -133,7 +179,7 @@ export class FileWriteAuthorizationBindingStore implements WriteAuthorizationBin
     const normalizedWorkspace = path.resolve(workspacePath);
     const payload = bindingSchema.parse(binding);
     const envelope = {
-      schemaVersion: 1 as const,
+      schemaVersion: 2 as const,
       workspacePath: normalizedWorkspace,
       payloadDigest: digest(payload),
       binding: payload,

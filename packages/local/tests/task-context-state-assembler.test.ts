@@ -23,6 +23,18 @@ describe("assembleCurrentTaskContextState", () => {
         {
           workItemId: "work-item:handler",
           plannedSymbolIds: ["planned-symbol:handler"],
+          plannedSymbols: [
+            {
+              plannedSymbolId: "planned-symbol:handler",
+              taskId: "task:assembly",
+              intendedIdentity: {
+                relativePath: "./src\\handler.ts",
+                kind: "function",
+                qualifiedName: "handler",
+              },
+              responsibility: "Handle the request",
+            },
+          ],
           allowedPaths: ["./src\\handler.ts"],
         },
       ],
@@ -44,6 +56,9 @@ describe("assembleCurrentTaskContextState", () => {
       },
     ]);
     expect(state.logicPlans[0]?.allowedPaths).toEqual(["src/handler.ts"]);
+    expect(state.logicPlans[0]?.plannedSymbols?.[0]?.intendedIdentity.relativePath).toBe(
+      "src/handler.ts",
+    );
     expect(state.effectiveScopes).toContainEqual({ kind: "personal", subjectId: "user:owner" });
   });
 
@@ -79,6 +94,24 @@ describe("assembleCurrentTaskContextState", () => {
         logicPlans: [{ ...logicPlan, allowedPaths: ["../outside.ts"] }],
       }),
     ).toThrow("stay inside the workspace");
+    expect(() =>
+      assembleCurrentTaskContextState({
+        ...base,
+        logicPlans: [
+          {
+            ...logicPlan,
+            plannedSymbols: [
+              {
+                plannedSymbolId: "planned-symbol:other",
+                taskId: "task:assembly",
+                intendedIdentity: { qualifiedName: "handler" },
+                responsibility: "Handle the request",
+              },
+            ],
+          },
+        ],
+      }),
+    ).toThrow("describe every Planned Symbol ID exactly once");
   });
 
   it("does not let an inactive historical revision restrict current Evidence egress", () => {

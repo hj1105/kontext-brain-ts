@@ -157,6 +157,8 @@ describe("Change Bundle validation", () => {
         currentCodeRevision: resultRevision,
         observedPatch,
         receipts: [receipt],
+        plannedSymbolIssues: [],
+        unauthorizedChangedSymbolIds: [],
         verificationRuns,
       }),
     ).toEqual({ accepted: true, issues: [] });
@@ -182,6 +184,8 @@ describe("Change Bundle validation", () => {
       currentCodeRevision: resultRevision,
       observedPatch: { ...observedPatch, changedPaths: ["src/actually-changed.ts"] },
       receipts: [receipt],
+      plannedSymbolIssues: [],
+      unauthorizedChangedSymbolIds: [],
       verificationRuns: staleRuns,
       quarantineRecords: [quarantine],
     });
@@ -190,11 +194,36 @@ describe("Change Bundle validation", () => {
     expect(result.issues.map((issue) => issue.code)).toEqual(
       expect.arrayContaining([
         "changed_paths_mismatch",
+        "path_out_of_scope",
         "invalid_verification",
         "missing_verification",
         "unresolved_work",
         "active_quarantine",
       ]),
+    );
+  });
+
+  it("rejects unbound Planned Symbols and observed Code Symbols outside the plan", () => {
+    const result = validateChangeBundle({
+      bundle: bundle(),
+      workItem,
+      snapshot,
+      currentCodeRevision: resultRevision,
+      observedPatch,
+      receipts: [receipt],
+      plannedSymbolIssues: [
+        {
+          plannedSymbolId: "planned-symbol:missing",
+          code: "identity_not_found",
+          candidateSymbolIds: [],
+        },
+      ],
+      unauthorizedChangedSymbolIds: ["symbol:outside"],
+      verificationRuns,
+    });
+
+    expect(result.issues.map((issue) => issue.code)).toEqual(
+      expect.arrayContaining(["unbound_planned_symbol", "symbol_out_of_scope"]),
     );
   });
 });

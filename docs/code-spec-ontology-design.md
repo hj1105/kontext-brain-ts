@@ -458,8 +458,10 @@ time. It does not duplicate secret source bodies or provider credentials.
 6. **Begin logic** — compile symbol-level just-in-time context and issue a
    Context Receipt before editing.
 7. **Edit** — a worker modifies only its isolated worktree and leased scope.
-8. **Resynchronize** — bind Planned Symbols to actual Code Symbols and compute
-   affected Facts, symbols, Invariants, and dependants.
+8. **Resynchronize** — the sidecar compares its preserved initial file and
+   semantic-symbol baselines with the current worktree, binds each Planned
+   Symbol only to one unambiguous actual Code Symbol, and computes affected
+   Facts, symbols, Invariants, and dependants.
 9. **Verify** — run the fast and targeted tiers for the same revision and
    context digest.
 10. **Handoff** — return a Change Bundle; conversation prose is not the handoff
@@ -485,8 +487,8 @@ evolve, but their contracts are stable:
 | `kontext_begin_logic` | acquire capability and return symbol context plus Context Receipt |
 | `kontext_authorize_write` | provider hook revalidates a receipt and exact write paths |
 | `kontext_refresh_task_context` | show revision diff and create a replacement snapshot |
-| `kontext_check_change` | resynchronize touched code and execute required symbol checks |
-| `kontext_submit_change_bundle` | validate the worker handoff against lease, revision, and digest |
+| `kontext_check_change` | derive the current revision and changed symbols from `workspacePath`, then execute required checks |
+| `kontext_submit_change_bundle` | derive patch, symbols, and receipts from `workspacePath`, then validate the worker's bundle claims |
 | `kontext_propose_transition` | accept Evidence and compute Task state; reject direct state writes |
 | `kontext_inspect_runtimes` | report CLI installation, auth, billing path, and scheduling eligibility |
 | `kontext_schedule_logic` | durably enqueue sidecar-planned Work Items for isolated provider-bound execution |
@@ -506,6 +508,17 @@ Any unreceipted or out-of-scope change is quarantined immediately after
 detection. Post-write blocking cannot undo a completed write. A runtime that
 cannot provide reliable pre-write enforcement or authoritative post-write
 observation is restricted to exploration and review.
+
+Caller-supplied “observed” patch data is not an enforcement input. The initial
+file and Code Symbol baselines remain immutable for the Work Item even while
+the hook advances its per-write observation baseline. Verification Runs and
+Change Bundle validation use a fresh sidecar observation, and ambiguous or
+missing Planned Symbol bindings fail closed.
+
+Write bindings created before the semantic baseline was introduced are not
+silently upgraded. The user or main agent begins the Logic Work Item again so
+the sidecar can capture one coherent file-and-symbol baseline and issue a fresh
+Context Receipt.
 
 ### 8.1 Verification tiers
 
