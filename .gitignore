@@ -8,3 +8,4 @@ coverage
 *.tsbuildinfo
 .turbo
 bench/data/rag-eval-v2/runs/
+bench/data/code-quality-eval/
