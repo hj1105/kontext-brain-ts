@@ -597,7 +597,7 @@ The server exposes 6 tools to the host agent:
 | `kontext_ingest` | `{ data, source? }` | extracts entities into the graph |
 | `kontext_describe` | `{}` | dumps ontology / pipeline / MCP adapters |
 | `kontext_sync` | `{ connectorName? }` | incrementally classify additions/changes and remove deleted resources |
-| `kontext_auto_setup` | `{ targetNodeCount? }` | LLM builds/expands ontology + classifies docs |
+| `kontext_auto_setup` | `{ targetNodeCount? }` | infers ontology size (or uses an override), builds it, and classifies docs |
 
 ---
 
@@ -666,7 +666,7 @@ sources:
 
 ```typescript
 const agent = await KontextLoader.fromFile("kontext.yaml");
-const result = await agent.autoSetup({ targetNodeCount: 8 });
+const result = await agent.autoSetup();
 
 console.log(`Built ${result.nodesCreated} ontology nodes`);
 console.log(`Classified ${result.documentsClassified} documents`);
@@ -677,12 +677,14 @@ console.log(result.ontologyYaml);  // save this back to kontext.yaml for reuse
 Internally:
 
 1. `MCPConnector.listResources()` on every connector → `MCPResourceInfo[]`
-2. `OntologyAutoBuilder.build()` — LLM extracts categories, designs N nodes
-   with parent/level hierarchy, infers edges
-3. `DocumentClassifier.classify()` — LLM maps each document to its best node;
-   any unmappable docs spawn new nodes
-4. `MetaIndexStore.index()` per node
-5. `VectorStore.upsert()` of node descriptions and (optionally) document bodies
+2. `OntologyAutoBuilder.build()` — LLM extracts categories; corpus size and
+   topic diversity determine a compact target node count automatically, unless
+   the caller supplies a numeric override such as `autoSetup(8)`
+3. The LLM designs nodes with parent/level hierarchy and infers edges
+4. `DocumentClassifier.classify()` — LLM maps each document to its best node;
+   unmappable documents create reviewable ontology proposals
+5. `MetaIndexStore.index()` per node
+6. `VectorStore.upsert()` of node descriptions and (optionally) document bodies
 
 The whole flow takes one network round-trip per LLM call, parallelized where
 safe. Total time: roughly 30 seconds for a 100-doc corpus on Claude Haiku;
