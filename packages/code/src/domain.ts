@@ -1,4 +1,4 @@
-export type CodeLanguage = "typescript" | "javascript";
+export type CodeLanguage = "typescript" | "javascript" | "python";
 
 export type CodeSymbolKind =
   | "module"

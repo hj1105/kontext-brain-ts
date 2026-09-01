@@ -2,7 +2,11 @@ import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFile, realpath } from "node:fs/promises";
 import path from "node:path";
-import { type CodeSymbolIdentity, TypeScriptCodeProvider } from "@kontext-brain/code";
+import {
+  type CodeSymbolIdentity,
+  PythonCodeProvider,
+  TypeScriptCodeProvider,
+} from "@kontext-brain/code";
 import {
   type WorkspaceObservationSnapshot,
   captureWorkspaceSnapshot,
@@ -23,7 +27,8 @@ export interface WorkspaceCodeSymbolSnapshot {
 
 const maxSourceFiles = 10_000;
 const maxSourceBytes = 32 * 1024 * 1024;
-const codeExtension = /\.(?:[cm]?[jt]sx?)$/i;
+const codeExtension = /\.(?:[cm]?[jt]sx?|py)$/i;
+const pythonExtension = /\.py$/i;
 
 export async function captureWorkspaceCodeSymbols(
   workspacePath: string,
@@ -62,15 +67,18 @@ export async function captureWorkspaceCodeSymbols(
       .filter((targetPath) => codeExtension.test(targetPath) && sourcePathSet.has(targetPath)),
   );
   const codebaseId = await resolveCodebaseId(workspace);
-  const provider = new TypeScriptCodeProvider();
+  const typescriptProvider = new TypeScriptCodeProvider();
+  const pythonProvider = new PythonCodeProvider();
   const symbols = targets
     .flatMap((targetPath) =>
-      provider.analyze({ codebaseId, targetPath, files }).symbols.map((symbol) => ({
-        symbolId: symbol.symbolId,
-        identity: symbol.identity,
-        behaviorBearing: symbol.behaviorBearing,
-        contentHash: symbol.contentHash,
-      })),
+      (pythonExtension.test(targetPath) ? pythonProvider : typescriptProvider)
+        .analyze({ codebaseId, targetPath, files })
+        .symbols.map((symbol) => ({
+          symbolId: symbol.symbolId,
+          identity: symbol.identity,
+          behaviorBearing: symbol.behaviorBearing,
+          contentHash: symbol.contentHash,
+        })),
     )
     .sort(compareSymbolState);
   return {
