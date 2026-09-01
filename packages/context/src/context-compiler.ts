@@ -85,8 +85,13 @@ export class ContextCompiler {
     );
     assessNormativeFreshness(input, catalog, currentRecords, addIssue);
 
+    const governing = governingRevisionKeys(input, addIssue);
     const accessibleNormative = currentRecords
       .filter((record) => {
+        // Narrowing by Planned Symbol is what makes a several-hundred-record
+        // Codebase compilable at all. Without it every accepted record in the
+        // organization is mandatory for every Work Item.
+        if (governing && !governing.has(governanceKey(record.revision))) return false;
         const allowed = record.revision.egress.allowedRuntimeProviders.includes(
           input.runtimeProvider,
         );
@@ -381,4 +386,44 @@ function uniqueBy<T>(values: readonly T[], keyFor: (value: T) => string): T[] {
     seen.add(key);
     return true;
   });
+}
+
+/**
+ * The set of revisions the Work Item's Planned Symbols are governed by, or
+ * undefined when no links were supplied and the caller wants the previous
+ * organization-wide behaviour.
+ *
+ * A proposed link carries no enforcement authority, so it does not admit a
+ * record into mandatory context. A Planned Symbol with no authoritative link is
+ * reported rather than silently receiving nothing.
+ */
+function governanceKey(value: {
+  readonly recordId: string;
+  readonly revisionId: string;
+}): string {
+  return JSON.stringify([value.recordId, value.revisionId]);
+}
+
+function governingRevisionKeys(
+  input: CompileTaskContextInput,
+  addIssue: (code: ContextCompilationIssue["code"], message: string, ref?: string) => void,
+): Set<string> | undefined {
+  const links = input.governanceLinks;
+  if (links === undefined) return undefined;
+  const authoritative = links.filter((link) => link.origin !== "proposed");
+  const keys = new Set<string>();
+  for (const link of authoritative) {
+    if (!input.logic.plannedSymbolIds.includes(link.plannedSymbolId)) continue;
+    keys.add(governanceKey(link));
+  }
+  for (const plannedSymbolId of input.logic.plannedSymbolIds) {
+    if (!authoritative.some((link) => link.plannedSymbolId === plannedSymbolId)) {
+      addIssue(
+        "ungoverned_planned_symbol",
+        "No authoritative governance link exists for this Planned Symbol",
+        plannedSymbolId,
+      );
+    }
+  }
+  return keys;
 }
