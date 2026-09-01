@@ -223673,6 +223673,22 @@ var WorkItemScheduler = class {
     throwIfCancelled(input.signal);
     const maxConcurrency = Math.max(1, Math.min(4, input.maxConcurrency ?? 4));
     const maxRetries = Math.max(0, Math.min(2, input.maxRetries ?? 2));
+    const workById = new Map(input.work.map((work) => [work.workItem.workItemId, work]));
+    if (workById.size !== input.work.length) throw new Error("Logic Work Item IDs must be unique");
+    const dependencies = effectiveDependencies(input.work);
+    assertKnownDependencies(workById, dependencies);
+    const results = validatedInitialResults(input.initialResults ?? [], workById);
+    const pending = new Set(
+      Array.from(workById.keys()).filter((workItemId) => !results.has(workItemId)).sort()
+    );
+    const completed = new Set(
+      Array.from(results.values()).filter((result) => result.status === "completed").map((result) => result.workItemId)
+    );
+    const running = /* @__PURE__ */ new Map();
+    propagateBlockedResults(pending, results, dependencies);
+    if (pending.size === 0) {
+      return scheduleResult(input.initialCapabilities ?? [], results);
+    }
     const capabilities = await Promise.all(
       Array.from(this.runtimes.values()).map((runtime) => runtime.inspectCapabilities())
     );
@@ -223680,14 +223696,6 @@ var WorkItemScheduler = class {
     const capabilityByProvider = new Map(
       capabilities.map((capability) => [capability.provider, capability])
     );
-    const workById = new Map(input.work.map((work) => [work.workItem.workItemId, work]));
-    if (workById.size !== input.work.length) throw new Error("Logic Work Item IDs must be unique");
-    const dependencies = effectiveDependencies(input.work);
-    assertKnownDependencies(workById, dependencies);
-    const pending = new Set(Array.from(workById.keys()).sort());
-    const completed = /* @__PURE__ */ new Set();
-    const results = /* @__PURE__ */ new Map();
-    const running = /* @__PURE__ */ new Map();
     while (pending.size > 0 || running.size > 0) {
       if (input.signal?.aborted) {
         await Promise.allSettled(running.values());
@@ -223725,36 +223733,10 @@ var WorkItemScheduler = class {
       running.delete(settled.id);
       results.set(settled.id, settled.result);
       if (settled.result.status === "completed") completed.add(settled.id);
-      else {
-        let removedDependency = settled.id;
-        while (removedDependency) {
-          const blocked = Array.from(pending).sort().find(
-            (workItemId) => (dependencies.get(workItemId) ?? []).some(
-              (dependency) => results.get(dependency)?.status === "failed"
-            )
-          );
-          if (!blocked) break;
-          const failedDependency = (dependencies.get(blocked) ?? []).find(
-            (dependency) => results.get(dependency)?.status === "failed"
-          );
-          pending.delete(blocked);
-          results.set(blocked, {
-            workItemId: blocked,
-            status: "failed",
-            attempts: 0,
-            checkpoints: [],
-            diagnostics: [`Dependency ${failedDependency ?? removedDependency} failed`]
-          });
-          removedDependency = blocked;
-        }
-      }
+      else propagateBlockedResults(pending, results, dependencies);
+      await input.onProgress?.(scheduleResult(capabilities, results));
     }
-    return {
-      capabilities,
-      results: Array.from(results.values()).sort(
-        (left, right) => left.workItemId.localeCompare(right.workItemId)
-      )
-    };
+    return scheduleResult(capabilities, results);
   }
   async executeWork(taskId, work, capabilities, maxRetries, leaseDurationMilliseconds, signal) {
     throwIfCancelled(signal);
@@ -223871,6 +223853,55 @@ var WorkItemScheduler = class {
     };
   }
 };
+function validatedInitialResults(initialResults, workById) {
+  const results = /* @__PURE__ */ new Map();
+  for (const result of initialResults) {
+    const work = workById.get(result.workItemId);
+    if (!work) throw new Error(`Checkpoint contains unknown Logic Work Item ${result.workItemId}`);
+    if (results.has(result.workItemId)) {
+      throw new Error(`Checkpoint repeats Logic Work Item ${result.workItemId}`);
+    }
+    for (const checkpoint of result.checkpoints) {
+      if (checkpoint.taskId !== work.workItem.taskId || checkpoint.workItemId !== result.workItemId || checkpoint.codeRevision !== work.codeRevision || checkpoint.contextDigest !== work.contextDigest) {
+        throw new Error(`Checkpoint does not match current work ${result.workItemId}`);
+      }
+    }
+    if (result.worktree && result.worktree.baseRevision !== work.codeRevision) {
+      throw new Error(`Checkpoint worktree does not match revision for ${result.workItemId}`);
+    }
+    results.set(result.workItemId, result);
+  }
+  return results;
+}
+function propagateBlockedResults(pending, results, dependencies) {
+  while (true) {
+    const blocked = Array.from(pending).sort().find(
+      (workItemId) => (dependencies.get(workItemId) ?? []).some(
+        (dependency) => results.get(dependency)?.status === "failed"
+      )
+    );
+    if (!blocked) return;
+    const failedDependency = (dependencies.get(blocked) ?? []).find(
+      (dependency) => results.get(dependency)?.status === "failed"
+    );
+    pending.delete(blocked);
+    results.set(blocked, {
+      workItemId: blocked,
+      status: "failed",
+      attempts: 0,
+      checkpoints: [],
+      diagnostics: [`Dependency ${failedDependency ?? "unknown"} failed`]
+    });
+  }
+}
+function scheduleResult(capabilities, results) {
+  return {
+    capabilities,
+    results: Array.from(results.values()).sort(
+      (left, right) => left.workItemId.localeCompare(right.workItemId)
+    )
+  };
+}
 function throwIfCancelled(signal) {
   if (signal?.aborted) throw new RuntimeScheduleCancelledError();
 }
@@ -228463,6 +228494,7 @@ var scheduleStatusSchema = external_exports.enum([
   "interrupted",
   "cancelled"
 ]);
+var maximumAutomaticResumes = 2;
 var scheduleJobSchema = external_exports.object({
   jobId: nonEmptyString9,
   taskId: nonEmptyString9,
@@ -228476,6 +228508,9 @@ var scheduleJobSchema = external_exports.object({
   finishedAt: external_exports.string().datetime().optional(),
   ownerInstanceId: nonEmptyString9.optional(),
   ownerProcessId: external_exports.number().int().positive().optional(),
+  resumeCount: external_exports.number().int().nonnegative().optional(),
+  lastResumedAt: external_exports.string().datetime().optional(),
+  progress: external_exports.unknown().optional(),
   result: external_exports.unknown().optional(),
   diagnostic: nonEmptyString9.optional()
 }).strict();
@@ -228520,6 +228555,17 @@ var FileRuntimeScheduleJobStore = class {
       assertValidJob(next);
       await atomicPrivateWrite7(this.filePath(jobId), encode5(next));
       return next;
+    });
+  }
+  async recordProgress(jobId, progress) {
+    await this.mutate(jobId, async () => {
+      const current = await this.getUnsafe(jobId);
+      if (!current) throw new Error(`Runtime schedule job ${jobId} does not exist`);
+      if (current.status !== "running") return;
+      const next = { ...current, progress };
+      assertImmutableFields(current, next);
+      assertValidJob(next);
+      await atomicPrivateWrite7(this.filePath(jobId), encode5(next));
     });
   }
   async getUnsafe(jobId) {
@@ -228642,13 +228688,36 @@ var RuntimeScheduleJobManager = class {
       ownerProcessId: this.processId
     };
     await this.store.create(job);
-    const controller = new AbortController();
-    const execution = this.execute(job.jobId, controller, execute);
-    this.active.set(job.jobId, { execution, controller });
-    void execution.then(
-      () => this.active.delete(job.jobId),
-      () => this.active.delete(job.jobId)
-    );
+    this.startExecution(job.jobId, execute);
+    return publicView(job);
+  }
+  async resume(jobId, prepare) {
+    let job = await this.reconcileOrphan(await this.requiredJob(jobId));
+    if (job.status !== "interrupted" || job.cancellationRequestedAt) return publicView(job);
+    if ((job.resumeCount ?? 0) >= maximumAutomaticResumes) {
+      return {
+        ...publicView(job),
+        resumeBlocked: true,
+        resumeDiagnostic: `Automatic resume limit of ${maximumAutomaticResumes} was reached`
+      };
+    }
+    const execute = await prepare(job);
+    try {
+      job = await this.store.update(jobId, "interrupted", (current) => ({
+        ...current,
+        status: "queued",
+        startedAt: void 0,
+        finishedAt: void 0,
+        ownerInstanceId: this.instanceId,
+        ownerProcessId: this.processId,
+        resumeCount: (current.resumeCount ?? 0) + 1,
+        lastResumedAt: this.now().toISOString(),
+        diagnostic: void 0
+      }));
+    } catch {
+      return publicView(await this.store.get(jobId) ?? job);
+    }
+    this.startExecution(jobId, execute);
     return publicView(job);
   }
   async get(jobId) {
@@ -228709,7 +228778,13 @@ var RuntimeScheduleJobManager = class {
         status: "running",
         startedAt: this.now().toISOString()
       }));
-      const result = await execute(controller.signal);
+      const initial = await this.store.get(jobId);
+      const result = await execute(
+        controller.signal,
+        initial?.progress?.results ?? [],
+        (progress) => this.store.recordProgress(jobId, progress),
+        initial?.progress?.capabilities ?? []
+      );
       const current = await this.store.get(jobId);
       if (controller.signal.aborted || current?.status === "cancelling") {
         await this.markCancelled(jobId);
@@ -228719,6 +228794,7 @@ var RuntimeScheduleJobManager = class {
         ...job,
         status: "completed",
         finishedAt: this.now().toISOString(),
+        progress: result,
         result
       }));
     } catch (error2) {
@@ -228737,6 +228813,15 @@ var RuntimeScheduleJobManager = class {
     } finally {
       clearInterval(cancellationPoll);
     }
+  }
+  startExecution(jobId, execute) {
+    const controller = new AbortController();
+    const execution = this.execute(jobId, controller, execute);
+    this.active.set(jobId, { execution, controller });
+    void execution.then(
+      () => this.active.delete(jobId),
+      () => this.active.delete(jobId)
+    );
   }
   async observeCancellation(jobId, controller) {
     if (controller.signal.aborted) return;
@@ -228767,6 +228852,9 @@ function publicView(job) {
     cancellationRequestedAt: job.cancellationRequestedAt,
     startedAt: job.startedAt,
     finishedAt: job.finishedAt,
+    resumeCount: job.resumeCount ?? 0,
+    lastResumedAt: job.lastResumedAt,
+    progress: job.progress,
     result: job.result,
     diagnostic: job.diagnostic
   };
@@ -228781,7 +228869,7 @@ function assertValidTransition(current, next) {
     cancelling: ["cancelled", "interrupted"],
     completed: [],
     failed: [],
-    interrupted: [],
+    interrupted: ["queued"],
     cancelled: []
   };
   if (!allowed[current].includes(next)) {
@@ -228822,6 +228910,15 @@ function assertValidJob(job) {
   }
   if (job.startedAt && job.finishedAt && job.finishedAt < job.startedAt) {
     throw new Error("Runtime schedule job cannot finish before it started");
+  }
+  if ((job.resumeCount ?? 0) === 0 && job.lastResumedAt) {
+    throw new Error("A schedule without resumes cannot have a last resume time");
+  }
+  if ((job.resumeCount ?? 0) > 0 && !job.lastResumedAt) {
+    throw new Error("A resumed schedule must retain its last resume time");
+  }
+  if (job.lastResumedAt && job.lastResumedAt < job.requestedAt) {
+    throw new Error("Runtime schedule job cannot resume before it was requested");
   }
   if (job.status === "queued" && (!job.ownerInstanceId || !job.ownerProcessId || job.startedAt || job.finishedAt || job.cancellationRequestedAt || job.result || job.diagnostic)) {
     throw new Error("A queued runtime schedule job must identify its owner before execution");
@@ -229304,9 +229401,49 @@ var LocalKontextRuntimeOperations = class {
     return new RuntimeDoctor().inspect(this.runtimes);
   }
   async scheduleLogic(request) {
+    const prepared = await this.prepareScheduleExecution(request);
+    return this.scheduleJobs.enqueue(
+      request,
+      prepared.codeRevision,
+      prepared.contextDigest,
+      prepared.execute
+    );
+  }
+  async getSchedule(request) {
+    const current = await this.scheduleJobs.get(request.jobId);
+    if (current.status !== "interrupted" || current.cancellationRequestedAt) return current;
+    try {
+      return await this.scheduleJobs.resume(request.jobId, async (job) => {
+        const prepared = await this.prepareScheduleExecution(job.request, {
+          codeRevision: job.codeRevision,
+          contextDigest: job.contextDigest,
+          requireAvailableProviders: true,
+          settledWorkItemIds: new Set(
+            job.progress?.results.map((result) => result.workItemId) ?? []
+          )
+        });
+        return prepared.execute;
+      });
+    } catch (error2) {
+      return {
+        ...current,
+        resumeBlocked: true,
+        resumeDiagnostic: error2 instanceof Error ? error2.message : String(error2)
+      };
+    }
+  }
+  async prepareScheduleExecution(request, resume) {
     const prepared = await this.preparedTasks.get(request.taskId);
     if (!prepared) throw new Error(`Task "${request.taskId}" has no prepared context`);
     const current = await this.currentState.getCurrent(request.taskId);
+    if (resume) {
+      const assessment = assessCurrentContext(prepared, current);
+      if (assessment.status !== "current" || current.codeRevision !== resume.codeRevision || prepared.snapshot.contextDigest !== resume.contextDigest) {
+        throw new Error(
+          `Automatic resume requires the original current revision and context digest; observed ${assessment.status}`
+        );
+      }
+    }
     const repositoryPath = path20.resolve(request.repositoryPath);
     const worktreeRoot = path20.join(
       this.dataDirectory,
@@ -229347,6 +229484,36 @@ var LocalKontextRuntimeOperations = class {
       };
     });
     const work = applyRiskProviderPolicy(requestedWork, prepared.contract.risk);
+    const unsettled = resume ? work.filter((item) => !resume.settledWorkItemIds.has(item.workItem.workItemId)) : [];
+    if (resume && unsettled.length > 0) {
+      const activeLeases = await this.leases.listActive(this.now().toISOString());
+      const blockingLease = activeLeases.find(
+        (lease) => unsettled.some(
+          (item) => lease.taskId === request.taskId && lease.workItemId === item.workItem.workItemId || lease.symbolIds.some((symbolId2) => item.workItem.plannedSymbolIds.includes(symbolId2)) || lease.paths.some((allowedPath) => item.workItem.allowedPaths.includes(allowedPath))
+        )
+      );
+      if (blockingLease) {
+        throw new Error(
+          `Automatic resume is waiting for write lease ${blockingLease.leaseId} to release or expire at ${blockingLease.expiresAt}`
+        );
+      }
+    }
+    if (resume?.requireAvailableProviders) {
+      const capabilities = unsettled.length === 0 ? [] : await Promise.all(this.runtimes.map((runtime) => runtime.inspectCapabilities()));
+      const available = new Set(
+        capabilities.filter(
+          (capability) => capability.installed && capability.authenticated && capability.billingPath === "subscription" && capability.supports.structuredOutput && capability.supports.workspaceSandbox
+        ).map((capability) => capability.provider)
+      );
+      const unavailable = unsettled.find(
+        (item) => !item.eligibleProviders.some((provider) => available.has(provider))
+      );
+      if (unavailable) {
+        throw new Error(
+          `No authenticated subscription runtime is currently available for ${unavailable.workItem.workItemId}`
+        );
+      }
+    }
     const scheduler = new WorkItemScheduler(this.runtimes, manager, this.leases, this.now, {
       prepare: async (input) => {
         const compiled = await contextRouter.beginLogic({
@@ -229368,21 +229535,20 @@ var LocalKontextRuntimeOperations = class {
         }
       }
     });
-    return this.scheduleJobs.enqueue(
-      request,
-      current.codeRevision,
-      prepared.snapshot.contextDigest,
-      (signal) => scheduler.run({
+    return {
+      codeRevision: current.codeRevision,
+      contextDigest: prepared.snapshot.contextDigest,
+      execute: (signal, initialResults, onProgress, initialCapabilities) => scheduler.run({
         taskId: request.taskId,
         work,
+        initialCapabilities,
+        initialResults,
+        onProgress,
         maxConcurrency: request.maxConcurrency,
         maxRetries: request.maxRetries,
         signal
       })
-    );
-  }
-  async getSchedule(request) {
-    return this.scheduleJobs.get(request.jobId);
+    };
   }
   async cancelSchedule(request) {
     return this.scheduleJobs.cancel(request.jobId);
@@ -239883,7 +240049,7 @@ function registerTaskWorkflowTools(server2, workflow, bindings, completionOperat
     );
     server2.tool(
       "kontext_get_schedule",
-      "Read queued, running, cancelling, completed, failed, interrupted, or cancelled durable schedule state and terminal result.",
+      "Read durable schedule progress and state; after restart, revalidate and automatically resume an eligible interrupted schedule.",
       getScheduleToolShape,
       async (input) => workflowToolResult(await runtime.getSchedule(input))
     );

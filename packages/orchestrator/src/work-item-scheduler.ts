@@ -29,6 +29,9 @@ export interface ScheduledLogicWork {
 export interface WorkItemScheduleInput {
   readonly taskId: string;
   readonly work: readonly ScheduledLogicWork[];
+  readonly initialCapabilities?: readonly RuntimeCapabilitySnapshot[];
+  readonly initialResults?: readonly ScheduledWorkResult[];
+  readonly onProgress?: (result: WorkItemScheduleResult) => Promise<void> | void;
   readonly maxConcurrency?: number;
   readonly maxRetries?: number;
   readonly leaseDurationMilliseconds?: number;
@@ -75,6 +78,27 @@ export class WorkItemScheduler {
     throwIfCancelled(input.signal);
     const maxConcurrency = Math.max(1, Math.min(4, input.maxConcurrency ?? 4));
     const maxRetries = Math.max(0, Math.min(2, input.maxRetries ?? 2));
+    const workById = new Map(input.work.map((work) => [work.workItem.workItemId, work] as const));
+    if (workById.size !== input.work.length) throw new Error("Logic Work Item IDs must be unique");
+    const dependencies = effectiveDependencies(input.work);
+    assertKnownDependencies(workById, dependencies);
+
+    const results = validatedInitialResults(input.initialResults ?? [], workById);
+    const pending = new Set(
+      Array.from(workById.keys())
+        .filter((workItemId) => !results.has(workItemId))
+        .sort(),
+    );
+    const completed = new Set(
+      Array.from(results.values())
+        .filter((result) => result.status === "completed")
+        .map((result) => result.workItemId),
+    );
+    const running = new Map<string, Promise<{ id: string; result: ScheduledWorkResult }>>();
+    propagateBlockedResults(pending, results, dependencies);
+    if (pending.size === 0) {
+      return scheduleResult(input.initialCapabilities ?? [], results);
+    }
     const capabilities = await Promise.all(
       Array.from(this.runtimes.values()).map((runtime) => runtime.inspectCapabilities()),
     );
@@ -82,15 +106,6 @@ export class WorkItemScheduler {
     const capabilityByProvider = new Map(
       capabilities.map((capability) => [capability.provider, capability] as const),
     );
-    const workById = new Map(input.work.map((work) => [work.workItem.workItemId, work] as const));
-    if (workById.size !== input.work.length) throw new Error("Logic Work Item IDs must be unique");
-    const dependencies = effectiveDependencies(input.work);
-    assertKnownDependencies(workById, dependencies);
-
-    const pending = new Set(Array.from(workById.keys()).sort());
-    const completed = new Set<string>();
-    const results = new Map<string, ScheduledWorkResult>();
-    const running = new Map<string, Promise<{ id: string; result: ScheduledWorkResult }>>();
 
     while (pending.size > 0 || running.size > 0) {
       if (input.signal?.aborted) {
@@ -131,38 +146,10 @@ export class WorkItemScheduler {
       running.delete(settled.id);
       results.set(settled.id, settled.result);
       if (settled.result.status === "completed") completed.add(settled.id);
-      else {
-        let removedDependency = settled.id;
-        while (removedDependency) {
-          const blocked = Array.from(pending)
-            .sort()
-            .find((workItemId) =>
-              (dependencies.get(workItemId) ?? []).some(
-                (dependency) => results.get(dependency)?.status === "failed",
-              ),
-            );
-          if (!blocked) break;
-          const failedDependency = (dependencies.get(blocked) ?? []).find(
-            (dependency) => results.get(dependency)?.status === "failed",
-          );
-          pending.delete(blocked);
-          results.set(blocked, {
-            workItemId: blocked,
-            status: "failed",
-            attempts: 0,
-            checkpoints: [],
-            diagnostics: [`Dependency ${failedDependency ?? removedDependency} failed`],
-          });
-          removedDependency = blocked;
-        }
-      }
+      else propagateBlockedResults(pending, results, dependencies);
+      await input.onProgress?.(scheduleResult(capabilities, results));
     }
-    return {
-      capabilities,
-      results: Array.from(results.values()).sort((left, right) =>
-        left.workItemId.localeCompare(right.workItemId),
-      ),
-    };
+    return scheduleResult(capabilities, results);
   }
 
   private async executeWork(
@@ -286,6 +273,75 @@ export class WorkItemScheduler {
       diagnostics,
     };
   }
+}
+
+function validatedInitialResults(
+  initialResults: readonly ScheduledWorkResult[],
+  workById: ReadonlyMap<string, ScheduledLogicWork>,
+): Map<string, ScheduledWorkResult> {
+  const results = new Map<string, ScheduledWorkResult>();
+  for (const result of initialResults) {
+    const work = workById.get(result.workItemId);
+    if (!work) throw new Error(`Checkpoint contains unknown Logic Work Item ${result.workItemId}`);
+    if (results.has(result.workItemId)) {
+      throw new Error(`Checkpoint repeats Logic Work Item ${result.workItemId}`);
+    }
+    for (const checkpoint of result.checkpoints) {
+      if (
+        checkpoint.taskId !== work.workItem.taskId ||
+        checkpoint.workItemId !== result.workItemId ||
+        checkpoint.codeRevision !== work.codeRevision ||
+        checkpoint.contextDigest !== work.contextDigest
+      ) {
+        throw new Error(`Checkpoint does not match current work ${result.workItemId}`);
+      }
+    }
+    if (result.worktree && result.worktree.baseRevision !== work.codeRevision) {
+      throw new Error(`Checkpoint worktree does not match revision for ${result.workItemId}`);
+    }
+    results.set(result.workItemId, result);
+  }
+  return results;
+}
+
+function propagateBlockedResults(
+  pending: Set<string>,
+  results: Map<string, ScheduledWorkResult>,
+  dependencies: ReadonlyMap<string, readonly string[]>,
+): void {
+  while (true) {
+    const blocked = Array.from(pending)
+      .sort()
+      .find((workItemId) =>
+        (dependencies.get(workItemId) ?? []).some(
+          (dependency) => results.get(dependency)?.status === "failed",
+        ),
+      );
+    if (!blocked) return;
+    const failedDependency = (dependencies.get(blocked) ?? []).find(
+      (dependency) => results.get(dependency)?.status === "failed",
+    );
+    pending.delete(blocked);
+    results.set(blocked, {
+      workItemId: blocked,
+      status: "failed",
+      attempts: 0,
+      checkpoints: [],
+      diagnostics: [`Dependency ${failedDependency ?? "unknown"} failed`],
+    });
+  }
+}
+
+function scheduleResult(
+  capabilities: readonly RuntimeCapabilitySnapshot[],
+  results: ReadonlyMap<string, ScheduledWorkResult>,
+): WorkItemScheduleResult {
+  return {
+    capabilities,
+    results: Array.from(results.values()).sort((left, right) =>
+      left.workItemId.localeCompare(right.workItemId),
+    ),
+  };
 }
 
 function throwIfCancelled(signal?: AbortSignal): void {

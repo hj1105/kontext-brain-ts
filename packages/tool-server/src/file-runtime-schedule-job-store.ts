@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { WorkItemScheduleResult } from "@kontext-brain/orchestrator";
+import type { ScheduledWorkResult, WorkItemScheduleResult } from "@kontext-brain/orchestrator";
 import { z } from "zod";
 import {
   type ScheduleLogicRequest,
@@ -24,6 +24,7 @@ const scheduleStatusSchema = z.enum([
   "interrupted",
   "cancelled",
 ]);
+const maximumAutomaticResumes = 2;
 const scheduleJobSchema = z
   .object({
     jobId: nonEmptyString,
@@ -38,6 +39,9 @@ const scheduleJobSchema = z
     finishedAt: z.string().datetime().optional(),
     ownerInstanceId: nonEmptyString.optional(),
     ownerProcessId: z.number().int().positive().optional(),
+    resumeCount: z.number().int().nonnegative().optional(),
+    lastResumedAt: z.string().datetime().optional(),
+    progress: z.unknown().optional(),
     result: z.unknown().optional(),
     diagnostic: nonEmptyString.optional(),
   })
@@ -58,6 +62,9 @@ export interface RuntimeScheduleJob {
   readonly finishedAt?: string;
   readonly ownerInstanceId?: string;
   readonly ownerProcessId?: number;
+  readonly resumeCount?: number;
+  readonly lastResumedAt?: string;
+  readonly progress?: WorkItemScheduleResult;
   readonly result?: WorkItemScheduleResult;
   readonly diagnostic?: string;
 }
@@ -73,9 +80,21 @@ export interface RuntimeScheduleJobView {
   readonly cancellationRequestedAt?: string;
   readonly startedAt?: string;
   readonly finishedAt?: string;
+  readonly resumeCount: number;
+  readonly lastResumedAt?: string;
+  readonly progress?: WorkItemScheduleResult;
   readonly result?: WorkItemScheduleResult;
   readonly diagnostic?: string;
+  readonly resumeBlocked?: boolean;
+  readonly resumeDiagnostic?: string;
 }
+
+export type RuntimeScheduleExecution = (
+  signal: AbortSignal,
+  initialResults: readonly ScheduledWorkResult[],
+  onProgress: (progress: WorkItemScheduleResult) => Promise<void>,
+  initialCapabilities: WorkItemScheduleResult["capabilities"],
+) => Promise<WorkItemScheduleResult>;
 
 interface RuntimeScheduleJobEnvelope {
   readonly schemaVersion: 1;
@@ -130,6 +149,18 @@ export class FileRuntimeScheduleJobStore {
       assertValidJob(next);
       await atomicPrivateWrite(this.filePath(jobId), encode(next));
       return next;
+    });
+  }
+
+  async recordProgress(jobId: string, progress: WorkItemScheduleResult): Promise<void> {
+    await this.mutate(jobId, async () => {
+      const current = await this.getUnsafe(jobId);
+      if (!current) throw new Error(`Runtime schedule job ${jobId} does not exist`);
+      if (current.status !== "running") return;
+      const next = { ...current, progress };
+      assertImmutableFields(current, next);
+      assertValidJob(next);
+      await atomicPrivateWrite(this.filePath(jobId), encode(next));
     });
   }
 
@@ -253,7 +284,7 @@ export class RuntimeScheduleJobManager {
     request: ScheduleLogicRequest,
     codeRevision: string,
     contextDigest: string,
-    execute: (signal: AbortSignal) => Promise<WorkItemScheduleResult>,
+    execute: RuntimeScheduleExecution,
   ): Promise<RuntimeScheduleJobView> {
     const job: RuntimeScheduleJob = {
       jobId: this.newJobId(),
@@ -267,13 +298,40 @@ export class RuntimeScheduleJobManager {
       ownerProcessId: this.processId,
     };
     await this.store.create(job);
-    const controller = new AbortController();
-    const execution = this.execute(job.jobId, controller, execute);
-    this.active.set(job.jobId, { execution, controller });
-    void execution.then(
-      () => this.active.delete(job.jobId),
-      () => this.active.delete(job.jobId),
-    );
+    this.startExecution(job.jobId, execute);
+    return publicView(job);
+  }
+
+  async resume(
+    jobId: string,
+    prepare: (job: RuntimeScheduleJob) => Promise<RuntimeScheduleExecution>,
+  ): Promise<RuntimeScheduleJobView> {
+    let job = await this.reconcileOrphan(await this.requiredJob(jobId));
+    if (job.status !== "interrupted" || job.cancellationRequestedAt) return publicView(job);
+    if ((job.resumeCount ?? 0) >= maximumAutomaticResumes) {
+      return {
+        ...publicView(job),
+        resumeBlocked: true,
+        resumeDiagnostic: `Automatic resume limit of ${maximumAutomaticResumes} was reached`,
+      };
+    }
+    const execute = await prepare(job);
+    try {
+      job = await this.store.update(jobId, "interrupted", (current) => ({
+        ...current,
+        status: "queued",
+        startedAt: undefined,
+        finishedAt: undefined,
+        ownerInstanceId: this.instanceId,
+        ownerProcessId: this.processId,
+        resumeCount: (current.resumeCount ?? 0) + 1,
+        lastResumedAt: this.now().toISOString(),
+        diagnostic: undefined,
+      }));
+    } catch {
+      return publicView((await this.store.get(jobId)) ?? job);
+    }
+    this.startExecution(jobId, execute);
     return publicView(job);
   }
 
@@ -336,7 +394,7 @@ export class RuntimeScheduleJobManager {
   private async execute(
     jobId: string,
     controller: AbortController,
-    execute: (signal: AbortSignal) => Promise<WorkItemScheduleResult>,
+    execute: RuntimeScheduleExecution,
   ): Promise<void> {
     const cancellationPoll = setInterval(() => {
       void this.observeCancellation(jobId, controller).catch(() => undefined);
@@ -348,7 +406,13 @@ export class RuntimeScheduleJobManager {
         status: "running",
         startedAt: this.now().toISOString(),
       }));
-      const result = await execute(controller.signal);
+      const initial = await this.store.get(jobId);
+      const result = await execute(
+        controller.signal,
+        initial?.progress?.results ?? [],
+        (progress) => this.store.recordProgress(jobId, progress),
+        initial?.progress?.capabilities ?? [],
+      );
       const current = await this.store.get(jobId);
       if (controller.signal.aborted || current?.status === "cancelling") {
         await this.markCancelled(jobId);
@@ -358,6 +422,7 @@ export class RuntimeScheduleJobManager {
         ...job,
         status: "completed",
         finishedAt: this.now().toISOString(),
+        progress: result,
         result,
       }));
     } catch (error) {
@@ -376,6 +441,16 @@ export class RuntimeScheduleJobManager {
     } finally {
       clearInterval(cancellationPoll);
     }
+  }
+
+  private startExecution(jobId: string, execute: RuntimeScheduleExecution): void {
+    const controller = new AbortController();
+    const execution = this.execute(jobId, controller, execute);
+    this.active.set(jobId, { execution, controller });
+    void execution.then(
+      () => this.active.delete(jobId),
+      () => this.active.delete(jobId),
+    );
   }
 
   private async observeCancellation(jobId: string, controller: AbortController): Promise<void> {
@@ -409,6 +484,9 @@ function publicView(job: RuntimeScheduleJob): RuntimeScheduleJobView {
     cancellationRequestedAt: job.cancellationRequestedAt,
     startedAt: job.startedAt,
     finishedAt: job.finishedAt,
+    resumeCount: job.resumeCount ?? 0,
+    lastResumedAt: job.lastResumedAt,
+    progress: job.progress,
     result: job.result,
     diagnostic: job.diagnostic,
   };
@@ -430,7 +508,7 @@ function assertValidTransition(current: RuntimeScheduleStatus, next: RuntimeSche
     cancelling: ["cancelled", "interrupted"],
     completed: [],
     failed: [],
-    interrupted: [],
+    interrupted: ["queued"],
     cancelled: [],
   };
   if (!allowed[current].includes(next)) {
@@ -474,6 +552,15 @@ function assertValidJob(job: RuntimeScheduleJob): void {
   }
   if (job.startedAt && job.finishedAt && job.finishedAt < job.startedAt) {
     throw new Error("Runtime schedule job cannot finish before it started");
+  }
+  if ((job.resumeCount ?? 0) === 0 && job.lastResumedAt) {
+    throw new Error("A schedule without resumes cannot have a last resume time");
+  }
+  if ((job.resumeCount ?? 0) > 0 && !job.lastResumedAt) {
+    throw new Error("A resumed schedule must retain its last resume time");
+  }
+  if (job.lastResumedAt && job.lastResumedAt < job.requestedAt) {
+    throw new Error("Runtime schedule job cannot resume before it was requested");
   }
   if (
     job.status === "queued" &&

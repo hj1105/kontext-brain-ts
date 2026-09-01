@@ -12,11 +12,13 @@ Change Bundles, and an independently audited Accuracy Manifest. Phase 5 now has
 official Codex and Claude CLI adapters, runtime inspection, isolated Git
 worktrees, persisted scope leases, bounded DAG scheduling, and provider-safe
 checkpoint transfer, semantic Change Bundle integration, and risk-based blind
-cross-runtime review. Automatic schedule resume is not yet implemented. Scheduling is asynchronous:
-accepted jobs and terminal results are private, digest-checked sidecar state.
+cross-runtime review, including revision-safe automatic schedule recovery. Scheduling is asynchronous:
+accepted jobs, incremental Work Item progress, recovery history, and terminal results are private, digest-checked sidecar state.
 Durable cancellation reaches the active Codex or Claude child process and does
-not become `cancelled` until workers stop and leases release. An unfinished job
-becomes `interrupted` after its owning sidecar process stops. Organization
+not become `cancelled` until workers stop and leases release. On the first poll
+after its owning process stops, an unfinished job becomes `interrupted`, then
+resumes only after the original revision, context, Evidence egress, and remaining
+subscription runtimes are revalidated. Organization
 topology and additional-language certification remain later phases.
 
 ## 1. Product outcome
@@ -492,7 +494,7 @@ evolve, but their contracts are stable:
 | `kontext_propose_transition` | accept Evidence and compute Task state; reject direct state writes |
 | `kontext_inspect_runtimes` | report CLI installation, auth, billing path, and scheduling eligibility |
 | `kontext_schedule_logic` | durably enqueue sidecar-planned Work Items for isolated provider-bound execution |
-| `kontext_get_schedule` | read queued, running, cancelling, completed, failed, interrupted, or cancelled state and terminal proof |
+| `kontext_get_schedule` | read durable progress and state; after restart, revalidate and automatically resume an eligible interrupted schedule |
 | `kontext_cancel_schedule` | durably request cancellation and report state while the owner stops workers and releases leases |
 | `kontext_integrate_schedule` | revalidate a completed schedule's accepted Bundles, semantically integrate them, run full verification, and obtain required independent review |
 
@@ -593,6 +595,23 @@ user. When a runtime is unavailable, queued work may move to another eligible,
 authenticated subscription runtime. In-progress transfer requires a durable
 checkpoint, confirmed process termination, and released write lease before a
 fresh provider session starts.
+
+Each settled Work Item result is written to the private schedule record before
+the scheduler advances. The first status poll after a sidecar restart detects an
+orphaned owner and attempts recovery. Recovery requires the original code
+revision and Task Context Snapshot digest to remain current, recomputes Evidence
+egress and risk-based provider eligibility, and requires an available
+subscription runtime only for unfinished work. Results already present in the
+durable checkpoint are never rerun. A lease owned by the stopped process is
+released before a remaining Work Item starts in its deterministic worktree.
+Provider conversation state is not trusted across the interruption: unfinished
+work starts a fresh session even when it uses the same provider. Because parent
+process death alone does not prove that a child CLI stopped, a still-active
+write lease blocks recovery until explicit release or expiry. Changed context,
+missing infrastructure, or an interrupted cancellation leaves the schedule
+interrupted rather than weakening authority. Automatic recovery is capped at
+two interrupted resume attempts so repeated process failure cannot create
+unbounded subscription sessions.
 
 ### 9.4 Risk-based cross-runtime review
 
@@ -821,8 +840,8 @@ superseded runs.
   review;
 - enforce default concurrency four and risk-based provider policy.
 
-Implemented in the local vertical slice except automatic resume of an
-interrupted durable schedule. Semantic integration uses a dedicated Git
+Implemented in the local vertical slice, including guarded automatic recovery
+of an interrupted durable schedule. Semantic integration uses a dedicated Git
 worktree, exact accepted Bundle patches, dependency order, and a hard conflict
 on overlapping changed Code Symbols. Worker-revision verification remains
 attached to each Bundle while full verification and review attach to the final

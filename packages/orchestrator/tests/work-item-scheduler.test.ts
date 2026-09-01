@@ -132,6 +132,90 @@ describe("WorkItemScheduler", () => {
     await expect(scheduledRun).rejects.toBeInstanceOf(RuntimeScheduleCancelledError);
     await expect(leases.listActive("2026-08-29T00:02:00.000Z")).resolves.toEqual([]);
   });
+
+  it("persists incremental results and resumes only unfinished work from a validated checkpoint", async () => {
+    const starts: string[] = [];
+    const progress: string[][] = [];
+    const runtime = fakeRuntime("codex", async (input) => {
+      starts.push(input.workItem.workItemId);
+      return session("codex", input.workItem.workItemId, "completed");
+    });
+    const scheduler = new WorkItemScheduler(
+      [runtime],
+      fakeWorktrees(),
+      new InMemoryRuntimeLeaseStore(),
+    );
+    const first = scheduled(workItem("work:finished", ["src/finished.ts"]));
+    const second = scheduled(workItem("work:remaining", ["src/remaining.ts"]));
+
+    const result = await scheduler.run({
+      taskId: "task:schedule",
+      work: [first, second],
+      initialResults: [
+        {
+          workItemId: "work:finished",
+          status: "completed",
+          provider: "codex",
+          worktree: {
+            worktreeId: "worktree:finished",
+            workspacePath: "/worktrees/work:finished",
+            branchName: "kontext/work:finished",
+            baseRevision: first.codeRevision,
+          },
+          session: session("codex", "work:finished", "completed"),
+          attempts: 1,
+          checkpoints: [],
+          diagnostics: [],
+        },
+      ],
+      onProgress: (current) => {
+        progress.push(current.results.map((item) => item.workItemId));
+      },
+    });
+
+    expect(starts).toEqual(["work:remaining"]);
+    expect(progress).toEqual([["work:finished", "work:remaining"]]);
+    expect(result.results).toHaveLength(2);
+  });
+
+  it("rejects a durable checkpoint bound to a different revision", async () => {
+    const scheduler = new WorkItemScheduler(
+      [
+        fakeRuntime("codex", async (input) =>
+          session("codex", input.workItem.workItemId, "completed"),
+        ),
+      ],
+      fakeWorktrees(),
+      new InMemoryRuntimeLeaseStore(),
+    );
+
+    await expect(
+      scheduler.run({
+        taskId: "task:schedule",
+        work: [scheduled(workItem("work:stale", ["src/stale.ts"]))],
+        initialResults: [
+          {
+            workItemId: "work:stale",
+            status: "completed",
+            attempts: 1,
+            checkpoints: [
+              {
+                checkpointId: "runtime-checkpoint:stale",
+                taskId: "task:schedule",
+                workItemId: "work:stale",
+                provider: "codex",
+                workspacePath: "/worktrees/work:stale",
+                codeRevision: "commit:stale",
+                contextDigest: "context:current",
+                createdAt: "2026-08-29T00:01:00.000Z",
+              },
+            ],
+            diagnostics: [],
+          },
+        ],
+      }),
+    ).rejects.toThrow("does not match current work");
+  });
 });
 
 function workItem(workItemId: string, allowedPaths: readonly string[]): LogicWorkItem {
