@@ -8,7 +8,7 @@
     "name": "Kontext Brain"
   },
   "repository": "https://github.com/hj1105/kontext-brain-ts",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "keywords": ["code-context", "provenance", "ontology", "claude-code"],
   "skills": "./skills/",
   "hooks": "./hooks/claude-hooks.json",
