@@ -13,6 +13,10 @@ import {
   type WorkspaceObservationSnapshot,
   captureWorkspaceSnapshot,
 } from "./workspace-change-observer.js";
+import {
+  type WorkspaceCodeSymbolSnapshot,
+  captureWorkspaceCodeSymbols,
+} from "./workspace-code-symbol-observer.js";
 
 const verifierSchema = z
   .object({
@@ -99,7 +103,9 @@ export interface WriteAuthorizationBinding {
   readonly request: BeginLogicRequest;
   readonly allowedPaths: readonly string[];
   readonly receipt: ContextReceipt;
+  readonly initialBaseline: WorkspaceObservationSnapshot;
   readonly baseline: WorkspaceObservationSnapshot;
+  readonly symbolBaseline: WorkspaceCodeSymbolSnapshot;
 }
 
 export interface WriteAuthorizationBindingStore {
@@ -167,11 +173,25 @@ export class KontextTaskWorkflowToolRouter {
       ? normalizeReceiptPaths(workspacePath, result.receipt.allowedPaths)
       : undefined;
     if (result.receipt && allowedPaths) {
+      const baseline = await captureWorkspaceSnapshot(workspacePath, allowedPaths);
+      const symbolBaseline = await captureWorkspaceCodeSymbols(
+        workspacePath,
+        allowedPaths,
+        baseline,
+      );
+      const confirmedBaseline = await captureWorkspaceSnapshot(workspacePath, allowedPaths);
+      if (symbolBaseline.workspaceRevision !== confirmedBaseline.revision) {
+        throw new Error(
+          `Workspace changed while the initial Code Symbol baseline was captured (${symbolBaseline.workspaceRevision} != ${confirmedBaseline.revision})`,
+        );
+      }
       await this.bindings.put(workspacePath, {
         request,
         allowedPaths,
         receipt: result.receipt,
-        baseline: await captureWorkspaceSnapshot(workspacePath, allowedPaths),
+        initialBaseline: confirmedBaseline,
+        baseline: confirmedBaseline,
+        symbolBaseline,
       });
     } else {
       await this.bindings.delete(workspacePath);

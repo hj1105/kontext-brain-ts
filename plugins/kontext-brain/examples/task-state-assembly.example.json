@@ -69,6 +69,19 @@
     {
       "workItemId": "work-item:example-handler",
       "plannedSymbolIds": ["planned-symbol:example-handler"],
+      "plannedSymbols": [
+        {
+          "plannedSymbolId": "planned-symbol:example-handler",
+          "taskId": "task:example",
+          "intendedIdentity": {
+            "relativePath": "src/example-handler.ts",
+            "language": "typescript",
+            "kind": "function",
+            "qualifiedName": "exampleHandler"
+          },
+          "responsibility": "Apply the example handler behavior"
+        }
+      ],
       "allowedPaths": ["src/example-handler.ts"],
       "dependsOn": [],
       "requiredVerifiers": [

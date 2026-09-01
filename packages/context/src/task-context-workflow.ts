@@ -1,3 +1,4 @@
+import type { PlannedSymbolRecord } from "@kontext-brain/code";
 import type {
   EffectiveNormativeRecord,
   GovernanceScope,
@@ -25,6 +26,7 @@ export interface CurrentTaskContextState {
 export interface LogicWorkPlan {
   readonly workItemId: string;
   readonly plannedSymbolIds: readonly string[];
+  readonly plannedSymbols?: readonly PlannedSymbolRecord[];
   readonly allowedPaths: readonly string[];
   readonly dependsOn?: readonly string[];
   readonly requiredVerifiers?: readonly VerifierRef[];

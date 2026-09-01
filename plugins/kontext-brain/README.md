@@ -51,8 +51,8 @@ The assembler:
 1. Call `kontext_prepare_task` once with the Task Contract.
 2. For each behavior-bearing symbol, call `kontext_begin_logic` with the exact Work Item and Planned Symbol IDs.
 3. Edit only when the result is current and contains a Context Receipt.
-4. After each affected behavior-bearing symbol, call `kontext_check_change` with `workspacePath` and the `fast` tier; at the Logic Work Item checkpoint call it with `targeted`.
-5. Submit an ID-free bundle draft with `kontext_submit_change_bundle`; the sidecar canonicalizes it, issues the immutable Bundle ID, and accepts it only when it matches observed code, receipts, current passing proof, and quarantine state.
+4. After each affected behavior-bearing symbol, call `kontext_check_change` with `workspacePath` and the `fast` tier; at the Logic Work Item checkpoint call it with `targeted`. The sidecar derives the revision and changed symbols.
+5. Submit `workspacePath` plus an ID-free bundle draft with `kontext_submit_change_bundle`; the sidecar independently derives the patch digest, changed paths and behavior-bearing Code Symbols, Planned Symbol bindings, and receipt, then issues the immutable Bundle ID only when the worker claims match current proof and quarantine state.
 6. After integration, call `kontext_check_change` with `full`, then call `kontext_propose_transition` with Evidence and evaluations. The sidecar creates the Accuracy Manifest and computes state; callers cannot write `done` or inject a manifest.
 7. Use `kontext_refresh_task_context` after a reported revision or Evidence change.
 
@@ -72,4 +72,4 @@ Hooks are provider edit-tool boundaries, not operating-system sandboxes. Keep th
 
 ## Current implementation boundary
 
-The current vertical slice implements context compilation, receipt-bound editing, deterministic verification, recovery retries, quarantine, Change Bundles, manifest audit, dual CLI adapters, worktrees, durable leases, provider switching, and durable asynchronous bounded scheduling and cancellation. A worker may continue in its approved worktree and consume the selected CLI subscription after `kontext_schedule_logic` returns. Schedule input and results remain private digest-checked sidecar state; a process restart marks unfinished work `interrupted` instead of silently resuming stale authority. Automatic schedule resume, semantic bundle integration, and risk-based blind cross-runtime review remain Phase 5 work; the main thread must perform those steps explicitly.
+The current vertical slice implements context compilation, receipt-bound editing, sidecar-owned file and semantic-symbol proof, deterministic verification, recovery retries, quarantine, Change Bundles, manifest audit, dual CLI adapters, worktrees, durable leases, provider switching, and durable asynchronous bounded scheduling and cancellation. A worker may continue in its approved worktree and consume the selected CLI subscription after `kontext_schedule_logic` returns. Schedule input and results remain private digest-checked sidecar state; a process restart marks unfinished work `interrupted` instead of silently resuming stale authority. Automatic schedule resume, semantic bundle integration, and risk-based blind cross-runtime review remain Phase 5 work; the main thread must perform those steps explicitly.

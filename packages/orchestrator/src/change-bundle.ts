@@ -58,10 +58,34 @@ export function validateChangeBundle(input: ValidateChangeBundleInput): ChangeBu
   ) {
     add("changed_paths_mismatch", "Change Bundle paths do not match the observed patch");
   }
+  const allowedPaths = new Set(workItem.allowedPaths.map(canonicalPath));
+  for (const changedPath of uniqueSorted(input.observedPatch.changedPaths.map(canonicalPath))) {
+    if (!allowedPaths.has(changedPath)) {
+      add(
+        "path_out_of_scope",
+        `Observed path ${changedPath} is outside the Logic Work Item plan`,
+        changedPath,
+      );
+    }
+  }
   if (!sameStrings(bundle.changedSymbolIds, input.observedPatch.changedSymbolIds)) {
     add(
       "changed_symbols_mismatch",
       "Change Bundle symbols do not match semantic resynchronization",
+    );
+  }
+  for (const issue of input.plannedSymbolIssues) {
+    add(
+      "unbound_planned_symbol",
+      `Planned Symbol ${issue.plannedSymbolId} could not be bound: ${issue.code}`,
+      issue.plannedSymbolId,
+    );
+  }
+  for (const symbolId of uniqueSorted(input.unauthorizedChangedSymbolIds)) {
+    add(
+      "symbol_out_of_scope",
+      `Changed Code Symbol ${symbolId} is outside the Logic Work Item plan`,
+      symbolId,
     );
   }
   if (!sameRevisionRefs(bundle.normativeRevisions, snapshot.normativeRevisions)) {

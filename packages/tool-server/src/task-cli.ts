@@ -23,6 +23,7 @@ import { LocalPostWriteObserver } from "./local-post-write-observer.js";
 import { LocalVerificationRecoveryService } from "./local-verification-recovery.js";
 import { LocalWorkspaceObservationService } from "./local-workspace-observation-service.js";
 import { LocalKontextRuntimeOperations } from "./runtime-workflow-tools.js";
+import { BoundWorkspaceChangeEvidenceProvider } from "./sidecar-change-evidence.js";
 import { subscriptionRuntimeEnvironment } from "./subscription-runtime-environment.js";
 import { KontextTaskToolServer } from "./task-tool-server.js";
 import {
@@ -67,6 +68,7 @@ async function main(): Promise<void> {
     artifacts,
     quarantine,
     durableVerification,
+    new BoundWorkspaceChangeEvidenceProvider(bindings),
   );
   const runtimeOperations = new LocalKontextRuntimeOperations(
     repository,

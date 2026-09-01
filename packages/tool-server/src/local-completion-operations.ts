@@ -6,6 +6,7 @@ import type {
   PreparedTaskContextStore,
   TaskContextStateProvider,
 } from "@kontext-brain/context";
+import { validateContextReceipt } from "@kontext-brain/context";
 import {
   type DurableVerificationCoordinator,
   type QuarantineStore,
@@ -32,6 +33,7 @@ import type {
   ProposeTransitionRequest,
   SubmitChangeBundleRequest,
 } from "./completion-workflow-tools.js";
+import type { SidecarChangeEvidenceProvider } from "./sidecar-change-evidence.js";
 
 export class LocalKontextCompletionOperations implements KontextCompletionOperations {
   constructor(
@@ -40,20 +42,29 @@ export class LocalKontextCompletionOperations implements KontextCompletionOperat
     private readonly artifacts: TaskCompletionArtifactStore,
     private readonly quarantine: QuarantineStore,
     private readonly verification: DurableVerificationCoordinator,
+    private readonly changeEvidence: SidecarChangeEvidenceProvider,
   ) {}
 
   async checkChange(request: CheckChangeRequest): Promise<unknown> {
-    const { prepared, current, workItem } = await this.loadTask(request.taskId, request.workItemId);
-    assertBinding(
-      request.codeRevision,
-      request.contextDigest,
-      current.codeRevision,
-      prepared.snapshot.contextDigest,
-    );
+    const {
+      prepared,
+      current,
+      workItem,
+      plan: logicPlan,
+    } = await this.loadTask(request.taskId, request.workItemId);
+    const evidence = await this.changeEvidence.observe({
+      workspacePath: request.workspacePath,
+      taskId: request.taskId,
+      workItem,
+      plannedSymbols: logicPlan.plannedSymbols,
+    });
+    assertCheckEvidence(evidence, workItem, prepared, request.observedAt);
     const invariantVerifiers = boundInvariantVerifiers(current, prepared);
     const plan =
       request.tier === "fast"
-        ? createFastVerificationPlan({ affectedSymbolIds: request.affectedSymbolIds })
+        ? createFastVerificationPlan({
+            affectedSymbolIds: evidence.observedPatch.changedSymbolIds,
+          })
         : request.tier === "targeted"
           ? createTargetedVerificationPlan({
               workItem,
@@ -69,8 +80,8 @@ export class LocalKontextCompletionOperations implements KontextCompletionOperat
       plan,
       binding: {
         workspacePath: path.resolve(request.workspacePath),
-        codeRevision: request.codeRevision,
-        contextDigest: request.contextDigest,
+        codeRevision: evidence.currentCodeRevision,
+        contextDigest: prepared.snapshot.contextDigest,
         observedAt: request.observedAt,
       },
       nextAttemptAt: request.nextAttemptAt,
@@ -79,35 +90,49 @@ export class LocalKontextCompletionOperations implements KontextCompletionOperat
       request.taskId,
       executions.map((execution) => execution.run),
     );
-    return { plan, executions };
+    return { plan, executions, observedPatch: evidence.observedPatch };
   }
 
   async submitChangeBundle(request: SubmitChangeBundleRequest): Promise<unknown> {
     const bundle = createChangeBundle(request.bundle);
-    const { prepared, current, workItem } = await this.loadTask(bundle.taskId, bundle.workItemId);
+    const { prepared, current, workItem, plan } = await this.loadTask(
+      bundle.taskId,
+      bundle.workItemId,
+    );
+    const evidence = await this.changeEvidence.observe({
+      workspacePath: request.workspacePath,
+      taskId: bundle.taskId,
+      workItem,
+      plannedSymbols: plan.plannedSymbols,
+    });
     const validation = validateChangeBundle({
       bundle,
       workItem,
       snapshot: prepared.snapshot,
-      currentCodeRevision: current.codeRevision,
-      observedPatch: request.observedPatch,
-      receipts: request.receipts,
+      currentCodeRevision: evidence.currentCodeRevision,
+      observedPatch: evidence.observedPatch,
+      receipts: evidence.receipts,
+      plannedSymbolIssues: evidence.plannedSymbolIssues,
+      unauthorizedChangedSymbolIds: evidence.unauthorizedChangedSymbolIds,
       verificationRuns: await this.artifacts.listVerificationRuns(bundle.taskId),
       boundInvariantVerifiers: boundInvariantVerifiers(current, prepared),
       quarantineRecords: await this.quarantine.list("active"),
     });
     if (validation.accepted) await this.artifacts.putChangeBundle(bundle);
-    return { ...validation, bundle };
+    return {
+      ...validation,
+      bundle,
+      observedPatch: evidence.observedPatch,
+      plannedSymbolBindings: evidence.plannedSymbolBindings,
+    };
   }
 
   async proposeTransition(request: ProposeTransitionRequest): Promise<unknown> {
     const prepared = await this.requirePrepared(request.taskId);
     const current = await this.currentState.getCurrent(request.taskId);
-    if (request.currentCodeRevision !== current.codeRevision) {
-      throw new Error("Requested Task transition code revision is not sidecar-current");
-    }
     let verificationRuns = await this.artifacts.listVerificationRuns(request.taskId);
     const changeBundles = await this.artifacts.listChangeBundles(request.taskId);
+    const currentCodeRevision = completionCodeRevision(changeBundles, current.codeRevision);
     let accuracyManifest = await this.artifacts.getAccuracyManifest(request.taskId);
     let accuracyManifestError: string | undefined;
     if (request.completionRequested) {
@@ -123,7 +148,7 @@ export class LocalKontextCompletionOperations implements KontextCompletionOperat
         const auditInput = {
           contract: prepared.contract,
           snapshot: prepared.snapshot,
-          currentCodeRevision: current.codeRevision,
+          currentCodeRevision,
           changeBundles,
           verificationRuns: candidateRuns,
           reviewFindings: request.reviewFindings,
@@ -138,7 +163,7 @@ export class LocalKontextCompletionOperations implements KontextCompletionOperat
             subjectIds: [prepared.contract.taskId, ...prepared.contract.targets],
           },
           {
-            codeRevision: current.codeRevision,
+            codeRevision: currentCodeRevision,
             contextDigest: prepared.snapshot.contextDigest,
             observedAt: request.requestedAt,
           },
@@ -173,7 +198,7 @@ export class LocalKontextCompletionOperations implements KontextCompletionOperat
       contract: prepared.contract,
       snapshot: prepared.snapshot,
       context,
-      currentCodeRevision: current.codeRevision,
+      currentCodeRevision,
       evidence: request.evidence,
       verificationRuns,
       invariantEvaluations: request.invariantEvaluations,
@@ -199,6 +224,7 @@ export class LocalKontextCompletionOperations implements KontextCompletionOperat
     readonly prepared: PreparedTaskContext;
     readonly current: CurrentTaskContextState;
     readonly workItem: LogicWorkItem;
+    readonly plan: CurrentTaskContextState["logicPlans"][number];
   }> {
     const prepared = await this.requirePrepared(taskId);
     const current = await this.currentState.getCurrent(taskId);
@@ -222,6 +248,7 @@ export class LocalKontextCompletionOperations implements KontextCompletionOperat
             )
             .digest("hex")}`,
       },
+      plan,
     };
   }
 
@@ -232,17 +259,55 @@ export class LocalKontextCompletionOperations implements KontextCompletionOperat
   }
 }
 
-function assertBinding(
-  requestedCodeRevision: string,
-  requestedContextDigest: string,
-  currentCodeRevision: string,
-  currentContextDigest: string,
-): void {
-  if (requestedCodeRevision !== currentCodeRevision) {
-    throw new Error("Requested Verification Run code revision is not sidecar-current");
+function completionCodeRevision(
+  bundles: readonly { readonly resultRevision: string }[],
+  baseRevision: string,
+): string {
+  const revisions = Array.from(new Set(bundles.map((bundle) => bundle.resultRevision)));
+  if (revisions.length > 1) {
+    throw new Error("Accepted Change Bundles do not describe one integrated code revision");
   }
-  if (requestedContextDigest !== currentContextDigest) {
-    throw new Error("Requested Verification Run context digest is not the prepared Snapshot");
+  return revisions[0] ?? baseRevision;
+}
+
+function assertCheckEvidence(
+  evidence: Awaited<ReturnType<SidecarChangeEvidenceProvider["observe"]>>,
+  workItem: LogicWorkItem,
+  prepared: PreparedTaskContext,
+  observedAt: string,
+): void {
+  if (evidence.plannedSymbolIssues.length > 0) {
+    throw new Error(
+      `Cannot verify unbound Planned Symbols: ${evidence.plannedSymbolIssues
+        .map((issue) => issue.plannedSymbolId)
+        .join(", ")}`,
+    );
+  }
+  if (evidence.unauthorizedChangedSymbolIds.length > 0) {
+    throw new Error(
+      `Cannot verify out-of-scope Code Symbols: ${evidence.unauthorizedChangedSymbolIds.join(", ")}`,
+    );
+  }
+  const allowedPaths = new Set(workItem.allowedPaths.map(canonicalPath));
+  const outsidePaths = evidence.observedPatch.changedPaths
+    .map(canonicalPath)
+    .filter((changedPath) => !allowedPaths.has(changedPath));
+  if (outsidePaths.length > 0) {
+    throw new Error(`Cannot verify out-of-scope paths: ${outsidePaths.join(", ")}`);
+  }
+  const receipt = evidence.receipts[0];
+  if (!receipt || evidence.receipts.length !== 1) {
+    throw new Error("Cannot verify without one sidecar-owned Context Receipt");
+  }
+  const receiptIssues = validateContextReceipt({
+    receipt,
+    snapshot: prepared.snapshot,
+    logic: workItem,
+    allowedPaths: workItem.allowedPaths,
+    now: observedAt,
+  });
+  if (receiptIssues.length > 0) {
+    throw new Error(`Cannot verify invalid Context Receipt: ${receiptIssues.join(", ")}`);
   }
 }
 
@@ -302,4 +367,8 @@ function sameValues(
   const normalize = (values: readonly unknown[]) =>
     values.map((value) => JSON.stringify(value)).sort();
   return JSON.stringify(normalize(left)) === JSON.stringify(normalize(right));
+}
+
+function canonicalPath(value: string): string {
+  return value.replaceAll("\\", "/").replace(/^\.\//, "");
 }

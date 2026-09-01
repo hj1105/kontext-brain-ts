@@ -37,6 +37,31 @@ export interface CodeSymbolRecord {
   readonly semanticSupport: "certified" | "syntactic";
 }
 
+export interface PlannedSymbolRecord {
+  readonly plannedSymbolId: string;
+  readonly taskId: string;
+  readonly intendedIdentity: Partial<CodeSymbolIdentity>;
+  readonly responsibility: string;
+  readonly boundSymbolId?: string;
+}
+
+export interface PlannedSymbolBinding {
+  readonly plannedSymbolId: string;
+  readonly symbolId: string;
+  readonly boundBy: "recorded_binding" | "existing_symbol_id" | "intended_identity";
+}
+
+export interface PlannedSymbolBindingIssue {
+  readonly plannedSymbolId: string;
+  readonly code: "bound_symbol_missing" | "identity_not_found" | "identity_ambiguous";
+  readonly candidateSymbolIds: readonly string[];
+}
+
+export interface PlannedSymbolResolution {
+  readonly bindings: readonly PlannedSymbolBinding[];
+  readonly issues: readonly PlannedSymbolBindingIssue[];
+}
+
 export type CodeRelationshipPredicate =
   | "imports"
   | "calls"

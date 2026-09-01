@@ -102,7 +102,7 @@ A source-language declaration with a stable semantic identity inside a Codebase.
 
 ## Planned Symbol
 
-The intended identity and responsibility of a Code Symbol before that symbol exists in synchronized code. It is bound to the actual Code Symbol after code synchronization.
+The intended identity and responsibility of a Code Symbol before that symbol exists in synchronized code. It is bound only when semantic synchronization finds one unambiguous actual Code Symbol.
 
 ## Code Symbol-Ontology Link
 

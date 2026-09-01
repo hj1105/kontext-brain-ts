@@ -1,3 +1,4 @@
+import type { PlannedSymbolBindingIssue } from "@kontext-brain/code";
 import type {
   AccuracyManifest,
   ChangeBundle,
@@ -174,7 +175,10 @@ export type ChangeBundleIssueCode =
   | "context_mismatch"
   | "patch_mismatch"
   | "changed_paths_mismatch"
+  | "path_out_of_scope"
   | "changed_symbols_mismatch"
+  | "unbound_planned_symbol"
+  | "symbol_out_of_scope"
   | "missing_context_receipt"
   | "invalid_context_receipt"
   | "normative_revision_mismatch"
@@ -196,6 +200,8 @@ export interface ValidateChangeBundleInput {
   readonly snapshot: TaskContextSnapshot;
   readonly currentCodeRevision: string;
   readonly observedPatch: ObservedPatch;
+  readonly plannedSymbolIssues: readonly PlannedSymbolBindingIssue[];
+  readonly unauthorizedChangedSymbolIds: readonly string[];
   readonly receipts: readonly ContextReceipt[];
   readonly verificationRuns: readonly VerificationRun[];
   readonly boundInvariantVerifiers?: readonly VerifierRef[];

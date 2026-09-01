@@ -121,10 +121,46 @@ const contextEvidenceSchema = z
     relevance: z.number().optional(),
   })
   .strict();
+const codeSymbolIdentitySchema = z
+  .object({
+    codebaseId: nonEmptyString.optional(),
+    relativePath: nonEmptyString.optional(),
+    language: z.enum(["typescript", "javascript"]).optional(),
+    kind: z
+      .enum([
+        "module",
+        "class",
+        "interface",
+        "type",
+        "enum",
+        "function",
+        "method",
+        "constructor",
+        "getter",
+        "setter",
+        "named_arrow",
+        "field",
+        "constant",
+      ])
+      .optional(),
+    qualifiedName: nonEmptyString.optional(),
+    signatureDiscriminator: z.string().optional(),
+  })
+  .strict();
+const plannedSymbolSchema = z
+  .object({
+    plannedSymbolId: nonEmptyString,
+    taskId: nonEmptyString,
+    intendedIdentity: codeSymbolIdentitySchema,
+    responsibility: nonEmptyString,
+    boundSymbolId: nonEmptyString.optional(),
+  })
+  .strict();
 const logicPlanSchema = z
   .object({
     workItemId: nonEmptyString,
     plannedSymbolIds: z.array(nonEmptyString).min(1),
+    plannedSymbols: z.array(plannedSymbolSchema).min(1).optional(),
     allowedPaths: z.array(nonEmptyString).min(1),
     dependsOn: z.array(nonEmptyString).optional(),
     requiredVerifiers: z.array(verifierSchema).optional(),

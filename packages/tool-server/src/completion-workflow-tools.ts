@@ -1,7 +1,6 @@
 import type {
   ChangeBundleInput,
   ContextAssessment,
-  ContextReceipt,
   InvariantEvaluation,
   ReviewFinding,
   TaskEvidence,
@@ -16,20 +15,6 @@ const revisionRefSchema = z
     kind: z.enum(["decision", "domain_term", "invariant"]),
     recordId: nonEmptyString,
     revisionId: nonEmptyString,
-  })
-  .strict();
-const contextReceiptSchema = z
-  .object({
-    receiptId: nonEmptyString,
-    taskId: nonEmptyString,
-    workItemId: nonEmptyString,
-    plannedSymbolIds: z.array(nonEmptyString),
-    allowedPaths: z.array(nonEmptyString),
-    contextDigest: nonEmptyString,
-    normativeRevisions: z.array(revisionRefSchema),
-    evidenceIds: z.array(nonEmptyString),
-    issuedAt: z.string().datetime(),
-    expiresAt: z.string().datetime(),
   })
   .strict();
 const changeBundleSchema = z
@@ -49,13 +34,6 @@ const changeBundleSchema = z
     proposals: z.array(nonEmptyString),
     unresolved: z.array(nonEmptyString),
     submittedAt: z.string().datetime(),
-  })
-  .strict();
-const observedPatchSchema = z
-  .object({
-    patchDigest: nonEmptyString,
-    changedPaths: z.array(nonEmptyString),
-    changedSymbolIds: z.array(nonEmptyString),
   })
   .strict();
 const evidenceSchema = z.discriminatedUnion("kind", [
@@ -104,17 +82,13 @@ export const checkChangeToolShape = {
   workItemId: nonEmptyString,
   workspacePath: nonEmptyString,
   tier: z.enum(["fast", "targeted", "full"]),
-  affectedSymbolIds: z.array(nonEmptyString),
-  codeRevision: nonEmptyString,
-  contextDigest: nonEmptyString,
   observedAt: z.string().datetime(),
   nextAttemptAt: z.string().datetime(),
 };
 
 export const submitChangeBundleToolShape = {
+  workspacePath: nonEmptyString,
   bundle: changeBundleSchema,
-  observedPatch: observedPatchSchema,
-  receipts: z.array(contextReceiptSchema),
 };
 
 export const proposeTransitionToolShape = {
@@ -122,7 +96,6 @@ export const proposeTransitionToolShape = {
   currentState: z.enum(["planned", "in_progress", "awaiting_evidence", "done", "blocked"]),
   workStarted: z.boolean(),
   completionRequested: z.boolean(),
-  currentCodeRevision: nonEmptyString,
   context: z
     .object({
       status: z.enum(["current", "stale", "conflict", "inaccessible", "unavailable"]),
@@ -140,21 +113,13 @@ export interface CheckChangeRequest {
   readonly workItemId: string;
   readonly workspacePath: string;
   readonly tier: "fast" | "targeted" | "full";
-  readonly affectedSymbolIds: readonly string[];
-  readonly codeRevision: string;
-  readonly contextDigest: string;
   readonly observedAt: string;
   readonly nextAttemptAt: string;
 }
 
 export interface SubmitChangeBundleRequest {
+  readonly workspacePath: string;
   readonly bundle: ChangeBundleInput;
-  readonly observedPatch: {
-    readonly patchDigest: string;
-    readonly changedPaths: readonly string[];
-    readonly changedSymbolIds: readonly string[];
-  };
-  readonly receipts: readonly ContextReceipt[];
 }
 
 export interface ProposeTransitionRequest {
@@ -162,7 +127,6 @@ export interface ProposeTransitionRequest {
   readonly currentState: TaskState;
   readonly workStarted: boolean;
   readonly completionRequested: boolean;
-  readonly currentCodeRevision: string;
   readonly context: ContextAssessment;
   readonly evidence: readonly TaskEvidence[];
   readonly invariantEvaluations: readonly InvariantEvaluation[];
