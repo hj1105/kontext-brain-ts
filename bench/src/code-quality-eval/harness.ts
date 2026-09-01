@@ -15,6 +15,12 @@ import type {
   CodeQualityScenario,
 } from "./contracts.js";
 import { publishScenarioState } from "./kontext-state.js";
+import {
+  EmbeddingRagRetriever,
+  type RagRetriever,
+  buildRagCorpus,
+  renderRetrievedContext,
+} from "./rag-context.js";
 import { buildCodeQualityReport } from "./report.js";
 import { createScenarioWorkspace, evaluateWorkspace } from "./workspace.js";
 
@@ -22,6 +28,7 @@ export interface CodeQualityHarnessDependencies {
   readonly execute?: (input: CodexExecutionInput) => Promise<CodexExecutionResult>;
   readonly publishState?: typeof publishScenarioState;
   readonly onProgress?: (message: string) => void;
+  readonly retriever?: RagRetriever;
 }
 
 export async function runCodeQualityEvaluation(input: {
@@ -37,12 +44,18 @@ export async function runCodeQualityEvaluation(input: {
   const execute = input.dependencies?.execute ?? ((execution) => runner.execute(execution));
   const publishState = input.dependencies?.publishState ?? publishScenarioState;
   const progress = input.dependencies?.onProgress ?? (() => undefined);
+  // Constructed on first use so a run without a retrieval arm never needs an
+  // embedding API key.
+  let retriever = input.dependencies?.retriever;
+  const requireRetriever = (): RagRetriever => {
+    retriever ??= new EmbeddingRagRetriever(buildRagCorpus(input.scenarios));
+    return retriever;
+  };
   const runs: CodeQualityRunResult[] = [];
 
   for (let repetition = 1; repetition <= input.config.repetitions; repetition += 1) {
     for (const [scenarioIndex, scenario] of input.scenarios.entries()) {
-      const arms: readonly CodeQualityArm[] =
-        (scenarioIndex + repetition) % 2 === 0 ? ["baseline", "kontext"] : ["kontext", "baseline"];
+      const arms = rotatedArms(scenarioIndex + repetition);
       for (const arm of arms) {
         progress(`[${scenario.scenarioId} r${repetition}] ${arm} starting`);
         const run = await runArm({
@@ -53,6 +66,13 @@ export async function runCodeQualityEvaluation(input: {
           config: input.config,
           execute,
           publishState,
+          ...(arm === "rag"
+            ? {
+                retrievedContext: renderRetrievedContext(
+                  await requireRetriever().retrieve(scenario),
+                ),
+              }
+            : {}),
         });
         runs.push(run);
         const passed = run.hiddenAssertions.filter((assertion) => assertion.passed).length;
@@ -75,6 +95,7 @@ async function runArm(input: {
   readonly scenario: CodeQualityScenario;
   readonly repetition: number;
   readonly arm: CodeQualityArm;
+  readonly retrievedContext?: string;
   readonly config: CodeQualityRunConfig;
   readonly execute: (input: CodexExecutionInput) => Promise<CodexExecutionResult>;
   readonly publishState: typeof publishScenarioState;
@@ -101,6 +122,7 @@ async function runArm(input: {
       workspacePath: workspace.workspacePath,
       repositoryRoot: input.repositoryRoot,
       ...(input.arm === "kontext" ? { pluginDataDirectory } : {}),
+      ...(input.retrievedContext === undefined ? {} : { retrievedContext: input.retrievedContext }),
       config: input.config,
     });
   } catch (error) {
@@ -129,7 +151,7 @@ async function runArm(input: {
       execution.kontextToolsObserved.includes("kontext_prepare_task") &&
       execution.kontextToolsObserved.includes("kontext_begin_logic");
     const evaluationEligible =
-      execution.exitCode === 0 && (input.arm === "baseline" || contextConsulted);
+      execution.exitCode === 0 && (input.arm !== "kontext" || contextConsulted);
     const finishedAt = new Date();
     const diagnostic = [
       execution.stderr.trim(),
@@ -173,4 +195,14 @@ async function runArm(input: {
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+}
+
+/**
+ * Rotates arm order so no arm always runs first for a given scenario, since
+ * ordering can bias a subscription runtime through cache warmth and load.
+ */
+function rotatedArms(offset: number): readonly CodeQualityArm[] {
+  const order: readonly CodeQualityArm[] = ["baseline", "rag", "kontext"];
+  const start = ((offset % order.length) + order.length) % order.length;
+  return [...order.slice(start), ...order.slice(0, start)];
 }

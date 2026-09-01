@@ -1,4 +1,5 @@
 import type {
+  ArmComparison,
   ArmSummary,
   CodeQualityArm,
   CodeQualityReport,
@@ -14,8 +15,14 @@ export function buildCodeQualityReport(input: {
   readonly generatedAt?: string;
 }): CodeQualityReport {
   const baseline = summarizeArm("baseline", input.runs);
+  const rag = summarizeArm("rag", input.runs);
   const kontext = summarizeArm("kontext", input.runs);
   const paired = summarizePairs(input.runs);
+  const comparisons = [
+    compareArms(input.runs, "kontext", "baseline"),
+    compareArms(input.runs, "kontext", "rag"),
+    compareArms(input.runs, "rag", "baseline"),
+  ].filter((comparison) => comparison.pairs > 0);
   const evidenceStrength = classifyEvidenceStrength(input.scenarios.length, paired.pairs);
   const hiddenAssertionUplift = kontext.hiddenAssertionPassRate - baseline.hiddenAssertionPassRate;
   const taskSuccessUplift = kontext.taskSuccessRate - baseline.taskSuccessRate;
@@ -25,8 +32,9 @@ export function buildCodeQualityReport(input: {
     config: input.config,
     scenarios: [...input.scenarios],
     runs: [...input.runs],
-    summaries: [baseline, kontext],
+    summaries: rag.runs > 0 ? [baseline, rag, kontext] : [baseline, kontext],
     paired,
+    comparisons,
     hiddenAssertionUplift,
     taskSuccessUplift,
     evidenceStrength,
@@ -83,6 +91,61 @@ export function summarizeArm(
   return summary;
 }
 
+/**
+ * The retrieval arm separates holding the policy from the governance workflow
+ * around it, so kontext against rag is the comparison that isolates the
+ * workflow while kontext against baseline measures both together.
+ */
+export function compareArms(
+  runs: readonly CodeQualityRunResult[],
+  treatment: CodeQualityArm,
+  control: CodeQualityArm,
+): ArmComparison {
+  const grouped = groupByPair(runs);
+  let treatmentWins = 0;
+  let controlWins = 0;
+  let ties = 0;
+  let pairs = 0;
+  for (const pair of grouped.values()) {
+    const left = pair[treatment];
+    const right = pair[control];
+    if (!left?.evaluationEligible || !right?.evaluationEligible) continue;
+    pairs += 1;
+    const comparison = compareRuns(left, right);
+    if (comparison > 0) treatmentWins += 1;
+    else if (comparison < 0) controlWins += 1;
+    else ties += 1;
+  }
+  const nonTies = treatmentWins + controlWins;
+  return {
+    treatment,
+    control,
+    pairs,
+    treatmentWins,
+    controlWins,
+    ties,
+    hiddenAssertionUplift:
+      summarizeArm(treatment, runs).hiddenAssertionPassRate -
+      summarizeArm(control, runs).hiddenAssertionPassRate,
+    ...(nonTies === 0
+      ? {}
+      : { twoSidedSignTestPValue: exactTwoSidedSignTest(treatmentWins, controlWins) }),
+  };
+}
+
+function groupByPair(
+  runs: readonly CodeQualityRunResult[],
+): Map<string, Partial<Record<CodeQualityArm, CodeQualityRunResult>>> {
+  const pairs = new Map<string, Partial<Record<CodeQualityArm, CodeQualityRunResult>>>();
+  for (const run of runs) {
+    const key = `${run.scenarioId}\u0000${run.repetition}`;
+    const pair = pairs.get(key) ?? {};
+    pair[run.arm] = run;
+    pairs.set(key, pair);
+  }
+  return pairs;
+}
+
 export function summarizePairs(runs: readonly CodeQualityRunResult[]): PairedOutcomeSummary {
   const pairs = new Map<string, Partial<Record<CodeQualityArm, CodeQualityRunResult>>>();
   for (const run of runs) {
@@ -129,8 +192,9 @@ export function exactTwoSidedSignTest(successes: number, failures: number): numb
 }
 
 export function renderCodeQualityMarkdown(report: CodeQualityReport): string {
-  const [baseline, kontext] = report.summaries;
-  if (!baseline || !kontext) throw new Error("Both arm summaries are required");
+  const baseline = report.summaries.find((summary) => summary.arm === "baseline");
+  const kontext = report.summaries.find((summary) => summary.arm === "kontext");
+  if (!baseline || !kontext) throw new Error("The baseline and kontext summaries are required");
   const percentage = (value: number): string => `${(value * 100).toFixed(1)}%`;
   const tokens = (value: number | undefined): string =>
     value === undefined ? "n/a" : Math.round(value).toLocaleString("en-US");
