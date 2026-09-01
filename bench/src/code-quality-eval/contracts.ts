@@ -1,4 +1,4 @@
-export type CodeQualityArm = "baseline" | "kontext";
+export type CodeQualityArm = "baseline" | "rag" | "kontext";
 
 export interface CodeQualityNormativeRule {
   readonly kind: "decision" | "domain_term" | "invariant";
@@ -100,6 +100,17 @@ export interface PairedOutcomeSummary {
   readonly twoSidedSignTestPValue?: number;
 }
 
+export interface ArmComparison {
+  readonly treatment: CodeQualityArm;
+  readonly control: CodeQualityArm;
+  readonly pairs: number;
+  readonly treatmentWins: number;
+  readonly controlWins: number;
+  readonly ties: number;
+  readonly hiddenAssertionUplift: number;
+  readonly twoSidedSignTestPValue?: number;
+}
+
 export interface CodeQualityReport {
   readonly schemaVersion: 1;
   readonly generatedAt: string;
@@ -108,6 +119,7 @@ export interface CodeQualityReport {
   readonly runs: readonly CodeQualityRunResult[];
   readonly summaries: readonly ArmSummary[];
   readonly paired: PairedOutcomeSummary;
+  readonly comparisons: readonly ArmComparison[];
   readonly hiddenAssertionUplift: number;
   readonly taskSuccessUplift: number;
   readonly evidenceStrength: "smoke" | "pilot" | "release";

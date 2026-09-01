@@ -18,6 +18,7 @@ export interface CodexExecutionInput {
   readonly workspacePath: string;
   readonly repositoryRoot: string;
   readonly pluginDataDirectory?: string;
+  readonly retrievedContext?: string;
   readonly config: CodeQualityRunConfig;
 }
 
@@ -136,6 +137,17 @@ export function codexPrompt(input: CodexExecutionInput): string {
     "Run npm test before finishing. Do not ask questions.",
   ];
   if (input.arm === "baseline") return `${shared.join("\n")}\n`;
+
+  if (input.arm === "rag") {
+    return `${shared.join("\n")}
+
+The following internal documentation was retrieved for this task. It may contain
+entries that are not relevant. Use whatever applies as the authoritative current
+policy, and follow its exact naming.
+
+${input.retrievedContext ?? "No documentation was retrieved."}
+`;
+  }
 
   const contract = {
     taskId: input.scenario.taskId,

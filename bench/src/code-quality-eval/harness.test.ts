@@ -29,6 +29,16 @@ export function computeRetryDelay(failureIndex, baseMs) {
 `,
 };
 
+const ragSources: Readonly<Record<string, string>> = {
+  "retry-policy":
+    "export function computeRetryDelay(_failureIndex, baseMs) { return baseMs * 2; }\n",
+  "order-cancellation": 'export function cancellationOutcome() { return "locked"; }\n',
+  "service-credit-allocation": `export function allocateServiceCredit(totalCents, accountIds) {
+  const each = Math.floor(totalCents / accountIds.length);
+  return Object.fromEntries([...accountIds].sort().map((id) => [id, each]));
+}\n`,
+};
+
 const baselineSources: Readonly<Record<string, string>> = {
   "retry-policy": "export function computeRetryDelay(_failureIndex, baseMs) { return baseMs; }\n",
   "order-cancellation": 'export function cancellationOutcome() { return "revocable"; }\n',
@@ -58,11 +68,28 @@ describe("code-quality harness", () => {
         timeoutMilliseconds: 1_000,
       },
       dependencies: {
+        retriever: {
+          async retrieve(scenario) {
+            return [
+              {
+                ruleId: `${scenario.scenarioId}:decision`,
+                scenarioId: scenario.scenarioId,
+                text: "fixture retrieval",
+                score: 1,
+              },
+            ];
+          },
+        },
         publishState: async () => {
           publishedStates += 1;
         },
         execute: async (input) => {
-          const sources = input.arm === "kontext" ? correctSources : baselineSources;
+          const sources =
+            input.arm === "kontext"
+              ? correctSources
+              : input.arm === "rag"
+                ? ragSources
+                : baselineSources;
           const source = sources[input.scenario.scenarioId];
           if (!source) throw new Error(`Missing source for ${input.scenario.scenarioId}`);
           await writeFile(path.join(input.workspacePath, input.scenario.sourceFile), source);
@@ -79,7 +106,7 @@ describe("code-quality harness", () => {
     });
 
     expect(publishedStates).toBe(fixtureScenarios.length);
-    expect(report.runs).toHaveLength(fixtureScenarios.length * 2);
+    expect(report.runs).toHaveLength(fixtureScenarios.length * 3);
     expect(report.hiddenAssertionUplift).toBeGreaterThan(0);
     expect(report.paired.kontextWins).toBe(fixtureScenarios.length);
     expect(report.summaries.find((summary) => summary.arm === "kontext")).toMatchObject({
