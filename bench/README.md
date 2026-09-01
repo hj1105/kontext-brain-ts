@@ -4,6 +4,37 @@ Compares 14 retrieval strategies against a vector-RAG baseline on a 12-doc
 tech-docs corpus with 8 factual queries. All systems share the same local
 Ollama models, so only the retrieval/reasoning strategy differs.
 
+## Code-quality A/B evaluation
+
+The code-quality suite measures whether Codex implements held-out, provenance-backed product
+rules more accurately when it consults Kontext Brain. Each pair uses the same model, reasoning
+effort, public task, minimal workspace, and public tests:
+
+- `baseline` runs without plugins, apps, skills, or Kontext MCP configuration.
+- `kontext` receives no policy text in its prompt and must call `kontext_prepare_task` and
+  `kontext_begin_logic` against a private sidecar fixture.
+- An evaluator outside the generated workspace scores hidden functional assertions, canonical
+  domain terms, exact-path scope, runtime completion, tokens, and duration.
+- Arm order is counterbalanced. Reports stay `inconclusive` until the release-sized threshold is
+  met, even when a small smoke run points in one direction.
+
+Build the local artifacts and run one paired repetition per scenario:
+
+```bash
+pnpm build
+pnpm --filter @kontext-brain/bench code-quality --repetitions 1
+
+# or against the Claude Code subscription
+pnpm --filter @kontext-brain/bench code-quality --runtime claude --repetitions 1
+```
+
+Pass `--runtime claude` to measure the Claude Code subscription instead; the fixture's Evidence
+egress then authorizes the `claude` provider and the private sidecar is exposed through a
+temporary `--mcp-config`. The runner removes provider API-key environment variables before
+invoking the CLI, so the measurement always uses the authenticated subscription. Generated JSON and Markdown reports
+are written under `bench/data/code-quality-eval/` and ignored by Git. Use `--output` to retain a
+dated report elsewhere.
+
 > Historical-results note: rows labeled `v1-default` below were recorded
 > before graph traversal depth and retrieval-stage order were separated.
 > The current `DEFAULT_PIPELINE` runs the full N-layer stage sequence for
