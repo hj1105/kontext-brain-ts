@@ -1,4 +1,7 @@
-export type CodeLanguage = "typescript" | "javascript" | "python";
+/** The single source of truth for every language the providers can analyze. */
+export const codeLanguages = ["typescript", "javascript", "python"] as const;
+
+export type CodeLanguage = (typeof codeLanguages)[number];
 
 export type CodeSymbolKind =
   | "module"

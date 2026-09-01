@@ -15,14 +15,17 @@
     "typecheck": "pnpm -r typecheck",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "clean": "pnpm -r exec rm -rf dist node_modules"
+    "clean": "pnpm -r exec rm -rf dist node_modules",
+    "bundle:plugin": "node scripts/bundle-plugin.mjs",
+    "bundle:plugin:check": "node scripts/bundle-plugin.mjs --check"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@types/node": "^22.10.5",
     "tsup": "^8.3.5",
     "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
+    "vitest": "^2.1.8",
+    "esbuild": "^0.24.2"
   },
   "packageManager": "pnpm@9.15.0"
 }
