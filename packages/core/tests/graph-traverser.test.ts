@@ -15,9 +15,7 @@ function buildGraph(): OntologyGraph {
     ["c", createNode({ id: "c", description: "gamma", weight: 0.9, parentId: "a", level: 1 })],
     ["d", createNode({ id: "d", description: "delta", weight: 0.7, parentId: "a", level: 1 })],
   ]);
-  const edges: Edge[] = [
-    { from: "a", to: "b", weight: 0.9 },
-  ];
+  const edges: Edge[] = [{ from: "a", to: "b", weight: 0.9 }];
   return new OntologyGraph(nodes, edges, {
     maxDepth: 3,
     maxTokens: 1000,

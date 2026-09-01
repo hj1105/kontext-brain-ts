@@ -9,13 +9,15 @@ import {
 describe("Entity as instance-of-node (proper ontological sense)", () => {
   it("attaches an entity to its parent node via nodeId", async () => {
     const idx = new InMemoryEntityIndex();
-    await idx.addEntity(createEntity({
-      id: "postgres",
-      name: "PostgreSQL",
-      type: "Database",
-      nodeId: "database",
-      attributes: { version: "15", supports_json: true, license: "PostgreSQL" },
-    }));
+    await idx.addEntity(
+      createEntity({
+        id: "postgres",
+        name: "PostgreSQL",
+        type: "Database",
+        nodeId: "database",
+        attributes: { version: "15", supports_json: true, license: "PostgreSQL" },
+      }),
+    );
     const instances = await idx.entitiesForNode("database");
     expect(instances.map((e) => e.id)).toEqual(["postgres"]);
     expect(instances[0]?.attributes?.version).toBe("15");
@@ -24,18 +26,33 @@ describe("Entity as instance-of-node (proper ontological sense)", () => {
 
   it("queries entities by attribute equality", async () => {
     const idx = new InMemoryEntityIndex();
-    await idx.addEntity(createEntity({
-      id: "postgres", name: "PostgreSQL", type: "Database", nodeId: "database",
-      attributes: { supports_json: true, released: 1996 },
-    }));
-    await idx.addEntity(createEntity({
-      id: "mysql", name: "MySQL", type: "Database", nodeId: "database",
-      attributes: { supports_json: true, released: 1995 },
-    }));
-    await idx.addEntity(createEntity({
-      id: "sqlite", name: "SQLite", type: "Database", nodeId: "database",
-      attributes: { supports_json: false, released: 2000 },
-    }));
+    await idx.addEntity(
+      createEntity({
+        id: "postgres",
+        name: "PostgreSQL",
+        type: "Database",
+        nodeId: "database",
+        attributes: { supports_json: true, released: 1996 },
+      }),
+    );
+    await idx.addEntity(
+      createEntity({
+        id: "mysql",
+        name: "MySQL",
+        type: "Database",
+        nodeId: "database",
+        attributes: { supports_json: true, released: 1995 },
+      }),
+    );
+    await idx.addEntity(
+      createEntity({
+        id: "sqlite",
+        name: "SQLite",
+        type: "Database",
+        nodeId: "database",
+        attributes: { supports_json: false, released: 2000 },
+      }),
+    );
 
     const jsonDbs = await idx.findByAttributes({
       nodeId: "database",
@@ -46,14 +63,24 @@ describe("Entity as instance-of-node (proper ontological sense)", () => {
 
   it("combines multiple predicates with AND", async () => {
     const idx = new InMemoryEntityIndex();
-    await idx.addEntity(createEntity({
-      id: "postgres", name: "PostgreSQL", type: "Database", nodeId: "database",
-      attributes: { supports_json: true, released: 1996 },
-    }));
-    await idx.addEntity(createEntity({
-      id: "mongo", name: "MongoDB", type: "Database", nodeId: "database",
-      attributes: { supports_json: true, released: 2009 },
-    }));
+    await idx.addEntity(
+      createEntity({
+        id: "postgres",
+        name: "PostgreSQL",
+        type: "Database",
+        nodeId: "database",
+        attributes: { supports_json: true, released: 1996 },
+      }),
+    );
+    await idx.addEntity(
+      createEntity({
+        id: "mongo",
+        name: "MongoDB",
+        type: "Database",
+        nodeId: "database",
+        attributes: { supports_json: true, released: 2009 },
+      }),
+    );
 
     const modernJsonDbs = await idx.findByAttributes({
       nodeId: "database",
@@ -67,18 +94,33 @@ describe("Entity as instance-of-node (proper ontological sense)", () => {
 
   it("supports comparison operators", async () => {
     const idx = new InMemoryEntityIndex();
-    await idx.addEntity(createEntity({
-      id: "a", name: "A", type: "Tool", nodeId: "tool",
-      attributes: { stars: 100 },
-    }));
-    await idx.addEntity(createEntity({
-      id: "b", name: "B", type: "Tool", nodeId: "tool",
-      attributes: { stars: 500 },
-    }));
-    await idx.addEntity(createEntity({
-      id: "c", name: "C", type: "Tool", nodeId: "tool",
-      attributes: { stars: 1000 },
-    }));
+    await idx.addEntity(
+      createEntity({
+        id: "a",
+        name: "A",
+        type: "Tool",
+        nodeId: "tool",
+        attributes: { stars: 100 },
+      }),
+    );
+    await idx.addEntity(
+      createEntity({
+        id: "b",
+        name: "B",
+        type: "Tool",
+        nodeId: "tool",
+        attributes: { stars: 500 },
+      }),
+    );
+    await idx.addEntity(
+      createEntity({
+        id: "c",
+        name: "C",
+        type: "Tool",
+        nodeId: "tool",
+        attributes: { stars: 1000 },
+      }),
+    );
 
     const popular = await idx.findByAttributes({
       nodeId: "tool",
@@ -89,14 +131,24 @@ describe("Entity as instance-of-node (proper ontological sense)", () => {
 
   it("supports string contains and array has predicates", async () => {
     const idx = new InMemoryEntityIndex();
-    await idx.addEntity(createEntity({
-      id: "postgres", name: "PostgreSQL", type: "Database", nodeId: "db",
-      attributes: { license: "PostgreSQL License", tags: ["relational", "opensource"] },
-    }));
-    await idx.addEntity(createEntity({
-      id: "oracle", name: "Oracle", type: "Database", nodeId: "db",
-      attributes: { license: "Commercial", tags: ["relational", "enterprise"] },
-    }));
+    await idx.addEntity(
+      createEntity({
+        id: "postgres",
+        name: "PostgreSQL",
+        type: "Database",
+        nodeId: "db",
+        attributes: { license: "PostgreSQL License", tags: ["relational", "opensource"] },
+      }),
+    );
+    await idx.addEntity(
+      createEntity({
+        id: "oracle",
+        name: "Oracle",
+        type: "Database",
+        nodeId: "db",
+        attributes: { license: "Commercial", tags: ["relational", "enterprise"] },
+      }),
+    );
 
     const openSource = await idx.findByAttributes({
       nodeId: "db",
@@ -114,10 +166,15 @@ describe("Entity as instance-of-node (proper ontological sense)", () => {
   it("excludes NER-style entities (no nodeId) from attribute queries", async () => {
     const idx = new InMemoryEntityIndex();
     // typed instance
-    await idx.addEntity(createEntity({
-      id: "postgres", name: "PostgreSQL", type: "Database", nodeId: "db",
-      attributes: { supports_json: true },
-    }));
+    await idx.addEntity(
+      createEntity({
+        id: "postgres",
+        name: "PostgreSQL",
+        type: "Database",
+        nodeId: "db",
+        attributes: { supports_json: true },
+      }),
+    );
     // NER mention, no nodeId
     await idx.addEntity(createEntity({ id: "kafka", name: "Kafka", type: "tool" }));
 
@@ -148,10 +205,7 @@ describe("validateEntityAttributes", () => {
   });
 
   it("treats string[] type correctly", () => {
-    const issues = validateEntityAttributes(
-      { tags: ["a", "b"] },
-      { tags: "string[]" },
-    );
+    const issues = validateEntityAttributes({ tags: ["a", "b"] }, { tags: "string[]" });
     expect(issues).toEqual([]);
     const bad = validateEntityAttributes(
       { tags: "not-an-array" as unknown as readonly string[] },

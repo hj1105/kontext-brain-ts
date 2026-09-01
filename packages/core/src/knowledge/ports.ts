@@ -14,6 +14,8 @@ import type {
 } from "./domain.js";
 
 export interface KnowledgeGraphUnitOfWork {
+  /** Resources attached to an Ontology Node; see the repository method. */
+  listResourcesByOntologyNode(ontologyNodeId: string): Promise<readonly ResourceRecord[]>;
   getResourceBySource(source: ResourceSource): Promise<ResourceRecord | null>;
   getResource(resourceId: string): Promise<ResourceRecord | null>;
   saveResource(resource: ResourceRecord): Promise<void>;
@@ -42,6 +44,18 @@ export interface KnowledgeGraphRepository {
     source: ResourceSource,
   ): Promise<ResourceRecord | null>;
   getResource(organizationId: OrganizationId, resourceId: string): Promise<ResourceRecord | null>;
+  /**
+   * Resources attached to an Ontology Node.
+   *
+   * Code files and documents are both synchronized with ontologyNodeIds, but
+   * nothing could read that edge back, so a Code Symbol could not reach the
+   * approved decisions that govern its area. Every existing query starts from a
+   * resource, a fact, or a source identifier.
+   */
+  listResourcesByOntologyNode(
+    organizationId: OrganizationId,
+    ontologyNodeId: string,
+  ): Promise<readonly ResourceRecord[]>;
   listChunks(organizationId: OrganizationId, resourceId: string): Promise<readonly ChunkRecord[]>;
   listEntitiesForResource(
     organizationId: OrganizationId,

@@ -21,10 +21,7 @@ export class Bm25NodeMappingStrategy implements NodeMappingStrategy {
     private readonly minScore = 0.1,
   ) {}
 
-  async findStartNodes(
-    query: string,
-    nodes: ReadonlyMap<string, OntologyNode>,
-  ): Promise<string[]> {
+  async findStartNodes(query: string, nodes: ReadonlyMap<string, OntologyNode>): Promise<string[]> {
     if (nodes.size === 0) return [];
     const qTokens = tokenize(query);
     if (qTokens.length === 0) {

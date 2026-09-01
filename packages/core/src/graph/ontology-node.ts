@@ -35,7 +35,9 @@ export interface OntologyNode {
   readonly attributeSchema?: Readonly<Record<string, "string" | "number" | "boolean" | "string[]">>;
 }
 
-export function createNode(init: Partial<OntologyNode> & { id: string; description: string }): OntologyNode {
+export function createNode(
+  init: Partial<OntologyNode> & { id: string; description: string },
+): OntologyNode {
   return {
     id: init.id,
     description: init.description,

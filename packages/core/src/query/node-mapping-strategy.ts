@@ -74,13 +74,15 @@ export class LLMMappingStrategy implements NodeMappingStrategy {
 }
 
 function parseNodeIds(response: string, validIds: Set<string>): string[] {
-  const clean = response.trim().replace(/^```json/, "").replace(/```$/, "").trim();
+  const clean = response
+    .trim()
+    .replace(/^```json/, "")
+    .replace(/```$/, "")
+    .trim();
   try {
     const parsed = JSON.parse(clean);
     if (Array.isArray(parsed)) {
-      const out = parsed
-        .map((v) => String(v))
-        .filter((s) => validIds.has(s));
+      const out = parsed.map((v) => String(v)).filter((s) => validIds.has(s));
       if (out.length > 0) return out;
     }
   } catch {
