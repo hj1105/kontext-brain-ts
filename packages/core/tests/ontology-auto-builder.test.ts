@@ -70,6 +70,15 @@ describe("OntologyAutoBuilder node-count selection", () => {
     expect(llm.nodeDesignPrompts[0]).toContain("design approximately 20 ontology nodes");
   });
 
+  it("rejects an explicit override outside the supported range", async () => {
+    for (const invalid of [0, -5, 2.5, 21]) {
+      const builder = new OntologyAutoBuilder(new CapturingLLM(), invalid);
+      await expect(
+        builder.build([new InMemoryDocumentSource(createDocuments(16))]),
+      ).rejects.toThrow(RangeError);
+    }
+  });
+
   it("keeps an explicit target node-count override", async () => {
     const llm = new CapturingLLM();
     const builder = new OntologyAutoBuilder(llm, 8);

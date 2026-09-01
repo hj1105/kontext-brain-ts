@@ -1,3 +1,4 @@
+import { MAX_AUTO_NODE_COUNT, MIN_AUTO_NODE_COUNT } from "@kontext-brain/core";
 import type { KontextAgent } from "@kontext-brain/loader";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -115,6 +116,9 @@ export class KontextToolServer {
       {
         targetNodeCount: z
           .number()
+          .int()
+          .min(MIN_AUTO_NODE_COUNT)
+          .max(MAX_AUTO_NODE_COUNT)
           .optional()
           .describe(
             "Optional target node-count override; omit to infer it from corpus size and topic diversity",

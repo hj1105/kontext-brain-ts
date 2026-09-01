@@ -26,8 +26,17 @@ export const emptyOntologyBuildResult: OntologyBuildResult = {
   docCount: 0,
 };
 
-const MIN_AUTO_NODE_COUNT = 3;
-const MAX_AUTO_NODE_COUNT = 20;
+export const MIN_AUTO_NODE_COUNT = 3;
+export const MAX_AUTO_NODE_COUNT = 20;
+
+function assertValidTargetNodeCount(value: number): number {
+  if (!Number.isInteger(value) || value < MIN_AUTO_NODE_COUNT || value > MAX_AUTO_NODE_COUNT) {
+    throw new RangeError(
+      `targetNodeCount must be an integer between ${MIN_AUTO_NODE_COUNT} and ${MAX_AUTO_NODE_COUNT}`,
+    );
+  }
+  return value;
+}
 
 function inferTargetNodeCount(documentCount: number, categoryCount: number): number {
   const maxUsefulNodeCount = Math.min(MAX_AUTO_NODE_COUNT, documentCount);
@@ -116,7 +125,9 @@ export class OntologyAutoBuilder {
     rawCategories: readonly string[],
   ): Promise<OntologyNode[]> {
     const targetNodeCount =
-      this.targetNodeCount ?? inferTargetNodeCount(docs.length, rawCategories.length);
+      this.targetNodeCount === undefined
+        ? inferTargetNodeCount(docs.length, rawCategories.length)
+        : assertValidTargetNodeCount(this.targetNodeCount);
     const docTitles = docs
       .slice(0, 100)
       .map((d) => `- ${d.title}`)
