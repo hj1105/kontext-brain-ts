@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { existsSync } from "node:fs";
 import { access, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,6 +18,10 @@ async function main(): Promise<void> {
     return;
   }
   const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
+  // The retrieval arm embeds its corpus through the shared OpenAI client, which
+  // reads its key the same way the rag-eval-v2 CLI does.
+  const localEnvironment = path.join(repositoryRoot, ".env.local");
+  if (existsSync(localEnvironment)) process.loadEnvFile(localEnvironment);
   const options = parseOptions(process.argv.slice(2), repositoryRoot);
   await verifyBuiltArtifacts(repositoryRoot);
   const report = await runCodeQualityEvaluation({
