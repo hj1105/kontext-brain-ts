@@ -1,3 +1,4 @@
+import { MAX_AUTO_NODE_COUNT, MIN_AUTO_NODE_COUNT } from "@kontext-brain/core";
 import {
   GitHubCanonicalOntologySource,
   GitHubOntologyProposalPublisher,
@@ -250,12 +251,17 @@ export class KontextToolServer {
       {
         targetNodeCount: z
           .number()
+          .int()
+          .min(MIN_AUTO_NODE_COUNT)
+          .max(MAX_AUTO_NODE_COUNT)
           .optional()
-          .describe("Target number of ontology nodes if built from scratch (default 10)"),
+          .describe(
+            "Optional target node-count override; omit to infer it from corpus size and topic diversity",
+          ),
       },
       async ({ targetNodeCount }) => {
         await this.refreshCanonicalOntology();
-        const result = await this.agent.autoSetup(targetNodeCount ?? 10);
+        const result = await this.agent.autoSetup(targetNodeCount);
         await this.publishOntologyProposals();
         const text = [
           "Auto-setup complete",
