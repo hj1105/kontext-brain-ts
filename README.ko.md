@@ -326,7 +326,7 @@ pnpm --filter @kontext-brain/tool-server start kontext.yaml
 | `kontext_ingest` | `{ data, source? }` | entity를 추출해 graph에 적재 |
 | `kontext_describe` | `{}` | ontology, pipeline, MCP adapter 설명 |
 | `kontext_sync` | `{ connectorName? }` | 추가/변경분을 점진적으로 분류하고 삭제 resource 제거 |
-| `kontext_auto_setup` | `{ targetNodeCount? }` | LLM이 ontology를 생성/확장하고 문서를 분류 |
+| `kontext_auto_setup` | `{ targetNodeCount? }` | ontology 크기를 자동 추정(또는 override)하고 생성·분류 |
 
 ---
 
@@ -436,7 +436,7 @@ graph traversal은 기본값이 아니라 명시적 recall-first 옵션입니다
 
 ```typescript
 const agent = await KontextLoader.fromFile("kontext.yaml");
-const result = await agent.autoSetup({ targetNodeCount: 8 });
+const result = await agent.autoSetup();
 
 console.log(`Built ${result.nodesCreated} ontology nodes`);
 console.log(`Classified ${result.documentsClassified} documents`);
@@ -447,10 +447,11 @@ console.log(result.ontologyYaml);
 내부 절차:
 
 1. 모든 connector에서 `MCPConnector.listResources()` 호출
-2. `OntologyAutoBuilder.build()`가 category, parent/level hierarchy, edge를 생성
-3. `DocumentClassifier.classify()`가 각 document를 최적 node에 mapping하고 unmappable document에 대해 새 node 제안
-4. Node별 `MetaIndexStore.index()`
-5. Node description과 선택적 document body를 `VectorStore.upsert()`
+2. `OntologyAutoBuilder.build()`가 corpus 크기와 category 다양성으로 적절한 node 수를 자동 추정. 필요하면 `autoSetup(8)`처럼 숫자로 덮어쓸 수 있음
+3. LLM이 parent/level hierarchy와 edge를 생성
+4. `DocumentClassifier.classify()`가 각 document를 최적 node에 mapping하고 unmappable document에 대해 검토 가능한 새 node 제안 생성
+5. Node별 `MetaIndexStore.index()`
+6. Node description과 선택적 document body를 `VectorStore.upsert()`
 
 ---
 

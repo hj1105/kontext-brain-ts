@@ -47,10 +47,10 @@ same 200/200 answer and judgement sample with zero errors.
 
 | System | Recall@10 | nDCG@10 | Raw/package-sensitive CP | Correctness | Strict faith | Claim F1 | Citation F1 | Warm retrieval p95 | Query-to-answer p95 | Eval E2E p95 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| **Kontext v15** | **0.891368** | 0.968907 | **0.580861** | **0.949917** | **0.961385** | **0.861159** | **0.958348** | 7.77 s | 20.15 s | 97.65 s |
-| Kontext v13 | 0.892338 | 0.970428 | 0.580222 | 0.946127 | 0.953411 | 0.855016 | 0.954141 | 6.83 s | 18.60 s | 108.08 s† |
+| **Kontext v15** | **0.891368** | 0.968907 | **0.580861** | **0.949917** | **0.961385** | **0.861159** | **0.958348** | 7.30 s | 19.20 s | 124.86 s |
+| Kontext v13 | 0.892338 | 0.970428 | 0.580222 | 0.946127 | 0.953411 | 0.855016 | 0.954141 | 6.83 s | 18.60 s | 107.71 s |
 | LightRAG 1.5.6 | 0.932590 | 0.999030* | 0.999030* | 0.893900 | 0.941683 | 0.857511 | 0.947662 | 6.00 s | 16.22 s | 123.02 s |
-| Microsoft GraphRAG 3.1.1 | 0.830262 | 0.997090* | 0.997090* | 0.781650 | 0.873956 | 0.733552 | 0.851768 | 0.28 s | 12.83 s | 123.08 s† |
+| Microsoft GraphRAG 3.1.1 | 0.830262 | 0.997090* | 0.997090* | 0.781650 | 0.873956 | 0.733552 | 0.851768 | 0.28 s | 12.83 s | 113.19 s |
 | Vector + BM25-RRF | 0.706596 | 0.743378 | 0.381232 | 0.873801 | 0.895057 | 0.807975 | 0.899981 | not re-measured | not re-measured | not re-measured |
 
 `*` LightRAG and Microsoft GraphRAG package a large native context as one
@@ -60,10 +60,11 @@ evidence windows.
 
 Relative to LightRAG, v15 has -0.041222 recall but +0.056017 correctness,
 +0.019702 strict faithfulness, +0.003649 claim F1, and +0.010686 citation F1.
-It is 1.3x slower on warm retrieval p95 and 1.2x slower on query-to-answer p95,
-and 1.3x faster on the judge-inclusive Eval E2E p95. Relative to Microsoft
+It is 1.2x slower on warm retrieval p95 and 1.2x slower on query-to-answer p95,
+and 1.02x slower on the judge-inclusive Eval E2E p95. Relative to Microsoft
 GraphRAG, v15 improves recall by 0.061106 and correctness by 0.168267 while
-being 27.8x slower on warm retrieval p95 and 1.6x slower on query-to-answer p95.
+being 26.1x slower on warm retrieval p95, 1.5x slower on query-to-answer p95,
+and 1.1x slower on judge-inclusive Eval E2E p95.
 
 An earlier revision of this report claimed v15's retrieval p95 was 11.1x lower
 than LightRAG's. That comparison came from queue-contended timings and its
@@ -88,10 +89,10 @@ judgement sample with zero errors.
 
 | System | Recall@10 | nDCG@10 | Raw/package-sensitive CP | Correctness | Strict faith | Claim F1 | Citation F1 | Warm retrieval p95 | Query-to-answer p95 | Eval E2E p95 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| **Kontext v15** | **0.820896** | 0.934913 | **0.449236** | **0.856572** | **0.929011** | **0.823365** | 0.936913 | 9.26 s | 20.15 s | 103.18 s |
-| Kontext v13 | 0.525871 | 0.666185 | 0.289687 | 0.465432 | 0.792182 | 0.518112 | 0.552107 | 10.13 s | 18.87 s | 83.62 s† |
+| **Kontext v15** | **0.820896** | 0.934913 | **0.449236** | **0.856572** | **0.929011** | **0.823365** | 0.936913 | 8.54 s | 20.11 s | 97.68 s |
+| Kontext v13 | 0.525871 | 0.666185 | 0.289687 | 0.465432 | 0.792182 | 0.518112 | 0.552107 | 9.89 s | 19.37 s | 83.51 s |
 | LightRAG 1.5.6 | 0.856716 | 0.994527* | 0.994527* | 0.849765 | 0.927176 | 0.820114 | **0.940739** | 6.66 s | 17.88 s | 117.30 s |
-| Microsoft GraphRAG 3.1.1 | 0.771642 | 0.981592* | 0.981592* | 0.766762 | 0.865095 | 0.743363 | 0.876322 | 0.40 s | 10.97 s | 140.49 s† |
+| Microsoft GraphRAG 3.1.1 | 0.771642 | 0.981592* | 0.981592* | 0.766762 | 0.865095 | 0.743363 | 0.876322 | 0.40 s | 10.97 s | 136.36 s |
 
 v15 versus v13 improves recall by 0.295025 and correctness by 0.391141. It
 also edges LightRAG on correctness (+0.006807), strict faithfulness
@@ -99,13 +100,13 @@ also edges LightRAG on correctness (+0.006807), strict faithfulness
 citation F1 by 0.003826. It exceeds Microsoft GraphRAG on every reported
 quality metric except the incomparable packaged context precision.
 
-`†` marks a judge stage that did not complete all 200 queries, which
-disqualifies only that row's Eval E2E figure. Retrieval and query-to-answer
-latency are unaffected, because the judge never enters them.
+Against LightRAG, Novel v15 is 1.28x slower on warm retrieval and 1.12x slower
+on query-to-answer, but 1.20x faster on judge-inclusive Eval E2E p95.
 
-The three latency columns come from the 2026-08-24/27 clean latency campaign
-(protocol `clean-latency-v1.1`, artifacts under
-`runs/clean-latency-2026-08-24/`), which replaced the earlier queue-contended
+The three latency columns come from the 2026-08-24/29 clean latency campaign
+(protocol `clean-latency-v1.1`; accepted composite suite under
+`runs/clean-latency-corrective-attempt6-2026-08-28/`), which replaced the
+earlier queue-contended
 timings rather than adjusting them. Warm retrieval p95 excludes index
 construction; query-to-answer p95 adds the answer call and is the user-facing
 figure; Eval E2E p95 adds the judge and describes the evaluation pipeline only.
@@ -146,7 +147,7 @@ needed by the newer score contract.
 | SciFact | Kontext v13 | 300/300 | 0.960000 | 0.824401 | 0.034686 | 38.71 s |
 | SciFact | Vector + BM25-RRF | 300/300 | 0.822444 | 0.706630 | 0.163667 | 0.017 s |
 | SciFact | LightRAG 1.5.6 | 300/300 | 0.149667 | 0.166667* | 0.166667* | 714.31 s |
-| SciFact | Microsoft GraphRAG 3.1.1 | indexing | — | — | — | — |
+| SciFact | Microsoft GraphRAG 3.1.1 | 300/300 | 0.685833 | 0.706667* | 0.706667* | 0.448 s |
 | NFCorpus | **Kontext v15** | 323/323 | **0.279016** | 0.366554 | 0.174420 | 57.88 s |
 | NFCorpus | Kontext v13 | 323/323 | 0.278486 | 0.368195 | 0.174640 | 57.26 s |
 | NFCorpus | Vector + BM25-RRF | 323/323 | 0.162923 | 0.331071 | 0.308978 | 0.015 s |
@@ -160,9 +161,17 @@ retrieval process started 13 minutes before the same provenance contract was
 committed, so its source-less output is likewise preserved as
 `retrieval.pre-provenance-2026-08-24.jsonl`. The completed native index was
 reused without rebuilding; a fresh retrieval process produced 323/323 rows
-with 4,644 official source IDs before the score above was generated. The
-Microsoft SciFact row will be filled only after its native graph index and
-retrieval complete.
+with 4,644 official source IDs before the score above was generated.
+
+Microsoft SciFact also completed 300/300 native retrievals. Its immutable
+pre-contract output stored official IDs inside every native evidence text but
+not in the top-level `sourceIds` field expected by the scorer. A deterministic
+provenance replay applied the adapter's existing extraction contract to that
+same file: no retrieval, model, embedding, or index call was made; all 300 rows
+received source IDs (4,481 IDs total), and the original retrieval file was left
+unchanged. The score above is recorded in
+`retrieval-score.provenance-replay-2026-08-29.json`, with the input/output
+digests and zero-call boundary in `provenance-replay-2026-08-29.json`.
 
 ## Answer/judge tokens and API-equivalent cost
 
@@ -222,6 +231,7 @@ without its validated v13 source cache.
 | SciFact / v15 newly incurred | **0** | **$0** | 6,364 vectors reused; 0 new |
 | SciFact / Vector baseline | 1,693,048 | $0.033861 | Native vector index |
 | SciFact / LightRAG | 815,880 | $0.016318 | Native-index usage log |
+| SciFact / Microsoft GraphRAG | 9,476,780 | $0.189536 | 9,470,864 index tokens/$0.189417 + 5,916 retrieval-query tokens/$0.000118; local completion tokens unmetered |
 | NFCorpus / Kontext v13 base | 1,253,777 | $0.025076 | Original reusable index |
 | NFCorpus / v15 newly incurred | **0** | **$0** | 4,645 vectors reused; 0 new |
 | NFCorpus / Vector baseline | 1,283,605 | $0.025672 | Native vector index |
@@ -232,6 +242,30 @@ The embedding table above reports the separately auditable OpenAI embedding API
 charge. The answer/judge table reports the stage-aware API-equivalent LLM cost;
 Kontext's local-CLI query-expansion and reranker calls were not fully metered and
 are excluded rather than estimated.
+
+### Index-build time and cost boundary
+
+Microsoft GraphRAG records active pipeline runtime separately from retrieval.
+The values below are its `stats.total_runtime`, not wall elapsed time including
+intentional pauses or restarts. Kontext and LightRAG did not preserve a
+comparable build timer for these runs, so their cells remain “not recorded”
+rather than being inferred from file times. Completion work used the local
+Codex CLI; its token telemetry was unavailable and no API-equivalent completion
+cost is estimated.
+
+| Dataset / system | Active index-build time | Index embedding tokens | Index embedding cost | Other index LLM boundary |
+|---|---:|---:|---:|---|
+| Medical / Microsoft GraphRAG | 1h 37m 53s | 643,800 | $0.012876 | Local completion cost unmetered |
+| Novel / Microsoft GraphRAG | 25h 08m 45s | 4,189,891 | $0.083798 | Local completion cost unmetered |
+| SciFact / Microsoft GraphRAG | 9h 36m 09s | 9,470,864 | $0.189417 | 22,770 local completion requests; token cost unmetered |
+| NFCorpus / Microsoft GraphRAG | 23h 15m 36s | 5,506,192 | $0.110124 | Local completion cost unmetered |
+| Kontext / all reported datasets | not recorded | See represented/marginal usage table | See represented/marginal usage table | Not inferred |
+| LightRAG / all reported datasets | not recorded | See represented usage table | See represented usage table | Not inferred |
+
+Query embeddings and warm retrieval latency are excluded from this index-build
+table. For SciFact Microsoft GraphRAG, the later retrieval used 5,916 embedding
+tokens ($0.000118), while the index pipeline used the 9,470,864 tokens shown
+above. The clean-latency table reused completed indexes and incurred no build.
 
 The original v15 Novel run revealed a cache transport defect: adding nine
 missing resources changed a whole-corpus digest and invalidated otherwise
