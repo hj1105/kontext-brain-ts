@@ -97,7 +97,8 @@ function assembly(
   };
 }
 
-function languageForPath(filePath: string): "typescript" | "javascript" {
+function languageForPath(filePath: string): "typescript" | "javascript" | "python" {
+  if (/\.py$/i.test(filePath)) return "python";
   return /\.[cm]?jsx?$/i.test(filePath) ? "javascript" : "typescript";
 }
 

@@ -1,12 +1,14 @@
 import { callAssertion, requiredFunction, throwAssertion } from "./assertions.js";
 import type { CodeQualityScenario } from "./contracts.js";
 import { extendedCodeQualityScenarios } from "./scenarios-extended.js";
+import { multiLanguageScenarios } from "./scenarios-multi-language.js";
 
 export const codeQualityScenarios: readonly CodeQualityScenario[] = [
   retryPolicyScenario(),
   cancellationScenario(),
   serviceCreditScenario(),
   ...extendedCodeQualityScenarios,
+  ...multiLanguageScenarios,
 ];
 
 function retryPolicyScenario(): CodeQualityScenario {

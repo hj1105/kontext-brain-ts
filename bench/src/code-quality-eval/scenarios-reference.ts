@@ -210,6 +210,30 @@ export const referenceImplementations: Readonly<Record<string, ScenarioModule>> 
       return Math.max(0, Math.min(refilled, burstCapacityTokens));
     },
   },
+  "ledger-posting": {
+    classifyPosting(posting: {
+      amountCents: number;
+      clearedAt: string | null;
+      disputed: boolean;
+    }): string {
+      const DISPUTE_HOLD_CENTS = 2500;
+      if (posting.amountCents <= 0) return "rejected";
+      if (posting.disputed && posting.amountCents > DISPUTE_HOLD_CENTS) return "pending";
+      return posting.clearedAt ? "settled" : "pending";
+    },
+  },
+  "membership-tier": {
+    MembershipPolicy: class {
+      resolve(monthsActive: number, lifetimeSpendCents: number): string {
+        const TENURE_CREDIT_CENTS = 1_000;
+        if (monthsActive < 0 || lifetimeSpendCents < 0) throw new RangeError("negative input");
+        const credited = lifetimeSpendCents + Math.floor(monthsActive / 12) * TENURE_CREDIT_CENTS;
+        if (credited >= 50_000) return "gold";
+        if (credited >= 20_000) return "silver";
+        return "standard";
+      }
+    },
+  },
 };
 
 export const naiveImplementations: Readonly<Record<string, ScenarioModule>> = {
@@ -315,6 +339,28 @@ export const naiveImplementations: Readonly<Record<string, ScenarioModule>> = {
       const elapsedMinutes = (nowMs - state.lastRefillMs) / 60_000;
       const refilled = state.tokens + elapsedMinutes * state.sustainedPerMinute;
       return Math.min(Math.round(refilled), state.burstCapacity);
+    },
+  },
+  // Treating any dispute as blocking is the intuitive reading.
+  "ledger-posting": {
+    classifyPosting(posting: {
+      amountCents: number;
+      clearedAt: string | null;
+      disputed: boolean;
+    }): string {
+      if (posting.amountCents <= 0) return "rejected";
+      if (posting.disputed) return "pending";
+      return posting.clearedAt ? "settled" : "pending";
+    },
+  },
+  // Comparing raw spend and treating tenure as its own rule is the obvious split.
+  "membership-tier": {
+    MembershipPolicy: class {
+      resolve(monthsActive: number, lifetimeSpendCents: number): string {
+        if (lifetimeSpendCents >= 50_000 || monthsActive >= 60) return "gold";
+        if (lifetimeSpendCents >= 20_000 || monthsActive >= 24) return "silver";
+        return "standard";
+      }
     },
   },
 };

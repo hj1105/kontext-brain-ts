@@ -22,6 +22,18 @@ export interface HiddenEvaluationResult {
   readonly assertions: readonly HiddenAssertionResult[];
 }
 
+/**
+ * A Python scenario cannot hand a JavaScript module to evaluateHidden, so its
+ * held-out checks are declared as data and executed by a Python driver.
+ */
+export interface PythonHiddenCheck {
+  readonly assertionId: string;
+  readonly functionName: string;
+  readonly args: readonly unknown[];
+  readonly expected?: unknown;
+  readonly throws?: string;
+}
+
 export interface CodeQualityScenario {
   readonly scenarioId: string;
   readonly taskId: string;
@@ -30,6 +42,10 @@ export interface CodeQualityScenario {
   readonly sourceFile: string;
   readonly initialSource: string;
   readonly publicTestSource: string;
+  /** Defaults to test/public.test.js; Python scenarios use test/public_test.py. */
+  readonly testFile?: string;
+  /** Required for a Python scenario, which cannot use evaluateHidden. */
+  readonly hiddenChecks?: readonly PythonHiddenCheck[];
   readonly workItemId: string;
   readonly plannedSymbolId: string;
   readonly qualifiedName: string;
