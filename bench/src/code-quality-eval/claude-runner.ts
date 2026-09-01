@@ -126,12 +126,18 @@ export class ClaudeCodeQualityRunner {
   }
 }
 
+/**
+ * Only a tool_use content block proves the model called a tool. Claude Code
+ * also streams the server's tool advertisement, whose names look identical, so
+ * scanning every "name" field reported the full catalogue for a run that called
+ * nothing and made contextConsulted always true.
+ */
 export function extractClaudeTools(stdout: string): readonly string[] {
   const tools = new Set<string>();
   for (const line of stdout.split(/\r?\n/)) {
     if (!line.trim()) continue;
     try {
-      collect(JSON.parse(line) as unknown, tools);
+      collectToolUse(JSON.parse(line) as unknown, tools);
     } catch {
       // Only structured stream-json events count as proof of a tool call.
     }
@@ -139,20 +145,24 @@ export function extractClaudeTools(stdout: string): readonly string[] {
   return [...tools].sort();
 }
 
-function collect(value: unknown, tools: Set<string>): void {
+function collectToolUse(value: unknown, tools: Set<string>): void {
   if (!value || typeof value !== "object") return;
   if (Array.isArray(value)) {
-    for (const item of value) collect(item, tools);
+    for (const item of value) collectToolUse(item, tools);
     return;
   }
-  for (const [key, nested] of Object.entries(value as Readonly<Record<string, unknown>>)) {
-    if (["name", "tool", "tool_name", "toolName"].includes(key) && typeof nested === "string") {
-      const separatorIndex = nested.lastIndexOf("__");
-      const normalized = separatorIndex === -1 ? nested : nested.slice(separatorIndex + 2);
-      if (/^kontext_[a-z_]+$/.test(normalized)) tools.add(normalized);
-    }
-    collect(nested, tools);
+  const record = value as Readonly<Record<string, unknown>>;
+  if (record.type === "tool_use" && typeof record.name === "string") {
+    const normalized = kontextToolName(record.name);
+    if (normalized) tools.add(normalized);
   }
+  for (const nested of Object.values(record)) collectToolUse(nested, tools);
+}
+
+function kontextToolName(rawName: string): string | undefined {
+  const separatorIndex = rawName.lastIndexOf("__");
+  const normalized = separatorIndex === -1 ? rawName : rawName.slice(separatorIndex + 2);
+  return (kontextToolNames as readonly string[]).includes(normalized) ? normalized : undefined;
 }
 
 export function extractClaudeUsage(stdout: string): {
