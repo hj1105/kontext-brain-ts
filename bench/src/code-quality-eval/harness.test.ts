@@ -38,12 +38,18 @@ const baselineSources: Readonly<Record<string, string>> = {
 }\n`,
 };
 
+// The harness test exercises pairing and scoring mechanics, not the scenario
+// catalogue, so it runs the fixed subset it carries sources for.
+const fixtureScenarios = codeQualityScenarios.filter(
+  (scenario) => scenario.scenarioId in correctSources,
+);
+
 describe("code-quality harness", () => {
   it("runs paired isolated workspaces and scores held-out requirements", async () => {
     let publishedStates = 0;
     const report = await runCodeQualityEvaluation({
       repositoryRoot: "/repo",
-      scenarios: codeQualityScenarios,
+      scenarios: fixtureScenarios,
       config: {
         runtime: "codex",
         model: "fixture-model",
@@ -72,10 +78,10 @@ describe("code-quality harness", () => {
       },
     });
 
-    expect(publishedStates).toBe(codeQualityScenarios.length);
-    expect(report.runs).toHaveLength(codeQualityScenarios.length * 2);
+    expect(publishedStates).toBe(fixtureScenarios.length);
+    expect(report.runs).toHaveLength(fixtureScenarios.length * 2);
     expect(report.hiddenAssertionUplift).toBeGreaterThan(0);
-    expect(report.paired.kontextWins).toBe(codeQualityScenarios.length);
+    expect(report.paired.kontextWins).toBe(fixtureScenarios.length);
     expect(report.summaries.find((summary) => summary.arm === "kontext")).toMatchObject({
       contextConsultationRate: 1,
       taskSuccessRate: 1,

@@ -92,9 +92,29 @@ describe("ClaudeCodeQualityRunner", () => {
     expect(result.outputTokens).toBe(120);
   });
 
+  it("ignores the server tool advertisement", () => {
+    // Claude Code streams the MCP server's catalogue. Counting those names made
+    // a run that called nothing look like it had consulted the sidecar.
+    const advertisement = JSON.stringify({
+      type: "system",
+      subtype: "init",
+      mcp_servers: [{ name: "kontext_brain", status: "connected" }],
+      tools: [
+        "mcp__kontext_brain__kontext_prepare_task",
+        "mcp__kontext_brain__kontext_begin_logic",
+      ],
+    });
+    expect(extractClaudeTools(advertisement)).toEqual([]);
+  });
+
+  it("ignores a name that is not a Kontext tool", () => {
+    const event = JSON.stringify({ type: "tool_use", name: "kontext_brain" });
+    expect(extractClaudeTools(event)).toEqual([]);
+  });
+
   it("keeps an unprefixed tool name intact", () => {
-    expect(extractClaudeTools(JSON.stringify({ name: "kontext_check_change" }))).toEqual([
-      "kontext_check_change",
-    ]);
+    expect(
+      extractClaudeTools(JSON.stringify({ type: "tool_use", name: "kontext_check_change" })),
+    ).toEqual(["kontext_check_change"]);
   });
 });
