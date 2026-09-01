@@ -91,6 +91,29 @@ describe("ClaudeCodeRuntimeAdapter", () => {
     );
     await expect(adapter.start(workInput())).rejects.toThrow("not been explicitly allowed");
   });
+
+  it("runs independent review in read-only plan mode", async () => {
+    const runner = new RecordingRunner([
+      {
+        exitCode: 0,
+        stdout: JSON.stringify({
+          type: "result",
+          subtype: "success",
+          is_error: false,
+          result: '{"verdict":"passed","findings":[]}',
+          session_id: "claude-review-1",
+        }),
+        stderr: "",
+      },
+    ]);
+    const adapter = new ClaudeCodeRuntimeAdapter({ runner, environment: {} });
+
+    await adapter.start({ ...workInput(), executionRole: "independent_review" });
+
+    expect(runner.inputs[0]?.args).toContain("plan");
+    expect(runner.inputs[0]?.stdin).toContain("Work read-only");
+    expect(runner.inputs[0]?.stdin).not.toContain("Change Bundle to the main orchestrator");
+  });
 });
 
 class RecordingRunner implements RuntimeCommandRunner {

@@ -35,6 +35,19 @@ const bundle = createChangeBundle({
   unresolved: [],
   submittedAt: "2026-08-28T12:01:00.000Z",
 });
+const finding = {
+  findingId: "review-finding:1",
+  status: "open" as const,
+  codeRevision: run.codeRevision,
+  contextDigest: run.contextDigest,
+  message: "The changed symbol lacks a boundary test.",
+  reviewerProvider: "claude" as const,
+  authorProviders: ["codex" as const],
+  reviewedAt: "2026-08-28T12:01:30.000Z",
+  symbolId: "symbol:store",
+  ruleRef: "acceptance:store",
+  evidenceIds: ["evidence:store"],
+};
 const manifest = createAccuracyManifest({
   taskId,
   taskContractDigest: "sha256:contract",
@@ -59,16 +72,18 @@ afterEach(async () => {
 });
 
 describe("FileTaskCompletionArtifactStore", () => {
-  it("persists Verification Runs, Change Bundles, and Accuracy Manifest across restarts", async () => {
+  it("persists Verification Runs, Change Bundles, Review Findings, and Accuracy Manifest across restarts", async () => {
     const directory = await temporaryDirectory();
     const first = new FileTaskCompletionArtifactStore(directory);
     await first.putVerificationRuns(taskId, [run]);
     await first.putChangeBundle(bundle);
+    await first.putReviewFindings(taskId, [finding]);
     await first.putAccuracyManifest(manifest);
     const reopened = new FileTaskCompletionArtifactStore(directory);
 
     expect(await reopened.listVerificationRuns(taskId)).toEqual([run]);
     expect(await reopened.listChangeBundles(taskId)).toEqual([bundle]);
+    expect(await reopened.listReviewFindings(taskId)).toEqual([finding]);
     expect(await reopened.getAccuracyManifest(taskId)).toEqual(manifest);
     expect((await stat(reopened.filePath(taskId))).mode & 0o777).toBe(0o600);
   });
@@ -82,6 +97,23 @@ describe("FileTaskCompletionArtifactStore", () => {
     await writeFile(filePath, JSON.stringify(envelope), "utf8");
 
     await expect(store.listVerificationRuns(taskId)).rejects.toThrow("digest mismatch");
+  });
+
+  it("allows an open Review Finding to resolve once and keeps terminal evidence immutable", async () => {
+    const store = new FileTaskCompletionArtifactStore(await temporaryDirectory());
+    await store.putReviewFindings(taskId, [finding]);
+    const resolved = {
+      ...finding,
+      status: "resolved" as const,
+      resolutionMessage: "A boundary test now covers the behavior.",
+      resolvedByProvider: "claude" as const,
+      resolvedAt: "2026-08-28T12:03:00.000Z",
+    };
+
+    await expect(store.putReviewFindings(taskId, [resolved])).resolves.toEqual([resolved]);
+    await expect(
+      store.putReviewFindings(taskId, [{ ...resolved, resolutionMessage: "changed" }]),
+    ).rejects.toThrow("immutable");
   });
 });
 

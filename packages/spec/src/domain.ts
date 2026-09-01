@@ -333,14 +333,23 @@ export interface InvariantEvaluation {
   readonly verificationRunIds: readonly string[];
 }
 
+export type AgentRuntimeProvider = "codex" | "claude";
+
 export interface ReviewFinding {
   readonly findingId: string;
   readonly status: "open" | "resolved" | "dismissed";
   readonly codeRevision: string;
   readonly contextDigest: string;
+  readonly message: string;
+  readonly reviewerProvider: AgentRuntimeProvider;
+  readonly authorProviders: readonly AgentRuntimeProvider[];
+  readonly reviewedAt: string;
   readonly symbolId?: string;
   readonly ruleRef?: string;
   readonly evidenceIds: readonly string[];
+  readonly resolutionMessage?: string;
+  readonly resolvedByProvider?: AgentRuntimeProvider;
+  readonly resolvedAt?: string;
 }
 
 export type TaskState = "planned" | "in_progress" | "awaiting_evidence" | "done" | "blocked";

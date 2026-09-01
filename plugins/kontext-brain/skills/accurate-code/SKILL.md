@@ -25,8 +25,9 @@ Use Kontext Brain as the authoritative context compiler for implementation work.
 9. After each affected behavior-bearing Code Symbol, call `kontext_check_change` with the exact `workspacePath` and the `fast` tier. The sidecar derives the current revision and changed symbols; never provide replacements client-side.
 10. At the Logic Work Item checkpoint, call `kontext_check_change` with `targeted`. Infrastructure failure is `inconclusive` and is durably retried for the same workspace, revision, and digest; a newer edit supersedes that retry.
 11. Submit the exact `workspacePath` and an ID-free bundle draft with `kontext_submit_change_bundle`. The bundle contains the worker's claims, Evidence, normative revisions, and returned Verification Run IDs; the sidecar independently derives the result revision, patch digest, changed paths and behavior-bearing Code Symbols, Planned Symbol bindings, and Context Receipt. Resolve every mismatch, ambiguous binding, out-of-scope symbol, and active quarantine; do not widen proof client-side.
-12. After the main thread integrates accepted bundles, call `kontext_check_change` with `full`. Then call `kontext_propose_transition` with commit/approval Evidence, Invariant evaluations, and independent Review Findings. Only the sidecar may assemble and audit the Accuracy Manifest and compute `done`; never submit a direct state write or caller-created manifest.
-13. Report a limitation when a verifier cannot run; do not guess compliance or treat `inconclusive` as pass.
+12. After the schedule completes and every worker Bundle is accepted, call `kontext_integrate_schedule`. The sidecar revalidates each source worktree, rejects overlapping changed Code Symbols, applies patches in dependency order to its integration worktree, runs full verification on that revision, and obtains risk-required read-only review from a non-author subscription runtime.
+13. Call `kontext_propose_transition` with commit/approval Evidence and Invariant evaluations. Review Findings, the integrated revision, and the Accuracy Manifest are sidecar-owned; never submit any of them as caller-observed proof or write `done` directly.
+14. Report a limitation when a verifier cannot run; do not guess compliance or treat `inconclusive` as pass.
 
 ## Session and source rules
 

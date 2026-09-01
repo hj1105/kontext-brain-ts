@@ -162,4 +162,31 @@ describe("Accuracy Manifest", () => {
       expect.objectContaining({ code: "unresolved_change_bundle", ref: bundle.bundleId }),
     );
   });
+
+  it("rejects a Review Finding reported by its own author provider", () => {
+    const finding = {
+      findingId: "review-finding:self",
+      status: "open" as const,
+      codeRevision: run.codeRevision,
+      contextDigest: snapshot.contextDigest,
+      message: "Self-reviewed concern.",
+      reviewerProvider: "codex" as const,
+      authorProviders: ["codex" as const],
+      reviewedAt: "2026-08-28T02:03:30.000Z",
+      evidenceIds: ["evidence:decision"],
+    };
+    const issues = validateAccuracyManifestForTask({
+      manifest: createAccuracyManifest(manifestInput({ reviewFindingIds: [finding.findingId] })),
+      contract,
+      snapshot,
+      currentCodeRevision: run.codeRevision,
+      changeBundles: [bundle],
+      verificationRuns: [run],
+      reviewFindings: [finding],
+    });
+
+    expect(issues).toContainEqual(
+      expect.objectContaining({ code: "review_finding_mismatch", ref: finding.findingId }),
+    );
+  });
 });

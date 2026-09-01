@@ -2,7 +2,12 @@ import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { TaskCompletionArtifactStore } from "@kontext-brain/orchestrator";
-import type { AccuracyManifest, ChangeBundle, VerificationRun } from "@kontext-brain/spec";
+import type {
+  AccuracyManifest,
+  ChangeBundle,
+  ReviewFinding,
+  VerificationRun,
+} from "@kontext-brain/spec";
 import { z } from "zod";
 
 const nonEmptyString = z.string().min(1);
@@ -47,6 +52,24 @@ const changeBundleSchema = z
     submittedAt: nonEmptyString,
   })
   .strict();
+const reviewFindingSchema = z
+  .object({
+    findingId: nonEmptyString,
+    status: z.enum(["open", "resolved", "dismissed"]),
+    codeRevision: nonEmptyString,
+    contextDigest: nonEmptyString,
+    message: nonEmptyString,
+    reviewerProvider: z.enum(["codex", "claude"]),
+    authorProviders: z.array(z.enum(["codex", "claude"])),
+    reviewedAt: z.string().datetime(),
+    symbolId: nonEmptyString.optional(),
+    ruleRef: nonEmptyString.optional(),
+    evidenceIds: z.array(nonEmptyString),
+    resolutionMessage: nonEmptyString.optional(),
+    resolvedByProvider: z.enum(["codex", "claude"]).optional(),
+    resolvedAt: z.string().datetime().optional(),
+  })
+  .strict();
 const accuracyManifestSchema = z
   .object({
     manifestId: nonEmptyString,
@@ -70,18 +93,21 @@ const payloadSchema = z
   .object({
     verificationRuns: z.array(verificationRunSchema),
     changeBundles: z.array(changeBundleSchema),
+    reviewFindings: z.array(reviewFindingSchema),
     accuracyManifest: accuracyManifestSchema.optional(),
   })
   .strict();
+const legacyPayloadSchema = payloadSchema.omit({ reviewFindings: true });
 
 interface TaskCompletionPayload {
   readonly verificationRuns: readonly VerificationRun[];
   readonly changeBundles: readonly ChangeBundle[];
+  readonly reviewFindings: readonly ReviewFinding[];
   readonly accuracyManifest?: AccuracyManifest;
 }
 
 interface TaskCompletionEnvelope {
-  readonly schemaVersion: 1;
+  readonly schemaVersion: 2;
   readonly kind: "task_completion_artifacts";
   readonly taskId: string;
   readonly payloadDigest: string;
@@ -140,6 +166,41 @@ export class FileTaskCompletionArtifactStore implements TaskCompletionArtifactSt
     return parsed;
   }
 
+  async listReviewFindings(taskId: string): Promise<readonly ReviewFinding[]> {
+    return (await this.read(taskId)).reviewFindings;
+  }
+
+  async putReviewFindings(
+    taskId: string,
+    findings: readonly ReviewFinding[],
+  ): Promise<readonly ReviewFinding[]> {
+    const current = await this.read(taskId);
+    const byId = new Map(current.reviewFindings.map((finding) => [finding.findingId, finding]));
+    for (const finding of findings) {
+      const parsed = reviewFindingSchema.parse(finding) as ReviewFinding;
+      const existing = byId.get(parsed.findingId);
+      if (existing && existing.status !== "open") {
+        if (JSON.stringify(existing) !== JSON.stringify(parsed)) {
+          throw new Error(`Terminal Review Finding ${parsed.findingId} is immutable`);
+        }
+      } else if (
+        existing &&
+        (existing.codeRevision !== parsed.codeRevision ||
+          existing.contextDigest !== parsed.contextDigest ||
+          existing.message !== parsed.message ||
+          existing.reviewerProvider !== parsed.reviewerProvider)
+      ) {
+        throw new Error(`Review Finding ${parsed.findingId} identity is immutable`);
+      }
+      byId.set(parsed.findingId, parsed);
+    }
+    const reviewFindings = Array.from(byId.values()).sort((left, right) =>
+      left.findingId.localeCompare(right.findingId),
+    );
+    await this.write(taskId, { ...current, reviewFindings });
+    return reviewFindings;
+  }
+
   async getAccuracyManifest(taskId: string): Promise<AccuracyManifest | undefined> {
     return (await this.read(taskId)).accuracyManifest;
   }
@@ -172,34 +233,48 @@ export class FileTaskCompletionArtifactStore implements TaskCompletionArtifactSt
       serialized = await readFile(this.filePath(taskId), "utf8");
     } catch (error) {
       if (isNodeError(error) && error.code === "ENOENT") {
-        return { verificationRuns: [], changeBundles: [] };
+        return { verificationRuns: [], changeBundles: [], reviewFindings: [] };
       }
       throw error;
     }
     const parsed: unknown = JSON.parse(serialized);
     const envelope = z
-      .object({
-        schemaVersion: z.literal(1),
-        kind: z.literal("task_completion_artifacts"),
-        taskId: nonEmptyString,
-        payloadDigest: nonEmptyString,
-        payload: payloadSchema,
-      })
-      .strict()
-      .parse(parsed) as TaskCompletionEnvelope;
+      .discriminatedUnion("schemaVersion", [
+        z
+          .object({
+            schemaVersion: z.literal(1),
+            kind: z.literal("task_completion_artifacts"),
+            taskId: nonEmptyString,
+            payloadDigest: nonEmptyString,
+            payload: legacyPayloadSchema,
+          })
+          .strict(),
+        z
+          .object({
+            schemaVersion: z.literal(2),
+            kind: z.literal("task_completion_artifacts"),
+            taskId: nonEmptyString,
+            payloadDigest: nonEmptyString,
+            payload: payloadSchema,
+          })
+          .strict(),
+      ])
+      .parse(parsed);
     if (envelope.taskId !== taskId) {
       throw new Error("Task completion artifacts do not match their storage location");
     }
     if (digest(envelope.payload) !== envelope.payloadDigest) {
       throw new Error("Task completion artifact payload digest mismatch");
     }
-    return envelope.payload;
+    return envelope.schemaVersion === 1
+      ? { ...envelope.payload, reviewFindings: [] }
+      : (envelope.payload as TaskCompletionPayload);
   }
 
   private async write(taskId: string, payload: TaskCompletionPayload): Promise<void> {
     const parsed = payloadSchema.parse(payload) as TaskCompletionPayload;
     const envelope: TaskCompletionEnvelope = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       kind: "task_completion_artifacts",
       taskId,
       payloadDigest: digest(parsed),

@@ -67,6 +67,7 @@ export interface RuntimeScheduleJobView {
   readonly taskId: string;
   readonly codeRevision: string;
   readonly contextDigest: string;
+  readonly repositoryPath: string;
   readonly status: RuntimeScheduleStatus;
   readonly requestedAt: string;
   readonly cancellationRequestedAt?: string;
@@ -402,6 +403,7 @@ function publicView(job: RuntimeScheduleJob): RuntimeScheduleJobView {
     taskId: job.taskId,
     codeRevision: job.codeRevision,
     contextDigest: job.contextDigest,
+    repositoryPath: job.request.repositoryPath,
     status: job.status,
     requestedAt: job.requestedAt,
     cancellationRequestedAt: job.cancellationRequestedAt,

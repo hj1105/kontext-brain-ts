@@ -11,8 +11,8 @@ implemented, including concrete workspace verifiers, recovery, quarantine,
 Change Bundles, and an independently audited Accuracy Manifest. Phase 5 now has
 official Codex and Claude CLI adapters, runtime inspection, isolated Git
 worktrees, persisted scope leases, bounded DAG scheduling, and provider-safe
-checkpoint transfer. Automatic semantic integration, blind cross-runtime
-review, and schedule resume are not yet implemented. Scheduling is asynchronous:
+checkpoint transfer, semantic Change Bundle integration, and risk-based blind
+cross-runtime review. Automatic schedule resume is not yet implemented. Scheduling is asynchronous:
 accepted jobs and terminal results are private, digest-checked sidecar state.
 Durable cancellation reaches the active Codex or Claude child process and does
 not become `cancelled` until workers stop and leases release. An unfinished job
@@ -494,6 +494,7 @@ evolve, but their contracts are stable:
 | `kontext_schedule_logic` | durably enqueue sidecar-planned Work Items for isolated provider-bound execution |
 | `kontext_get_schedule` | read queued, running, cancelling, completed, failed, interrupted, or cancelled state and terminal proof |
 | `kontext_cancel_schedule` | durably request cancellation and report state while the owner stops workers and releases leases |
+| `kontext_integrate_schedule` | revalidate a completed schedule's accepted Bundles, semantically integrate them, run full verification, and obtain required independent review |
 
 Codex and Claude adapters install their native plugin, MCP, and hook bindings.
 `AGENTS.md` and `CLAUDE.md` contain only the minimal bootstrap rule to use these
@@ -610,6 +611,11 @@ criteria, normative revisions, and verifier output, not the implementer's full
 conversation. Implementer explanations are labeled as unverified claims rather
 than Facts. Reviewers return Code-Symbol-scoped Review Findings with rule and
 Evidence references, and an implementer cannot close its own finding.
+Review execution uses the official CLI's read-only sandbox or plan mode. The
+sidecar selects a subscription-authenticated provider absent from the Bundle
+author set, parses a strict result, and records both findings and the
+manual-review Verification Run itself; callers cannot inject either as
+completion proof.
 
 ### 9.5 User visibility
 
@@ -814,6 +820,13 @@ superseded runs.
   capabilities, semantic merge, checkpoint transfer, and blind cross-runtime
   review;
 - enforce default concurrency four and risk-based provider policy.
+
+Implemented in the local vertical slice except automatic resume of an
+interrupted durable schedule. Semantic integration uses a dedicated Git
+worktree, exact accepted Bundle patches, dependency order, and a hard conflict
+on overlapping changed Code Symbols. Worker-revision verification remains
+attached to each Bundle while full verification and review attach to the final
+integrated revision.
 
 Gate: provider switching never resumes the wrong conversation, no concurrent
 writer exceeds its lease, billing-path changes require consent, and integrated

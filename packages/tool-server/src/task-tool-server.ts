@@ -12,6 +12,7 @@ import {
   cancelScheduleToolShape,
   getScheduleToolShape,
   inspectRuntimesToolShape,
+  integrateScheduleToolShape,
   scheduleLogicToolShape,
 } from "./runtime-schedule-contract.js";
 import {
@@ -106,6 +107,12 @@ export function registerTaskWorkflowTools(
       "Request cancellation, terminate active runtime workers, release their leases, and report durable schedule state.",
       cancelScheduleToolShape,
       async (input) => workflowToolResult(await runtime.cancelSchedule(input)),
+    );
+    server.tool(
+      "kontext_integrate_schedule",
+      "Semantically validate accepted Change Bundles, apply them in dependency order to an isolated integration worktree, run same-revision full verification, and obtain risk-based independent review.",
+      integrateScheduleToolShape,
+      async (input) => workflowToolResult(await runtime.integrateSchedule(input)),
     );
   }
 }

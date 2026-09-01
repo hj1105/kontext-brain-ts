@@ -108,7 +108,15 @@ export class CodexRuntimeAdapter implements AgentRuntimePort {
   async start(input: RuntimeWorkInput): Promise<RuntimeSession> {
     this.assertBillingPath();
     return this.execute(
-      ["exec", "--json", "--sandbox", "workspace-write", "--cd", input.workspacePath, "-"],
+      [
+        "exec",
+        "--json",
+        "--sandbox",
+        input.executionRole === "independent_review" ? "read-only" : "workspace-write",
+        "--cd",
+        input.workspacePath,
+        "-",
+      ],
       input,
     );
   }
@@ -191,6 +199,19 @@ export class CodexRuntimeAdapter implements AgentRuntimePort {
 }
 
 function workerPrompt(input: RuntimeWorkInput): string {
+  if (input.executionRole === "independent_review") {
+    return [
+      input.prompt,
+      "",
+      "Kontext independent review contract:",
+      `- Task: ${input.taskId}`,
+      `- Context digest: ${input.contextDigest}`,
+      `- Integrated code revision: ${input.codeRevision}`,
+      "- Work read-only. Do not edit, commit, merge, or invoke implementation agents.",
+      "- Judge the diff against the supplied acceptance criteria, normative revisions, Evidence, and verifier output.",
+      "- Return only the requested JSON object. Do not wrap it in Markdown.",
+    ].join("\n");
+  }
   return [
     input.prompt,
     "",

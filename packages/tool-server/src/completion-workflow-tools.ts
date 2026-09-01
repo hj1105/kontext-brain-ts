@@ -2,7 +2,6 @@ import type {
   ChangeBundleInput,
   ContextAssessment,
   InvariantEvaluation,
-  ReviewFinding,
   TaskEvidence,
   TaskState,
 } from "@kontext-brain/spec";
@@ -65,18 +64,6 @@ const invariantEvaluationSchema = z
     verificationRunIds: z.array(nonEmptyString),
   })
   .strict();
-const reviewFindingSchema = z
-  .object({
-    findingId: nonEmptyString,
-    status: z.enum(["open", "resolved", "dismissed"]),
-    codeRevision: nonEmptyString,
-    contextDigest: nonEmptyString,
-    symbolId: nonEmptyString.optional(),
-    ruleRef: nonEmptyString.optional(),
-    evidenceIds: z.array(nonEmptyString),
-  })
-  .strict();
-
 export const checkChangeToolShape = {
   taskId: nonEmptyString,
   workItemId: nonEmptyString,
@@ -104,7 +91,6 @@ export const proposeTransitionToolShape = {
     .strict(),
   evidence: z.array(evidenceSchema),
   invariantEvaluations: z.array(invariantEvaluationSchema),
-  reviewFindings: z.array(reviewFindingSchema),
   requestedAt: z.string().datetime(),
 };
 
@@ -130,7 +116,6 @@ export interface ProposeTransitionRequest {
   readonly context: ContextAssessment;
   readonly evidence: readonly TaskEvidence[];
   readonly invariantEvaluations: readonly InvariantEvaluation[];
-  readonly reviewFindings: readonly ReviewFinding[];
   readonly requestedAt: string;
 }
 

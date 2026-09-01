@@ -12,6 +12,8 @@ export * from "./local-verification-recovery.js";
 export * from "./task-tool-server.js";
 export * from "./workspace-change-observer.js";
 export * from "./workspace-code-symbol-observer.js";
+export * from "./file-integrated-task-state-store.js";
+export * from "./local-schedule-integrator.js";
 export * from "./sidecar-change-evidence.js";
 export * from "./runtime-workflow-tools.js";
 export * from "./runtime-schedule-contract.js";

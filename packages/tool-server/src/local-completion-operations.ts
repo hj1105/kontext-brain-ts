@@ -33,7 +33,12 @@ import type {
   ProposeTransitionRequest,
   SubmitChangeBundleRequest,
 } from "./completion-workflow-tools.js";
+import type {
+  IntegratedTaskState,
+  IntegratedTaskStateStore,
+} from "./file-integrated-task-state-store.js";
 import type { SidecarChangeEvidenceProvider } from "./sidecar-change-evidence.js";
+import { captureWorkspaceSnapshot } from "./workspace-change-observer.js";
 
 export class LocalKontextCompletionOperations implements KontextCompletionOperations {
   constructor(
@@ -43,6 +48,7 @@ export class LocalKontextCompletionOperations implements KontextCompletionOperat
     private readonly quarantine: QuarantineStore,
     private readonly verification: DurableVerificationCoordinator,
     private readonly changeEvidence: SidecarChangeEvidenceProvider,
+    private readonly integratedTasks?: IntegratedTaskStateStore,
   ) {}
 
   async checkChange(request: CheckChangeRequest): Promise<unknown> {
@@ -132,7 +138,15 @@ export class LocalKontextCompletionOperations implements KontextCompletionOperat
     const current = await this.currentState.getCurrent(request.taskId);
     let verificationRuns = await this.artifacts.listVerificationRuns(request.taskId);
     const changeBundles = await this.artifacts.listChangeBundles(request.taskId);
-    const currentCodeRevision = completionCodeRevision(changeBundles, current.codeRevision);
+    const integration = await this.integratedTasks?.get(request.taskId);
+    const currentCodeRevision = integration
+      ? await validateIntegratedTaskState(integration, prepared, changeBundles)
+      : completionCodeRevision(changeBundles, current.codeRevision);
+    const reviewFindings = (await this.artifacts.listReviewFindings(request.taskId)).filter(
+      (finding) =>
+        finding.codeRevision === currentCodeRevision &&
+        finding.contextDigest === prepared.snapshot.contextDigest,
+    );
     let accuracyManifest = await this.artifacts.getAccuracyManifest(request.taskId);
     let accuracyManifestError: string | undefined;
     if (request.completionRequested) {
@@ -151,7 +165,7 @@ export class LocalKontextCompletionOperations implements KontextCompletionOperat
           currentCodeRevision,
           changeBundles,
           verificationRuns: candidateRuns,
-          reviewFindings: request.reviewFindings,
+          reviewFindings,
           additionalEvidenceIds: request.evidence.map((evidence) => evidence.ref),
           createdAt: request.requestedAt,
         };
@@ -202,7 +216,7 @@ export class LocalKontextCompletionOperations implements KontextCompletionOperat
       evidence: request.evidence,
       verificationRuns,
       invariantEvaluations: request.invariantEvaluations,
-      reviewFindings: request.reviewFindings,
+      reviewFindings,
       changeBundles,
       accuracyManifest,
     });
@@ -214,6 +228,7 @@ export class LocalKontextCompletionOperations implements KontextCompletionOperat
         request.context.contextDigest === context.contextDigest,
       accuracyManifest,
       accuracyManifestError,
+      integration,
     };
   }
 
@@ -257,6 +272,35 @@ export class LocalKontextCompletionOperations implements KontextCompletionOperat
     if (!prepared) throw new Error(`Task "${taskId}" has no prepared context`);
     return prepared;
   }
+}
+
+async function validateIntegratedTaskState(
+  integration: IntegratedTaskState,
+  prepared: PreparedTaskContext,
+  bundles: readonly { readonly bundleId: string }[],
+): Promise<string> {
+  if (integration.taskId !== prepared.contract.taskId) {
+    throw new Error("Integrated Task state belongs to another Task");
+  }
+  if (integration.contextDigest !== prepared.snapshot.contextDigest) {
+    throw new Error("Integrated Task state uses stale Task context");
+  }
+  if (
+    !sameStringSet(
+      integration.changeBundleIds,
+      bundles.map((bundle) => bundle.bundleId),
+    )
+  ) {
+    throw new Error("Integrated Task state does not include every accepted Change Bundle");
+  }
+  const observed = await captureWorkspaceSnapshot(
+    integration.workspacePath,
+    integration.changedPaths,
+  );
+  if (observed.revision !== integration.resultRevision) {
+    throw new Error("Integrated workspace changed after sidecar integration");
+  }
+  return observed.revision;
 }
 
 function completionCodeRevision(
@@ -324,7 +368,7 @@ function boundInvariantVerifiers(current: CurrentTaskContextState, prepared: Pre
   );
 }
 
-function assessCurrentContext(
+export function assessCurrentContext(
   prepared: PreparedTaskContext,
   current: CurrentTaskContextState,
 ): ContextAssessment {
@@ -371,4 +415,9 @@ function sameValues(
 
 function canonicalPath(value: string): string {
   return value.replaceAll("\\", "/").replace(/^\.\//, "");
+}
+
+function sameStringSet(left: readonly string[], right: readonly string[]): boolean {
+  const normalize = (values: readonly string[]) => Array.from(new Set(values)).sort();
+  return JSON.stringify(normalize(left)) === JSON.stringify(normalize(right));
 }

@@ -51,6 +51,14 @@ export const REQUIRED_COMPLETION_VERIFIERS: readonly VerifierRef[] = Object.free
   { kind: "query", ref: "kontext:manifest-audit" },
 ]);
 
+export function requiredCompletionVerifiers(risk: TaskContract["risk"]): readonly VerifierRef[] {
+  return risk === "low"
+    ? REQUIRED_COMPLETION_VERIFIERS.filter(
+        (verifier) => verifier.ref !== "kontext:independent-review",
+      )
+    : REQUIRED_COMPLETION_VERIFIERS;
+}
+
 export function taskContractDigest(contract: TaskContract): string {
   return digest({
     taskId: contract.taskId,
@@ -157,7 +165,6 @@ export function validateAccuracyManifestForTask(
     }
     if (
       bundle.taskContextDigest !== snapshot.contextDigest ||
-      bundle.resultRevision !== input.currentCodeRevision ||
       !manifest.workItemIds.includes(bundle.workItemId) ||
       !bundle.changedSymbolIds.every((symbolId) => manifest.changedSymbolIds.includes(symbolId))
     ) {
@@ -182,7 +189,28 @@ export function validateAccuracyManifestForTask(
       run.contextDigest === snapshot.contextDigest &&
       run.result === "passed",
   );
-  for (const verifier of REQUIRED_COMPLETION_VERIFIERS) {
+  const validBundleRunIds = new Set(
+    bundles.flatMap((bundle) =>
+      bundle.verificationRunIds.filter((runId) =>
+        input.verificationRuns.some(
+          (run) =>
+            run.verificationRunId === runId &&
+            run.codeRevision === bundle.resultRevision &&
+            run.contextDigest === snapshot.contextDigest &&
+            run.result === "passed",
+        ),
+      ),
+    ),
+  );
+  const declaredBundleRunIds = uniqueSorted(bundles.flatMap((bundle) => bundle.verificationRunIds));
+  if (!declaredBundleRunIds.every((runId) => validBundleRunIds.has(runId))) {
+    add(
+      "verification_mismatch",
+      "A Change Bundle Verification Run is not passing on its submitted revision",
+    );
+  }
+  const requiredVerifiers = requiredCompletionVerifiers(contract.risk);
+  for (const verifier of requiredVerifiers) {
     if (
       !currentPassingRuns.some(
         (run) =>
@@ -218,7 +246,7 @@ export function validateAccuracyManifestForTask(
   }
   const requiredRunIds = uniqueSorted([
     ...bundles.flatMap((bundle) => bundle.verificationRunIds),
-    ...REQUIRED_COMPLETION_VERIFIERS.flatMap((verifier) =>
+    ...requiredVerifiers.flatMap((verifier) =>
       currentPassingRuns
         .filter(
           (run) =>
@@ -243,8 +271,10 @@ export function validateAccuracyManifestForTask(
   ]);
   if (
     !requiredRunIds.every((runId) => manifest.verificationRunIds.includes(runId)) ||
-    !manifest.verificationRunIds.every((runId) =>
-      currentPassingRuns.some((run) => run.verificationRunId === runId),
+    !manifest.verificationRunIds.every(
+      (runId) =>
+        currentPassingRuns.some((run) => run.verificationRunId === runId) ||
+        validBundleRunIds.has(runId),
     )
   ) {
     add(
@@ -267,6 +297,29 @@ export function validateAccuracyManifestForTask(
     )
   ) {
     add("review_finding_mismatch", "Accuracy Manifest must include every Review Finding");
+  }
+  for (const finding of input.reviewFindings) {
+    const authorProviders = new Set(finding.authorProviders);
+    const invalidResolution =
+      finding.status === "open"
+        ? finding.resolutionMessage !== undefined ||
+          finding.resolvedByProvider !== undefined ||
+          finding.resolvedAt !== undefined
+        : !finding.resolutionMessage || !finding.resolvedByProvider || !finding.resolvedAt;
+    if (
+      finding.codeRevision !== input.currentCodeRevision ||
+      finding.contextDigest !== snapshot.contextDigest ||
+      authorProviders.has(finding.reviewerProvider) ||
+      (finding.resolvedByProvider !== undefined &&
+        authorProviders.has(finding.resolvedByProvider)) ||
+      invalidResolution
+    ) {
+      add(
+        "review_finding_mismatch",
+        `Review Finding ${finding.findingId} lacks current independent provenance`,
+        finding.findingId,
+      );
+    }
   }
   return issues;
 }

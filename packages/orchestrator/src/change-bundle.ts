@@ -229,11 +229,16 @@ function createCandidateManifest(input: AssembleAccuracyManifestInput): Accuracy
   const bundleRunIds = new Set(bundles.flatMap((bundle) => bundle.verificationRunIds));
   const runs = input.verificationRuns.filter(
     (run) =>
-      run.codeRevision === input.currentCodeRevision &&
       run.contextDigest === input.snapshot.contextDigest &&
       run.result === "passed" &&
-      (bundleRunIds.has(run.verificationRunId) ||
-        run.subjectIds.some((subjectId) => taskSubjectIds.has(subjectId))),
+      (bundleRunIds.has(run.verificationRunId)
+        ? bundles.some(
+            (bundle) =>
+              bundle.verificationRunIds.includes(run.verificationRunId) &&
+              bundle.resultRevision === run.codeRevision,
+          )
+        : run.codeRevision === input.currentCodeRevision &&
+          run.subjectIds.some((subjectId) => taskSubjectIds.has(subjectId))),
   );
   const manifest = createAccuracyManifest({
     taskId: input.contract.taskId,

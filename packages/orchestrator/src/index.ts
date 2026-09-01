@@ -8,3 +8,5 @@ export * from "./drift-finding.js";
 export * from "./runtime.js";
 export * from "./runtime-doctor.js";
 export * from "./work-item-scheduler.js";
+export * from "./integration.js";
+export * from "./independent-review.js";

@@ -28,6 +28,11 @@ export const scheduleLogicToolShape = {
 };
 export const getScheduleToolShape = { jobId: nonEmptyString };
 export const cancelScheduleToolShape = { jobId: nonEmptyString };
+export const integrateScheduleToolShape = {
+  jobId: nonEmptyString,
+  observedAt: z.string().datetime(),
+  nextAttemptAt: z.string().datetime(),
+};
 
 export const scheduleLogicRequestSchema = z.object(scheduleLogicToolShape).strict();
 
@@ -52,3 +57,9 @@ export interface GetScheduleRequest {
 }
 
 export type CancelScheduleRequest = GetScheduleRequest;
+
+export interface IntegrateScheduleRequest {
+  readonly jobId: string;
+  readonly observedAt: string;
+  readonly nextAttemptAt: string;
+}

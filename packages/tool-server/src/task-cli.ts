@@ -16,6 +16,7 @@ import {
 } from "@kontext-brain/orchestrator";
 import { ClaudeCodeRuntimeAdapter } from "@kontext-brain/runtime-claude";
 import { CodexRuntimeAdapter } from "@kontext-brain/runtime-codex";
+import { FileIntegratedTaskStateStore } from "./file-integrated-task-state-store.js";
 import { FileWriteAuthorizationBindingStore } from "./file-write-authorization-binding-store.js";
 import { FileWriteAuthorizationEventStore } from "./file-write-authorization-event-store.js";
 import { LocalKontextCompletionOperations } from "./local-completion-operations.js";
@@ -55,6 +56,7 @@ async function main(): Promise<void> {
     return;
   }
   const artifacts = new FileTaskCompletionArtifactStore(dataDirectory);
+  const integratedTasks = new FileIntegratedTaskStateStore(dataDirectory);
   const retryQueue = new FileVerificationRetryQueue(dataDirectory);
   const verifierRegistry = new VerifierRegistry();
   registerWorkspaceCommandVerifiers(verifierRegistry);
@@ -62,13 +64,15 @@ async function main(): Promise<void> {
     new VerificationCoordinator(verifierRegistry),
     retryQueue,
   );
+  const changeEvidence = new BoundWorkspaceChangeEvidenceProvider(bindings);
   const completion = new LocalKontextCompletionOperations(
     repository,
     repository,
     artifacts,
     quarantine,
     durableVerification,
-    new BoundWorkspaceChangeEvidenceProvider(bindings),
+    changeEvidence,
+    integratedTasks,
   );
   const runtimeOperations = new LocalKontextRuntimeOperations(
     repository,
@@ -83,6 +87,11 @@ async function main(): Promise<void> {
         environment: subscriptionRuntimeEnvironment(dataDirectory),
       }),
     ],
+    artifacts,
+    quarantine,
+    durableVerification,
+    changeEvidence,
+    integratedTasks,
   );
   new LocalVerificationRecoveryService(
     repository,
