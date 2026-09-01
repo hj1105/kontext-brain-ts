@@ -1,5 +1,6 @@
 import path from "node:path";
 import {
+  type CodeSymbolIdentity,
   type PlannedSymbolBinding,
   type PlannedSymbolBindingIssue,
   type PlannedSymbolRecord,
@@ -75,11 +76,12 @@ export class BoundWorkspaceChangeEvidenceProvider implements SidecarChangeEviden
         intendedIdentity: {},
         responsibility: "Legacy exact Code Symbol binding",
       }));
-    const resolution = resolvePlannedSymbols(
-      planned,
-      mergeSymbols(binding.symbolBaseline.symbols, currentSymbols.symbols),
+    const resolution = resolvePlannedSymbols(planned, currentSymbols.symbols);
+    const authorized = authorizedSymbolIds(
+      resolution.bindings,
+      binding.symbolBaseline.symbols,
+      currentSymbols.symbols,
     );
-    const authorized = new Set(resolution.bindings.map((item) => item.symbolId));
 
     return {
       currentCodeRevision: confirmedCurrent.revision,
@@ -98,15 +100,45 @@ export class BoundWorkspaceChangeEvidenceProvider implements SidecarChangeEviden
   }
 }
 
-function mergeSymbols(
-  before: readonly WorkspaceCodeSymbolState[],
-  after: readonly WorkspaceCodeSymbolState[],
-): readonly WorkspaceCodeSymbolState[] {
-  const symbols = new Map(before.map((symbol) => [symbol.symbolId, symbol] as const));
-  for (const symbol of after) symbols.set(symbol.symbolId, symbol);
-  return Array.from(symbols.values()).sort((left, right) =>
-    left.symbolId.localeCompare(right.symbolId),
+/**
+ * A Planned Symbol binds only against synchronized current code. Resolving it
+ * against the baseline as well made the pre-edit and post-edit revisions of one
+ * function two candidates sharing the same intended identity, so implementing
+ * the target symbol reported identity_ambiguous and blocked its own
+ * verification.
+ *
+ * The baseline still authorizes the predecessor that a bound symbol replaced. A
+ * behavior change gives that predecessor a different symbol ID and
+ * changedWorkspaceCodeSymbolIds reports both IDs, so the superseded one stays in
+ * scope without ever authorizing an unrelated symbol.
+ */
+function authorizedSymbolIds(
+  bindings: readonly PlannedSymbolBinding[],
+  baseline: readonly WorkspaceCodeSymbolState[],
+  current: readonly WorkspaceCodeSymbolState[],
+): ReadonlySet<string> {
+  const currentById = new Map(current.map((symbol) => [symbol.symbolId, symbol] as const));
+  const authorized = new Set(bindings.map((item) => item.symbolId));
+  const boundIdentities = new Set(
+    bindings
+      .map((item) => currentById.get(item.symbolId))
+      .filter((symbol): symbol is WorkspaceCodeSymbolState => symbol !== undefined)
+      .map((symbol) => identityKey(symbol.identity)),
   );
+  for (const symbol of baseline) {
+    if (currentById.has(symbol.symbolId)) continue;
+    if (boundIdentities.has(identityKey(symbol.identity))) authorized.add(symbol.symbolId);
+  }
+  return authorized;
+}
+
+function identityKey(identity: CodeSymbolIdentity): string {
+  return JSON.stringify([
+    identity.relativePath,
+    identity.language,
+    identity.kind,
+    identity.qualifiedName,
+  ]);
 }
 
 function sameStrings(left: readonly string[], right: readonly string[]): boolean {
