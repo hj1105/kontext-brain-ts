@@ -179,7 +179,7 @@ async function main(): Promise<void> {
 
   console.log("Before autoSetup:", agent.ontologyGraph.nodes.size, "nodes");
 
-  const setup = await agent.autoSetup(3);
+  const setup = await agent.autoSetup();
   console.log("\nautoSetup result:");
   console.log("  Nodes created:   ", setup.nodesCreated);
   console.log("  Docs classified: ", setup.documentsClassified);
