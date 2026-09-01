@@ -64,6 +64,43 @@ describe("BoundWorkspaceChangeEvidenceProvider", () => {
     expect(evidence.unauthorizedChangedSymbolIds).toEqual([]);
   });
 
+  it("binds the Planned Symbol after a throwing stub is implemented", async () => {
+    const { workspace, bindings } = await boundWorkspace(
+      "export function handler(_value: number): number {\n  throw new Error('Not implemented');\n}\n",
+    );
+    // Implementing a throw-only stub changes the inferred signature, so the
+    // symbol takes a new ID and the pre-edit and post-edit revisions used to
+    // collide as two candidates sharing one intended identity.
+    await writeFile(
+      path.join(workspace, "src/handler.ts"),
+      [
+        "export function handler(value: number) {",
+        "  if (value < 0) throw new RangeError('negative');",
+        "  return Math.min(value * 3, 4500);",
+        "}",
+        "",
+      ].join("\n"),
+    );
+
+    const evidence = await new BoundWorkspaceChangeEvidenceProvider(bindings).observe({
+      workspacePath: workspace,
+      taskId,
+      workItem,
+      plannedSymbols: [plannedHandler()],
+    });
+
+    expect(evidence.plannedSymbolIssues).toEqual([]);
+    expect(evidence.plannedSymbolBindings).toEqual([
+      expect.objectContaining({
+        plannedSymbolId: "planned-symbol:handler",
+        boundBy: "intended_identity",
+      }),
+    ]);
+    // The superseded predecessor is still reported as changed, so it must not
+    // count as an out-of-scope symbol.
+    expect(evidence.unauthorizedChangedSymbolIds).toEqual([]);
+  });
+
   it("reports an unbound plan instead of accepting a caller-named symbol", async () => {
     const { workspace, bindings } = await boundWorkspace();
     await writeFile(
@@ -88,15 +125,14 @@ describe("BoundWorkspaceChangeEvidenceProvider", () => {
   });
 });
 
-async function boundWorkspace() {
+async function boundWorkspace(
+  initialSource = "export function handler(value: number) { return value + 1; }\n",
+) {
   const root = await mkdtemp(path.join(tmpdir(), "kontext-sidecar-evidence-"));
   temporaryDirectories.push(root);
   const workspace = path.join(root, "workspace");
   await mkdir(path.join(workspace, "src"), { recursive: true });
-  await writeFile(
-    path.join(workspace, "src/handler.ts"),
-    "export function handler(value: number) { return value + 1; }\n",
-  );
+  await writeFile(path.join(workspace, "src/handler.ts"), initialSource);
   execFileSync("git", ["init", "-q"], { cwd: workspace });
   execFileSync("git", ["add", "."], { cwd: workspace });
   execFileSync(
