@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, readdir, rename, rm, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { codeLanguages } from "@kontext-brain/code";
 import { z } from "zod";
 import type {
   WriteAuthorizationBinding,
@@ -27,7 +28,7 @@ const codeSymbolIdentitySchema = z
   .object({
     codebaseId: z.string().min(1),
     relativePath: z.string().min(1),
-    language: z.enum(["typescript", "javascript"]),
+    language: z.enum(codeLanguages),
     kind: z.enum([
       "module",
       "class",

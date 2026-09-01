@@ -7,6 +7,7 @@ import type {
   PreparedTaskContextStore,
   TaskContextStateProvider,
 } from "@kontext-brain/context";
+import { codeLanguages } from "@kontext-brain/code";
 import { z } from "zod";
 
 export interface TaskContextStateWriteOptions {
@@ -125,7 +126,7 @@ const codeSymbolIdentitySchema = z
   .object({
     codebaseId: nonEmptyString.optional(),
     relativePath: nonEmptyString.optional(),
-    language: z.enum(["typescript", "javascript"]).optional(),
+    language: z.enum(codeLanguages).optional(),
     kind: z
       .enum([
         "module",
