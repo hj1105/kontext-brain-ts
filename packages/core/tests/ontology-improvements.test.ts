@@ -1,21 +1,24 @@
 import { describe, expect, it } from "vitest";
 import {
   Bm25NodeMappingStrategy,
+  DataSource,
+  type Edge,
   EdgeAwareMappingStrategy,
   KeywordMappingStrategy,
   MmrSelector,
   OntologyGraph,
-  type Edge,
   type OntologyNode,
   TraversalStrategy,
   createMetaDocument,
   createNode,
-  DataSource,
 } from "../src/index.js";
 
 function buildGraph(): OntologyGraph {
   const nodes = new Map<string, OntologyNode>([
-    ["backend", createNode({ id: "backend", description: "rest api server database jwt", weight: 1 })],
+    [
+      "backend",
+      createNode({ id: "backend", description: "rest api server database jwt", weight: 1 }),
+    ],
     ["frontend", createNode({ id: "frontend", description: "react ui components", weight: 1 })],
     ["security", createNode({ id: "security", description: "owasp tls secrets vault", weight: 1 })],
   ]);
@@ -83,9 +86,24 @@ describe("MmrSelector", () => {
 
   it("prefers diverse docs over duplicates", async () => {
     const docs = [
-      createMetaDocument({ id: "a1", title: "api guide", source: DataSource.CUSTOM, ontologyNodeId: "n" }),
-      createMetaDocument({ id: "a2", title: "api guide reference", source: DataSource.CUSTOM, ontologyNodeId: "n" }),
-      createMetaDocument({ id: "b1", title: "auth tutorial", source: DataSource.CUSTOM, ontologyNodeId: "n" }),
+      createMetaDocument({
+        id: "a1",
+        title: "api guide",
+        source: DataSource.CUSTOM,
+        ontologyNodeId: "n",
+      }),
+      createMetaDocument({
+        id: "a2",
+        title: "api guide reference",
+        source: DataSource.CUSTOM,
+        ontologyNodeId: "n",
+      }),
+      createMetaDocument({
+        id: "b1",
+        title: "auth tutorial",
+        source: DataSource.CUSTOM,
+        ontologyNodeId: "n",
+      }),
     ];
     const mmr = new MmrSelector(0.5); // balance relevance/diversity
     const result = await mmr.select("api auth", docs, 2);

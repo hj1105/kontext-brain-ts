@@ -85,7 +85,11 @@ Return JSON only:
 
     const response = await this.adapter.complete(system, "", snippet);
     try {
-      const clean = response.trim().replace(/^```json/, "").replace(/```$/, "").trim();
+      const clean = response
+        .trim()
+        .replace(/^```json/, "")
+        .replace(/```$/, "")
+        .trim();
       const parsed = JSON.parse(clean) as {
         entities?: Array<{ id: string; name: string; type?: string; aliases?: string[] }>;
         relations?: Array<{ from: string; to: string; type: string; weight?: number }>;

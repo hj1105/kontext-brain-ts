@@ -74,7 +74,8 @@ export class InMemoryEntityIndex implements EntityIndex {
   private readonly mentionsByEntity = new Map<string, EntityMention[]>();
   private readonly outgoing = new Map<string, EntityRelation[]>();
   private readonly incoming = new Map<string, EntityRelation[]>();
-  private patternCache: { patterns: Array<{ entity: Entity; re: RegExp }>; stamp: number } | null = null;
+  private patternCache: { patterns: Array<{ entity: Entity; re: RegExp }>; stamp: number } | null =
+    null;
 
   async addEntity(entity: Entity): Promise<void> {
     this.entities.set(entity.id, entity);
@@ -162,7 +163,11 @@ export class InMemoryEntityIndex implements EntityIndex {
     const typeFilter = relationTypes && relationTypes.length > 0 ? new Set(relationTypes) : null;
     const result: Array<{ entity: Entity; depth: number; relation: string }> = [];
     const visited = new Set<string>([entityId]);
-    interface Frontier { id: string; depth: number; relation: string }
+    interface Frontier {
+      id: string;
+      depth: number;
+      relation: string;
+    }
     const queue: Frontier[] = [{ id: entityId, depth: 0, relation: "" }];
 
     while (queue.length > 0) {

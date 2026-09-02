@@ -51,9 +51,7 @@ export class MmrSelector implements MetaDocumentSelector {
       let best: { idx: number; mmr: number } | null = null;
       for (let i = 0; i < remaining.length; i++) {
         const cand = remaining[i]!;
-        const maxSim = Math.max(
-          ...selected.map((s) => jaccard(cand.titleTokens, s.titleTokens)),
-        );
+        const maxSim = Math.max(...selected.map((s) => jaccard(cand.titleTokens, s.titleTokens)));
         const mmr = this.lambda * cand.relevance - (1 - this.lambda) * maxSim;
         if (!best || mmr > best.mmr) best = { idx: i, mmr };
       }

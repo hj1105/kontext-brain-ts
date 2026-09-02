@@ -44,6 +44,13 @@ export class PostgresKnowledgeGraphRepository implements KnowledgeGraphRepositor
     return this.read(organizationId, (unit) => unit.getResource(resourceId));
   }
 
+  async listResourcesByOntologyNode(
+    organizationId: string,
+    ontologyNodeId: string,
+  ): Promise<readonly ResourceRecord[]> {
+    return this.read(organizationId, (unit) => unit.listResourcesByOntologyNode(ontologyNodeId));
+  }
+
   async listChunks(organizationId: string, resourceId: string): Promise<readonly ChunkRecord[]> {
     return this.read(organizationId, (unit) => unit.listChunks(resourceId));
   }
@@ -130,6 +137,22 @@ class PostgresKnowledgeGraphUnitOfWork implements KnowledgeGraphUnitOfWork {
       [this.organizationId, resourceId],
     );
     return result.rows[0] ? mapResource(result.rows[0]) : null;
+  }
+
+  async listResourcesByOntologyNode(ontologyNodeId: string): Promise<readonly ResourceRecord[]> {
+    const result = await this.client.query(
+      `${resourceSelectSql()}
+       WHERE r.organization_id = $1
+         AND EXISTS (
+           SELECT 1 FROM kontext_resource_ontology_links l
+           WHERE l.organization_id = r.organization_id
+             AND l.resource_id = r.resource_id
+             AND l.ontology_node_id = $2
+         )
+       ORDER BY r.resource_id`,
+      [this.organizationId, ontologyNodeId],
+    );
+    return result.rows.map(mapResource);
   }
 
   async saveResource(resource: ResourceRecord): Promise<void> {

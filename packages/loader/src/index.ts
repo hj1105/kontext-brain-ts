@@ -1,3 +1,5 @@
+export * from "./symbol-governance-resolver.js";
+export * from "./code-ontology-classifier.js";
 export * from "./kontext-config.js";
 export * from "./kontext-agent.js";
 export * from "./kontext-loader.js";
