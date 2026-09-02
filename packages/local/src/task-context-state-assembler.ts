@@ -4,6 +4,7 @@ import type {
   ContextEvidenceItem,
   CurrentTaskContextState,
   LogicWorkPlan,
+  PlannedSymbolGovernanceLink,
 } from "@kontext-brain/context";
 import {
   type GovernanceScope,
@@ -22,6 +23,7 @@ export interface TaskContextStateAssemblyInput {
   readonly managedManifest?: NormativeManifest;
   readonly evidence: readonly ContextEvidenceItem[];
   readonly logicPlans: readonly LogicWorkPlan[];
+  readonly governanceLinks?: readonly PlannedSymbolGovernanceLink[];
 }
 
 /**
@@ -43,6 +45,11 @@ export function assembleCurrentTaskContextState(
     resolution.effective.map((record) => record.revision),
   );
   const logicPlans = normalizeLogicPlans(input.taskId, input.logicPlans);
+  const governanceLinks = normalizeGovernanceLinks(
+    input.governanceLinks,
+    logicPlans,
+    resolution.effective.map((record) => record.revision),
+  );
   const effectiveScopes = uniqueScopes([
     ...(input.baseScopes ?? []),
     ...resolution.effective.map((record) => record.revision.scope),
@@ -57,7 +64,46 @@ export function assembleCurrentTaskContextState(
     conflicts: resolution.conflicts,
     evidence,
     logicPlans,
+    ...(governanceLinks === undefined ? {} : { governanceLinks }),
   };
+}
+
+function normalizeGovernanceLinks(
+  links: readonly PlannedSymbolGovernanceLink[] | undefined,
+  plans: readonly LogicWorkPlan[],
+  effectiveRevisions: readonly NormativeRevision[],
+): readonly PlannedSymbolGovernanceLink[] | undefined {
+  if (links === undefined) return undefined;
+  const plannedSymbolIds = new Set(plans.flatMap((plan) => plan.plannedSymbolIds));
+  const revisionKeys = new Set(
+    effectiveRevisions.map((revision) => JSON.stringify([revision.recordId, revision.revisionId])),
+  );
+  const byKey = new Map<string, PlannedSymbolGovernanceLink>();
+  for (const link of links) {
+    requireNonEmpty(link.plannedSymbolId, "Governance link Planned Symbol ID");
+    requireNonEmpty(link.recordId, "Governance link record ID");
+    requireNonEmpty(link.revisionId, "Governance link revision ID");
+    if (!plannedSymbolIds.has(link.plannedSymbolId)) {
+      throw new Error(`Governance link names unknown Planned Symbol "${link.plannedSymbolId}"`);
+    }
+    if (!revisionKeys.has(JSON.stringify([link.recordId, link.revisionId]))) {
+      throw new Error(
+        `Governance link names non-effective normative revision "${link.recordId}" at "${link.revisionId}"`,
+      );
+    }
+    const key = JSON.stringify([link.plannedSymbolId, link.recordId, link.revisionId]);
+    const existing = byKey.get(key);
+    if (existing && existing.origin !== link.origin) {
+      throw new Error(`Governance link has conflicting origins for "${link.plannedSymbolId}"`);
+    }
+    byKey.set(key, { ...link });
+  }
+  return [...byKey.values()].sort(
+    (left, right) =>
+      left.plannedSymbolId.localeCompare(right.plannedSymbolId) ||
+      left.recordId.localeCompare(right.recordId) ||
+      left.revisionId.localeCompare(right.revisionId),
+  );
 }
 
 function normalizedManifest(

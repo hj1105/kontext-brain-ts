@@ -58,6 +58,8 @@ export interface CompileTaskContextInput {
    * organization-wide behaviour.
    */
   readonly governanceLinks?: readonly PlannedSymbolGovernanceLink[];
+  /** Evidence explicitly requested by the Task stays mandatory after symbol narrowing. */
+  readonly additionalRequiredEvidenceIds?: readonly string[];
   readonly authorizedPaths: readonly string[];
   readonly issuedAt: string;
   readonly expiresAt: string;

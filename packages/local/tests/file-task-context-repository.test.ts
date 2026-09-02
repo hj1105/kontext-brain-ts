@@ -129,5 +129,13 @@ function currentState(): CurrentTaskContextState {
         allowedPaths: ["src/durable.ts"],
       },
     ],
+    governanceLinks: [
+      {
+        plannedSymbolId: "planned-symbol:durable",
+        recordId: revision.recordId,
+        revisionId: revision.revisionId,
+        origin: "curated",
+      },
+    ],
   };
 }

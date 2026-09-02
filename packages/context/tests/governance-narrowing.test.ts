@@ -129,6 +129,56 @@ describe("governance narrowing by Planned Symbol", () => {
     ]);
   });
 
+  it("narrows mandatory Evidence with the records but retains Task-requested Evidence", () => {
+    const selected = revisions[7];
+    const unrelated = revisions[9];
+    if (!selected || !unrelated) throw new Error("Expected corpus revisions");
+    const input = baseInput([
+      {
+        plannedSymbolId: "planned-symbol:charge",
+        recordId: selected.recordId,
+        revisionId: selected.revisionId,
+        origin: "curated",
+      },
+    ]);
+    const result = compileTaskContext({
+      ...input,
+      snapshot: {
+        ...input.snapshot,
+        requiredEvidenceIds: [
+          selected.evidence[0]?.evidenceId ?? "",
+          unrelated.evidence[0]?.evidenceId ?? "",
+          "evidence:incident",
+        ],
+      },
+      evidence: [
+        {
+          evidenceId: selected.evidence[0]?.evidenceId ?? "",
+          text: "selected decision source",
+          availability: "current",
+          allowedRuntimeProviders: ["codex"],
+        },
+        {
+          evidenceId: unrelated.evidence[0]?.evidenceId ?? "",
+          text: "unrelated decision source",
+          availability: "current",
+          allowedRuntimeProviders: ["codex"],
+        },
+        {
+          evidenceId: "evidence:incident",
+          text: "task-specific incident",
+          availability: "current",
+          allowedRuntimeProviders: ["codex"],
+        },
+      ],
+      additionalRequiredEvidenceIds: ["evidence:incident"],
+    });
+    expect(result.mandatory.evidence.map((evidence) => evidence.evidenceId)).toEqual([
+      "evidence:area-7",
+      "evidence:incident",
+    ]);
+  });
+
   it("gives a proposed link no enforcement authority", () => {
     const result = compileTaskContext(
       baseInput([

@@ -1,13 +1,13 @@
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { codeLanguages } from "@kontext-brain/code";
 import type {
   CurrentTaskContextState,
   PreparedTaskContext,
   PreparedTaskContextStore,
   TaskContextStateProvider,
 } from "@kontext-brain/context";
-import { codeLanguages } from "@kontext-brain/code";
 import { z } from "zod";
 
 export interface TaskContextStateWriteOptions {
@@ -168,6 +168,14 @@ const logicPlanSchema = z
     capabilityId: nonEmptyString.optional(),
   })
   .strict();
+const governanceLinkSchema = z
+  .object({
+    plannedSymbolId: nonEmptyString,
+    recordId: nonEmptyString,
+    revisionId: nonEmptyString,
+    origin: z.enum(["curated", "deterministic", "proposed"]),
+  })
+  .strict();
 const currentStateSchema = z
   .object({
     codeRevision: nonEmptyString,
@@ -178,6 +186,7 @@ const currentStateSchema = z
     conflicts: z.array(conflictSchema),
     evidence: z.array(contextEvidenceSchema),
     logicPlans: z.array(logicPlanSchema),
+    governanceLinks: z.array(governanceLinkSchema).optional(),
   })
   .strict();
 const taskContractSchema = z

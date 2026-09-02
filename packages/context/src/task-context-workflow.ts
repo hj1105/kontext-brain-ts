@@ -10,7 +10,12 @@ import type {
 } from "@kontext-brain/spec";
 import { ContextCompiler } from "./context-compiler.js";
 import { prepareTaskContextSnapshot } from "./context-compiler.js";
-import type { CompiledTaskContext, ContextEvidenceItem, LogicContextTarget } from "./domain.js";
+import type {
+  CompiledTaskContext,
+  ContextEvidenceItem,
+  LogicContextTarget,
+  PlannedSymbolGovernanceLink,
+} from "./domain.js";
 
 export interface CurrentTaskContextState {
   readonly codeRevision: string;
@@ -21,6 +26,7 @@ export interface CurrentTaskContextState {
   readonly conflicts: readonly NormativeLayerConflict[];
   readonly evidence: readonly ContextEvidenceItem[];
   readonly logicPlans: readonly LogicWorkPlan[];
+  readonly governanceLinks?: readonly PlannedSymbolGovernanceLink[];
 }
 
 export interface LogicWorkPlan {
@@ -125,6 +131,8 @@ export class TaskContextWorkflow {
       evidence: state.evidence,
       runtimeProvider: request.runtimeProvider,
       logic: request.logic,
+      governanceLinks: state.governanceLinks,
+      additionalRequiredEvidenceIds: prepared.additionalRequiredEvidenceIds,
       authorizedPaths: plan?.allowedPaths ?? [],
       issuedAt: request.issuedAt,
       expiresAt: request.expiresAt,
