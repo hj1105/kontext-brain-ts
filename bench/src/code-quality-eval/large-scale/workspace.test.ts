@@ -76,6 +76,7 @@ describe("large-scale fixture is a valid benchmark item", () => {
     for (const surface of [task, publicTest]) {
       expect(surface).not.toContain(governedPolicy.constantName);
       expect(surface).not.toContain(String(governedPolicy.capMs));
+      expect(surface).not.toContain("billing subsystem");
     }
   });
 
