@@ -27,6 +27,7 @@ describe("CodexCodeQualityRunner", () => {
       config,
     };
     expect(codexArguments(input).join(" ")).not.toContain("mcp_servers.kontext_brain");
+    expect(codexArguments(input)).toContain('approval_policy="never"');
     const prompt = codexPrompt(input);
     expect(prompt).not.toContain("kontext_prepare_task");
     for (const rule of scenario.rules) {
@@ -46,6 +47,10 @@ describe("CodexCodeQualityRunner", () => {
       config,
     };
     expect(codexArguments(input).join(" ")).toContain("mcp_servers.kontext_brain");
+    expect(codexArguments(input)).toContain("mcp_servers.kontext_brain.required=true");
+    expect(codexArguments(input)).toContain(
+      'mcp_servers.kontext_brain.default_tools_approval_mode="approve"',
+    );
     const prompt = codexPrompt(input);
     expect(prompt).toContain("kontext_prepare_task");
     expect(prompt).toContain(scenario.taskId);
@@ -73,8 +78,16 @@ describe("CodexCodeQualityRunner", () => {
     const runner = new CodexCodeQualityRunner(async () => ({
       exitCode: 0,
       stdout: [
-        JSON.stringify({ item: { name: "mcp__kontext_brain__kontext_prepare_task" } }),
-        JSON.stringify({ item: { name: "kontext_begin_logic" } }),
+        JSON.stringify({
+          item: {
+            id: "call:prepare",
+            type: "mcp_tool_call",
+            tool: "mcp__kontext_brain__kontext_prepare_task",
+          },
+        }),
+        JSON.stringify({
+          item: { id: "call:begin", type: "mcp_tool_call", tool: "kontext_begin_logic" },
+        }),
         JSON.stringify({ usage: { input_tokens: 120, output_tokens: 30 } }),
       ].join("\n"),
       stderr: "",

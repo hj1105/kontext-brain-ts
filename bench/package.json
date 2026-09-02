@@ -23,6 +23,7 @@
     "gb-dump-kg": "node --import tsx src/gb-dump-kg.ts",
     "merge-claude-kg": "node --import tsx src/merge-claude-kg.ts",
     "code-quality": "node --import tsx src/code-quality-eval/cli.ts",
+    "code-quality:large": "node --import tsx src/code-quality-eval/large-scale/cli.ts",
     "test:code-quality": "pnpm --dir .. exec vitest run --config bench/vitest.code-quality.config.ts",
     "typecheck:code-quality": "pnpm --dir .. exec tsc -p bench/tsconfig.code-quality.json"
   },

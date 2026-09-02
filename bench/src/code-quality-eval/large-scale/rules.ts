@@ -49,7 +49,7 @@ export function governingRules(): readonly LargeScaleRule[] {
       recordId: "invariant:billing-retry-bounded",
       revisionId: "revision:billing-retry-bounded:1",
       subsystem: governedSubsystem,
-      text: `No billing retry delay exceeds the Recovery Ceiling, and no subsystem outside billing changes its retry behaviour as part of this work.`,
+      text: "No billing retry delay exceeds the Recovery Ceiling, and no subsystem outside billing changes its retry behaviour as part of this work.",
       evidenceId: "evidence:billing:retry-bounded",
       evidenceText:
         "Operations requires the billing ceiling to hold and requires unrelated subsystems to stay byte-identical so the change can be rolled back independently.",
