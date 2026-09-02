@@ -91,7 +91,18 @@ export class ContextCompiler {
         // Narrowing by Planned Symbol is what makes a several-hundred-record
         // Codebase compilable at all. Without it every accepted record in the
         // organization is mandatory for every Work Item.
-        if (governing && !governing.has(governanceKey(record.revision))) return false;
+        //
+        // An organization-scoped record is never narrowed away. A narrower
+        // scope may add constraints but cannot weaken a managed organization
+        // rule, so dropping one because no symbol link happens to point at it
+        // would silently lose mandatory governance.
+        if (
+          governing &&
+          record.revision.scope.kind !== "organization" &&
+          !governing.has(governanceKey(record.revision))
+        ) {
+          return false;
+        }
         const allowed = record.revision.egress.allowedRuntimeProviders.includes(
           input.runtimeProvider,
         );
