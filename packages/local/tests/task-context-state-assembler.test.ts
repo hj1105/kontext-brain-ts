@@ -38,6 +38,14 @@ describe("assembleCurrentTaskContextState", () => {
           allowedPaths: ["./src\\handler.ts"],
         },
       ],
+      governanceLinks: [
+        {
+          plannedSymbolId: "planned-symbol:handler",
+          recordId: "decision:workflow",
+          revisionId: "revision:local",
+          origin: "curated",
+        },
+      ],
     });
 
     expect(state.normativeRecords.map((record) => record.origin)).toEqual(["local", "managed"]);
@@ -59,6 +67,14 @@ describe("assembleCurrentTaskContextState", () => {
     expect(state.logicPlans[0]?.plannedSymbols?.[0]?.intendedIdentity.relativePath).toBe(
       "src/handler.ts",
     );
+    expect(state.governanceLinks).toEqual([
+      {
+        plannedSymbolId: "planned-symbol:handler",
+        recordId: "decision:workflow",
+        revisionId: "revision:local",
+        origin: "curated",
+      },
+    ]);
     expect(state.effectiveScopes).toContainEqual({ kind: "personal", subjectId: "user:owner" });
   });
 
@@ -112,6 +128,19 @@ describe("assembleCurrentTaskContextState", () => {
         ],
       }),
     ).toThrow("describe every Planned Symbol ID exactly once");
+    expect(() =>
+      assembleCurrentTaskContextState({
+        ...base,
+        governanceLinks: [
+          {
+            plannedSymbolId: "planned-symbol:unknown",
+            recordId: "decision:workflow",
+            revisionId: "revision:local",
+            origin: "curated",
+          },
+        ],
+      }),
+    ).toThrow("unknown Planned Symbol");
   });
 
   it("does not let an inactive historical revision restrict current Evidence egress", () => {
@@ -167,6 +196,20 @@ describe("assembleCurrentTaskContextState", () => {
     expect(historical.evidence[0]?.allowedRuntimeProviders).toEqual(["codex"]);
     expect(historical.sourceFreshnessDigest).toBe(withoutHistory.sourceFreshnessDigest);
     expect(historical.normativeRevisionCatalog).toHaveLength(2);
+    expect(() =>
+      assembleCurrentTaskContextState({
+        ...input,
+        localManifest: withHistory,
+        governanceLinks: [
+          {
+            plannedSymbolId: "planned-symbol:handler",
+            recordId: activeRevision.recordId,
+            revisionId: "revision:historical",
+            origin: "curated",
+          },
+        ],
+      }),
+    ).toThrow("non-effective normative revision");
   });
 });
 
