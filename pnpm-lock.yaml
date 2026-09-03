@@ -32,6 +32,9 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.120.0
         version: 0.120.0(zod@3.25.76)
+      '@kontext-brain/code':
+        specifier: workspace:*
+        version: link:../packages/code
       '@kontext-brain/core':
         specifier: workspace:*
         version: link:../packages/core
