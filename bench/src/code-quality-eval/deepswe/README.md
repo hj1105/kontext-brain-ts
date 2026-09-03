@@ -5,7 +5,7 @@ This adapter measures whether Kontext's provenance-governed context improves fun
 ## Arms
 
 - `baseline`: `kontext-context` is installed, but returns no supplemental context.
-- `rag`: the command retrieves raw documents from the frozen source corpus.
+- `rag`: the command retrieves raw Evidence text from the frozen Resource/Chunk provenance.
 - `kontext`: the command retrieves current Decisions, Domain Terms, and Invariants plus their exact evidence closure.
 
 The model, task instruction, image, timeout, agent implementation, command surface, and rollout count are fixed across arms. Only the context projection changes.
@@ -18,30 +18,45 @@ The benchmark never invents or extracts organizational decisions from the DeepSW
 {
   "schemaVersion": 1,
   "taskId": "python-statemachine-state-data-scoping",
+  "organizationId": "organization:personal",
+  "baseCodeRevision": "<DeepSWE task base commit>",
+  "contextDigest": "sha256:<Task Context Snapshot digest>",
+  "sourceFreshnessDigest": "sha256:<source freshness digest>",
   "snapshotAt": "2026-09-03T00:00:00.000Z",
   "generator": {
     "name": "kontext-brain",
     "revision": "<Kontext export revision>"
   },
-  "documents": [
+  "evidence": [
     {
-      "documentId": "doc:design",
+      "evidenceId": "evidence:state-data-design",
+      "resourceId": "resource:state-data-design",
+      "chunkId": "chunk:state-data-scope",
       "title": "State data design",
-      "body": "<verbatim source text>",
+      "text": "<verbatim Evidence text>",
       "sourceUri": "file:///independent/specs/state-data.md",
       "observedAt": "2026-09-02T00:00:00.000Z",
-      "contentSha256": "<SHA-256 of body>",
+      "contentSha256": "<SHA-256 of text>",
       "ontologyNodeIds": ["resource:state-data-design"]
     }
   ],
   "normativeRecords": [
     {
-      "kind": "decision",
-      "recordId": "decision:state-data-scope",
-      "revisionId": "revision:1",
-      "text": "State data is owned by one state and resets on exit.",
-      "evidenceIds": ["doc:design"],
-      "ontologyNodeIds": ["decision:state-data-scope"],
+      "revision": {
+        "kind": "decision",
+        "organizationId": "organization:personal",
+        "recordId": "decision:state-data-scope",
+        "revisionId": "revision:1",
+        "scope": { "kind": "codebase", "codebaseId": "python-statemachine" },
+        "evidence": [{ "evidenceId": "evidence:state-data-design" }],
+        "egress": {
+          "dataClassification": "public",
+          "allowedRuntimeProviders": ["openai"]
+        },
+        "authoredBy": "user:local",
+        "authoredAt": "2026-09-02T00:00:00.000Z",
+        "statement": "State data is owned by one state and resets on exit."
+      },
       "symbolSelectors": [
         {
           "relativePath": "statemachine/statemachine.py",
@@ -53,7 +68,7 @@ The benchmark never invents or extracts organizational decisions from the DeepSW
 }
 ```
 
-An empty `documents`/`normativeRecords` corpus is valid for infrastructure tests. It does not test a Kontext treatment effect.
+An empty `evidence`/`normativeRecords` corpus is valid for infrastructure tests. It does not test a Kontext treatment effect.
 
 The loader rejects future-dated evidence, hash mismatches, missing evidence closure, duplicate IDs, corpus files inside the benchmark tree, and provenance paths containing task tests, verifier, solution, trajectory, result, or agent artifacts. These structural checks do not prove authorship independence; preregistered corpora still require external review.
 

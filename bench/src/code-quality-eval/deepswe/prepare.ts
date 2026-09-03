@@ -45,6 +45,12 @@ export async function prepareDeepSweEvaluation(
     if (configuredTaskId !== taskId) {
       throw new Error(`DeepSWE task id mismatch in ${taskId}/task.toml: ${configuredTaskId}`);
     }
+    const baseCommit = tomlString(taskToml, "base_commit_hash");
+    if (corpus.baseCodeRevision !== baseCommit) {
+      throw new Error(
+        `Corpus base code revision mismatch for ${taskId}: ${corpus.baseCodeRevision} != ${baseCommit}`,
+      );
+    }
     const instructionSha256 = sha256(stripPierCanary(instruction));
     if ([...tasks].some((task) => task.instructionSha256 === instructionSha256)) {
       throw new Error(`Duplicate DeepSWE instruction content: ${taskId}`);
@@ -55,7 +61,7 @@ export async function prepareDeepSweEvaluation(
       taskPath,
       instructionSha256,
       taskTomlSha256: sha256(taskToml),
-      baseCommit: tomlString(taskToml, "base_commit_hash"),
+      baseCommit,
       language: tomlString(taskToml, "language"),
       dockerImage: tomlString(taskToml, "docker_image"),
     });

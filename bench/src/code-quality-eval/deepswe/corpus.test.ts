@@ -10,11 +10,11 @@ describe("DeepSWE context corpus", () => {
     const kontext = buildContextBundle("kontext", corpus);
 
     expect(new Set([baseline.corpusSha256, rag.corpusSha256, kontext.corpusSha256]).size).toBe(1);
-    expect(baseline.documents).toEqual([]);
+    expect(baseline.evidence).toEqual([]);
     expect(baseline.normativeRecords).toEqual([]);
-    expect(rag.documents).toEqual(corpus.documents);
+    expect(rag.evidence).toEqual(corpus.evidence);
     expect(rag.normativeRecords).toEqual([]);
-    expect(kontext.documents).toEqual(corpus.documents);
+    expect(kontext.evidence).toEqual(corpus.evidence);
     expect(kontext.normativeRecords).toEqual(corpus.normativeRecords);
     expect(
       new Set([baseline.projectionSha256, rag.projectionSha256, kontext.projectionSha256]).size,
@@ -23,13 +23,13 @@ describe("DeepSWE context corpus", () => {
 
   it("rejects post-snapshot evidence and ungrounded decisions", () => {
     const corpus = fixtureCorpus();
-    const document = required(corpus.documents[0]);
+    const evidence = required(corpus.evidence[0]);
     const record = required(corpus.normativeRecords[0]);
     expect(() =>
       validateCorpus(
         {
           ...corpus,
-          documents: [{ ...document, observedAt: "2026-01-03T00:00:00.000Z" }],
+          evidence: [{ ...evidence, observedAt: "2026-01-03T00:00:00.000Z" }],
         },
         corpus.taskId,
         "/tmp/deep-swe/tasks/demo",
@@ -39,17 +39,22 @@ describe("DeepSWE context corpus", () => {
       validateCorpus(
         {
           ...corpus,
-          normativeRecords: [{ ...record, evidenceIds: ["missing"] }],
+          normativeRecords: [
+            {
+              ...record,
+              revision: { ...record.revision, evidence: [{ evidenceId: "missing" }] },
+            },
+          ],
         },
         corpus.taskId,
         "/tmp/deep-swe/tasks/demo",
       ),
-    ).toThrow(/unknown evidence/);
+    ).toThrow(/unknown Evidence/);
   });
 
   it("rejects benchmark solution and verifier provenance from files or URLs", () => {
     const corpus = fixtureCorpus();
-    const document = required(corpus.documents[0]);
+    const evidence = required(corpus.evidence[0]);
     for (const sourceUri of [
       "file:///tmp/deep-swe/tasks/demo/solution/solve.py",
       "https://github.com/datacurve-ai/deep-swe/blob/main/tasks/demo/verifier/test.sh",
@@ -58,7 +63,7 @@ describe("DeepSWE context corpus", () => {
         validateCorpus(
           {
             ...corpus,
-            documents: [{ ...document, sourceUri }],
+            evidence: [{ ...evidence, sourceUri }],
           },
           corpus.taskId,
           "/tmp/deep-swe/tasks/demo",

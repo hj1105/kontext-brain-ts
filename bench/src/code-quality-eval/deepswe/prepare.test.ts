@@ -48,16 +48,16 @@ describe("DeepSWE evaluation preparation", () => {
             arm: string;
             byInstructionSha256: Record<
               string,
-              { documents: unknown[]; normativeRecords: unknown[]; corpusSha256: string }
+              { evidence: unknown[]; normativeRecords: unknown[]; corpusSha256: string }
             >;
           },
       ),
     );
     const bundles = indexes.map((index) => required(Object.values(index.byInstructionSha256)[0]));
-    expect(bundles[0]?.documents).toEqual([]);
-    expect(bundles[1]?.documents).toHaveLength(1);
+    expect(bundles[0]?.evidence).toEqual([]);
+    expect(bundles[1]?.evidence).toHaveLength(1);
     expect(bundles[1]?.normativeRecords).toEqual([]);
-    expect(bundles[2]?.documents).toHaveLength(1);
+    expect(bundles[2]?.evidence).toHaveLength(1);
     expect(bundles[2]?.normativeRecords).toHaveLength(1);
     expect(new Set(bundles.map((bundle) => bundle.corpusSha256)).size).toBe(1);
 
@@ -108,6 +108,40 @@ describe("DeepSWE evaluation preparation", () => {
         adapterRevision: "adapter-sha",
       }),
     ).rejects.toThrow(/revision mismatch/);
+  });
+
+  it("refuses a corpus frozen against a different base code revision", async () => {
+    const fixture = await createFixture();
+    const corpusPath = path.join(fixture.corpora, "alpha-task.json");
+    const corpus = JSON.parse(await readFile(corpusPath, "utf8")) as Record<string, unknown>;
+    await writeFile(
+      corpusPath,
+      `${JSON.stringify({ ...corpus, baseCodeRevision: "b".repeat(40) }, null, 2)}\n`,
+      "utf8",
+    );
+
+    await expect(
+      prepareDeepSweEvaluation({
+        repositoryRoot: "/repo",
+        datasetTasksPath: fixture.tasks,
+        corpusRoot: fixture.corpora,
+        runDirectory: fixture.run,
+        jobsDirectory: path.join(fixture.run, "jobs"),
+        pierBinary: "pier",
+        model: "openai/test-model",
+        reasoningEffort: "medium",
+        attempts: 1,
+        concurrency: 1,
+        sampleSeed: 0,
+        arms: ["baseline"],
+        taskIds: ["alpha-task"],
+        environment: "docker",
+        miniSweAgentVersion: "2.1.0",
+        deepSweRevision: fixture.revision,
+        pierRevision: "pier-0.3.1",
+        adapterRevision: "adapter-sha",
+      }),
+    ).rejects.toThrow(/base code revision mismatch/);
   });
 });
 

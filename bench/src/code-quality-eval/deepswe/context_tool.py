@@ -26,33 +26,44 @@ def snippet(value: str, limit: int = 4000) -> str:
     return value if len(value) <= limit else value[: limit - 1] + "…"
 
 
-def ranked_documents(bundle: dict[str, Any], query: str, limit: int) -> list[dict[str, Any]]:
+def present_evidence(evidence: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "kind": "evidence",
+        "evidenceId": evidence["evidenceId"],
+        "resourceId": evidence["resourceId"],
+        "chunkId": evidence["chunkId"],
+        "title": evidence["title"],
+        "sourceUri": evidence["sourceUri"],
+        "observedAt": evidence["observedAt"],
+        "ontologyNodeIds": evidence.get("ontologyNodeIds", []),
+        "text": snippet(evidence["text"]),
+    }
+
+
+def ranked_evidence(bundle: dict[str, Any], query: str, limit: int) -> list[dict[str, Any]]:
     scored = [
         (
-            score(query, f"{document.get('title', '')}\n{document.get('body', '')}"),
-            document,
+            score(query, f"{evidence.get('title', '')}\n{evidence.get('text', '')}"),
+            evidence,
         )
-        for document in bundle.get("documents", [])
+        for evidence in bundle.get("evidence", [])
     ]
     ranked = [
-        document
-        for relevance, document in sorted(
-            scored, key=lambda entry: (-entry[0], entry[1].get("documentId", ""))
+        evidence
+        for relevance, evidence in sorted(
+            scored, key=lambda entry: (-entry[0], entry[1].get("evidenceId", ""))
         )
         if relevance > 0
     ]
-    return [
-        {
-            "kind": "source",
-            "documentId": document["documentId"],
-            "title": document["title"],
-            "sourceUri": document["sourceUri"],
-            "observedAt": document["observedAt"],
-            "ontologyNodeIds": document.get("ontologyNodeIds", []),
-            "text": snippet(document["body"]),
-        }
-        for document in ranked[:limit]
-    ]
+    return [present_evidence(evidence) for evidence in ranked[:limit]]
+
+
+def normative_text(revision: dict[str, Any]) -> str:
+    if revision.get("kind") == "domain_term":
+        avoid = revision.get("avoid", [])
+        suffix = f" Avoid: {', '.join(avoid)}." if avoid else ""
+        return f"{revision.get('term', '')}: {revision.get('definition', '')}.{suffix}"
+    return revision.get("statement", "")
 
 
 def selector_score(record: dict[str, Any], path: str, symbol: str) -> int:
@@ -71,53 +82,52 @@ def ranked_records(
     bundle: dict[str, Any], query: str, path: str, symbol: str, limit: int
 ) -> list[dict[str, Any]]:
     scored = [
-        (score(query, record.get("text", "")) + selector_score(record, path, symbol), record)
+        (
+            score(query, normative_text(record.get("revision", {})))
+            + selector_score(record, path, symbol),
+            record,
+        )
         for record in bundle.get("normativeRecords", [])
     ]
     ranked = [
         record
         for relevance, record in sorted(
-            scored, key=lambda entry: (-entry[0], entry[1].get("recordId", ""))
+            scored,
+            key=lambda entry: (
+                -entry[0],
+                entry[1].get("revision", {}).get("recordId", ""),
+            ),
         )
         if relevance > 0
     ]
-    return [
-        {
-            "kind": record["kind"],
-            "recordId": record["recordId"],
-            "revisionId": record["revisionId"],
-            "text": record["text"],
-            "evidenceIds": record.get("evidenceIds", []),
-            "ontologyNodeIds": record.get("ontologyNodeIds", []),
-        }
-        for record in ranked[:limit]
-    ]
+    presented = []
+    for record in ranked[:limit]:
+        revision = record["revision"]
+        presented.append(
+            {
+                **revision,
+                "text": normative_text(revision),
+            }
+        )
+    return presented
 
 
-def evidence_documents(
+def supporting_evidence(
     bundle: dict[str, Any], records: list[dict[str, Any]]
 ) -> list[dict[str, Any]]:
     evidence_ids = {
-        evidence_id
+        reference["evidenceId"]
         for record in records
-        for evidence_id in record.get("evidenceIds", [])
+        for reference in record.get("evidence", [])
     }
     by_id = {
-        document.get("documentId"): document
-        for document in bundle.get("documents", [])
+        evidence.get("evidenceId"): evidence
+        for evidence in bundle.get("evidence", [])
     }
     return [
-        {
-            "kind": "source",
-            "documentId": document["documentId"],
-            "title": document["title"],
-            "sourceUri": document["sourceUri"],
-            "observedAt": document["observedAt"],
-            "ontologyNodeIds": document.get("ontologyNodeIds", []),
-            "text": snippet(document["body"]),
-        }
+        present_evidence(evidence)
         for evidence_id in sorted(evidence_ids)
-        if (document := by_id.get(evidence_id)) is not None
+        if (evidence := by_id.get(evidence_id)) is not None
     ]
 
 
@@ -169,6 +179,10 @@ def execute(bundle: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:
         "ok": True,
         "arm": bundle["arm"],
         "taskId": bundle["taskId"],
+        "organizationId": bundle["organizationId"],
+        "baseCodeRevision": bundle["baseCodeRevision"],
+        "contextDigest": bundle["contextDigest"],
+        "sourceFreshnessDigest": bundle["sourceFreshnessDigest"],
         "corpusSha256": bundle["corpusSha256"],
         "projectionSha256": bundle["projectionSha256"],
     }
@@ -181,12 +195,12 @@ def execute(bundle: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:
         if bundle["arm"] == "baseline":
             return {**common, "results": []}
         if bundle["arm"] == "rag":
-            return {**common, "results": ranked_documents(bundle, args.query, limit)}
+            return {**common, "results": ranked_evidence(bundle, args.query, limit)}
         records = ranked_records(bundle, args.query, "", "", limit)
         return {
             **common,
             "results": records,
-            "evidence": evidence_documents(bundle, records),
+            "evidence": supporting_evidence(bundle, records),
         }
     if args.command == "begin-logic":
         query = " ".join((args.path, args.symbol, args.responsibility))
@@ -196,12 +210,12 @@ def execute(bundle: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:
             else []
         )
         sources = (
-            evidence_documents(bundle, records)
+            supporting_evidence(bundle, records)
             if records
             else (
                 []
                 if bundle["arm"] == "baseline"
-                else ranked_documents(bundle, query, args.limit)
+                else ranked_evidence(bundle, query, args.limit)
             )
         )
         return {

@@ -1,11 +1,14 @@
+import type { NormativeRevision } from "@kontext-brain/spec";
 import type { CodeQualityArm } from "../contracts.js";
 
 export type DeepSweArm = CodeQualityArm;
 
-export interface DeepSweSourceDocument {
-  readonly documentId: string;
+export interface DeepSweEvidenceSnapshot {
+  readonly evidenceId: string;
+  readonly resourceId: string;
+  readonly chunkId: string;
   readonly title: string;
-  readonly body: string;
+  readonly text: string;
   readonly sourceUri: string;
   readonly observedAt: string;
   readonly contentSha256: string;
@@ -13,12 +16,7 @@ export interface DeepSweSourceDocument {
 }
 
 export interface DeepSweNormativeRecord {
-  readonly kind: "decision" | "domain_term" | "invariant";
-  readonly recordId: string;
-  readonly revisionId: string;
-  readonly text: string;
-  readonly evidenceIds: readonly string[];
-  readonly ontologyNodeIds: readonly string[];
+  readonly revision: NormativeRevision;
   readonly symbolSelectors?: readonly {
     readonly relativePath?: string;
     readonly qualifiedName?: string;
@@ -28,12 +26,16 @@ export interface DeepSweNormativeRecord {
 export interface DeepSweContextCorpus {
   readonly schemaVersion: 1;
   readonly taskId: string;
+  readonly organizationId: string;
+  readonly baseCodeRevision: string;
+  readonly contextDigest: string;
+  readonly sourceFreshnessDigest: string;
   readonly snapshotAt: string;
   readonly generator: {
     readonly name: "kontext-brain";
     readonly revision: string;
   };
-  readonly documents: readonly DeepSweSourceDocument[];
+  readonly evidence: readonly DeepSweEvidenceSnapshot[];
   readonly normativeRecords: readonly DeepSweNormativeRecord[];
 }
 
@@ -41,11 +43,15 @@ export interface DeepSweContextBundle {
   readonly schemaVersion: 1;
   readonly arm: DeepSweArm;
   readonly taskId: string;
+  readonly organizationId: string;
+  readonly baseCodeRevision: string;
+  readonly contextDigest: string;
+  readonly sourceFreshnessDigest: string;
   readonly snapshotAt: string;
   readonly corpusSha256: string;
   readonly projectionSha256: string;
   readonly generator: DeepSweContextCorpus["generator"];
-  readonly documents: readonly DeepSweSourceDocument[];
+  readonly evidence: readonly DeepSweEvidenceSnapshot[];
   readonly normativeRecords: readonly DeepSweNormativeRecord[];
 }
 

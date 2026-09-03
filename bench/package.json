@@ -36,6 +36,7 @@
     "@kontext-brain/llm": "workspace:*",
     "@kontext-brain/loader": "workspace:*",
     "@kontext-brain/mcp": "workspace:*",
+    "@kontext-brain/spec": "workspace:*",
     "@langchain/core": "^0.3.27",
     "@langchain/ollama": "^0.1.4"
   },

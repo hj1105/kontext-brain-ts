@@ -18,8 +18,13 @@ interface ToolResult {
   readonly results?: readonly unknown[];
   readonly editingAllowed?: boolean;
   readonly receipt?: {
-    readonly mandatoryRecords: readonly { readonly recordId: string }[];
-    readonly sources: readonly { readonly documentId: string }[];
+    readonly mandatoryRecords: readonly {
+      readonly kind: string;
+      readonly recordId: string;
+      readonly statement: string;
+      readonly verifiers: readonly { readonly kind: string; readonly ref: string }[];
+    }[];
+    readonly sources: readonly { readonly evidenceId: string }[];
   };
 }
 
@@ -49,11 +54,16 @@ describe("DeepSWE context command", () => {
     const receipt = required(result.receipt);
     expect(result.editingAllowed).toBe(true);
     expect(receipt.mandatoryRecords).toHaveLength(1);
-    expect(receipt.mandatoryRecords[0]?.recordId).toBe("invariant:stable-order");
-    expect(receipt.sources.map((source) => source.documentId)).toEqual(["doc:design"]);
+    expect(receipt.mandatoryRecords[0]).toMatchObject({
+      kind: "invariant",
+      recordId: "invariant:stable-order",
+      statement: "Parser.equal_values must preserve stable ordering.",
+      verifiers: [{ kind: "test", ref: "tests/test_parser.py" }],
+    });
+    expect(receipt.sources.map((source) => source.evidenceId)).toEqual(["evidence:design"]);
   });
 
-  it("does not pad lexical retrieval with zero-relevance documents", async () => {
+  it("does not pad lexical retrieval with zero-relevance Evidence", async () => {
     const prepared = await fixture("rag");
     const result = await runTool(prepared, ["search", "--query", "completely-unrelated-token"]);
     expect(result.results).toEqual([]);

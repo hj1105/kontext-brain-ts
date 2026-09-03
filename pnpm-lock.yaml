@@ -47,6 +47,9 @@ importers:
       '@kontext-brain/mcp':
         specifier: workspace:*
         version: link:../packages/mcp
+      '@kontext-brain/spec':
+        specifier: workspace:*
+        version: link:../packages/spec
       '@langchain/core':
         specifier: ^0.3.27
         version: 0.3.80(openai@4.104.0(zod@3.25.76))
