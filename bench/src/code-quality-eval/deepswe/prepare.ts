@@ -8,6 +8,7 @@ import type {
   DeepSweTaskSnapshot,
 } from "./contracts.js";
 import { buildContextBundle, loadDeepSweCorpus, sha256, stableJson } from "./corpus.js";
+import { planCodexWorkerImage } from "./worker-image.js";
 
 export async function prepareDeepSweEvaluation(
   options: DeepSwePrepareOptions,
@@ -98,6 +99,10 @@ export async function prepareDeepSweEvaluation(
   );
   const preparedAt = new Date().toISOString();
   const arms: DeepSwePreparedArm[] = [];
+  const executionGroups = taskExecutionGroups(tasks, options);
+  const workerImages = executionGroups.flatMap((group) =>
+    group.workerImage ? [group.workerImage] : [],
+  );
   for (const arm of options.arms) {
     const byInstructionSha256 = Object.fromEntries(
       tasks.map((task) => [
@@ -113,80 +118,93 @@ export async function prepareDeepSweEvaluation(
     } as const;
     const contextIndexPath = path.join(manifestsDirectory, `context-${arm}.json`);
     await writePrivateJson(contextIndexPath, contextIndex);
-    const identityHash = sha256(
-      stableJson({
+    for (const group of executionGroups) {
+      const identityHash = sha256(
+        stableJson({
+          arm,
+          deepSweRevision: actualDeepSweRevision,
+          pierRevision: options.pierRevision,
+          adapterRevision: options.adapterRevision,
+          runtime: options.runtime,
+          agentVersion,
+          model: options.model,
+          reasoningEffort: options.reasoningEffort,
+          attempts: options.attempts,
+          sampleSeed: options.sampleSeed,
+          tasks: group.tasks.map((task) => task.taskId),
+          workerImageIdentitySha256: group.workerImage?.identitySha256,
+          corpusSha256ByTask,
+        }),
+      ).slice(0, 12);
+      const jobName = `deepswe-${arm}-${identityHash}`;
+      const jobConfigPath = path.join(manifestsDirectory, `pier-${arm}-${identityHash}.json`);
+      const jobConfig = {
+        job_name: jobName,
+        jobs_dir: jobsDirectory,
+        n_attempts: options.attempts,
+        n_concurrent_trials: options.concurrency,
+        quiet: true,
+        retry: { max_retries: 0 },
+        environment: {
+          type: options.environment,
+          force_build: false,
+          delete: true,
+          ...(group.workerImage ? { env: { PREBUILT_IMAGE_NAME: group.workerImage.tag } } : {}),
+        },
+        agents: [
+          options.runtime === "codex-subscription"
+            ? {
+                import_path: "kontext_codex_agent:KontextCodexAgent",
+                model_name: options.model,
+                env: { CODEX_FORCE_AUTH_JSON: "true" },
+                kwargs: {
+                  context_index_path: contextIndexPath,
+                  context_tool_path: contextToolPath,
+                  reasoning_effort: options.reasoningEffort,
+                  version: agentVersion,
+                  command_model_name: options.model,
+                  ...(group.workerImage ? { prebuilt_worker_image: true } : {}),
+                },
+              }
+            : {
+                import_path: "kontext_mini_swe_agent:KontextMiniSweAgent",
+                model_name: options.model,
+                kwargs: {
+                  context_index_path: contextIndexPath,
+                  context_tool_path: contextToolPath,
+                  reasoning_effort: options.reasoningEffort,
+                  version: agentVersion,
+                },
+              },
+        ],
+        tasks: group.tasks.map((task) => ({ path: task.taskPath })),
+        datasets: [],
+      };
+      await writePrivateJson(jobConfigPath, jobConfig);
+      arms.push({
         arm,
-        deepSweRevision: actualDeepSweRevision,
-        pierRevision: options.pierRevision,
-        adapterRevision: options.adapterRevision,
         runtime: options.runtime,
-        agentVersion,
-        model: options.model,
-        reasoningEffort: options.reasoningEffort,
-        attempts: options.attempts,
-        sampleSeed: options.sampleSeed,
-        tasks: tasks.map((task) => task.taskId),
-        corpusSha256ByTask,
-      }),
-    ).slice(0, 12);
-    const jobName = `deepswe-${arm}-${identityHash}`;
-    const jobConfigPath = path.join(manifestsDirectory, `pier-${arm}.json`);
-    const jobConfig = {
-      job_name: jobName,
-      jobs_dir: jobsDirectory,
-      n_attempts: options.attempts,
-      n_concurrent_trials: options.concurrency,
-      quiet: true,
-      retry: { max_retries: 0 },
-      environment: { type: options.environment, force_build: false, delete: true },
-      agents: [
-        options.runtime === "codex-subscription"
-          ? {
-              import_path: "kontext_codex_agent:KontextCodexAgent",
-              model_name: options.model,
-              env: { CODEX_FORCE_AUTH_JSON: "true" },
-              kwargs: {
-                context_index_path: contextIndexPath,
-                context_tool_path: contextToolPath,
-                reasoning_effort: options.reasoningEffort,
-                version: agentVersion,
-                command_model_name: options.model,
-              },
-            }
-          : {
-              import_path: "kontext_mini_swe_agent:KontextMiniSweAgent",
-              model_name: options.model,
-              kwargs: {
-                context_index_path: contextIndexPath,
-                context_tool_path: contextToolPath,
-                reasoning_effort: options.reasoningEffort,
-                version: agentVersion,
-              },
-            },
-      ],
-      tasks: tasks.map((task) => ({ path: task.taskPath })),
-      datasets: [],
-    };
-    await writePrivateJson(jobConfigPath, jobConfig);
-    arms.push({
-      arm,
-      runtime: options.runtime,
-      billingMode: options.runtime === "codex-subscription" ? "subscription" : "api",
-      jobName,
-      jobConfigPath,
-      contextIndexPath,
-      expectedJobResultPath: path.join(jobsDirectory, jobName, "result.json"),
-      command: [
-        options.pierBinary,
-        "run",
-        "--config",
+        billingMode: options.runtime === "codex-subscription" ? "subscription" : "api",
+        taskIds: group.tasks.map((task) => task.taskId),
+        ...(group.workerImage
+          ? { workerImageIdentitySha256: group.workerImage.identitySha256 }
+          : {}),
+        jobName,
         jobConfigPath,
-        "--yes",
-        ...(options.runtime === "mini-swe-api" && options.envFile
-          ? ["--env-file", path.resolve(options.envFile)]
-          : []),
-      ],
-    });
+        contextIndexPath,
+        expectedJobResultPath: path.join(jobsDirectory, jobName, "result.json"),
+        command: [
+          options.pierBinary,
+          "run",
+          "--config",
+          jobConfigPath,
+          "--yes",
+          ...(options.runtime === "mini-swe-api" && options.envFile
+            ? ["--env-file", path.resolve(options.envFile)]
+            : []),
+        ],
+      });
+    }
   }
   const manifest: DeepSwePreparationManifest = {
     schemaVersion: 1,
@@ -203,6 +221,7 @@ export async function prepareDeepSweEvaluation(
     sampleSeed: options.sampleSeed,
     tasks,
     arms,
+    workerImages,
     corpusSha256ByTask,
   };
   await writePrivateJson(path.join(runDirectory, "preparation.json"), manifest);
@@ -211,6 +230,34 @@ export async function prepareDeepSweEvaluation(
     mode: 0o600,
   });
   return manifest;
+}
+
+function taskExecutionGroups(
+  tasks: readonly DeepSweTaskSnapshot[],
+  options: DeepSwePrepareOptions,
+): readonly {
+  readonly tasks: readonly DeepSweTaskSnapshot[];
+  readonly workerImage?: ReturnType<typeof planCodexWorkerImage>;
+}[] {
+  if (options.runtime !== "codex-subscription" || options.environment !== "docker") {
+    return [{ tasks }];
+  }
+  const byBaseImage = new Map<string, DeepSweTaskSnapshot[]>();
+  for (const task of tasks) {
+    const group = byBaseImage.get(task.dockerImage) ?? [];
+    group.push(task);
+    byBaseImage.set(task.dockerImage, group);
+  }
+  return Array.from(byBaseImage.entries())
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([baseImage, groupedTasks]) => ({
+      tasks: groupedTasks,
+      workerImage: planCodexWorkerImage({
+        baseImage,
+        codexVersion: requiredAgentVersion(options),
+        pierVersion: options.pierRevision,
+      }),
+    }));
 }
 
 export function stripPierCanary(source: string): string {

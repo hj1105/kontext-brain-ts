@@ -113,6 +113,8 @@ This pilot intentionally uses facts already present in the base checkout. It mea
 
 The default runtime is the open-source Codex CLI authenticated through the user's ChatGPT subscription. The runner refuses any API credential file, strips provider API-key environment variables before starting Pier, verifies that `codex login status` reports ChatGPT login, uploads the local auth cache only to the ephemeral agent container, and removes it before verification. Pin Codex, Pier, and DeepSWE revisions for replayability.
 
+For Docker runs, the runner derives one fixed worker image identity from the task base image, Codex version, Pier version, and build-recipe version. It builds a labeled image only on a cache miss and otherwise requires every identity label to match before reusing the exact local image ID. Tasks with different base images are split into separate Pier jobs, while every arm for the same base uses the same pinned worker image. This removes repeated Codex installation without sharing task workspaces, auth caches, context bundles, or verifier state.
+
 ```bash
 pnpm --filter @kontext-brain/bench code-quality:deepswe -- \
   --dataset /absolute/path/to/deep-swe/tasks \

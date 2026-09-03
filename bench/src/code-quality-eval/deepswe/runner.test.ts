@@ -4,6 +4,7 @@ import type {
   DeepSwePreparationManifest,
   DeepSwePreparedArm,
   DeepSweTrialResult,
+  DeepSweWorkerImageSnapshot,
 } from "./contracts.js";
 import { runPreparedDeepSweEvaluation } from "./runner.js";
 
@@ -43,9 +44,52 @@ describe("DeepSWE runner", () => {
     expect(report).toBeUndefined();
     expect(called).toBe(false);
   });
+
+  it("ensures pinned worker images before running Pier and records the immutable image id", async () => {
+    const events: string[] = [];
+    const input = manifest(0);
+    input.workerImages.push({
+      baseImage: "image@sha256:digest",
+      codexVersion: "0.144.6",
+      pierVersion: "0.3.1",
+      recipeVersion: "pier-codex-v1",
+      identitySha256: "a".repeat(64),
+      tag: `kontext-brain/deepswe-codex:${"a".repeat(24)}`,
+      labels: {},
+    });
+    const plannedImage = input.workerImages[0];
+    if (!plannedImage) throw new Error("Missing planned worker image");
+    const report = await runPreparedDeepSweEvaluation({
+      repositoryRoot: "/repo",
+      manifest: input,
+      dependencies: {
+        ensureWorkerImage: async ({ spec }) => {
+          events.push(`image:${spec.baseImage}`);
+          return {
+            ...plannedImage,
+            imageId: "sha256:immutable",
+            reused: true,
+            labels: {},
+          };
+        },
+        execute: async (_workingDirectory, command) => {
+          events.push(command);
+          return { exitCode: 0, stdout: "", stderr: "" };
+        },
+        readResults: async (arm) => [trial(arm.arm)],
+      },
+    });
+
+    expect(events[0]).toBe("image:image@sha256:digest");
+    expect(report?.manifest.workerImages[0]).toEqual(
+      expect.objectContaining({ imageId: "sha256:immutable", reused: true }),
+    );
+  });
 });
 
-function manifest(sampleSeed: number): DeepSwePreparationManifest {
+function manifest(sampleSeed: number): DeepSwePreparationManifest & {
+  workerImages: DeepSweWorkerImageSnapshot[];
+} {
   return {
     schemaVersion: 1,
     benchmark: "deepswe-kontext-ab",
@@ -71,6 +115,7 @@ function manifest(sampleSeed: number): DeepSwePreparationManifest {
       },
     ],
     arms: (["baseline", "rag", "kontext"] as const).map(preparedArm),
+    workerImages: [],
     corpusSha256ByTask: { demo: "corpus-sha" },
   };
 }
@@ -80,6 +125,7 @@ function preparedArm(arm: DeepSweArm): DeepSwePreparedArm {
     arm,
     runtime: "codex-subscription",
     billingMode: "subscription",
+    taskIds: ["demo"],
     jobName: `job-${arm}`,
     jobConfigPath: `/run/${arm}.json`,
     contextIndexPath: `/run/context-${arm}.json`,

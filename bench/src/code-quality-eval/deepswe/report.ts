@@ -11,7 +11,7 @@ export function buildDeepSweReport(input: {
   readonly trials: readonly DeepSweTrialResult[];
   readonly generatedAt?: string;
 }): DeepSweReport {
-  const arms = input.manifest.arms.map((arm) => arm.arm);
+  const arms = [...new Set(input.manifest.arms.map((arm) => arm.arm))];
   return {
     schemaVersion: 1,
     benchmark: "deepswe-kontext-ab",
@@ -47,6 +47,16 @@ export function renderDeepSweMarkdown(report: DeepSweReport): string {
 - Kontext adapter revision: \`${report.manifest.adapterRevision}\`
 - Runtime: \`${report.manifest.runtime}\`; agent version: \`${report.manifest.agentVersion}\`
 - Model: \`${report.manifest.model}\` at \`${report.manifest.reasoningEffort}\`
+- Worker images: ${
+    (report.manifest.workerImages?.length ?? 0) === 0
+      ? "n/a"
+      : (report.manifest.workerImages ?? [])
+          .map(
+            (workerImage) =>
+              `\`${workerImage.tag}\` → \`${workerImage.imageId ?? "not-materialized"}\` (${workerImage.reused ? "reused" : "built"})`,
+          )
+          .join(", ")
+  }
 - Tasks: ${report.manifest.tasks.length}; attempts per task: ${report.manifest.attempts}
 
 ## Arm summaries

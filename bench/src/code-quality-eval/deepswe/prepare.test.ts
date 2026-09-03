@@ -42,6 +42,7 @@ describe("DeepSWE evaluation preparation", () => {
     expect(manifest.deepSweRevision).toBe(fixture.revision);
     expect(manifest.tasks).toHaveLength(2);
     expect(manifest.arms).toHaveLength(3);
+    expect(manifest.workerImages).toEqual([]);
     const indexes = await Promise.all(
       manifest.arms.map(
         async (arm) =>
@@ -103,6 +104,8 @@ describe("DeepSWE evaluation preparation", () => {
 
     expect(manifest.runtime).toBe("codex-subscription");
     expect(manifest.agentVersion).toBe("0.144.6");
+    expect(manifest.workerImages).toHaveLength(2);
+    expect(manifest.arms).toHaveLength(6);
     for (const arm of manifest.arms) {
       expect(arm.runtime).toBe("codex-subscription");
       expect(arm.billingMode).toBe("subscription");
@@ -110,8 +113,15 @@ describe("DeepSWE evaluation preparation", () => {
       const config = JSON.parse(await readFile(arm.jobConfigPath, "utf8"));
       expect(config.agents[0].import_path).toBe("kontext_codex_agent:KontextCodexAgent");
       expect(config.agents[0].kwargs.version).toBe("0.144.6");
+      expect(config.agents[0].kwargs.prebuilt_worker_image).toBe(true);
       expect(config.agents[0].env).toEqual({ CODEX_FORCE_AUTH_JSON: "true" });
       expect(config.agents[0].kwargs.extra_env).toBeUndefined();
+      expect(config.environment.env.PREBUILT_IMAGE_NAME).toMatch(
+        /^kontext-brain\/deepswe-codex:[a-f0-9]{24}$/,
+      );
+      expect(config.tasks).toHaveLength(1);
+      expect(arm.taskIds).toHaveLength(1);
+      expect(arm.workerImageIdentitySha256).toMatch(/^[a-f0-9]{64}$/);
     }
   });
 

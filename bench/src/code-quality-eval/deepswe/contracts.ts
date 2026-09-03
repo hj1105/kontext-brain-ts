@@ -79,11 +79,25 @@ export interface DeepSwePreparedArm {
   readonly arm: DeepSweArm;
   readonly runtime: DeepSweRuntime;
   readonly billingMode: "subscription" | "api";
+  readonly taskIds?: readonly string[];
+  readonly workerImageIdentitySha256?: string;
   readonly jobName: string;
   readonly jobConfigPath: string;
   readonly contextIndexPath: string;
   readonly expectedJobResultPath: string;
   readonly command: readonly string[];
+}
+
+export interface DeepSweWorkerImageSnapshot {
+  readonly baseImage: string;
+  readonly codexVersion: string;
+  readonly pierVersion: string;
+  readonly recipeVersion: string;
+  readonly identitySha256: string;
+  readonly tag: string;
+  readonly labels: Readonly<Record<string, string>>;
+  readonly imageId?: string;
+  readonly reused?: boolean;
 }
 
 export interface DeepSwePreparationManifest {
@@ -101,6 +115,7 @@ export interface DeepSwePreparationManifest {
   readonly sampleSeed: number;
   readonly tasks: readonly DeepSweTaskSnapshot[];
   readonly arms: readonly DeepSwePreparedArm[];
+  readonly workerImages?: readonly DeepSweWorkerImageSnapshot[];
   readonly corpusSha256ByTask: Readonly<Record<string, string>>;
 }
 

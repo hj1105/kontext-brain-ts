@@ -12,6 +12,7 @@ from typing import Any
 from pier.agents.installed.codex import Codex
 from pier.environments.base import BaseEnvironment
 from pier.models.agent.context import AgentContext
+from pier.models.agent.install import AgentInstallSpec
 from pier.models.agent.network import NetworkAllowlist
 
 
@@ -34,10 +35,12 @@ class KontextCodexAgent(Codex):
         self,
         context_index_path: str,
         context_tool_path: str | None = None,
+        prebuilt_worker_image: bool = False,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         super().__init__(*args, **kwargs)
+        self._prebuilt_worker_image = prebuilt_worker_image
         self._context_index_path = Path(context_index_path)
         self._context_tool_path = (
             Path(context_tool_path)
@@ -55,6 +58,27 @@ class KontextCodexAgent(Codex):
         # apex, so adding both forms would make Pier's proxy configuration fail.
         # The task repository itself stays offline.
         return NetworkAllowlist(domains=[".chatgpt.com", ".openai.com"])
+
+    def install_spec(self) -> AgentInstallSpec | None:
+        """Let Pier use the task's already-provisioned image when explicitly opted in."""
+        if self._prebuilt_worker_image:
+            return None
+        return super().install_spec()
+
+    async def install(self, environment: BaseEnvironment) -> None:
+        if not self._prebuilt_worker_image:
+            await super().install(environment)
+            return
+        result = await environment.exec(command=self.get_version_command())
+        if result.return_code != 0:
+            raise RuntimeError(
+                "Pinned Codex worker image does not contain an executable Codex CLI"
+            )
+        actual = self.parse_version(result.stdout or "")
+        if self._version and actual != self._version:
+            raise RuntimeError(
+                f"Pinned Codex worker image version mismatch: {actual} != {self._version}"
+            )
 
     async def run(
         self,
