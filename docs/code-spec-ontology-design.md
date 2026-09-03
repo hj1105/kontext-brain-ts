@@ -468,9 +468,13 @@ time. It does not duplicate secret source bodies or provider credentials.
    context digest.
 10. **Handoff** — return a Change Bundle; conversation prose is not the handoff
     contract.
-11. **Integrate** — the main thread validates receipts, applies bundles in
+11. **Settle** — after the runtime process exits, the sidecar independently
+    re-observes the worktree and accepts the Logic Work Item only when one
+    current Change Bundle and its passing targeted Verification Runs match the
+    same Context Receipt, revision, and context digest.
+12. **Integrate** — the main thread validates receipts, applies bundles in
     dependency order, resolves semantic conflicts, and runs integrated checks.
-12. **Complete** — create the Accuracy Manifest only when every required proof
+13. **Complete** — create the Accuracy Manifest only when every required proof
     is current and passing.
 
 If a new normative revision is accepted after snapshot creation, the Task is
@@ -493,7 +497,7 @@ evolve, but their contracts are stable:
 | `kontext_submit_change_bundle` | derive patch, symbols, and receipts from `workspacePath`, then validate the worker's bundle claims |
 | `kontext_propose_transition` | accept Evidence and compute Task state; reject direct state writes |
 | `kontext_inspect_runtimes` | report CLI installation, auth, billing path, and scheduling eligibility |
-| `kontext_schedule_logic` | durably enqueue sidecar-planned Work Items for isolated provider-bound execution |
+| `kontext_schedule_logic` | durably enqueue sidecar-planned Work Items for isolated provider-bound execution; release dependencies only after settlement proof |
 | `kontext_get_schedule` | read durable progress and state; after restart, revalidate and automatically resume an eligible interrupted schedule |
 | `kontext_cancel_schedule` | durably request cancellation and report state while the owner stops workers and releases leases |
 | `kontext_integrate_schedule` | revalidate a completed schedule's accepted Bundles, semantically integrate them, run full verification, and obtain required independent review |

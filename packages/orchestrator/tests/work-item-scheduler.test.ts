@@ -7,12 +7,98 @@ import {
   RuntimeScheduleCancelledError,
   type RuntimeSession,
   type RuntimeWorkInput,
+  type RuntimeWorkSettlementPort,
   type RuntimeWorktreePort,
   WorkItemScheduler,
   createRuntimeCapabilitySnapshot,
 } from "../src/index.js";
 
 describe("WorkItemScheduler", () => {
+  it("retries in a fresh runtime session until a completed worker produces accepted bundle proof", async () => {
+    const starts: RuntimeProvider[] = [];
+    let resumes = 0;
+    const codex = fakeRuntime(
+      "codex",
+      async (input) => {
+        starts.push("codex");
+        return session("codex", input.workItem.workItemId, "completed");
+      },
+      () => {
+        resumes += 1;
+      },
+    );
+    const claude = fakeRuntime(
+      "claude",
+      async (input) => {
+        starts.push("claude");
+        return session("claude", input.workItem.workItemId, "completed");
+      },
+      () => {
+        resumes += 1;
+      },
+    );
+    const settlements: RuntimeWorkSettlementPort = {
+      settle: async ({
+        provider,
+        session: completedSession,
+        contextDigest,
+        codeRevision,
+        worktree,
+      }) => {
+        expect(completedSession.status).toBe("completed");
+        expect(contextDigest).toBe("context:current");
+        expect(codeRevision).toBe("commit:base");
+        expect(worktree.workspacePath).toBe("/worktrees/work:settlement");
+        if (provider === "codex") {
+          return {
+            accepted: false,
+            missingProof: ["targeted_verification"],
+            diagnostic: "Change Bundle has no passing targeted Verification Run",
+          };
+        }
+        return {
+          accepted: true,
+          proofId: "settlement-proof:accepted",
+          changeBundleId: "change-bundle:accepted",
+          targetedVerificationRunIds: ["verification-run:targeted"],
+        };
+      },
+    };
+    const scheduler = new WorkItemScheduler(
+      [codex, claude],
+      fakeWorktrees(),
+      new InMemoryRuntimeLeaseStore(),
+      undefined,
+      undefined,
+      settlements,
+    );
+
+    const result = await scheduler.run({
+      taskId: "task:settlement",
+      maxRetries: 1,
+      work: [
+        {
+          ...scheduled(workItem("work:settlement", ["src/settlement.ts"])),
+          eligibleProviders: ["codex", "claude"],
+        },
+      ],
+    });
+
+    expect(starts).toEqual(["codex", "claude"]);
+    expect(resumes).toBe(0);
+    expect(result.results[0]).toEqual(
+      expect.objectContaining({
+        status: "completed",
+        provider: "claude",
+        attempts: 2,
+        settlementProofId: "settlement-proof:accepted",
+        diagnostics: [
+          "Change Bundle has no passing targeted Verification Run; missing proof: passing targeted Verification Run",
+        ],
+      }),
+    );
+  });
+
   it("runs independent work concurrently while serializing shared paths", async () => {
     let active = 0;
     let maximumActive = 0;
@@ -29,6 +115,9 @@ describe("WorkItemScheduler", () => {
       [runtime],
       fakeWorktrees(),
       new InMemoryRuntimeLeaseStore(),
+      undefined,
+      undefined,
+      acceptedSettlement(),
     );
 
     const result = await scheduler.run({
@@ -75,6 +164,9 @@ describe("WorkItemScheduler", () => {
       [codex, claude],
       fakeWorktrees(),
       new InMemoryRuntimeLeaseStore(),
+      undefined,
+      undefined,
+      acceptedSettlement(),
     );
 
     const result = await scheduler.run({
@@ -144,6 +236,9 @@ describe("WorkItemScheduler", () => {
       [runtime],
       fakeWorktrees(),
       new InMemoryRuntimeLeaseStore(),
+      undefined,
+      undefined,
+      acceptedSettlement(),
     );
     const first = scheduled(workItem("work:finished", ["src/finished.ts"]));
     const second = scheduled(workItem("work:remaining", ["src/remaining.ts"]));
@@ -166,6 +261,9 @@ describe("WorkItemScheduler", () => {
           attempts: 1,
           checkpoints: [],
           diagnostics: [],
+          settlementProofId: "settlement-proof:finished",
+          changeBundleId: "change-bundle:finished",
+          targetedVerificationRunIds: ["verification-run:targeted:finished"],
         },
       ],
       onProgress: (current) => {
@@ -176,6 +274,103 @@ describe("WorkItemScheduler", () => {
     expect(starts).toEqual(["work:remaining"]);
     expect(progress).toEqual([["work:finished", "work:remaining"]]);
     expect(result.results).toHaveLength(2);
+  });
+
+  it("rejects a durable completed result without accepted Change Bundle and targeted proof", async () => {
+    const scheduler = new WorkItemScheduler(
+      [
+        fakeRuntime("codex", async (input) =>
+          session("codex", input.workItem.workItemId, "completed"),
+        ),
+      ],
+      fakeWorktrees(),
+      new InMemoryRuntimeLeaseStore(),
+    );
+
+    await expect(
+      scheduler.run({
+        taskId: "task:schedule",
+        work: [scheduled(workItem("work:unsettled", ["src/unsettled.ts"]))],
+        initialResults: [
+          {
+            workItemId: "work:unsettled",
+            status: "completed",
+            attempts: 1,
+            checkpoints: [],
+            diagnostics: [],
+          },
+        ],
+      }),
+    ).rejects.toThrow(
+      "Completed Logic Work Item work:unsettled is missing accepted Change Bundle and passing targeted Verification Run proof",
+    );
+  });
+
+  it("fails closed when no runtime settlement port is configured", async () => {
+    let starts = 0;
+    const runtime = fakeRuntime("codex", async (input) => {
+      starts += 1;
+      return session("codex", input.workItem.workItemId, "completed");
+    });
+    const scheduler = new WorkItemScheduler(
+      [runtime],
+      fakeWorktrees(),
+      new InMemoryRuntimeLeaseStore(),
+    );
+
+    const result = await scheduler.run({
+      taskId: "task:unsettled",
+      maxRetries: 1,
+      work: [scheduled(workItem("work:unsettled", ["src/unsettled.ts"]))],
+    });
+
+    expect(starts).toBe(2);
+    expect(result.results[0]).toEqual(
+      expect.objectContaining({
+        status: "failed",
+        attempts: 2,
+        diagnostics: [
+          "Runtime work settlement is required; missing proof: accepted Change Bundle, passing targeted Verification Run",
+          "Runtime work settlement is required; missing proof: accepted Change Bundle, passing targeted Verification Run",
+        ],
+      }),
+    );
+  });
+
+  it("does not trust an accepted settlement without a targeted Verification Run reference", async () => {
+    const runtime = fakeRuntime("codex", async (input) =>
+      session("codex", input.workItem.workItemId, "completed"),
+    );
+    const scheduler = new WorkItemScheduler(
+      [runtime],
+      fakeWorktrees(),
+      new InMemoryRuntimeLeaseStore(),
+      undefined,
+      undefined,
+      {
+        settle: async () => ({
+          accepted: true,
+          proofId: "settlement-proof:incomplete",
+          changeBundleId: "change-bundle:present",
+          targetedVerificationRunIds: [],
+        }),
+      },
+    );
+
+    const result = await scheduler.run({
+      taskId: "task:incomplete-settlement",
+      maxRetries: 0,
+      work: [scheduled(workItem("work:incomplete-settlement", ["src/incomplete.ts"]))],
+    });
+
+    expect(result.results[0]).toEqual(
+      expect.objectContaining({
+        status: "failed",
+        diagnostics: [
+          "Runtime work settlement returned incomplete accepted proof; missing proof: passing targeted Verification Run",
+        ],
+      }),
+    );
   });
 
   it("rejects a durable checkpoint bound to a different revision", async () => {
@@ -280,6 +475,17 @@ function fakeWorktrees(): RuntimeWorktreePort {
       workspacePath: `/worktrees/${workItem.workItemId}`,
       branchName: `kontext/${workItem.workItemId}`,
       baseRevision,
+    }),
+  };
+}
+
+function acceptedSettlement(): RuntimeWorkSettlementPort {
+  return {
+    settle: async ({ workItem }) => ({
+      accepted: true,
+      proofId: `settlement-proof:${workItem.workItemId}`,
+      changeBundleId: `change-bundle:${workItem.workItemId}`,
+      targetedVerificationRunIds: [`verification-run:targeted:${workItem.workItemId}`],
     }),
   };
 }

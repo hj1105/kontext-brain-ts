@@ -98,6 +98,39 @@ export interface RuntimeWorkPreparationPort {
   }): Promise<void>;
 }
 
+export type RuntimeWorkSettlementProofKind = "accepted_change_bundle" | "targeted_verification";
+
+export interface RuntimeWorkSettlementInput {
+  readonly taskId: string;
+  readonly workItem: LogicWorkItem;
+  readonly worktree: RuntimeWorktree;
+  readonly contextDigest: string;
+  readonly codeRevision: string;
+  readonly provider: RuntimeProvider;
+  readonly session: RuntimeSession;
+  readonly attempt: number;
+}
+
+export type RuntimeWorkSettlementResult =
+  | {
+      readonly accepted: true;
+      readonly proofId: string;
+      readonly changeBundleId: string;
+      readonly targetedVerificationRunIds: readonly string[];
+    }
+  | {
+      readonly accepted: false;
+      readonly missingProof: readonly [
+        RuntimeWorkSettlementProofKind,
+        ...RuntimeWorkSettlementProofKind[],
+      ];
+      readonly diagnostic: string;
+    };
+
+export interface RuntimeWorkSettlementPort {
+  settle(input: RuntimeWorkSettlementInput): Promise<RuntimeWorkSettlementResult>;
+}
+
 export interface RuntimeLease {
   readonly leaseId: string;
   readonly taskId: string;

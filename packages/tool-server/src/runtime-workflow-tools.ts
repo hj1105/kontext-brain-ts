@@ -8,6 +8,7 @@ import {
   RuntimeDoctor,
   type RuntimeProvider,
   WorkItemScheduler,
+  validateChangeBundle,
 } from "@kontext-brain/orchestrator";
 import type { QuarantineStore, TaskCompletionArtifactStore } from "@kontext-brain/orchestrator";
 import type { LogicWorkItem } from "@kontext-brain/spec";
@@ -249,27 +250,139 @@ export class LocalKontextRuntimeOperations implements KontextRuntimeOperations {
         );
       }
     }
-    const scheduler = new WorkItemScheduler(this.runtimes, manager, this.leases, this.now, {
-      prepare: async (input) => {
-        const compiled = await contextRouter.beginLogic({
-          taskId: input.taskId,
-          workspacePath: input.worktree.workspacePath,
-          logic: {
-            workItemId: input.workItem.workItemId,
-            plannedSymbolIds: input.workItem.plannedSymbolIds,
-          },
-          runtimeProvider: input.provider,
-          receiptTtlSeconds: input.receiptTtlSeconds,
-          totalTokenBudget: input.totalTokenBudget,
-          optionalEvidenceTokenBudget: input.optionalEvidenceTokenBudget,
-        });
-        if (!compiled.editingAllowed || !compiled.receipt) {
-          throw new Error(
-            `Context is ${compiled.status} for ${input.workItem.workItemId} on ${input.provider}`,
-          );
-        }
+    const scheduler = new WorkItemScheduler(
+      this.runtimes,
+      manager,
+      this.leases,
+      this.now,
+      {
+        prepare: async (input) => {
+          const compiled = await contextRouter.beginLogic({
+            taskId: input.taskId,
+            workspacePath: input.worktree.workspacePath,
+            logic: {
+              workItemId: input.workItem.workItemId,
+              plannedSymbolIds: input.workItem.plannedSymbolIds,
+            },
+            runtimeProvider: input.provider,
+            receiptTtlSeconds: input.receiptTtlSeconds,
+            totalTokenBudget: input.totalTokenBudget,
+            optionalEvidenceTokenBudget: input.optionalEvidenceTokenBudget,
+          });
+          if (!compiled.editingAllowed || !compiled.receipt) {
+            throw new Error(
+              `Context is ${compiled.status} for ${input.workItem.workItemId} on ${input.provider}`,
+            );
+          }
+        },
       },
-    });
+      {
+        settle: async (input) => {
+          const plan = current.logicPlans.find(
+            (candidate) => candidate.workItemId === input.workItem.workItemId,
+          );
+          if (!plan) {
+            return {
+              accepted: false,
+              missingProof: ["accepted_change_bundle"],
+              diagnostic: `Logic Work Item ${input.workItem.workItemId} is no longer sidecar-planned`,
+            };
+          }
+          const evidence = await this.changeEvidence.observe({
+            workspacePath: input.worktree.workspacePath,
+            taskId: input.taskId,
+            workItem: input.workItem,
+            plannedSymbols: plan.plannedSymbols,
+          });
+          const [storedBundles, verificationRuns, quarantineRecords] = await Promise.all([
+            this.artifacts.listChangeBundles(input.taskId),
+            this.artifacts.listVerificationRuns(input.taskId),
+            this.quarantine.list("active"),
+          ]);
+          const candidates = storedBundles.filter(
+            (bundle) =>
+              bundle.workItemId === input.workItem.workItemId &&
+              bundle.resultRevision === evidence.currentCodeRevision &&
+              bundle.patchDigest === evidence.observedPatch.patchDigest,
+          );
+          if (candidates.length !== 1 || !candidates[0]) {
+            return {
+              accepted: false,
+              missingProof: ["accepted_change_bundle"],
+              diagnostic: `Runtime work requires exactly one current Change Bundle; observed ${candidates.length}`,
+            };
+          }
+          const bundle = candidates[0];
+          const validation = validateChangeBundle({
+            bundle,
+            workItem: input.workItem,
+            snapshot: prepared.snapshot,
+            currentCodeRevision: evidence.currentCodeRevision,
+            observedPatch: evidence.observedPatch,
+            plannedSymbolIssues: evidence.plannedSymbolIssues,
+            unauthorizedChangedSymbolIds: evidence.unauthorizedChangedSymbolIds,
+            receipts: evidence.receipts,
+            verificationRuns,
+            boundInvariantVerifiers: boundInvariantVerifiers(
+              current,
+              prepared.snapshot.normativeRevisions,
+            ),
+            quarantineRecords,
+          });
+          if (!validation.accepted) {
+            const verificationMissing = validation.issues.some(
+              (issue) =>
+                issue.code === "missing_verification" || issue.code === "invalid_verification",
+            );
+            return {
+              accepted: false,
+              missingProof: verificationMissing
+                ? ["accepted_change_bundle", "targeted_verification"]
+                : ["accepted_change_bundle"],
+              diagnostic: `Change Bundle ${bundle.bundleId} was rejected: ${validation.issues
+                .map((issue) => issue.code)
+                .join(", ")}`,
+            };
+          }
+          const targetedVerificationRunIds = verificationRuns
+            .filter(
+              (run) =>
+                bundle.verificationRunIds.includes(run.verificationRunId) &&
+                run.tier === "targeted" &&
+                run.result === "passed" &&
+                run.codeRevision === evidence.currentCodeRevision &&
+                run.contextDigest === prepared.snapshot.contextDigest,
+            )
+            .map((run) => run.verificationRunId)
+            .sort();
+          if (targetedVerificationRunIds.length === 0) {
+            return {
+              accepted: false,
+              missingProof: ["targeted_verification"],
+              diagnostic: `Change Bundle ${bundle.bundleId} has no passing targeted Verification Run`,
+            };
+          }
+          const proofId = `runtime-settlement:${createHash("sha256")
+            .update(
+              JSON.stringify([
+                input.taskId,
+                input.workItem.workItemId,
+                prepared.snapshot.contextDigest,
+                evidence.currentCodeRevision,
+                bundle.bundleId,
+                targetedVerificationRunIds,
+              ]),
+            )
+            .digest("hex")}`;
+          return {
+            accepted: true,
+            proofId,
+            changeBundleId: bundle.bundleId,
+            targetedVerificationRunIds,
+          };
+        },
+      },
+    );
     return {
       codeRevision: current.codeRevision,
       contextDigest: prepared.snapshot.contextDigest,
@@ -306,6 +419,22 @@ export class LocalKontextRuntimeOperations implements KontextRuntimeOperations {
       this.now,
     ).integrate(job, request);
   }
+}
+
+function boundInvariantVerifiers(
+  current: Awaited<ReturnType<TaskContextStateProvider["getCurrent"]>>,
+  revisions: readonly { readonly kind: string; readonly revisionId: string }[],
+) {
+  const revisionIds = new Set(
+    revisions
+      .filter((revision) => revision.kind === "invariant")
+      .map((revision) => revision.revisionId),
+  );
+  return current.normativeRecords.flatMap((record) =>
+    record.revision.kind === "invariant" && revisionIds.has(record.revision.revisionId)
+      ? record.revision.verifiers
+      : [],
+  );
 }
 
 export function applyRiskProviderPolicy<

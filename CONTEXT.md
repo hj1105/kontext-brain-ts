@@ -144,9 +144,13 @@ The immutable set of applicable Decision, Domain Term, Invariant, source-freshne
 
 A schedulable unit of work over one behavior-bearing Code Symbol or a tightly coupled group of Code Symbols. Logic Work Items form a dependency graph and carry bounded write authority.
 
+A Logic Work Item is settled only when its current Context Receipt, accepted Change Bundle, and passing targeted Verification Runs agree on the workspace revision and Task Context Snapshot. A runtime process exiting successfully is not settlement proof.
+
 ## Runtime Schedule
 
 The private, digest-checked sidecar record that executes a set of Logic Work Items asynchronously. It retains the frozen revision and context digest, bounded provider authority, durable Work Item progress, cancellation intent, and recovery history without exposing worker prompts in its public view.
+
+A Runtime Schedule is complete only after every Logic Work Item is settled; a provider or infrastructure failure may be retried in a fresh session but never falls back to API billing without explicit consent.
 
 ## Runtime Checkpoint
 

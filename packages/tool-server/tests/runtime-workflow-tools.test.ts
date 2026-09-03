@@ -302,6 +302,9 @@ async function orphanSchedule(
           attempts: 1,
           checkpoints: [],
           diagnostics: [],
+          settlementProofId: "runtime-settlement:handler",
+          changeBundleId: "change-bundle:handler",
+          targetedVerificationRunIds: ["verification-run:targeted:handler"],
         },
       ],
     });

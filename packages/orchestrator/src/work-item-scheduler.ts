@@ -9,6 +9,8 @@ import type {
   RuntimeProvider,
   RuntimeSession,
   RuntimeWorkPreparationPort,
+  RuntimeWorkSettlementPort,
+  RuntimeWorkSettlementProofKind,
   RuntimeWorktree,
   RuntimeWorktreePort,
 } from "./runtime.js";
@@ -47,6 +49,9 @@ export interface ScheduledWorkResult {
   readonly attempts: number;
   readonly checkpoints: readonly RuntimeCheckpoint[];
   readonly diagnostics: readonly string[];
+  readonly settlementProofId?: string;
+  readonly changeBundleId?: string;
+  readonly targetedVerificationRunIds?: readonly string[];
 }
 
 export interface WorkItemScheduleResult {
@@ -70,6 +75,7 @@ export class WorkItemScheduler {
     private readonly leases: RuntimeLeaseStore,
     private readonly now: () => Date = () => new Date(),
     private readonly preparation?: RuntimeWorkPreparationPort,
+    private readonly settlement?: RuntimeWorkSettlementPort,
   ) {
     this.runtimes = new Map(runtimes.map((runtime) => [runtime.provider, runtime]));
   }
@@ -241,6 +247,36 @@ export class WorkItemScheduler {
         });
         checkpoints.push(checkpoint);
         if (lastSession.status === "completed") {
+          const settlement = this.settlement
+            ? await this.settlement.settle({
+                taskId,
+                workItem: work.workItem,
+                worktree,
+                contextDigest: work.contextDigest,
+                codeRevision: work.codeRevision,
+                provider,
+                session: lastSession,
+                attempt: attempt + 1,
+              })
+            : {
+                accepted: false as const,
+                missingProof: ["accepted_change_bundle" as const, "targeted_verification" as const],
+                diagnostic: "Runtime work settlement is required",
+              };
+          if (!settlement.accepted) {
+            diagnostics.push(settlementDiagnostic(settlement.diagnostic, settlement.missingProof));
+            continue;
+          }
+          const missingProof = missingAcceptedSettlementProof(settlement);
+          if (missingProof.length > 0) {
+            diagnostics.push(
+              settlementDiagnostic(
+                "Runtime work settlement returned incomplete accepted proof",
+                missingProof,
+              ),
+            );
+            continue;
+          }
           return {
             workItemId: work.workItem.workItemId,
             status: "completed",
@@ -250,6 +286,9 @@ export class WorkItemScheduler {
             attempts: attempt + 1,
             checkpoints,
             diagnostics,
+            settlementProofId: settlement.proofId,
+            changeBundleId: settlement.changeBundleId,
+            targetedVerificationRunIds: settlement.targetedVerificationRunIds,
           };
         }
         diagnostics.push(lastSession.diagnostic ?? `${provider} worker failed`);
@@ -275,6 +314,38 @@ export class WorkItemScheduler {
   }
 }
 
+function settlementDiagnostic(
+  diagnostic: string,
+  missingProof: readonly RuntimeWorkSettlementProofKind[],
+): string {
+  return `${diagnostic}; missing proof: ${missingProof.map(settlementProofLabel).join(", ")}`;
+}
+
+function settlementProofLabel(kind: RuntimeWorkSettlementProofKind): string {
+  return kind === "accepted_change_bundle"
+    ? "accepted Change Bundle"
+    : "passing targeted Verification Run";
+}
+
+function missingAcceptedSettlementProof(settlement: {
+  readonly proofId: string;
+  readonly changeBundleId: string;
+  readonly targetedVerificationRunIds: readonly string[];
+}): RuntimeWorkSettlementProofKind[] {
+  const missingProof: RuntimeWorkSettlementProofKind[] = [];
+  if (!hasText(settlement.proofId) || !hasText(settlement.changeBundleId)) {
+    missingProof.push("accepted_change_bundle");
+  }
+  if (!settlement.targetedVerificationRunIds.some(hasText)) {
+    missingProof.push("targeted_verification");
+  }
+  return missingProof;
+}
+
+function hasText(value: string): boolean {
+  return value.trim().length > 0;
+}
+
 function validatedInitialResults(
   initialResults: readonly ScheduledWorkResult[],
   workById: ReadonlyMap<string, ScheduledLogicWork>,
@@ -298,6 +369,27 @@ function validatedInitialResults(
     }
     if (result.worktree && result.worktree.baseRevision !== work.codeRevision) {
       throw new Error(`Checkpoint worktree does not match revision for ${result.workItemId}`);
+    }
+    if (result.status === "completed") {
+      const missingProof: RuntimeWorkSettlementProofKind[] = [];
+      if (
+        !result.settlementProofId ||
+        !hasText(result.settlementProofId) ||
+        !result.changeBundleId ||
+        !hasText(result.changeBundleId)
+      ) {
+        missingProof.push("accepted_change_bundle");
+      }
+      if (!result.targetedVerificationRunIds?.some(hasText)) {
+        missingProof.push("targeted_verification");
+      }
+      if (missingProof.length > 0) {
+        throw new Error(
+          `Completed Logic Work Item ${result.workItemId} is missing ${missingProof
+            .map(settlementProofLabel)
+            .join(" and ")} proof`,
+        );
+      }
     }
     results.set(result.workItemId, result);
   }
