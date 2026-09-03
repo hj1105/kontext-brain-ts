@@ -50,6 +50,22 @@ describe("Codex plugin bundle", () => {
         "kontext_schedule_logic",
         "kontext_submit_change_bundle",
       ]);
+      expect(
+        tools.tools.find((tool) => tool.name === "kontext_inspect_runtimes")?.annotations,
+      ).toEqual({
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      });
+      expect(tools.tools.find((tool) => tool.name === "kontext_get_schedule")?.annotations).toEqual(
+        {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
+      );
     } finally {
       await client.close();
     }

@@ -88,6 +88,12 @@ export function registerTaskWorkflowTools(
       "kontext_inspect_runtimes",
       "Inspect installed Codex and Claude CLIs, authentication, billing path, and frozen runtime capabilities.",
       inspectRuntimesToolShape,
+      {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
       async (input) => workflowToolResult(await runtime.inspectRuntimes(input)),
     );
     server.tool(
@@ -100,6 +106,12 @@ export function registerTaskWorkflowTools(
       "kontext_get_schedule",
       "Read durable schedule progress and state; after restart, revalidate and automatically resume an eligible interrupted schedule.",
       getScheduleToolShape,
+      {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
       async (input) => workflowToolResult(await runtime.getSchedule(input)),
     );
     server.tool(
