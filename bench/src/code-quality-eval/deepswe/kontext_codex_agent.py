@@ -51,10 +51,10 @@ class KontextCodexAgent(Codex):
 
     def network_allowlist(self) -> NetworkAllowlist:
         # ChatGPT-authenticated Codex can use ChatGPT and OpenAI subdomains for
-        # inference and token refresh. The task repository itself stays offline.
-        return NetworkAllowlist(
-            domains=["chatgpt.com", ".chatgpt.com", "api.openai.com", ".openai.com"]
-        )
+        # inference and token refresh. Squid's leading-dot form also matches the
+        # apex, so adding both forms would make Pier's proxy configuration fail.
+        # The task repository itself stays offline.
+        return NetworkAllowlist(domains=[".chatgpt.com", ".openai.com"])
 
     async def run(
         self,
