@@ -93,6 +93,22 @@ pnpm --filter @kontext-brain/bench code-quality:deepswe:export -- \
 
 The exporter records the clean Kontext Git revision automatically. `--generator-revision` is available for an installed, externally pinned build, and `--data-dir` selects a non-default sidecar directory.
 
+## Preregistered Awilix pilot
+
+The `awilix-async-container-initialization` pilot exercises the complete production-shaped path: the pinned public Awilix checkout is synchronized as Code and documentation Resources, exact line ranges become Chunks and Evidence, shared Ontology Nodes derive Planned Symbol governance links, the sidecar prepares a Task Context Snapshot, and the exporter freezes it. The source manifest pins every input file hash. It does not read DeepSWE tests, verifier files, solutions, or earlier trajectories.
+
+```bash
+git clone https://github.com/jeffijoe/awilix.git /absolute/path/to/awilix
+git -C /absolute/path/to/awilix switch --detach 82ac179c1de4c216c4e333093044fac643303f0c
+
+pnpm --filter @kontext-brain/bench code-quality:deepswe:pilot:awilix -- \
+  --checkout /absolute/path/to/awilix \
+  --runtime-provider openai \
+  --output /absolute/path/to/frozen-corpora/awilix-async-container-initialization.json
+```
+
+This pilot intentionally uses facts already present in the base checkout. It measures whether ontology-linked, provenance-governed compression helps an agent apply existing project contracts; it does not claim access to otherwise unavailable information. A one-rollout run is infrastructure and directional evidence only. Use the default four rollouts per arm for the preregistered comparison.
+
 ## Reproducible run
 
 Pin all three repositories/tools. The paper's mini-swe-agent commit `adfe2023` is release `2.3.0`; the current adapter was checked against Pier `0.3.1` and DeepSWE revision `0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea`.

@@ -27,6 +27,7 @@
     "code-quality:real-oss": "node --import tsx src/code-quality-eval/real-oss/cli.ts",
     "code-quality:deepswe": "node --import tsx src/code-quality-eval/deepswe/cli.ts",
     "code-quality:deepswe:export": "node --import tsx src/code-quality-eval/deepswe/export-cli.ts",
+    "code-quality:deepswe:pilot:awilix": "node --import tsx src/code-quality-eval/deepswe/awilix-pilot-cli.ts",
     "test:code-quality": "pnpm --dir .. exec vitest run --config bench/vitest.code-quality.config.ts",
     "typecheck:code-quality": "pnpm --dir .. exec tsc -p bench/tsconfig.code-quality.json"
   },

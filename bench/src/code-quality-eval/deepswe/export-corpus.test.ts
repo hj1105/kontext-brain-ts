@@ -8,7 +8,15 @@ import { type DeepSweCorpusExportInput, exportDeepSweCorpus } from "./export-cor
 describe("DeepSWE corpus export", () => {
   it("freezes the exact Task Context Snapshot with Evidence provenance and symbol selectors", () => {
     const input = fixture();
-    const corpus = exportDeepSweCorpus(input);
+    const corpus = exportDeepSweCorpus({
+      ...input,
+      current: {
+        ...input.current,
+        effectiveScopes: input.current.effectiveScopes.map((scope) =>
+          scope.kind === "codebase" ? { codebaseId: scope.codebaseId, kind: scope.kind } : scope,
+        ),
+      },
+    });
 
     expect(corpus).toMatchObject({
       taskId: input.taskId,

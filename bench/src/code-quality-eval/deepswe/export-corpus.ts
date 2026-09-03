@@ -39,13 +39,18 @@ export function exportDeepSweCorpus(input: DeepSweCorpusExportInput): DeepSweCon
   ) {
     throw new Error("Prepared Task Context Snapshot is invalid for this benchmark task");
   }
-  if (
-    input.current.codeRevision !== snapshot.baseCodeRevision ||
-    input.current.sourceFreshnessDigest !== snapshot.sourceFreshnessDigest ||
-    !sameScopes(input.current.effectiveScopes, snapshot.effectiveScopes)
-  ) {
+  const staleFields = [
+    ...(input.current.codeRevision === snapshot.baseCodeRevision ? [] : ["code revision"]),
+    ...(input.current.sourceFreshnessDigest === snapshot.sourceFreshnessDigest
+      ? []
+      : ["source freshness"]),
+    ...(sameScopes(input.current.effectiveScopes, snapshot.effectiveScopes)
+      ? []
+      : ["effective scopes"]),
+  ];
+  if (staleFields.length > 0) {
     throw new Error(
-      "Current Kontext state is stale relative to the prepared Task Context Snapshot",
+      `Current Kontext state is stale relative to the prepared Task Context Snapshot: ${staleFields.join(", ")}`,
     );
   }
   if (input.current.conflicts.length > 0) {
@@ -236,7 +241,16 @@ function sameScopes(
 }
 
 function scopeKey(scope: CurrentTaskContextState["effectiveScopes"][number]): string {
-  return JSON.stringify(scope);
+  switch (scope.kind) {
+    case "personal":
+      return JSON.stringify([scope.kind, scope.subjectId]);
+    case "workspace":
+      return JSON.stringify([scope.kind, scope.workspaceId]);
+    case "codebase":
+      return JSON.stringify([scope.kind, scope.codebaseId]);
+    case "organization":
+      return JSON.stringify([scope.kind, scope.organizationId]);
+  }
 }
 
 function revisionKey(value: {
