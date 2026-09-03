@@ -33,9 +33,11 @@ def present_evidence(evidence: dict[str, Any]) -> dict[str, Any]:
         "resourceId": evidence["resourceId"],
         "chunkId": evidence["chunkId"],
         "title": evidence["title"],
-        "sourceUri": evidence["sourceUri"],
+        "sourceSpan": evidence.get("sourceSpan"),
+        "source": evidence["source"],
         "observedAt": evidence["observedAt"],
         "ontologyNodeIds": evidence.get("ontologyNodeIds", []),
+        "allowedRuntimeProviders": evidence["allowedRuntimeProviders"],
         "text": snippet(evidence["text"]),
     }
 
@@ -180,6 +182,7 @@ def execute(bundle: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:
         "arm": bundle["arm"],
         "taskId": bundle["taskId"],
         "organizationId": bundle["organizationId"],
+        "runtimeProvider": bundle["runtimeProvider"],
         "baseCodeRevision": bundle["baseCodeRevision"],
         "contextDigest": bundle["contextDigest"],
         "sourceFreshnessDigest": bundle["sourceFreshnessDigest"],

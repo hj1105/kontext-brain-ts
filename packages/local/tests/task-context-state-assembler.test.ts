@@ -17,6 +17,19 @@ describe("assembleCurrentTaskContextState", () => {
           text: "The user approved the local workflow.",
           availability: "current",
           allowedRuntimeProviders: ["codex", "unapproved-provider"],
+          provenance: {
+            resourceId: "resource:local",
+            chunkId: "chunk:local",
+            resourceTitle: "Local decision",
+            source: {
+              connectorId: "codex",
+              externalId: "codex://session/local",
+              type: "session",
+            },
+            observedAt: "2026-08-28T00:00:00.000Z",
+            contentHash: "sha256:local",
+            ontologyNodeIds: ["workflow", "engineering", "workflow"],
+          },
         },
       ],
       logicPlans: [
@@ -55,6 +68,19 @@ describe("assembleCurrentTaskContextState", () => {
         text: "The user approved the local workflow.",
         availability: "current",
         allowedRuntimeProviders: ["codex"],
+        provenance: {
+          resourceId: "resource:local",
+          chunkId: "chunk:local",
+          resourceTitle: "Local decision",
+          source: {
+            connectorId: "codex",
+            externalId: "codex://session/local",
+            type: "session",
+          },
+          observedAt: "2026-08-28T00:00:00.000Z",
+          contentHash: "sha256:local",
+          ontologyNodeIds: ["engineering", "workflow"],
+        },
       },
       {
         evidenceId: "evidence:managed",
@@ -103,7 +129,25 @@ describe("assembleCurrentTaskContextState", () => {
       ...base,
       evidence: [{ ...evidence, text: "second" }],
     });
+    const withProvenance = assembleCurrentTaskContextState({
+      ...base,
+      evidence: [
+        {
+          ...evidence,
+          provenance: {
+            resourceId: "resource:local",
+            chunkId: "chunk:local",
+            resourceTitle: "Local decision",
+            source: { connectorId: "codex", externalId: "codex://session/1", type: "session" },
+            observedAt: "2026-08-28T00:00:00.000Z",
+            contentHash: "sha256:first",
+            ontologyNodeIds: ["workflow"],
+          },
+        },
+      ],
+    });
     expect(second.sourceFreshnessDigest).not.toBe(first.sourceFreshnessDigest);
+    expect(withProvenance.sourceFreshnessDigest).not.toBe(first.sourceFreshnessDigest);
     expect(() =>
       assembleCurrentTaskContextState({
         ...base,

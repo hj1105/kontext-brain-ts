@@ -120,6 +120,24 @@ const contextEvidenceSchema = z
     availability: z.enum(["current", "stale", "conflict", "inaccessible", "unavailable"]),
     allowedRuntimeProviders: z.array(nonEmptyString),
     relevance: z.number().optional(),
+    provenance: z
+      .object({
+        resourceId: nonEmptyString,
+        chunkId: nonEmptyString,
+        resourceTitle: nonEmptyString,
+        source: z
+          .object({
+            connectorId: nonEmptyString,
+            externalId: nonEmptyString,
+            type: nonEmptyString,
+          })
+          .strict(),
+        observedAt: z.string().datetime(),
+        contentHash: nonEmptyString,
+        ontologyNodeIds: z.array(nonEmptyString),
+      })
+      .strict()
+      .optional(),
   })
   .strict();
 const codeSymbolIdentitySchema = z
