@@ -14,7 +14,7 @@ export function buildRealOssReport(input: {
   readonly generatedAt?: string;
 }): RealOssReport {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     benchmark: "real-oss-code-quality",
     generatedAt: input.generatedAt ?? new Date().toISOString(),
     task: {
@@ -42,7 +42,7 @@ export function buildRealOssReport(input: {
     limitations: [
       "This run covers one real SWE-bench Verified task from one public library; it is a smoke test, not an external-validity claim.",
       "The task is an upstream historical replay. The agent sees the pinned pre-fix commit, while the grader alone applies the upstream regression-test patch.",
-      "The public issue states the requested behavior directly, so this task validates real-repository integration and governance discipline more than difficult knowledge retrieval.",
+      ...input.task.limitations,
       "Subscription runtime load and model nondeterminism remain uncontrolled; arm order rotates between repetitions.",
     ],
   };
@@ -107,7 +107,7 @@ ${report.summaries
 
 ${
   ontology
-    ? `The Kontext arm indexed ${ontology.codeResources} Python code Resources, ${ontology.codeSymbols} symbols (${ontology.behaviorBearingSymbols} behavior-bearing), ${ontology.provenanceResources} provenance Resources, and ${ontology.normativeRecords} effective normative records. Target: \`${ontology.targetQualifiedName}\` (\`${ontology.targetSymbolId}\`). Governing records: ${ontology.governingRecordIds.map((id) => `\`${id}\``).join(", ")}.`
+    ? `The Kontext arm indexed ${ontology.codeResources} Python code Resources, ${ontology.codeSymbols} symbols (${ontology.behaviorBearingSymbols} behavior-bearing), ${ontology.provenanceResources} provenance Resources, and ${ontology.normativeRecords} effective normative records. Targets: ${ontology.targetSymbols.map((target) => `\`${target.qualifiedName}\` (${target.symbolId ? `\`${target.symbolId}\`` : target.binding})`).join(", ")}. Governing records: ${ontology.governingRecordIds.map((id) => `\`${id}\``).join(", ")}.`
     : "No eligible Kontext ontology assembly was recorded."
 }
 

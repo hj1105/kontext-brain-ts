@@ -65,6 +65,54 @@ describe("FileWriteAuthorizationBindingStore", () => {
     expect(decision.hookSpecificOutput.permissionDecision).toBe("allow");
     expect((await stat(bindings.filePath(workspace))).mode & 0o777).toBe(0o600);
   });
+
+  it("does not let a stale observer overwrite a newer Logic Work Item binding", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "kontext-write-capability-race-"));
+    temporaryDirectories.push(directory);
+    const workspace = path.join(directory, "workspace");
+    const bindings = new FileWriteAuthorizationBindingStore(directory);
+    const workflow = new CurrentWorkflow();
+    const firstRouter = new KontextTaskWorkflowToolRouter(
+      workflow,
+      () => new Date("2026-08-28T00:00:00.000Z"),
+      bindings,
+    );
+    await firstRouter.beginLogic({
+      taskId: "task:persisted-capability",
+      workspacePath: workspace,
+      logic: {
+        workItemId: "work-item:first",
+        plannedSymbolIds: ["planned-symbol:first"],
+      },
+      runtimeProvider: "codex",
+      receiptTtlSeconds: 600,
+      totalTokenBudget: 10_000,
+      optionalEvidenceTokenBudget: 1_000,
+    });
+    const stale = await bindings.get(workspace);
+    if (!stale) throw new Error("expected first binding");
+
+    const secondRouter = new KontextTaskWorkflowToolRouter(
+      workflow,
+      () => new Date("2026-08-28T00:01:00.000Z"),
+      bindings,
+    );
+    await secondRouter.beginLogic({
+      taskId: "task:persisted-capability",
+      workspacePath: workspace,
+      logic: {
+        workItemId: "work-item:second",
+        plannedSymbolIds: ["planned-symbol:second"],
+      },
+      runtimeProvider: "codex",
+      receiptTtlSeconds: 600,
+      totalTokenBudget: 10_000,
+      optionalEvidenceTokenBudget: 1_000,
+    });
+
+    expect(await bindings.putIfUnchanged(workspace, stale, stale)).toBe(false);
+    expect((await bindings.get(workspace))?.request.logic.workItemId).toBe("work-item:second");
+  });
 });
 
 class CurrentWorkflow implements KontextTaskWorkflowOperations {

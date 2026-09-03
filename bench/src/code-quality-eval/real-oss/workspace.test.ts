@@ -5,7 +5,12 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { runWorkspaceCommand } from "../workspace.js";
 import type { RealOssTask } from "./contracts.js";
-import { createRealOssWorkspace, readWorkspaceFile, validateRealOssSource } from "./workspace.js";
+import {
+  createRealOssWorkspace,
+  parseDjangoPassed,
+  readWorkspaceFile,
+  validateRealOssSource,
+} from "./workspace.js";
 
 const cleanup = new Set<string>();
 
@@ -49,6 +54,14 @@ describe("real OSS workspace", () => {
       "Source integrity mismatch",
     );
   });
+
+  it("counts partial Django test success from unittest summaries", () => {
+    expect(parseDjangoPassed("Ran 4 tests in 0.1s\nFAILED (failures=2)", 4)).toBe(2);
+    expect(parseDjangoPassed("Ran 4 tests in 0.1s\nFAILED (errors=1, skipped=1)", 4)).toBe(2);
+    expect(
+      parseDjangoPassed("Ran 4 tests in 0.1s\nFAILED (errors=1, expected failures=2)", 4),
+    ).toBe(3);
+  });
 });
 
 async function sourceFixture(): Promise<{ readonly source: string; readonly task: RealOssTask }> {
@@ -82,15 +95,24 @@ async function sourceFixture(): Promise<{ readonly source: string; readonly task
       upstreamIssueUrl: "https://github.com/example/repo/issues/1",
       upstreamPullRequestUrl: "https://github.com/example/repo/pull/2",
       publicPrompt: "Change the value.",
+      acceptanceStatement: "The value changes.",
+      nonGoals: ["Editing tests"],
+      risk: "low",
+      codeRoots: ["src"],
       allowedPaths: ["src/example.py"],
-      target: {
-        workItemId: "work-item:example",
-        plannedSymbolId: "planned-symbol:example",
-        relativePath: "src/example.py",
-        qualifiedName: "<module>",
-        responsibility: "Hold the value.",
-        ontologyNodeIds: ["domain:example"],
-      },
+      targets: [
+        {
+          workItemId: "work-item:example",
+          plannedSymbolId: "planned-symbol:example",
+          relativePath: "src/example.py",
+          qualifiedName: "change_value",
+          symbolKind: "function",
+          binding: "planned",
+          responsibility: "Change the value.",
+          ontologyNodeIds: ["domain:example"],
+          capabilityId: "capability:example",
+        },
+      ],
       sourceIntegrity: [
         {
           relativePath: "src/example.py",
@@ -102,11 +124,13 @@ async function sourceFixture(): Promise<{ readonly source: string; readonly task
       hiddenTest: {
         patch: hiddenPatch,
         patchSha256: createHash("sha256").update(hiddenPatch).digest("hex"),
+        runner: { kind: "pytest-selectors", command: "python3", args: ["-m", "pytest", "-q"] },
         failToPass: [],
         passToPass: [],
       },
       sourceDocuments: [],
       normativeRecords: [],
+      limitations: [],
     },
   };
 }
