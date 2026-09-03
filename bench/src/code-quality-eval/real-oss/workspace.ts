@@ -186,11 +186,13 @@ export async function gradeRealOssWorkspace(
         hiddenFailures.push(`hidden test patch failed: ${diagnostic(apply)}`);
       } else {
         hiddenPatchApplied = true;
-        const failToPass = await runPytestSelection(
+        const failToPass = await runHiddenTestSelection(
+          task,
           workspace.workspacePath,
           task.hiddenTest.failToPass,
         );
-        const passToPass = await runPytestSelection(
+        const passToPass = await runHiddenTestSelection(
+          task,
           workspace.workspacePath,
           task.hiddenTest.passToPass,
         );
@@ -206,7 +208,7 @@ export async function gradeRealOssWorkspace(
 
   return {
     publicTestsPassed: publicTests.exitCode === 0,
-    targetChanged: changed.includes(task.target.relativePath),
+    targetChanged: task.targets.some((target) => changed.includes(target.relativePath)),
     allowedPathsOnly: changed.every((file) => task.allowedPaths.includes(file)),
     changedFiles: changed,
     failToPassPassed,
@@ -219,27 +221,45 @@ export async function gradeRealOssWorkspace(
   };
 }
 
-async function runPytestSelection(
+async function runHiddenTestSelection(
+  task: RealOssTask,
   workspacePath: string,
   selectors: readonly string[],
 ): Promise<{ readonly passed: number; readonly complete: boolean; readonly diagnostic: string }> {
   if (selectors.length === 0) return { passed: 0, complete: true, diagnostic: "" };
-  const result = await runWorkspaceCommand(workspacePath, "./.venv/bin/python", [
-    "-m",
-    "pytest",
-    "-q",
+  const runner = task.hiddenTest.runner;
+  const result = await runWorkspaceCommand(workspacePath, runner.command, [
+    ...runner.args,
     ...selectors,
   ]);
   if (result.exitCode === 0) {
     return { passed: selectors.length, complete: true, diagnostic: "" };
   }
   const output = `${result.stdout}\n${result.stderr}`.trim();
-  const passed = [...output.matchAll(/(?:^|\s)(\d+) passed(?:,|\s|$)/g)].at(-1)?.[1];
+  const passed =
+    runner.kind === "pytest-selectors"
+      ? parsePytestPassed(output)
+      : parseDjangoPassed(output, selectors.length);
   return {
-    passed: passed ? Number(passed) : 0,
+    passed,
     complete: false,
     diagnostic: output.slice(-4_000),
   };
+}
+
+function parsePytestPassed(output: string): number {
+  const passed = [...output.matchAll(/(?:^|\s)(\d+) passed(?:,|\s|$)/g)].at(-1)?.[1];
+  return passed ? Number(passed) : 0;
+}
+
+export function parseDjangoPassed(output: string, requested: number): number {
+  const ran = [...output.matchAll(/Ran (\d+) tests?/g)].at(-1)?.[1];
+  if (!ran) return 0;
+  const summary = output.match(/FAILED \(([^)]*)\)/)?.[1] ?? "";
+  const unsuccessful = ["failures", "errors", "skipped", "unexpected successes"]
+    .map((label) => Number(summary.match(new RegExp(`(?:^|, )${label}=(\\d+)`))?.[1] ?? 0))
+    .reduce((total, count) => total + count, 0);
+  return Math.max(0, Math.min(requested, Number(ran) - unsuccessful));
 }
 
 async function changedFiles(workspacePath: string): Promise<readonly string[]> {

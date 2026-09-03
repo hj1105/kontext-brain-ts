@@ -7,6 +7,7 @@ import type {
   WriteAuthorizationBinding,
   WriteAuthorizationBindingStore,
 } from "./task-workflow-tools.js";
+import { sameBindingGeneration } from "./task-workflow-tools.js";
 
 const workspaceSnapshotSchema = z
   .object({
@@ -124,6 +125,8 @@ const envelopeSchema = z
 
 /** Persists short-lived write capabilities so command hooks can fail closed. */
 export class FileWriteAuthorizationBindingStore implements WriteAuthorizationBindingStore {
+  private operation = Promise.resolve();
+
   constructor(private readonly pluginDataDirectory: string) {}
 
   async get(workspacePath: string): Promise<WriteAuthorizationBinding | undefined> {
@@ -177,6 +180,26 @@ export class FileWriteAuthorizationBindingStore implements WriteAuthorizationBin
   }
 
   async put(workspacePath: string, binding: WriteAuthorizationBinding): Promise<void> {
+    await this.exclusive(() => this.putUnlocked(workspacePath, binding));
+  }
+
+  async putIfUnchanged(
+    workspacePath: string,
+    expected: WriteAuthorizationBinding,
+    binding: WriteAuthorizationBinding,
+  ): Promise<boolean> {
+    return this.exclusive(async () => {
+      const current = await this.get(workspacePath);
+      if (!sameBindingGeneration(current, expected)) return false;
+      await this.putUnlocked(workspacePath, binding);
+      return true;
+    });
+  }
+
+  private async putUnlocked(
+    workspacePath: string,
+    binding: WriteAuthorizationBinding,
+  ): Promise<void> {
     const normalizedWorkspace = path.resolve(workspacePath);
     const payload = bindingSchema.parse(binding);
     const envelope = {
@@ -202,9 +225,25 @@ export class FileWriteAuthorizationBindingStore implements WriteAuthorizationBin
   }
 
   async delete(workspacePath: string): Promise<void> {
-    await unlink(this.filePath(path.resolve(workspacePath))).catch((error) => {
-      if (!isNodeError(error) || error.code !== "ENOENT") throw error;
+    await this.exclusive(async () => {
+      await unlink(this.filePath(path.resolve(workspacePath))).catch((error) => {
+        if (!isNodeError(error) || error.code !== "ENOENT") throw error;
+      });
     });
+  }
+
+  private async exclusive<T>(operation: () => Promise<T>): Promise<T> {
+    const previous = this.operation;
+    let release = (): void => undefined;
+    this.operation = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await previous;
+    try {
+      return await operation();
+    } finally {
+      release();
+    }
   }
 
   filePath(workspacePath: string): string {
