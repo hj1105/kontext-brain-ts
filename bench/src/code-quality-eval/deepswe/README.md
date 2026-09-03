@@ -19,6 +19,7 @@ The benchmark never invents or extracts organizational decisions from the DeepSW
   "schemaVersion": 1,
   "taskId": "python-statemachine-state-data-scoping",
   "organizationId": "organization:personal",
+  "runtimeProvider": "openai",
   "baseCodeRevision": "<DeepSWE task base commit>",
   "contextDigest": "sha256:<Task Context Snapshot digest>",
   "sourceFreshnessDigest": "sha256:<source freshness digest>",
@@ -34,10 +35,16 @@ The benchmark never invents or extracts organizational decisions from the DeepSW
       "chunkId": "chunk:state-data-scope",
       "title": "State data design",
       "text": "<verbatim Evidence text>",
-      "sourceUri": "file:///independent/specs/state-data.md",
+      "sourceSpan": "State data scope",
+      "source": {
+        "connectorId": "filesystem",
+        "externalId": "file:///independent/specs/state-data.md",
+        "type": "markdown"
+      },
       "observedAt": "2026-09-02T00:00:00.000Z",
       "contentSha256": "<SHA-256 of text>",
-      "ontologyNodeIds": ["resource:state-data-design"]
+      "ontologyNodeIds": ["resource:state-data-design"],
+      "allowedRuntimeProviders": ["openai"]
     }
   ],
   "normativeRecords": [
@@ -70,7 +77,21 @@ The benchmark never invents or extracts organizational decisions from the DeepSW
 
 An empty `evidence`/`normativeRecords` corpus is valid for infrastructure tests. It does not test a Kontext treatment effect.
 
-The loader rejects future-dated evidence, hash mismatches, missing evidence closure, duplicate IDs, corpus files inside the benchmark tree, and provenance paths containing task tests, verifier, solution, trajectory, result, or agent artifacts. These structural checks do not prove authorship independence; preregistered corpora still require external review.
+The loader rejects future-dated evidence, hash mismatches, missing evidence closure, runtime-provider egress mismatches, duplicate IDs, corpus files inside the benchmark tree, and provenance paths containing task tests, verifier, solution, trajectory, result, or agent artifacts. The preparation step also requires the frozen `runtimeProvider` to match the provider prefix in `--model`. These structural checks do not prove authorship independence; preregistered corpora still require external review.
+
+## Export from the sidecar
+
+Prepare the benchmark Task with the normal `kontext_prepare_task` flow, then export its immutable Task Context Snapshot. The sidecar Evidence must carry its original Resource, Chunk, connector/external source identity, observation time, content hash, and Ontology Node IDs. Export fails if the snapshot is stale, conflicted, inaccessible to the selected runtime provider, missing exact Evidence closure, or lacks provenance. Empty exports require the explicit infrastructure-only flag.
+
+```bash
+pnpm --filter @kontext-brain/bench code-quality:deepswe:export -- \
+  --task-id python-statemachine-state-data-scoping \
+  --organization-id organization:personal \
+  --runtime-provider openai \
+  --output /absolute/path/to/frozen-corpora/python-statemachine-state-data-scoping.json
+```
+
+The exporter records the clean Kontext Git revision automatically. `--generator-revision` is available for an installed, externally pinned build, and `--data-dir` selects a non-default sidecar directory.
 
 ## Reproducible run
 

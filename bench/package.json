@@ -26,6 +26,7 @@
     "code-quality:large": "node --import tsx src/code-quality-eval/large-scale/cli.ts",
     "code-quality:real-oss": "node --import tsx src/code-quality-eval/real-oss/cli.ts",
     "code-quality:deepswe": "node --import tsx src/code-quality-eval/deepswe/cli.ts",
+    "code-quality:deepswe:export": "node --import tsx src/code-quality-eval/deepswe/export-cli.ts",
     "test:code-quality": "pnpm --dir .. exec vitest run --config bench/vitest.code-quality.config.ts",
     "typecheck:code-quality": "pnpm --dir .. exec tsc -p bench/tsconfig.code-quality.json"
   },
@@ -33,8 +34,10 @@
     "@anthropic-ai/sdk": "^0.120.0",
     "@kontext-brain/code": "workspace:*",
     "@kontext-brain/core": "workspace:*",
+    "@kontext-brain/context": "workspace:*",
     "@kontext-brain/llm": "workspace:*",
     "@kontext-brain/loader": "workspace:*",
+    "@kontext-brain/local": "workspace:*",
     "@kontext-brain/mcp": "workspace:*",
     "@kontext-brain/spec": "workspace:*",
     "@langchain/core": "^0.3.27",
