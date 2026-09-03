@@ -350,7 +350,9 @@ async function ingestEvidenceSources(input: {
     const [resource, storedChunks, evidenceRecords] = await Promise.all([
       input.repository.getResource(input.spec.organizationId, result.resourceId),
       input.repository.listChunks(input.spec.organizationId, result.resourceId),
-      input.repository.listEvidenceForResource(input.spec.organizationId, result.resourceId),
+      input.repository.transaction(input.spec.organizationId, (unitOfWork) =>
+        unitOfWork.listEvidenceForResource(result.resourceId),
+      ),
     ]);
     if (!resource) throw new Error(`Missing ingested Resource for ${relativePath}`);
     for (const source of sources) {
