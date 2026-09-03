@@ -53,6 +53,8 @@ function manifest(sampleSeed: number): DeepSwePreparationManifest {
     deepSweRevision: "deep-swe-sha",
     pierRevision: "0.3.1",
     adapterRevision: "adapter-sha",
+    runtime: "codex-subscription",
+    agentVersion: "0.144.6",
     model: "openai/test-model",
     reasoningEffort: "medium",
     attempts: 1,
@@ -76,6 +78,8 @@ function manifest(sampleSeed: number): DeepSwePreparationManifest {
 function preparedArm(arm: DeepSweArm): DeepSwePreparedArm {
   return {
     arm,
+    runtime: "codex-subscription",
+    billingMode: "subscription",
     jobName: `job-${arm}`,
     jobConfigPath: `/run/${arm}.json`,
     contextIndexPath: `/run/context-${arm}.json`,

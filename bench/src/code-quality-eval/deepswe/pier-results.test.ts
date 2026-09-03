@@ -93,6 +93,12 @@ describe("Pier DeepSWE result ingestion", () => {
       path.join(archivedAgent, "mini-swe-agent.trajectory.json"),
     );
     expect(results[0]?.trajectorySha256).toMatch(/^[0-9a-f]{64}$/);
+
+    const subscriptionResults = await readPierArmResults(
+      arm(path.join(job, "result.json"), "subscription"),
+    );
+    expect(subscriptionResults[0]?.costUsd).toBeUndefined();
+    expect(subscriptionResults[0]?.inputTokens).toBe(100);
   });
 
   it("counts agent capability failures but excludes infrastructure failures", () => {
@@ -125,9 +131,14 @@ describe("Pier DeepSWE result ingestion", () => {
   });
 });
 
-function arm(expectedJobResultPath: string): DeepSwePreparedArm {
+function arm(
+  expectedJobResultPath: string,
+  billingMode: "subscription" | "api" = "api",
+): DeepSwePreparedArm {
   return {
     arm: "kontext",
+    runtime: billingMode === "subscription" ? "codex-subscription" : "mini-swe-api",
+    billingMode,
     jobName: "job",
     jobConfigPath: "/tmp/pier.json",
     contextIndexPath: "/tmp/context.json",

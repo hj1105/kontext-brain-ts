@@ -4,6 +4,7 @@ import { runWorkspaceCommand } from "../workspace.js";
 import type {
   DeepSwePreparationManifest,
   DeepSwePrepareOptions,
+  DeepSwePreparedArm,
   DeepSweTaskSnapshot,
 } from "./contracts.js";
 import { buildContextBundle, loadDeepSweCorpus, sha256, stableJson } from "./corpus.js";
@@ -12,7 +13,9 @@ export async function prepareDeepSweEvaluation(
   options: DeepSwePrepareOptions,
 ): Promise<DeepSwePreparationManifest> {
   validateOptions(options);
-  const runtimeProvider = modelRuntimeProvider(options.model);
+  const runtimeProvider =
+    options.runtime === "codex-subscription" ? "codex" : modelRuntimeProvider(options.model);
+  const agentVersion = requiredAgentVersion(options);
   const datasetTasksPath = path.resolve(options.datasetTasksPath);
   const deepSweRoot = path.dirname(datasetTasksPath);
   const discovered = await discoverTaskIds(datasetTasksPath);
@@ -94,7 +97,7 @@ export async function prepareDeepSweEvaluation(
     ]),
   );
   const preparedAt = new Date().toISOString();
-  const arms = [];
+  const arms: DeepSwePreparedArm[] = [];
   for (const arm of options.arms) {
     const byInstructionSha256 = Object.fromEntries(
       tasks.map((task) => [
@@ -116,6 +119,8 @@ export async function prepareDeepSweEvaluation(
         deepSweRevision: actualDeepSweRevision,
         pierRevision: options.pierRevision,
         adapterRevision: options.adapterRevision,
+        runtime: options.runtime,
+        agentVersion,
         model: options.model,
         reasoningEffort: options.reasoningEffort,
         attempts: options.attempts,
@@ -135,16 +140,29 @@ export async function prepareDeepSweEvaluation(
       retry: { max_retries: 0 },
       environment: { type: options.environment, force_build: false, delete: true },
       agents: [
-        {
-          import_path: "kontext_mini_swe_agent:KontextMiniSweAgent",
-          model_name: options.model,
-          kwargs: {
-            context_index_path: contextIndexPath,
-            context_tool_path: contextToolPath,
-            reasoning_effort: options.reasoningEffort,
-            ...(options.miniSweAgentVersion ? { version: options.miniSweAgentVersion } : {}),
-          },
-        },
+        options.runtime === "codex-subscription"
+          ? {
+              import_path: "kontext_codex_agent:KontextCodexAgent",
+              model_name: options.model,
+              kwargs: {
+                context_index_path: contextIndexPath,
+                context_tool_path: contextToolPath,
+                reasoning_effort: options.reasoningEffort,
+                version: agentVersion,
+                command_model_name: options.model,
+                extra_env: { CODEX_FORCE_AUTH_JSON: "true" },
+              },
+            }
+          : {
+              import_path: "kontext_mini_swe_agent:KontextMiniSweAgent",
+              model_name: options.model,
+              kwargs: {
+                context_index_path: contextIndexPath,
+                context_tool_path: contextToolPath,
+                reasoning_effort: options.reasoningEffort,
+                version: agentVersion,
+              },
+            },
       ],
       tasks: tasks.map((task) => ({ path: task.taskPath })),
       datasets: [],
@@ -152,6 +170,8 @@ export async function prepareDeepSweEvaluation(
     await writePrivateJson(jobConfigPath, jobConfig);
     arms.push({
       arm,
+      runtime: options.runtime,
+      billingMode: options.runtime === "codex-subscription" ? "subscription" : "api",
       jobName,
       jobConfigPath,
       contextIndexPath,
@@ -162,7 +182,9 @@ export async function prepareDeepSweEvaluation(
         "--config",
         jobConfigPath,
         "--yes",
-        ...(options.envFile ? ["--env-file", path.resolve(options.envFile)] : []),
+        ...(options.runtime === "mini-swe-api" && options.envFile
+          ? ["--env-file", path.resolve(options.envFile)]
+          : []),
       ],
     });
   }
@@ -173,6 +195,8 @@ export async function prepareDeepSweEvaluation(
     deepSweRevision: actualDeepSweRevision,
     pierRevision: options.pierRevision,
     adapterRevision: options.adapterRevision,
+    runtime: options.runtime,
+    agentVersion,
     model: options.model,
     reasoningEffort: options.reasoningEffort,
     attempts: options.attempts,
@@ -269,7 +293,29 @@ function validateOptions(options: DeepSwePrepareOptions): void {
     throw new Error("DeepSWE task limit must be a positive integer");
   }
   if (options.arms.length === 0) throw new Error("Select at least one DeepSWE arm");
+  if (options.runtime === "codex-subscription") {
+    if (!options.model.trim() || options.model.includes("/")) {
+      throw new Error("Codex subscription model must use a bare Codex model name");
+    }
+    if (!options.codexVersion?.trim()) {
+      throw new Error("Codex version is required for replayability");
+    }
+    if (options.envFile) {
+      throw new Error("Codex subscription runtime does not accept --env-file");
+    }
+    return;
+  }
   modelRuntimeProvider(options.model);
+  if (!options.miniSweAgentVersion?.trim()) {
+    throw new Error("mini-swe-agent version is required for replayability");
+  }
+}
+
+function requiredAgentVersion(options: DeepSwePrepareOptions): string {
+  const version =
+    options.runtime === "codex-subscription" ? options.codexVersion : options.miniSweAgentVersion;
+  if (!version?.trim()) throw new Error("Agent version is required for replayability");
+  return version.trim();
 }
 
 function modelRuntimeProvider(model: string): string {

@@ -10,6 +10,10 @@ const providerApiKeyEnvironmentVariables = [
   "GOOGLE_API_KEY",
   "AZURE_OPENAI_API_KEY",
   "NVIDIA_API_KEY",
+  "MSWEA_API_KEY",
+  "OPENAI_API_BASE",
+  "OPENAI_BASE_URL",
+  "CODEX_AUTH_JSON_PATH",
 ] as const;
 
 export interface CodexExecutionInput {

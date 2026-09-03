@@ -1,4 +1,5 @@
 import path from "node:path";
+import { codexSubscriptionEnvironment } from "../codex-runner.js";
 import { runWorkspaceCommand } from "../workspace.js";
 import type { DeepSwePreparationManifest, DeepSweReport, DeepSweTrialResult } from "./contracts.js";
 import { readPierArmResults } from "./pier-results.js";
@@ -31,13 +32,17 @@ export async function runPreparedDeepSweEvaluation(input: {
   const pythonPath = [adapterDirectory, process.env.PYTHONPATH]
     .filter(Boolean)
     .join(path.delimiter);
+  const runtimeEnvironment =
+    input.manifest.runtime === "codex-subscription"
+      ? codexSubscriptionEnvironment(process.env)
+      : { ...process.env };
   const trials: DeepSweTrialResult[] = [];
   for (const arm of rotateArms(input.manifest.arms, input.manifest.sampleSeed)) {
     progress(`[deepswe ${arm.arm}] starting ${input.manifest.tasks.length} tasks`);
     const [command, ...args] = arm.command;
     if (!command) throw new Error(`DeepSWE ${arm.arm} arm has no Pier command`);
     const result = await execute(input.repositoryRoot, command, args, {
-      ...process.env,
+      ...runtimeEnvironment,
       PYTHONPATH: pythonPath,
     });
     if (result.exitCode !== 0) {

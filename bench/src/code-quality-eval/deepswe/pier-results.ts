@@ -136,6 +136,7 @@ async function normalizeTrial(
     path.join(trialDirectory, "artifacts", "kontext-agent", "mini-swe-agent.trajectory.json"),
   );
   const metrics = mergeMetrics(aggregateContexts(trial), nativeMetrics);
+  const reportedMetrics = withoutSubscriptionPriceEstimate(arm, metrics);
   const startedAt = trial.agent_execution?.started_at ?? trial.started_at;
   const finishedAt = trial.agent_execution?.finished_at ?? trial.finished_at;
   const durationMilliseconds = duration(startedAt, finishedAt);
@@ -155,10 +156,26 @@ async function normalizeTrial(
     ...(startedAt ? { startedAt } : {}),
     ...(finishedAt ? { finishedAt } : {}),
     ...(durationMilliseconds === undefined ? {} : { durationMilliseconds }),
-    ...metrics,
+    ...reportedMetrics,
     ...(patchSha256 ? { patchSha256 } : {}),
     ...(trajectory ? { trajectoryPath: trajectory.path, trajectorySha256: trajectory.sha256 } : {}),
     context,
+  };
+}
+
+function withoutSubscriptionPriceEstimate(
+  arm: DeepSwePreparedArm,
+  metrics: ReturnType<typeof aggregateContexts>,
+): ReturnType<typeof aggregateContexts> {
+  if (arm.billingMode === "api") return metrics;
+  return {
+    ...(metrics.inputTokens === undefined ? {} : { inputTokens: metrics.inputTokens }),
+    ...(metrics.cachedTokens === undefined ? {} : { cachedTokens: metrics.cachedTokens }),
+    ...(metrics.outputTokens === undefined ? {} : { outputTokens: metrics.outputTokens }),
+    ...(metrics.agentSteps === undefined ? {} : { agentSteps: metrics.agentSteps }),
+    ...(metrics.peakContextTokens === undefined
+      ? {}
+      : { peakContextTokens: metrics.peakContextTokens }),
   };
 }
 

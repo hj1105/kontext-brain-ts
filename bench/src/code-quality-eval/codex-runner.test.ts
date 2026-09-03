@@ -64,12 +64,18 @@ describe("CodexCodeQualityRunner", () => {
   it("removes usage-billed provider keys while retaining subscription auth state", () => {
     const environment = codexSubscriptionEnvironment({
       OPENAI_API_KEY: "remove",
+      OPENAI_BASE_URL: "https://paid-proxy.invalid",
+      MSWEA_API_KEY: "remove",
       ANTHROPIC_API_KEY: "remove",
+      CODEX_AUTH_JSON_PATH: "/tmp/alternate-auth.json",
       CODEX_HOME: "/subscription-state",
       PATH: "/bin",
     });
     expect(environment.OPENAI_API_KEY).toBeUndefined();
+    expect(environment.OPENAI_BASE_URL).toBeUndefined();
+    expect(environment.MSWEA_API_KEY).toBeUndefined();
     expect(environment.ANTHROPIC_API_KEY).toBeUndefined();
+    expect(environment.CODEX_AUTH_JSON_PATH).toBeUndefined();
     expect(environment.CODEX_HOME).toBe("/subscription-state");
     expect(environment.PATH).toBe("/bin");
   });

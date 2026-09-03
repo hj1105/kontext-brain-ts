@@ -25,6 +25,7 @@ describe("DeepSWE evaluation preparation", () => {
       runDirectory: fixture.run,
       jobsDirectory: path.join(fixture.run, "jobs"),
       pierBinary: "pier",
+      runtime: "mini-swe-api",
       model: "openai/test-model",
       reasoningEffort: "medium",
       attempts: 4,
@@ -76,6 +77,43 @@ describe("DeepSWE evaluation preparation", () => {
     }
   });
 
+  it("prepares Codex with ChatGPT auth and never adds an API env file", async () => {
+    const fixture = await createFixture();
+    await rewriteCorpusRuntime(fixture.corpora, "codex");
+    const manifest = await prepareDeepSweEvaluation({
+      repositoryRoot: "/repo",
+      datasetTasksPath: fixture.tasks,
+      corpusRoot: fixture.corpora,
+      runDirectory: fixture.run,
+      jobsDirectory: path.join(fixture.run, "jobs"),
+      pierBinary: "pier",
+      runtime: "codex-subscription",
+      model: "gpt-test",
+      reasoningEffort: "medium",
+      attempts: 1,
+      concurrency: 1,
+      sampleSeed: 0,
+      arms: ["baseline", "rag", "kontext"],
+      environment: "docker",
+      codexVersion: "0.144.6",
+      deepSweRevision: fixture.revision,
+      pierRevision: "pier-0.3.1",
+      adapterRevision: "adapter-sha",
+    });
+
+    expect(manifest.runtime).toBe("codex-subscription");
+    expect(manifest.agentVersion).toBe("0.144.6");
+    for (const arm of manifest.arms) {
+      expect(arm.runtime).toBe("codex-subscription");
+      expect(arm.billingMode).toBe("subscription");
+      expect(arm.command).not.toContain("--env-file");
+      const config = JSON.parse(await readFile(arm.jobConfigPath, "utf8"));
+      expect(config.agents[0].import_path).toBe("kontext_codex_agent:KontextCodexAgent");
+      expect(config.agents[0].kwargs.version).toBe("0.144.6");
+      expect(config.agents[0].kwargs.extra_env).toEqual({ CODEX_FORCE_AUTH_JSON: "true" });
+    }
+  });
+
   it("matches Pier's leading canary normalization", () => {
     expect(stripPierCanary("<!-- benchmark canary -->\n# SECOND CANARY\n\nDo the work.\n")).toBe(
       "Do the work.\n",
@@ -95,6 +133,7 @@ describe("DeepSWE evaluation preparation", () => {
         runDirectory: fixture.run,
         jobsDirectory: path.join(fixture.run, "jobs"),
         pierBinary: "pier",
+        runtime: "mini-swe-api",
         model: "openai/test-model",
         reasoningEffort: "medium",
         attempts: 1,
@@ -128,6 +167,7 @@ describe("DeepSWE evaluation preparation", () => {
         runDirectory: fixture.run,
         jobsDirectory: path.join(fixture.run, "jobs"),
         pierBinary: "pier",
+        runtime: "mini-swe-api",
         model: "openai/test-model",
         reasoningEffort: "medium",
         attempts: 1,
@@ -181,6 +221,7 @@ describe("DeepSWE evaluation preparation", () => {
         runDirectory: fixture.run,
         jobsDirectory: path.join(fixture.run, "jobs"),
         pierBinary: "pier",
+        runtime: "mini-swe-api",
         model: "openai/test-model",
         reasoningEffort: "medium",
         attempts: 1,
@@ -252,4 +293,35 @@ async function createFixture(): Promise<{
 function required<T>(value: T | undefined): T {
   if (value === undefined) throw new Error("Missing test fixture value");
   return value;
+}
+
+async function rewriteCorpusRuntime(corpusRoot: string, runtimeProvider: string): Promise<void> {
+  for (const taskId of ["alpha-task", "beta-task"]) {
+    const corpusPath = path.join(corpusRoot, `${taskId}.json`);
+    const corpus = JSON.parse(await readFile(corpusPath, "utf8")) as Record<string, unknown>;
+    const evidence = (corpus.evidence as Record<string, unknown>[]).map((entry) => ({
+      ...entry,
+      allowedRuntimeProviders: [runtimeProvider],
+    }));
+    const normativeRecords = (corpus.normativeRecords as Record<string, unknown>[]).map(
+      (record) => {
+        const revision = record.revision as Record<string, unknown>;
+        return {
+          ...record,
+          revision: {
+            ...revision,
+            egress: {
+              ...(revision.egress as Record<string, unknown>),
+              allowedRuntimeProviders: [runtimeProvider],
+            },
+          },
+        };
+      },
+    );
+    await writeFile(
+      corpusPath,
+      `${JSON.stringify({ ...corpus, runtimeProvider, evidence, normativeRecords }, null, 2)}\n`,
+      "utf8",
+    );
+  }
 }

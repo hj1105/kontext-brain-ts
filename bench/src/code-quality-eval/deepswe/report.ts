@@ -23,7 +23,12 @@ export function buildDeepSweReport(input: {
     ),
     trials: input.trials,
     limitations: [
-      "This changes the official mini-swe-agent scaffold by adding an arm-stable context command, so it is a DeepSWE-based paired A/B result rather than an official leaderboard score.",
+      `This changes the official ${input.manifest.runtime === "codex-subscription" ? "Codex CLI" : "mini-swe-agent"} scaffold by adding an arm-stable context command, so it is a DeepSWE-based paired A/B result rather than an official leaderboard score.`,
+      ...(input.manifest.runtime === "codex-subscription"
+        ? [
+            "Codex ran through ChatGPT subscription authentication. API-equivalent price estimates are deliberately omitted because they are not usage-based API charges.",
+          ]
+        : []),
       "Functional verifier success does not by itself measure maintainability, security, evidence correctness, or terminology consistency.",
       "Normative records are a derived Kontext projection; their evidence closure and snapshot date are validated, but task authorship independence still requires external review.",
     ],
@@ -40,6 +45,7 @@ export function renderDeepSweMarkdown(report: DeepSweReport): string {
 - DeepSWE revision: \`${report.manifest.deepSweRevision}\`
 - Pier revision: \`${report.manifest.pierRevision}\`
 - Kontext adapter revision: \`${report.manifest.adapterRevision}\`
+- Runtime: \`${report.manifest.runtime}\`; agent version: \`${report.manifest.agentVersion}\`
 - Model: \`${report.manifest.model}\` at \`${report.manifest.reasoningEffort}\`
 - Tasks: ${report.manifest.tasks.length}; attempts per task: ${report.manifest.attempts}
 

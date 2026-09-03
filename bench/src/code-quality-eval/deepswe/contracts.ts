@@ -3,6 +3,8 @@ import type { CodeQualityArm } from "../contracts.js";
 
 export type DeepSweArm = CodeQualityArm;
 
+export type DeepSweRuntime = "codex-subscription" | "mini-swe-api";
+
 export interface DeepSweEvidenceSnapshot {
   readonly evidenceId: string;
   readonly resourceId: string;
@@ -75,6 +77,8 @@ export interface DeepSweTaskSnapshot {
 
 export interface DeepSwePreparedArm {
   readonly arm: DeepSweArm;
+  readonly runtime: DeepSweRuntime;
+  readonly billingMode: "subscription" | "api";
   readonly jobName: string;
   readonly jobConfigPath: string;
   readonly contextIndexPath: string;
@@ -89,6 +93,8 @@ export interface DeepSwePreparationManifest {
   readonly deepSweRevision: string;
   readonly pierRevision: string;
   readonly adapterRevision: string;
+  readonly runtime: DeepSweRuntime;
+  readonly agentVersion: string;
   readonly model: string;
   readonly reasoningEffort: string;
   readonly attempts: number;
@@ -191,6 +197,7 @@ export interface DeepSwePrepareOptions {
   readonly runDirectory: string;
   readonly jobsDirectory: string;
   readonly pierBinary: string;
+  readonly runtime: DeepSweRuntime;
   readonly model: string;
   readonly reasoningEffort: string;
   readonly attempts: number;
@@ -202,6 +209,7 @@ export interface DeepSwePrepareOptions {
   readonly environment: "docker" | "modal";
   readonly envFile?: string;
   readonly miniSweAgentVersion?: string;
+  readonly codexVersion?: string;
   readonly deepSweRevision?: string;
   readonly pierRevision: string;
   readonly adapterRevision: string;

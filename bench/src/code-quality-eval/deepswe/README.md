@@ -19,7 +19,7 @@ The benchmark never invents or extracts organizational decisions from the DeepSW
   "schemaVersion": 1,
   "taskId": "python-statemachine-state-data-scoping",
   "organizationId": "organization:personal",
-  "runtimeProvider": "openai",
+  "runtimeProvider": "codex",
   "baseCodeRevision": "<DeepSWE task base commit>",
   "contextDigest": "sha256:<Task Context Snapshot digest>",
   "sourceFreshnessDigest": "sha256:<source freshness digest>",
@@ -44,7 +44,7 @@ The benchmark never invents or extracts organizational decisions from the DeepSW
       "observedAt": "2026-09-02T00:00:00.000Z",
       "contentSha256": "<SHA-256 of text>",
       "ontologyNodeIds": ["resource:state-data-design"],
-      "allowedRuntimeProviders": ["openai"]
+      "allowedRuntimeProviders": ["codex"]
     }
   ],
   "normativeRecords": [
@@ -58,7 +58,7 @@ The benchmark never invents or extracts organizational decisions from the DeepSW
         "evidence": [{ "evidenceId": "evidence:state-data-design" }],
         "egress": {
           "dataClassification": "public",
-          "allowedRuntimeProviders": ["openai"]
+          "allowedRuntimeProviders": ["codex"]
         },
         "authoredBy": "user:local",
         "authoredAt": "2026-09-02T00:00:00.000Z",
@@ -87,7 +87,7 @@ Prepare the benchmark Task with the normal `kontext_prepare_task` flow, then exp
 pnpm --filter @kontext-brain/bench code-quality:deepswe:export -- \
   --task-id python-statemachine-state-data-scoping \
   --organization-id organization:personal \
-  --runtime-provider openai \
+  --runtime-provider codex \
   --output /absolute/path/to/frozen-corpora/python-statemachine-state-data-scoping.json
 ```
 
@@ -103,33 +103,35 @@ git -C /absolute/path/to/awilix switch --detach 82ac179c1de4c216c4e333093044fac6
 
 pnpm --filter @kontext-brain/bench code-quality:deepswe:pilot:awilix -- \
   --checkout /absolute/path/to/awilix \
-  --runtime-provider openai \
+  --runtime-provider codex \
   --output /absolute/path/to/frozen-corpora/awilix-async-container-initialization.json
 ```
 
 This pilot intentionally uses facts already present in the base checkout. It measures whether ontology-linked, provenance-governed compression helps an agent apply existing project contracts; it does not claim access to otherwise unavailable information. A one-rollout run is infrastructure and directional evidence only. Use the default four rollouts per arm for the preregistered comparison.
 
-## Reproducible run
+## Reproducible subscription run
 
-Pin all three repositories/tools. The paper's mini-swe-agent commit `adfe2023` is release `2.3.0`; the current adapter was checked against Pier `0.3.1` and DeepSWE revision `0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea`.
+The default runtime is the open-source Codex CLI authenticated through the user's ChatGPT subscription. The runner refuses any API credential file, strips provider API-key environment variables before starting Pier, verifies that `codex login status` reports ChatGPT login, uploads the local auth cache only to the ephemeral agent container, and removes it before verification. Pin Codex, Pier, and DeepSWE revisions for replayability.
 
 ```bash
 pnpm --filter @kontext-brain/bench code-quality:deepswe -- \
   --dataset /absolute/path/to/deep-swe/tasks \
   --corpus /absolute/path/to/frozen-corpora \
-  --mini-swe-version 2.3.0 \
+  --runtime codex-subscription \
+  --codex-version 0.144.6 \
   --pier-revision 0.3.1 \
   --deepswe-revision 0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea \
-  --model openai/gpt-5.5 \
+  --model gpt-5.5 \
   --sample-seed 0 \
   --task-limit 10 \
   --attempts 4 \
-  --environment docker \
-  --env-file .env.local
+  --environment docker
 ```
 
-Add `--dry-run` to validate the corpus and write private Pier/context manifests without starting containers or model calls. Scored runs refuse a dirty Kontext checkout. Pier credentials are passed by environment file path and are never copied into the generated manifest.
+Add `--dry-run` to validate the corpus and write private Pier/context manifests without starting containers or model calls. Scored runs refuse a dirty Kontext checkout. Subscription reports retain token telemetry but omit API-equivalent dollar estimates because those values are not usage-based API charges.
+
+The legacy mini-swe-agent route is intentionally opt-in and cannot silently load `.env.local`. It requires all of `--runtime mini-swe-api`, `--mini-swe-version <version>`, and `--allow-api-billing`; `--env-file` is accepted only on that route.
 
 On macOS with Docker Desktop, keep `--run-dir` under a Docker-shared path such as `/Users/...` (the default repository-local directory already satisfies this). A run directory under `/tmp` resolves through `/private/tmp` and may prevent Pier's agent/verifier bind-mounted logs from reaching the host.
 
-The report includes task-macro pass@1, pass@4, paired deltas with task-cluster bootstrap intervals, exclusions, token/cost/duration/step metrics, patch hashes, context-call telemetry, and paths plus hashes for full trajectories. Pier's ATIF trajectory is preferred; the original mini-swe-agent trajectory is archived and used as the lossless fallback.
+The report includes task-macro pass@1, pass@4, paired deltas with task-cluster bootstrap intervals, exclusions, token/duration/step metrics, patch hashes, context-call telemetry, and paths plus hashes for full trajectories. API runs additionally include cost; subscription runs do not. Pier's ATIF trajectory is preferred; the original mini-swe-agent trajectory is used only as the API-runner fallback.
