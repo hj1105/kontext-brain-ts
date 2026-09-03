@@ -110,7 +110,8 @@ describe("DeepSWE evaluation preparation", () => {
       const config = JSON.parse(await readFile(arm.jobConfigPath, "utf8"));
       expect(config.agents[0].import_path).toBe("kontext_codex_agent:KontextCodexAgent");
       expect(config.agents[0].kwargs.version).toBe("0.144.6");
-      expect(config.agents[0].kwargs.extra_env).toEqual({ CODEX_FORCE_AUTH_JSON: "true" });
+      expect(config.agents[0].env).toEqual({ CODEX_FORCE_AUTH_JSON: "true" });
+      expect(config.agents[0].kwargs.extra_env).toBeUndefined();
     }
   });
 

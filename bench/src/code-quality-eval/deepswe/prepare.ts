@@ -144,13 +144,13 @@ export async function prepareDeepSweEvaluation(
           ? {
               import_path: "kontext_codex_agent:KontextCodexAgent",
               model_name: options.model,
+              env: { CODEX_FORCE_AUTH_JSON: "true" },
               kwargs: {
                 context_index_path: contextIndexPath,
                 context_tool_path: contextToolPath,
                 reasoning_effort: options.reasoningEffort,
                 version: agentVersion,
                 command_model_name: options.model,
-                extra_env: { CODEX_FORCE_AUTH_JSON: "true" },
               },
             }
           : {
