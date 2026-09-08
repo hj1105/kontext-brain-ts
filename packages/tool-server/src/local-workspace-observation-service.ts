@@ -2,6 +2,9 @@ import type { LocalPostWriteObserver } from "./local-post-write-observer.js";
 import type { WriteAuthorizationBindingStore } from "./task-workflow-tools.js";
 
 export class LocalWorkspaceObservationService {
+  private inFlight: Promise<void> | undefined;
+  private timer: NodeJS.Timeout | undefined;
+
   constructor(
     private readonly bindings: WriteAuthorizationBindingStore,
     private readonly observer: LocalPostWriteObserver,
@@ -21,11 +24,28 @@ export class LocalWorkspaceObservationService {
     intervalMilliseconds = 2_000,
     onError: (error: unknown) => void = () => undefined,
   ): () => void {
+    if (this.timer) throw new Error("Workspace observation is already running");
     const observe = (): void => {
-      void this.observeAll(new Date().toISOString()).catch(onError);
+      if (this.inFlight) return;
+      this.inFlight = this.observeAll(new Date().toISOString())
+        .catch((error) => {
+          try {
+            onError(error);
+          } catch {
+            // Error reporting must not terminate the observation loop.
+          }
+        })
+        .finally(() => {
+          this.inFlight = undefined;
+        });
     };
     const timer = setInterval(observe, intervalMilliseconds);
     timer.unref();
-    return () => clearInterval(timer);
+    this.timer = timer;
+    return () => {
+      if (this.timer !== timer) return;
+      clearInterval(timer);
+      this.timer = undefined;
+    };
   }
 }

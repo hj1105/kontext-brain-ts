@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { listHashedRecordFiles } from "@kontext-brain/local";
 import type { ScheduledWorkResult, WorkItemScheduleResult } from "@kontext-brain/orchestrator";
 import { z } from "zod";
 import {
@@ -70,6 +71,7 @@ export interface RuntimeScheduleJob {
 }
 
 export interface RuntimeScheduleJobView {
+  readonly requestId?: string;
   readonly jobId: string;
   readonly taskId: string;
   readonly codeRevision: string;
@@ -112,16 +114,37 @@ export class FileRuntimeScheduleJobStore {
     private readonly ownerIsAlive: (processId: number) => boolean = isProcessAlive,
   ) {}
 
-  async create(job: RuntimeScheduleJob): Promise<void> {
-    await this.mutate(job.jobId, async () => {
+  async listTaskSummaries(taskIds: ReadonlySet<string>) {
+    const directory = path.join(this.pluginDataDirectory, "runtime-schedules");
+    const rows: Pick<
+      RuntimeScheduleJob,
+      "jobId" | "taskId" | "status" | "requestedAt" | "codeRevision" | "contextDigest"
+    >[] = [];
+    for (const filename of await listHashedRecordFiles(directory)) {
+      const job = await readJob(path.join(directory, filename));
+      if (path.basename(this.filePath(job.jobId)) !== filename)
+        throw new Error("Schedule inventory storage identity mismatch");
+      if (taskIds.has(job.taskId)) {
+        const { jobId, taskId, status, requestedAt, codeRevision, contextDigest } = job;
+        rows.push({ jobId, taskId, status, requestedAt, codeRevision, contextDigest });
+      }
+    }
+    return rows;
+  }
+
+  async create(job: RuntimeScheduleJob): Promise<{ created: boolean; job: RuntimeScheduleJob }> {
+    return this.mutate(job.jobId, async () => {
       assertValidJob(job);
       if (job.status !== "queued") {
         throw new Error("A new runtime schedule job must be queued");
       }
-      if (await this.getUnsafe(job.jobId)) {
-        throw new Error(`Runtime schedule job ${job.jobId} already exists`);
+      const existing = await this.getUnsafe(job.jobId);
+      if (existing) {
+        assertSameEnqueueRequest(existing, job.request);
+        return { created: false, job: existing };
       }
       await atomicPrivateWrite(this.filePath(job.jobId), encode(job));
+      return { created: true, job };
     });
   }
 
@@ -161,6 +184,27 @@ export class FileRuntimeScheduleJobStore {
       assertImmutableFields(current, next);
       assertValidJob(next);
       await atomicPrivateWrite(this.filePath(jobId), encode(next));
+    });
+  }
+
+  async requestCancellation(jobId: string, requestedAt: string): Promise<RuntimeScheduleJob> {
+    return this.mutate(jobId, async () => {
+      const current = await this.getUnsafe(jobId);
+      if (!current) throw new Error(`Runtime schedule job ${jobId} does not exist`);
+      if (
+        ["completed", "failed", "cancelled"].includes(current.status) ||
+        current.cancellationRequestedAt
+      )
+        return current;
+      const next: RuntimeScheduleJob = {
+        ...current,
+        status: current.status === "interrupted" ? "interrupted" : "cancelling",
+        cancellationRequestedAt: requestedAt,
+      };
+      assertImmutableFields(current, next);
+      assertValidJob(next);
+      await atomicPrivateWrite(this.filePath(jobId), encode(next));
+      return next;
     });
   }
 
@@ -282,14 +326,26 @@ export class RuntimeScheduleJobManager {
 
   async enqueue(
     request: ScheduleLogicRequest,
-    codeRevision: string,
-    contextDigest: string,
-    execute: RuntimeScheduleExecution,
+    prepare: (request: ScheduleLogicRequest) => Promise<{
+      readonly codeRevision: string;
+      readonly contextDigest: string;
+      readonly execute: RuntimeScheduleExecution;
+    }>,
   ): Promise<RuntimeScheduleJobView> {
+    const parsed = scheduleLogicRequestSchema.parse(request);
+    const jobId = parsed.requestId
+      ? `runtime-schedule:request:${createHash("sha256").update(parsed.requestId).digest("hex")}`
+      : this.newJobId();
+    const existing = await this.store.get(jobId);
+    if (existing) {
+      assertSameEnqueueRequest(existing, parsed);
+      return publicView(existing);
+    }
+    const { codeRevision, contextDigest, execute } = await prepare(parsed);
     const job: RuntimeScheduleJob = {
-      jobId: this.newJobId(),
-      taskId: request.taskId,
-      request,
+      jobId,
+      taskId: parsed.taskId,
+      request: parsed,
       codeRevision,
       contextDigest,
       status: "queued",
@@ -297,9 +353,9 @@ export class RuntimeScheduleJobManager {
       ownerInstanceId: this.instanceId,
       ownerProcessId: this.processId,
     };
-    await this.store.create(job);
-    this.startExecution(job.jobId, execute);
-    return publicView(job);
+    const accepted = await this.store.create(job);
+    if (accepted.created) this.startExecution(job.jobId, execute);
+    return publicView(accepted.job);
   }
 
   async resume(
@@ -341,19 +397,8 @@ export class RuntimeScheduleJobManager {
   }
 
   async cancel(jobId: string): Promise<RuntimeScheduleJobView> {
-    let job = await this.reconcileOrphan(await this.requiredJob(jobId));
-    if (isTerminal(job.status)) return publicView(job);
-    if (job.status !== "cancelling") {
-      try {
-        job = await this.store.update(jobId, ["queued", "running"], (current) => ({
-          ...current,
-          status: "cancelling",
-          cancellationRequestedAt: this.now().toISOString(),
-        }));
-      } catch {
-        job = (await this.store.get(jobId)) ?? job;
-      }
-    }
+    await this.reconcileOrphan(await this.requiredJob(jobId));
+    const job = await this.store.requestCancellation(jobId, this.now().toISOString());
     if (job.status === "cancelling") this.active.get(jobId)?.controller.abort();
     return publicView(job);
   }
@@ -474,6 +519,7 @@ export class RuntimeScheduleJobManager {
 
 function publicView(job: RuntimeScheduleJob): RuntimeScheduleJobView {
   return {
+    ...(job.request.requestId ? { requestId: job.request.requestId } : {}),
     jobId: job.jobId,
     taskId: job.taskId,
     codeRevision: job.codeRevision,
@@ -536,6 +582,15 @@ function assertImmutableFields(current: RuntimeScheduleJob, next: RuntimeSchedul
   });
   if (JSON.stringify(immutable(current)) !== JSON.stringify(immutable(next))) {
     throw new Error(`Runtime schedule job ${current.jobId} immutable fields changed`);
+  }
+}
+
+function assertSameEnqueueRequest(job: RuntimeScheduleJob, request: ScheduleLogicRequest): void {
+  if (!request.requestId) {
+    throw new Error(`Runtime schedule job ${job.jobId} already exists`);
+  }
+  if (job.request.requestId !== request.requestId || digest(job.request) !== digest(request)) {
+    throw new Error("Runtime schedule request ID was already accepted with a different request");
   }
 }
 

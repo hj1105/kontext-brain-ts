@@ -6,6 +6,7 @@ const providerSchema = z.enum(["codex", "claude"]);
 
 export const inspectRuntimesToolShape = {};
 export const scheduleLogicToolShape = {
+  requestId: z.string().uuid().optional(),
   taskId: nonEmptyString,
   repositoryPath: nonEmptyString,
   work: z
@@ -37,6 +38,7 @@ export const integrateScheduleToolShape = {
 export const scheduleLogicRequestSchema = z.object(scheduleLogicToolShape).strict();
 
 export interface ScheduleLogicRequest {
+  readonly requestId?: string;
   readonly taskId: string;
   readonly repositoryPath: string;
   readonly work: readonly {
@@ -62,4 +64,5 @@ export interface IntegrateScheduleRequest {
   readonly jobId: string;
   readonly observedAt: string;
   readonly nextAttemptAt: string;
+  readonly expectedIntegrationDigest?: string | null;
 }

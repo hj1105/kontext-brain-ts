@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import {
   type AgentRuntimePort,
   type RuntimeCapabilitySnapshot,
+  type RuntimePlanningInput,
   type RuntimeSession,
   type RuntimeWorkInput,
   createRuntimeCapabilitySnapshot,
@@ -155,6 +156,26 @@ export class ClaudeCodeRuntimeAdapter implements AgentRuntimePort {
     );
   }
 
+  async plan(input: RuntimePlanningInput): Promise<RuntimeSession> {
+    this.assertBillingPath();
+    const providerSessionId = randomUUID();
+    return this.execute(
+      [
+        "-p",
+        "--output-format",
+        "json",
+        "--permission-mode",
+        "plan",
+        "--max-turns",
+        String(this.maxTurns),
+        "--session-id",
+        providerSessionId,
+      ],
+      input,
+      providerSessionId,
+    );
+  }
+
   async terminate(providerSessionId: string): Promise<void> {
     const executionId = this.activeExecutions.get(providerSessionId);
     if (executionId) await this.runner.terminate(executionId);
@@ -162,7 +183,7 @@ export class ClaudeCodeRuntimeAdapter implements AgentRuntimePort {
 
   private async execute(
     args: readonly string[],
-    input: RuntimeWorkInput,
+    input: RuntimeWorkInput | RuntimePlanningInput,
     providerSessionId: string,
   ): Promise<RuntimeSession> {
     const executionId = randomUUID();
@@ -221,7 +242,8 @@ export class ClaudeCodeRuntimeAdapter implements AgentRuntimePort {
   }
 }
 
-function workerPrompt(input: RuntimeWorkInput): string {
+function workerPrompt(input: RuntimeWorkInput | RuntimePlanningInput): string {
+  if (input.executionRole === "planning") return input.prompt;
   if (input.executionRole === "independent_review") {
     return [
       input.prompt,

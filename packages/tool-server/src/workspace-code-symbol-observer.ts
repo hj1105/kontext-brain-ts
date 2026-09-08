@@ -7,6 +7,7 @@ import {
   PythonCodeProvider,
   TypeScriptCodeProvider,
 } from "@kontext-brain/code";
+import { readSeedCodebaseId } from "./local-coding-workspace-seed.js";
 import {
   type WorkspaceObservationSnapshot,
   captureWorkspaceSnapshot,
@@ -112,9 +113,16 @@ async function resolveCodebaseId(workspacePath: string): Promise<string> {
     await runGit(workspacePath, ["config", "--get", "remote.origin.url"]).catch(() => "")
   ).trim();
   const commonDirectory = await runGit(workspacePath, ["rev-parse", "--git-common-dir"]).catch(
-    () => workspacePath,
+    () => undefined,
   );
-  const identity = remote || path.resolve(workspacePath, commonDirectory.trim());
+  const commonPath =
+    commonDirectory === undefined
+      ? workspacePath
+      : path.resolve(workspacePath, commonDirectory.trim());
+  const seedIdentity =
+    commonDirectory === undefined ? undefined : await readSeedCodebaseId(workspacePath, commonPath);
+  if (seedIdentity) return seedIdentity;
+  const identity = remote || commonPath;
   return `codebase:${createHash("sha256").update(identity).digest("hex")}`;
 }
 

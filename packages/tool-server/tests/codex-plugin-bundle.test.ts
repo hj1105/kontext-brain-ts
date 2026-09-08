@@ -43,6 +43,7 @@ describe("Codex plugin bundle", () => {
         "kontext_check_change",
         "kontext_get_schedule",
         "kontext_inspect_runtimes",
+        "kontext_inspect_task",
         "kontext_integrate_schedule",
         "kontext_prepare_task",
         "kontext_propose_transition",
@@ -60,10 +61,10 @@ describe("Codex plugin bundle", () => {
       });
       expect(tools.tools.find((tool) => tool.name === "kontext_get_schedule")?.annotations).toEqual(
         {
-          readOnlyHint: true,
-          destructiveHint: false,
-          idempotentHint: true,
-          openWorldHint: false,
+          readOnlyHint: false,
+          destructiveHint: true,
+          idempotentHint: false,
+          openWorldHint: true,
         },
       );
     } finally {

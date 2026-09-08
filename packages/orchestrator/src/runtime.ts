@@ -50,6 +50,16 @@ export interface RuntimeWorkInput {
   readonly signal?: AbortSignal;
 }
 
+export interface RuntimePlanningInput {
+  readonly executionRole: "planning";
+  readonly planningId: string;
+  readonly workspacePath: string;
+  readonly prompt: string;
+  readonly codeRevision: string;
+  readonly contextDigest: string;
+  readonly signal?: AbortSignal;
+}
+
 export interface RuntimeSession {
   readonly sessionId: string;
   readonly provider: RuntimeProvider;
@@ -65,6 +75,8 @@ export interface RuntimeSession {
 export interface AgentRuntimePort {
   readonly provider: RuntimeProvider;
   inspectCapabilities(): Promise<RuntimeCapabilitySnapshot>;
+  /** Produces an unapproved plan, without an implementation capability or worker lease. */
+  plan?(input: RuntimePlanningInput): Promise<RuntimeSession>;
   start(input: RuntimeWorkInput): Promise<RuntimeSession>;
   resume(providerSessionId: string, input: RuntimeWorkInput): Promise<RuntimeSession>;
   terminate(providerSessionId: string): Promise<void>;

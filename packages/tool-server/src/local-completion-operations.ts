@@ -133,7 +133,7 @@ export class LocalKontextCompletionOperations implements KontextCompletionOperat
     };
   }
 
-  async proposeTransition(request: ProposeTransitionRequest): Promise<unknown> {
+  async proposeTransition(request: ProposeTransitionRequest) {
     const prepared = await this.requirePrepared(request.taskId);
     const current = await this.currentState.getCurrent(request.taskId);
     let verificationRuns = await this.artifacts.listVerificationRuns(request.taskId);

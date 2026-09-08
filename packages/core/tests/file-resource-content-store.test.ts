@@ -1,6 +1,7 @@
-import { mkdtemp, readdir, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { gzipSync } from "node:zlib";
 import { afterEach, describe, expect, it } from "vitest";
 import { FileResourceContentStore } from "../src/index.js";
 
@@ -38,6 +39,52 @@ describe("FileResourceContentStore", () => {
     const store = new FileResourceContentStore(directory);
 
     await expect(store.get("../../secret.json.gz")).rejects.toThrow("Invalid object key");
+  });
+
+  it("bounds every new path segment while preserving long native identities and organization separation", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "kontext-content-"));
+    directories.push(directory);
+    const store = new FileResourceContentStore(directory);
+    const content = {
+      organizationId: "org".repeat(300),
+      resourceId: "근거/".repeat(500),
+      contentHash: "hash".repeat(300),
+      body: "Body",
+      chunks: { section: "Body" },
+    };
+    const key = await store.put(content);
+    expect(key.split("/")).toHaveLength(4);
+    expect(key.split("/").every((segment) => segment.length < 100)).toBe(true);
+    expect(await store.get(key)).toEqual(content);
+    expect(await store.put(content)).toBe(key);
+    const other = { ...content, organizationId: "other-org" };
+    const otherKey = await store.put(other);
+    expect(otherKey).not.toBe(key);
+    expect(await store.get(otherKey)).toEqual(other);
+  });
+
+  it("continues reading and purging legacy three-segment keys without a migration", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "kontext-content-"));
+    directories.push(directory);
+    const content = {
+      organizationId: "org",
+      resourceId: "resource:one",
+      contentHash: "sha256:old",
+      body: "Legacy source",
+      chunks: { section: "Legacy source" },
+    };
+    const key = [
+      encodeURIComponent(content.organizationId),
+      encodeURIComponent(content.resourceId),
+      `${encodeURIComponent(content.contentHash)}.json.gz`,
+    ].join("/");
+    const file = join(directory, key);
+    await mkdir(dirname(file), { recursive: true });
+    await writeFile(file, gzipSync(JSON.stringify(content)));
+    const store = new FileResourceContentStore(directory);
+    expect(await store.get(key)).toEqual(content);
+    await store.purge(key);
+    expect(await store.get(key)).toBeNull();
   });
 });
 

@@ -56,3 +56,4 @@ export * from "./knowledge/file-resource-content-store.js";
 export * from "./knowledge/extraction-jobs.js";
 export * from "./knowledge/ontology-proposals.js";
 export * from "./knowledge/adaptive-knowledge-enricher.js";
+export * from "./knowledge/sqlite-knowledge-graph.js";

@@ -27,6 +27,8 @@ export interface CurrentTaskContextState {
   readonly evidence: readonly ContextEvidenceItem[];
   readonly logicPlans: readonly LogicWorkPlan[];
   readonly governanceLinks?: readonly PlannedSymbolGovernanceLink[];
+  /** Current Evidence belonging to the Task's host-owned required source selection. */
+  readonly sourceEvidenceIds?: readonly string[];
 }
 
 export interface LogicWorkPlan {
@@ -101,7 +103,10 @@ export class TaskContextWorkflow {
         baseCodeRevision: state.codeRevision,
         effectiveScopes: state.effectiveScopes,
         normativeRecords: state.normativeRecords,
-        additionalRequiredEvidenceIds: request.additionalRequiredEvidenceIds,
+        additionalRequiredEvidenceIds: uniqueSorted([
+          ...(request.additionalRequiredEvidenceIds ?? []),
+          ...(state.sourceEvidenceIds ?? []),
+        ]),
         sourceFreshnessDigest: state.sourceFreshnessDigest,
         createdAt: request.createdAt,
       }),
@@ -132,7 +137,10 @@ export class TaskContextWorkflow {
       runtimeProvider: request.runtimeProvider,
       logic: request.logic,
       governanceLinks: state.governanceLinks,
-      additionalRequiredEvidenceIds: prepared.additionalRequiredEvidenceIds,
+      additionalRequiredEvidenceIds: uniqueSorted([
+        ...prepared.additionalRequiredEvidenceIds,
+        ...(state.sourceEvidenceIds ?? []),
+      ]),
       authorizedPaths: plan?.allowedPaths ?? [],
       issuedAt: request.issuedAt,
       expiresAt: request.expiresAt,
@@ -151,7 +159,10 @@ export class TaskContextWorkflow {
         baseCodeRevision: currentState.codeRevision,
         effectiveScopes: currentState.effectiveScopes,
         normativeRecords: currentState.normativeRecords,
-        additionalRequiredEvidenceIds: previous.additionalRequiredEvidenceIds,
+        additionalRequiredEvidenceIds: uniqueSorted([
+          ...previous.additionalRequiredEvidenceIds,
+          ...(currentState.sourceEvidenceIds ?? []),
+        ]),
         sourceFreshnessDigest: currentState.sourceFreshnessDigest,
         createdAt: request.createdAt,
       }),

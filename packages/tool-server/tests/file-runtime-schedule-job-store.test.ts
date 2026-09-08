@@ -43,12 +43,11 @@ describe("RuntimeScheduleJobManager", () => {
       () => "runtime-schedule:test",
     );
 
-    const queued = await manager.enqueue(
-      request,
-      "commit:async",
-      "sha256:context",
-      () => execution,
-    );
+    const queued = await manager.enqueue(request, async () => ({
+      codeRevision: "commit:async",
+      contextDigest: "sha256:context",
+      execute: () => execution,
+    }));
 
     expect(queued).toMatchObject({
       jobId: "runtime-schedule:test",
@@ -232,9 +231,11 @@ describe("RuntimeScheduleJobManager", () => {
       () => new Date("2026-08-31T02:00:00.000Z"),
       () => "runtime-schedule:failed",
     );
-    await manager.enqueue(request, "commit:failed", "sha256:failed", () =>
-      Promise.reject(new Error("runtime unavailable")),
-    );
+    await manager.enqueue(request, async () => ({
+      codeRevision: "commit:failed",
+      contextDigest: "sha256:failed",
+      execute: () => Promise.reject(new Error("runtime unavailable")),
+    }));
 
     await expect(
       waitForStatus(manager, "runtime-schedule:failed", "failed"),
@@ -256,10 +257,14 @@ describe("RuntimeScheduleJobManager", () => {
       acknowledgeAbort = () => resolve({ capabilities: [], results: [] });
     });
     let receivedSignal: AbortSignal | undefined;
-    await manager.enqueue(request, "commit:cancelled", "sha256:cancelled", (signal) => {
-      receivedSignal = signal;
-      return workerStopped;
-    });
+    await manager.enqueue(request, async () => ({
+      codeRevision: "commit:cancelled",
+      contextDigest: "sha256:cancelled",
+      execute: (signal) => {
+        receivedSignal = signal;
+        return workerStopped;
+      },
+    }));
     await waitForStatus(manager, "runtime-schedule:cancelled", "running");
 
     await expect(manager.cancel("runtime-schedule:cancelled")).resolves.toMatchObject({
@@ -329,17 +334,16 @@ describe("RuntimeScheduleJobManager", () => {
       () => new Date("2026-08-31T03:30:00.000Z"),
       () => "runtime-schedule:remote-cancel",
     );
-    await owner.enqueue(
-      request,
-      "commit:remote",
-      "sha256:remote",
-      (signal) =>
+    await owner.enqueue(request, async () => ({
+      codeRevision: "commit:remote",
+      contextDigest: "sha256:remote",
+      execute: (signal) =>
         new Promise((resolve) => {
           const stop = () => resolve({ capabilities: [], results: [] });
           signal.addEventListener("abort", stop, { once: true });
           if (signal.aborted) stop();
         }),
-    );
+    }));
     await waitForStatus(owner, "runtime-schedule:remote-cancel", "running");
     const remote = new RuntimeScheduleJobManager(
       new FileRuntimeScheduleJobStore(directory),

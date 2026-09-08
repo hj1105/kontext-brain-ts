@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { promisify } from "node:util";
@@ -17,16 +17,17 @@ export class FileResourceContentStore implements ResourceContentStore {
 
   async put(content: StoredResourceContent): Promise<string> {
     const objectKey = [
-      encodeURIComponent(content.organizationId),
-      encodeURIComponent(content.resourceId),
-      `${encodeURIComponent(content.contentHash)}.json.gz`,
+      "objects-v2",
+      digest(content.organizationId),
+      digest(content.resourceId),
+      `${digest(content.contentHash)}.json.gz`,
     ].join("/");
     const file = this.resolveKey(objectKey);
-    await fs.mkdir(path.dirname(file), { recursive: true });
+    await fs.mkdir(path.dirname(file), { recursive: true, mode: 0o700 });
     const temporary = `${file}.${process.pid}.${randomUUID()}.tmp`;
     try {
       const encoded = await gzipAsync(Buffer.from(JSON.stringify(content), "utf8"));
-      await fs.writeFile(temporary, encoded);
+      await fs.writeFile(temporary, encoded, { flag: "wx", mode: 0o600 });
       await fs.rename(temporary, file);
       return objectKey;
     } finally {
@@ -66,6 +67,10 @@ export class FileResourceContentStore implements ResourceContentStore {
     }
     return resolved;
   }
+}
+
+function digest(value: string): string {
+  return createHash("sha256").update(value).digest("hex");
 }
 
 function isFileNotFound(error: unknown): boolean {

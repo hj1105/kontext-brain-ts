@@ -32,7 +32,9 @@ import {
   integrateScheduleToolShape,
   scheduleLogicRequestSchema,
 } from "./runtime-schedule-contract.js";
+import { inspectRuntimeTask } from "./runtime-task-inspection.js";
 import type { SidecarChangeEvidenceProvider } from "./sidecar-change-evidence.js";
+import { resolveTaskExecutionRepository } from "./task-execution-repository.js";
 import {
   type KontextTaskWorkflowOperations,
   KontextTaskWorkflowToolRouter,
@@ -40,6 +42,7 @@ import {
 } from "./task-workflow-tools.js";
 
 export interface KontextRuntimeOperations {
+  inspectTask?(request: { readonly taskId: string }): Promise<unknown>;
   inspectRuntimes(): Promise<unknown>;
   scheduleLogic(request: ScheduleLogicRequest): Promise<unknown>;
   getSchedule(request: GetScheduleRequest): Promise<unknown>;
@@ -103,13 +106,13 @@ export class LocalKontextRuntimeOperations implements KontextRuntimeOperations {
     return new RuntimeDoctor().inspect(this.runtimes);
   }
 
+  async inspectTask(request: { readonly taskId: string }): Promise<unknown> {
+    return inspectRuntimeTask(request.taskId, this.currentState, this.preparedTasks);
+  }
+
   async scheduleLogic(request: ScheduleLogicRequest): Promise<unknown> {
-    const prepared = await this.prepareScheduleExecution(request);
-    return this.scheduleJobs.enqueue(
-      request,
-      prepared.codeRevision,
-      prepared.contextDigest,
-      prepared.execute,
+    return this.scheduleJobs.enqueue(request, (validated) =>
+      this.prepareScheduleExecution(validated),
     );
   }
 
@@ -171,7 +174,12 @@ export class LocalKontextRuntimeOperations implements KontextRuntimeOperations {
       "runtime-worktrees",
       createHash("sha256").update(repositoryPath).digest("hex"),
     );
-    const manager = new GitRuntimeWorktreeManager(repositoryPath, worktreeRoot);
+    const executionRepository = await resolveTaskExecutionRepository(
+      this.dataDirectory,
+      request.taskId,
+      repositoryPath,
+    );
+    const manager = new GitRuntimeWorktreeManager(executionRepository, worktreeRoot);
     const contextRouter = new KontextTaskWorkflowToolRouter(this.workflow, this.now, this.bindings);
     const allowedByEvidence = providersAllowedByEvidence(
       current.evidence,

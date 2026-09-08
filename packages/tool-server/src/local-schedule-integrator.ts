@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import path from "node:path";
 import type { PreparedTaskContextStore, TaskContextStateProvider } from "@kontext-brain/context";
-import { GitChangeBundleIntegrator } from "@kontext-brain/local";
+import { GitChangeBundleIntegrator, withLocalFileMutationLock } from "@kontext-brain/local";
 import {
   type AgentRuntimePort,
   type DurableVerificationCoordinator,
@@ -21,6 +21,8 @@ import type { RuntimeScheduleJobView } from "./file-runtime-schedule-job-store.j
 import { assessCurrentContext } from "./local-completion-operations.js";
 import type { IntegrateScheduleRequest } from "./runtime-schedule-contract.js";
 import type { SidecarChangeEvidenceProvider } from "./sidecar-change-evidence.js";
+import { resolveTaskExecutionRepository } from "./task-execution-repository.js";
+import { taskPlanningDigest } from "./task-planning-contract.js";
 import { captureWorkspaceSnapshot, observeWorkspacePatch } from "./workspace-change-observer.js";
 import {
   captureWorkspaceCodeSymbols,
@@ -47,6 +49,21 @@ export class LocalScheduleIntegrator {
     job: RuntimeScheduleJobView,
     request: IntegrateScheduleRequest,
   ): Promise<unknown> {
+    if (request.jobId !== job.jobId) throw new Error("Integration schedule identity mismatch");
+    return withLocalFileMutationLock(
+      path.join(
+        this.dataDirectory,
+        "integration-locks",
+        createHash("sha256").update(job.taskId).digest("hex"),
+      ),
+      () => this.integrateLocked(job, request),
+    );
+  }
+
+  private async integrateLocked(
+    job: RuntimeScheduleJobView,
+    request: IntegrateScheduleRequest,
+  ): Promise<unknown> {
     if (job.status !== "completed" || !job.result) {
       throw new Error(`Runtime schedule ${job.jobId} is not completed`);
     }
@@ -62,6 +79,13 @@ export class LocalScheduleIntegrator {
       throw new Error("Runtime schedule no longer matches the prepared Task Context Snapshot");
     }
     const existingIntegration = await this.integratedTasks.get(job.taskId);
+    if (
+      request.expectedIntegrationDigest !== undefined &&
+      request.expectedIntegrationDigest !==
+        (existingIntegration ? taskPlanningDigest(existingIntegration) : null)
+    ) {
+      throw new Error("Reviewed integration record changed; inspect before retrying");
+    }
     if (existingIntegration?.scheduleJobId === job.jobId) {
       const observed = await captureWorkspaceSnapshot(
         existingIntegration.workspacePath,
@@ -155,8 +179,13 @@ export class LocalScheduleIntegrator {
       authors,
     });
     const repositoryPath = path.resolve(job.repositoryPath);
-    const integrator = new GitChangeBundleIntegrator(
+    const executionRepository = await resolveTaskExecutionRepository(
+      this.dataDirectory,
+      job.taskId,
       repositoryPath,
+    );
+    const integrator = new GitChangeBundleIntegrator(
+      executionRepository,
       path.join(
         this.dataDirectory,
         "integration-worktrees",

@@ -5,7 +5,7 @@ import type { RuntimeProvider } from "@kontext-brain/orchestrator";
 import { z } from "zod";
 
 const nonEmptyString = z.string().min(1);
-const integratedTaskStateSchema = z
+export const integratedTaskStateSchema = z
   .object({
     taskId: nonEmptyString,
     scheduleJobId: nonEmptyString,

@@ -1,6 +1,7 @@
 import type { TaskContextWorkflow } from "@kontext-brain/context";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { z } from "zod";
 import {
   type KontextCompletionOperations,
   KontextCompletionToolRouter,
@@ -8,6 +9,10 @@ import {
   proposeTransitionToolShape,
   submitChangeBundleToolShape,
 } from "./completion-workflow-tools.js";
+import {
+  type HostKnowledgeOperations,
+  registerHostKnowledgeTools,
+} from "./host-knowledge-tools.js";
 import {
   cancelScheduleToolShape,
   getScheduleToolShape,
@@ -83,6 +88,15 @@ export function registerTaskWorkflowTools(
     );
   }
   if (runtimeOperations) {
+    if (runtimeOperations.inspectTask) {
+      server.tool(
+        "kontext_inspect_task",
+        "Read a published Task Contract, current context status and sidecar-planned work identifiers without starting workers or disclosing Evidence text.",
+        { taskId: z.string().min(1) },
+        { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+        async (input) => workflowToolResult(await runtimeOperations.inspectTask?.(input)),
+      );
+    }
     const runtime = new KontextRuntimeToolRouter(runtimeOperations);
     server.tool(
       "kontext_inspect_runtimes",
@@ -107,10 +121,10 @@ export function registerTaskWorkflowTools(
       "Read durable schedule progress and state; after restart, revalidate and automatically resume an eligible interrupted schedule.",
       getScheduleToolShape,
       {
-        readOnlyHint: true,
-        destructiveHint: false,
-        idempotentHint: true,
-        openWorldHint: false,
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: false,
+        openWorldHint: true,
       },
       async (input) => workflowToolResult(await runtime.getSchedule(input)),
     );
@@ -138,6 +152,7 @@ export class KontextTaskToolServer {
     bindings?: WriteAuthorizationBindingStore,
     completionOperations?: KontextCompletionOperations,
     runtimeOperations?: KontextRuntimeOperations,
+    hostKnowledge?: HostKnowledgeOperations,
   ) {
     registerTaskWorkflowTools(
       this.server,
@@ -146,6 +161,7 @@ export class KontextTaskToolServer {
       completionOperations,
       runtimeOperations,
     );
+    if (hostKnowledge) registerHostKnowledgeTools(this.server, hostKnowledge);
   }
 
   async start(): Promise<void> {

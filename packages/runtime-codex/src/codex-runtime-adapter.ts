@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import {
   type AgentRuntimePort,
   type RuntimeCapabilitySnapshot,
+  type RuntimePlanningInput,
   type RuntimeSession,
   type RuntimeWorkInput,
   createRuntimeCapabilitySnapshot,
@@ -121,6 +122,14 @@ export class CodexRuntimeAdapter implements AgentRuntimePort {
     );
   }
 
+  async plan(input: RuntimePlanningInput): Promise<RuntimeSession> {
+    this.assertBillingPath();
+    return this.execute(
+      ["exec", "--json", "--sandbox", "read-only", "--cd", input.workspacePath, "-"],
+      input,
+    );
+  }
+
   async resume(providerSessionId: string, input: RuntimeWorkInput): Promise<RuntimeSession> {
     this.assertBillingPath();
     return this.execute(
@@ -137,7 +146,7 @@ export class CodexRuntimeAdapter implements AgentRuntimePort {
 
   private async execute(
     args: readonly string[],
-    input: RuntimeWorkInput,
+    input: RuntimeWorkInput | RuntimePlanningInput,
     knownProviderSessionId?: string,
   ): Promise<RuntimeSession> {
     const executionId = randomUUID();
@@ -198,7 +207,8 @@ export class CodexRuntimeAdapter implements AgentRuntimePort {
   }
 }
 
-function workerPrompt(input: RuntimeWorkInput): string {
+function workerPrompt(input: RuntimeWorkInput | RuntimePlanningInput): string {
+  if (input.executionRole === "planning") return input.prompt;
   if (input.executionRole === "independent_review") {
     return [
       input.prompt,

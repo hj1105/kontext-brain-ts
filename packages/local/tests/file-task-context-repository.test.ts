@@ -30,6 +30,27 @@ afterEach(async () => {
 });
 
 describe("FileTaskContextRepository", () => {
+  it("accepts exactly one of concurrent publishers using the same expected version", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "kontext-task-context-cas-"));
+    temporaryDirectories.push(directory);
+    const repository = new FileTaskContextRepository(directory);
+    const written = await repository.publishCurrent(contract.taskId, currentState());
+    const initial = await repository.getCurrentVersion(contract.taskId);
+    expect(initial.digest).toBe(written.digest);
+    expect(initial.state).toEqual(currentState());
+    const outcomes = await Promise.allSettled(
+      Array.from({ length: 16 }, (_, index) =>
+        new FileTaskContextRepository(directory).publishCurrent(
+          contract.taskId,
+          { ...currentState(), codeRevision: `commit:contender:${index}` },
+          { expectedDigest: initial.digest },
+        ),
+      ),
+    );
+    expect(outcomes.filter((outcome) => outcome.status === "fulfilled")).toHaveLength(1);
+    expect(outcomes.filter((outcome) => outcome.status === "rejected")).toHaveLength(15);
+  });
+
   it("atomically persists private current and prepared Task context across instances", async () => {
     const directory = await mkdtemp(path.join(tmpdir(), "kontext-task-context-"));
     temporaryDirectories.push(directory);
@@ -74,6 +95,27 @@ describe("FileTaskContextRepository", () => {
     envelope.payload.codeRevision = "commit:tampered";
     await writeFile(filePath, JSON.stringify(envelope), "utf8");
     await expect(repository.getCurrent(contract.taskId)).rejects.toThrow("digest mismatch");
+    const corrupted = await readFile(filePath, "utf8");
+    await expect(repository.publishCurrent(contract.taskId, currentState())).rejects.toThrow(
+      "digest mismatch",
+    );
+    expect(await readFile(filePath, "utf8")).toBe(corrupted);
+  });
+
+  it("supports create-only publication without adopting or overwriting another creation", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "kontext-task-context-create-"));
+    temporaryDirectories.push(directory);
+    const outcomes = await Promise.allSettled(
+      Array.from({ length: 16 }, (_, index) =>
+        new FileTaskContextRepository(directory).publishCurrent(
+          contract.taskId,
+          { ...currentState(), codeRevision: `commit:creator:${index}` },
+          { expectedDigest: null },
+        ),
+      ),
+    );
+    expect(outcomes.filter((outcome) => outcome.status === "fulfilled")).toHaveLength(1);
+    expect(outcomes.filter((outcome) => outcome.status === "rejected")).toHaveLength(15);
   });
 });
 

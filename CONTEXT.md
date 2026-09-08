@@ -14,7 +14,7 @@ A coarse concept declared by the Ontology. Fine-grained names, records, and clai
 
 ## Resource
 
-One source-native unit such as a Notion page, Slack thread, GitHub issue, or pull request. Its external system remains the source of truth.
+One source-native unit such as a Markdown file, session transcript, Notion page, Slack thread, GitHub issue, or pull request. The originating file, session, or external system remains the source of truth.
 
 ## Chunk
 
@@ -38,7 +38,7 @@ A content-driven kind of knowledge extraction such as identity resolution, event
 
 ## Evidence
 
-An accessible Chunk used as explicit support for a Fact or as provenance for a normative record. A supported claim is visible only when the requesting principal can access the required active Evidence.
+An accessible Chunk used as explicit support for a Task or Fact, or as provenance for a normative record. Source registration is not normative approval; a supported claim is visible only when the requesting principal can access its required active Evidence.
 
 ## Resource-scoped Entity
 

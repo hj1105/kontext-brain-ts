@@ -26,6 +26,11 @@ export interface WorkspacePatchObservation {
 const maxGitOutputBytes = 64 * 1024 * 1024;
 const maxObservedFiles = 50_000;
 
+interface GitWorkspaceObservation {
+  readonly head: string;
+  readonly paths: readonly string[];
+}
+
 export async function captureWorkspaceSnapshot(
   workspacePath: string,
   fallbackPaths: readonly string[] = [],
@@ -33,8 +38,12 @@ export async function captureWorkspaceSnapshot(
   const normalizedWorkspace = path.resolve(workspacePath);
   const canonicalWorkspace = await realpath(normalizedWorkspace).catch(() => normalizedWorkspace);
   const gitFiles = await listGitFiles(canonicalWorkspace).catch(() => undefined);
-  const relativePaths =
-    gitFiles ?? normalizeFallbackPaths(normalizedWorkspace, canonicalWorkspace, fallbackPaths);
+  const relativePaths = Array.from(
+    new Set([
+      ...normalizeFallbackPaths(normalizedWorkspace, canonicalWorkspace, fallbackPaths),
+      ...(gitFiles?.paths ?? []),
+    ]),
+  ).sort((left, right) => left.localeCompare(right));
   if (relativePaths.length > maxObservedFiles) {
     throw new Error(`Workspace observation exceeds ${maxObservedFiles} files`);
   }
@@ -43,7 +52,9 @@ export async function captureWorkspaceSnapshot(
       relativePaths.map((relativePath) => fileState(canonicalWorkspace, relativePath)),
     )
   ).sort((left, right) => left.path.localeCompare(right.path));
-  const revision = `workspace-revision:${sha256(stableJson(files))}`;
+  const revision = `workspace-revision:${sha256(
+    stableJson({ gitHead: gitFiles?.head ?? null, files }),
+  )}`;
   return { workspacePath: canonicalWorkspace, revision, files };
 }
 
@@ -81,15 +92,20 @@ export function observeWorkspacePatch(
   };
 }
 
-async function listGitFiles(workspacePath: string): Promise<readonly string[]> {
-  const output = await run(
-    "git",
-    ["ls-files", "-c", "-o", "--exclude-standard", "-z"],
-    workspacePath,
-  );
-  return Array.from(
+async function listGitFiles(workspacePath: string): Promise<GitWorkspaceObservation> {
+  await run("git", ["rev-parse", "--git-dir"], workspacePath);
+  const head = await run("git", ["rev-parse", "--verify", "HEAD"], workspacePath)
+    .then((output) => output.toString("utf8").trim())
+    .catch(() => "unborn-head");
+  const [trackedChanges, untracked] = await Promise.all([
+    head === "unborn-head"
+      ? run("git", ["ls-files", "--cached", "-z"], workspacePath)
+      : run("git", ["diff", "--name-only", "--no-renames", "-z", head, "--"], workspacePath),
+    run("git", ["ls-files", "--others", "--exclude-standard", "-z"], workspacePath),
+  ]);
+  const paths = Array.from(
     new Set(
-      output
+      Buffer.concat([trackedChanges, untracked])
         .toString("utf8")
         .split("\u0000")
         .filter(Boolean)
@@ -97,6 +113,7 @@ async function listGitFiles(workspacePath: string): Promise<readonly string[]> {
         .filter((filePath) => isSafeRelativePath(filePath)),
     ),
   ).sort((left, right) => left.localeCompare(right));
+  return { head, paths };
 }
 
 function normalizeFallbackPaths(

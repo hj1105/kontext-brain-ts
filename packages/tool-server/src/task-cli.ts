@@ -19,10 +19,21 @@ import { CodexRuntimeAdapter } from "@kontext-brain/runtime-codex";
 import { FileIntegratedTaskStateStore } from "./file-integrated-task-state-store.js";
 import { FileWriteAuthorizationBindingStore } from "./file-write-authorization-binding-store.js";
 import { FileWriteAuthorizationEventStore } from "./file-write-authorization-event-store.js";
+import { takeHostKnowledgeCapability } from "./host-knowledge-tools.js";
 import { LocalKontextCompletionOperations } from "./local-completion-operations.js";
+import { LocalKnowledgeOperations } from "./local-knowledge-operations.js";
 import { LocalPostWriteObserver } from "./local-post-write-observer.js";
+import { LocalRegisteredIntegrationOperations } from "./local-registered-integration.js";
+import { LocalRegisteredScheduleOperations } from "./local-registered-schedules.js";
+import { LocalTaskCompletionAssessment } from "./local-task-completion-assessment.js";
+import { LocalTaskCreationOperations } from "./local-task-creation.js";
+import { LocalTaskFinalizationOperations } from "./local-task-finalization.js";
+import { LocalTaskInventoryOperations } from "./local-task-inventory.js";
+import { LocalTaskPlanningOperations } from "./local-task-planning.js";
 import { LocalVerificationRecoveryService } from "./local-verification-recovery.js";
 import { LocalWorkspaceObservationService } from "./local-workspace-observation-service.js";
+import { RegisteredTaskContextProvider } from "./registered-task-context.js";
+import { RegisteredTaskContextWorkflow } from "./registered-task-workflow.js";
 import { LocalKontextRuntimeOperations } from "./runtime-workflow-tools.js";
 import { BoundWorkspaceChangeEvidenceProvider } from "./sidecar-change-evidence.js";
 import { subscriptionRuntimeEnvironment } from "./subscription-runtime-environment.js";
@@ -34,9 +45,12 @@ import {
 } from "./task-workflow-tools.js";
 
 async function main(): Promise<void> {
+  // Verifiers and Git subprocesses must never inherit host-management authority.
+  const hostToken = takeHostKnowledgeCapability(process.env);
   const dataDirectory = resolvePluginDataDirectory();
   const repository = new FileTaskContextRepository(dataDirectory);
-  const workflow = new TaskContextWorkflow(repository, repository);
+  const currentState = new RegisteredTaskContextProvider(dataDirectory, repository);
+  const workflow = new RegisteredTaskContextWorkflow(dataDirectory, repository, currentState);
   const bindings = new FileWriteAuthorizationBindingStore(dataDirectory);
   const authorizationEvents = new FileWriteAuthorizationEventStore(dataDirectory);
   if (process.argv.includes("--authorize-write-hook")) {
@@ -45,7 +59,7 @@ async function main(): Promise<void> {
   }
   const quarantine = new FileQuarantineStore(dataDirectory);
   const postWriteObserver = new LocalPostWriteObserver(
-    repository,
+    currentState,
     repository,
     bindings,
     authorizationEvents,
@@ -66,7 +80,7 @@ async function main(): Promise<void> {
   );
   const changeEvidence = new BoundWorkspaceChangeEvidenceProvider(bindings);
   const completion = new LocalKontextCompletionOperations(
-    repository,
+    currentState,
     repository,
     artifacts,
     quarantine,
@@ -75,7 +89,7 @@ async function main(): Promise<void> {
     integratedTasks,
   );
   const runtimeOperations = new LocalKontextRuntimeOperations(
-    repository,
+    currentState,
     repository,
     workflow,
     bindings,
@@ -93,8 +107,9 @@ async function main(): Promise<void> {
     changeEvidence,
     integratedTasks,
   );
+  const completionAssessment = new LocalTaskCompletionAssessment(dataDirectory, completion);
   new LocalVerificationRecoveryService(
-    repository,
+    currentState,
     repository,
     artifacts,
     retryQueue,
@@ -110,7 +125,44 @@ async function main(): Promise<void> {
     );
   });
   process.stderr.write(`kontext-brain private data: ${dataDirectory}\n`);
-  await new KontextTaskToolServer(workflow, bindings, completion, runtimeOperations).start();
+  await new KontextTaskToolServer(
+    workflow,
+    bindings,
+    completion,
+    runtimeOperations,
+    hostToken
+      ? {
+          token: hostToken,
+          operations: new LocalKnowledgeOperations(dataDirectory),
+          taskCreation: new LocalTaskCreationOperations(dataDirectory),
+          taskCompletion: completionAssessment,
+          taskInventory: new LocalTaskInventoryOperations(dataDirectory),
+          registeredSchedules: new LocalRegisteredScheduleOperations(
+            dataDirectory,
+            runtimeOperations,
+          ),
+          registeredIntegration: new LocalRegisteredIntegrationOperations(
+            dataDirectory,
+            new LocalRegisteredScheduleOperations(dataDirectory, runtimeOperations),
+            runtimeOperations,
+          ),
+          taskFinalization: new LocalTaskFinalizationOperations(
+            dataDirectory,
+            completionAssessment,
+          ),
+          taskPlanning: new LocalTaskPlanningOperations(dataDirectory, [
+            new CodexRuntimeAdapter({
+              environment: subscriptionRuntimeEnvironment(dataDirectory),
+              timeoutMilliseconds: 15 * 60_000,
+            }),
+            new ClaudeCodeRuntimeAdapter({
+              environment: subscriptionRuntimeEnvironment(dataDirectory),
+              timeoutMilliseconds: 15 * 60_000,
+            }),
+          ]),
+        }
+      : undefined,
+  ).start();
 }
 
 async function authorizeWriteHook(
