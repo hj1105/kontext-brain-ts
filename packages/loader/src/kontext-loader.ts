@@ -29,6 +29,7 @@ import {
   toOntologyNodes,
 } from "@kontext-brain/core";
 import {
+  CodexCliLLMAdapter,
   type LLMProviderConfig,
   LLMProviderRegistry,
   LangChainLLMAdapter,
@@ -159,11 +160,14 @@ export class KontextLoader {
     const templates = resolvePromptTemplates(config.language);
     const tokenEstimator = resolveTokenEstimator(config.language);
 
-    // LLM
-    const traversalModel = this.llmRegistry.createChat(toLLMConfig(config.llm.traversal));
-    const reasoningModel = this.llmRegistry.createChat(toLLMConfig(config.llm.reasoning));
-    const traversalAdapter = new LangChainLLMAdapter(traversalModel, templates);
-    const reasoningAdapter = new LangChainLLMAdapter(reasoningModel, templates);
+    // LLM. Why: the `codex` provider drives the user's logged-in CLI, which no
+    // LangChain chat model can represent — the others need a billed API key.
+    const buildAdapter = (dto: LLMProviderConfigDto) =>
+      dto.provider === "codex"
+        ? new CodexCliLLMAdapter({ templates })
+        : new LangChainLLMAdapter(this.llmRegistry.createChat(toLLMConfig(dto)), templates);
+    const traversalAdapter = buildAdapter(config.llm.traversal);
+    const reasoningAdapter = buildAdapter(config.llm.reasoning);
     const router = new RouterLLMAdapter(traversalAdapter, reasoningAdapter);
 
     // Vector + embedding

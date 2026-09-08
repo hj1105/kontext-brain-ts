@@ -226,6 +226,10 @@ Options:
   --target-nodes <n>     Ontology node-count override (setup)
 
 Run import-mcp or add, then check, then setup.
+
+LLM providers: claude and openai bill per token against an API key. Use
+provider: codex to drive your logged-in Codex CLI instead, which a ChatGPT
+subscription already covers. ollama runs locally.
 `;
 }
 
