@@ -2,28 +2,59 @@
 
 [English](./README.md) | [한국어](./README.ko.md)
 
-> Evidence-backed N-layer knowledge-graph RAG for AI agents — TypeScript / Node.js.
+**Give coding agents the right organizational context before they change code.**
+
+Kontext connects your code to decisions, domain rules, and source evidence — and
+proves which context governed each change.
 
 [![node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
 [![pnpm](https://img.shields.io/badge/pnpm-9-orange)](https://pnpm.io)
 [![typescript](https://img.shields.io/badge/typescript-5.x-blue)](https://www.typescriptlang.org/)
 
+```text
+Without Kontext
+
+Task
+ ↓
+LLM searches random docs
+ ↓
+code
+
+With Kontext
+
+Task
+ ↓
+applicable decisions + evidence + code symbols
+ ↓
+Context Receipt
+ ↓
+code
+ ↓
+verification
+```
+
+An agent that guesses which docs are relevant produces changes nobody can audit.
+Kontext resolves the decisions and rules that actually govern the symbol being
+edited, hands the agent only those, and records a Context Receipt naming what it
+was given — so a reviewer can check the context, not just the diff.
+
+- **Decisions, not documents.** Accepted decisions, domain terms, and invariants
+  are the normative layer; source material stays Evidence with its own ID and span.
+- **Scoped to the change.** Governance is resolved per code symbol, so a symbol
+  does not inherit a neighbouring area's approved decision.
+- **Auditable.** Every change carries the receipt of the context that governed it.
+
+New here? Read [What this project is](#what-this-project-is), then
+[Quick start](#quick-start). Retrieval quality numbers live in
+[Current benchmark snapshot](#current-benchmark-snapshot).
+
+---
+
+## What this project is
+
 A retrieval framework that structures multi-source knowledge as Resources,
 source-native Chunks, Entities, Facts, and ACL-aware Evidence instead of treating
-the corpus as a flat vector index. The included RAG evaluation harness uses the
-**v13 anchored-evidence stack** by default: original-query-anchored multi-query
-retrieval, graph/vector/BM25 fusion, coverage-aware reranking, source hydration,
-and evidence-needs-constrained answers. The RAG evaluation harness selects v13
-when no experimental mode is configured. See
-[RAG evaluation v2](./bench/src/rag-eval-v2/README.md) for the frozen protocol
-and the
-[dataset-by-dataset cross-framework report](./bench/data/rag-eval-v2/cross-framework-all-datasets-2026-08-23.md);
-the superseded experiments are indexed in
-[Benchmark history](./bench/data/BENCHMARK_HISTORY.md), not presented as the
-primary quality claim. The profiles were iteratively tuned, some comparisons
-use a precomputed Kontext KG, and the report's raw run directories are not
-committed, so these results are regression evidence rather than an independently
-reproducible final cross-framework benchmark.
+the corpus as a flat vector index.
 
 The production path keeps external systems as the source of truth and maintains
 an evidence-backed derived index. A query can seed accessible Resources, Chunks,
@@ -31,133 +62,6 @@ Entities, Facts, and optional Ontology anchors, then run bounded best-first
 **Lift → Expand → Ground** traversal. Only the source Chunks selected as Evidence
 are hydrated for answering. Ontology-first staged routing remains available for
 backward compatibility; it is not the definition of production N-layer retrieval.
-
----
-
-## Current benchmark snapshot
-
-This is the section to read for current performance. The old Round-by-Round
-research log lives separately in [Benchmark history](./bench/data/BENCHMARK_HISTORY.md).
-
-The public benchmark scope is deliberately narrow: **GraphRAG-Bench Medical,
-GraphRAG-Bench Novel, BEIR SciFact, and BEIR NFCorpus**. Medical and Novel carry
-the shared retrieval, answer, citation, and judge evaluation; SciFact and
-NFCorpus are public retrieval guardrails. Historical datasets and exploratory
-harnesses are not part of the current performance claim.
-
-- **Default, no configuration:** v13 anchored-evidence stack.
-- **Latest validated candidate:** v15, which keeps the v13 ranking and answer
-  policy but repairs missing original resources in incomplete precomputed KGs.
-- **Promotion status:** v15 is not silently made the default yet. Novel supplied
-  the development signal and SciFact recall moved slightly, so v13 remains the
-  conservative default until another held-out gate confirms the change.
-
-All rows below use the frozen shared answer/judge contract. Retrieval is scored
-over the full dataset; answer quality uses the same deterministic 200-query
-sample. Higher is better. Embedding API cost is the total represented embedding
-usage available for each row (index plus measured query-time embeddings), not
-an index-only cost; when a run reused an existing cache, its newly incurred
-cost is shown separately. The detailed report splits index-build time and cost
-from query-time usage where the native framework recorded both boundaries.
-
-| Dataset | System | Recall@10 | nDCG@10 | Correctness | Strict faithfulness | Claim F1 | Citation F1 | Warm retrieval p95 | Query-to-answer p95 | Eval E2E p95 | Embedding API cost | Answer+judge LLM tokens/query (in/out) | LLM API-equivalent $/query |
-|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Medical | **Kontext v15** | 0.8914 | 0.9689 | **0.9499** | **0.9614** | **0.8612** | **0.9583** | 7.30 s | 19.20 s | 124.86 s | **$0.008150 represented / $0 new**‡ | 45,150 / 1,277 | ≈$0.1593§ |
-| Medical | Kontext v13 default | 0.8923 | 0.9704 | 0.9461 | 0.9534 | 0.8550 | 0.9541 | 6.83 s | 18.60 s | 107.71 s | $0.008150 | 45,148 / 1,344 | ≈$0.1606§ |
-| Medical | LightRAG 1.5.6 | **0.9326** | 0.9990* | 0.8939 | 0.9417 | 0.8575 | 0.9477 | 6.00 s | 16.22 s | 123.02 s | $0.015409 | 57,911 / 1,651 | ≈$0.2057§ |
-| Medical | Microsoft GraphRAG 3.1.1 | 0.8303 | 0.9971* | 0.7817 | 0.8740 | 0.7336 | 0.8518 | 0.28 s | 12.83 s | 113.19 s | $0.013623 | 43,402 / 1,942 | ≈$0.1678§ |
-| Novel | **Kontext v15** | 0.8209 | 0.9349 | **0.8566** | **0.9290** | **0.8234** | 0.9369 | 8.54 s | 20.11 s | 97.68 s | $0.029414¶ | 47,690 / 1,374 | ≈$0.1688§ |
-| Novel | Kontext v13 default | 0.5259 | 0.6662 | 0.4654 | 0.7922 | 0.5181 | 0.5521 | 9.89 s | 19.37 s | 83.51 s | $0.017840 | 47,508 / 1,088 | ≈$0.1629§ |
-| Novel | LightRAG 1.5.6 | **0.8567** | 0.9945* | 0.8498 | 0.9272 | 0.8201 | **0.9407** | 6.66 s | 17.88 s | 117.30 s | $0.049371 | 58,705 / 1,351 | ≈$0.2022§ |
-| Novel | Microsoft GraphRAG 3.1.1 | 0.7716 | 0.9816* | 0.7668 | 0.8651 | 0.7434 | 0.8763 | 0.40 s | 10.97 s | 136.36 s | $0.088326 | 43,492 / 1,653 | ≈$0.1624§ |
-
-Context precision is deliberately omitted from this compact table. `*` marks
-package-sensitive nDCG: LightRAG and Microsoft GraphRAG package a large native
-context as one evidence record, while Kontext exposes separately scored evidence
-windows, so their raw ranking/noise values are not directly comparable. `‡`
-means the Medical v15 row represents the same 407,518 embedding
-input tokens already paid for by the v13 run: 1,385 document, 2,062 query, and
-5,893 expanded-query vectors were reused, with zero new vectors or embedding
-input tokens. A fresh index or new query workload is not free. `¶` is the
-preserved pre-fix v15 Novel run cost; its whole-batch cache invalidation was
-fixed but the benchmark was not rerun to manufacture a cheaper number. `§` is
-an API-equivalent estimate
-from the preserved stage-specific tokens, treating all input as uncached: answer
-GPT-5.6 Terra at $2 input/$12 output and judge GPT-5.6 Sol at $4 input/$20 output
-per million tokens, using the
-[official OpenAI model prices](https://developers.openai.com/api/docs/models/compare)
-on 2026-08-24. The benchmark actually used the local Codex CLI, so this is not an
-API invoice or a per-query Codex subscription charge. The token and cost columns
-cover answer+judge only; Kontext query expansion and reranking CLI tokens were
-not fully metered, so they must not be presented as total LLM compute cost. The
-detailed report includes confidence intervals and the public BEIR
-SciFact/NFCorpus retrieval guardrails:
-[cross-framework evaluation](./bench/data/rag-eval-v2/cross-framework-all-datasets-2026-08-23.md).
-
-#### How the three latency columns were measured
-
-The latency columns come from the 2026-08-24/29 clean latency campaign
-(protocol `clean-latency-v1.1`; accepted composite suite under
-`bench/data/rag-eval-v2/runs/clean-latency-corrective-attempt6-2026-08-28/`).
-Earlier invalid attempts remain preserved beside it. These values replace the
-earlier speed figures outright rather than adjusting them, because several of
-those were measured while other benchmarks shared one local Codex queue and so
-recorded other jobs' queue wait. Novel Kontext v15 previously read 972.11 s and
-Novel LightRAG 3,386.57 s; rows that had never been flagged as contaminated
-reproduced within 1.3–1.9x, which is the check that the protocol isolates
-contamination instead of moving every number.
-
-Every row reuses its finished warm index with no index build and no new
-embeddings, and a cache miss fails closed. All four systems draw the same
-deterministic 200-query sample per dataset (seed 20260814, one shared sample
-digest), one system runs at a time, and retrieval, answer, and judge each run at
-concurrency 1, batch size 1, with no retries. Percentiles are nearest-rank.
-
-- **Warm retrieval p95** is retrieval only. Index construction is excluded;
-  recorded index-build time and cost are reported separately in the detailed
-  comparison rather than folded into request latency.
-- **Query-to-answer p95** is retrieval plus answer latency. This is the
-  user-facing number: the judge is an evaluation step, not part of answering.
-- **Eval E2E p95** adds the judge call and describes the evaluation pipeline
-  only. It must not be read as user-perceived latency.
-
-A run is accepted only when its retrieval and answer stages carry no latency
-above 600 s, no queue, throttle, quota, or usage-limit error, and no
-inter-completion gap in the 10–20 minute throttle-wave band. Rejected and
-aborted runs are preserved beside the accepted ones under `invalid-*`,
-`aborted-*`, and `pre-expansion-latency-fix/` rather than deleted or blended.
-Two measurement bugs were found and fixed during the campaign: a cached
-multi-query expansion's stored latency was being added to each query's reported
-retrieval latency even though a cache hit spends no wall clock, and the judge
-waited 1,800 s before giving up on a call the protocol had already disqualified
-at 600 s. Both fixes are covered by unit tests. Quality columns are unchanged
-throughout: they come from the 2026-08-22/23 scored runs on the same sample, and
-this campaign re-measured latency only.
-
-### Official evaluation contract
-
-No single aggregate “overall score” is used. A system must report the layers
-separately so a retrieval gain cannot hide a grounding or abstention regression.
-
-| Layer | Primary metric | What it checks |
-|---|---|---|
-| Retrieval | Evidence Recall@K | Whether the evidence required for the answer was actually found |
-| Retrieval order | nDCG@K | Whether important evidence was ranked near the front |
-| Retrieval noise | Context Precision | What fraction of retrieved evidence is relevant |
-| Answer coverage | Claim Recall | Whether required answer claims were omitted |
-| Grounding | Strict Faithfulness / Claim Support Precision | Whether every generated claim is entailed by retrieved evidence |
-| Citations | Citation Precision / Recall / F1 | Whether citations support their claims and cover the claims that need them |
-| Out-of-scope handling | Answerable/Unanswerable Joint Accuracy | Whether the system answers supported questions and abstains outside the KB |
-| Stability | Robustness Drop | Performance loss after document-order, paraphrase, or distractor perturbations |
-| Writing quality | Clarity / Conciseness / Fluency | Whether the response is readable without unnecessary wording |
-
-Metrics that require labels or paired perturbations are reported as unavailable,
-not fabricated. Historical score files retain the fields available under their
-original frozen judge contract.
-
----
-
-## What this project is
 
 A modular monorepo with eight published packages and the RAG evaluation v2
 harness:
@@ -726,6 +630,137 @@ Internally:
 The whole flow takes one network round-trip per LLM call, parallelized where
 safe. Total time: roughly 30 seconds for a 100-doc corpus on Claude Haiku;
 proportionally slower on local Ollama.
+
+---
+
+## Current benchmark snapshot
+
+The evaluation harness uses the **v13 anchored-evidence stack** by default:
+original-query-anchored multi-query retrieval, graph/vector/BM25 fusion,
+coverage-aware reranking, source hydration, and evidence-needs-constrained
+answers. The profiles were iteratively tuned, some comparisons use a precomputed
+Kontext KG, and the report's raw run directories are not committed, so these
+results are **regression evidence rather than an independently reproducible
+final cross-framework benchmark**.
+
+This is the section to read for current performance. The old Round-by-Round
+research log lives separately in [Benchmark history](./bench/data/BENCHMARK_HISTORY.md).
+
+The public benchmark scope is deliberately narrow: **GraphRAG-Bench Medical,
+GraphRAG-Bench Novel, BEIR SciFact, and BEIR NFCorpus**. Medical and Novel carry
+the shared retrieval, answer, citation, and judge evaluation; SciFact and
+NFCorpus are public retrieval guardrails. Historical datasets and exploratory
+harnesses are not part of the current performance claim.
+
+- **Default, no configuration:** v13 anchored-evidence stack.
+- **Latest validated candidate:** v15, which keeps the v13 ranking and answer
+  policy but repairs missing original resources in incomplete precomputed KGs.
+- **Promotion status:** v15 is not silently made the default yet. Novel supplied
+  the development signal and SciFact recall moved slightly, so v13 remains the
+  conservative default until another held-out gate confirms the change.
+
+All rows below use the frozen shared answer/judge contract. Retrieval is scored
+over the full dataset; answer quality uses the same deterministic 200-query
+sample. Higher is better. Embedding API cost is the total represented embedding
+usage available for each row (index plus measured query-time embeddings), not
+an index-only cost; when a run reused an existing cache, its newly incurred
+cost is shown separately. The detailed report splits index-build time and cost
+from query-time usage where the native framework recorded both boundaries.
+
+| Dataset | System | Recall@10 | nDCG@10 | Correctness | Strict faithfulness | Claim F1 | Citation F1 | Warm retrieval p95 | Query-to-answer p95 | Eval E2E p95 | Embedding API cost | Answer+judge LLM tokens/query (in/out) | LLM API-equivalent $/query |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Medical | **Kontext v15** | 0.8914 | 0.9689 | **0.9499** | **0.9614** | **0.8612** | **0.9583** | 7.30 s | 19.20 s | 124.86 s | **$0.008150 represented / $0 new**‡ | 45,150 / 1,277 | ≈$0.1593§ |
+| Medical | Kontext v13 default | 0.8923 | 0.9704 | 0.9461 | 0.9534 | 0.8550 | 0.9541 | 6.83 s | 18.60 s | 107.71 s | $0.008150 | 45,148 / 1,344 | ≈$0.1606§ |
+| Medical | LightRAG 1.5.6 | **0.9326** | 0.9990* | 0.8939 | 0.9417 | 0.8575 | 0.9477 | 6.00 s | 16.22 s | 123.02 s | $0.015409 | 57,911 / 1,651 | ≈$0.2057§ |
+| Medical | Microsoft GraphRAG 3.1.1 | 0.8303 | 0.9971* | 0.7817 | 0.8740 | 0.7336 | 0.8518 | 0.28 s | 12.83 s | 113.19 s | $0.013623 | 43,402 / 1,942 | ≈$0.1678§ |
+| Novel | **Kontext v15** | 0.8209 | 0.9349 | **0.8566** | **0.9290** | **0.8234** | 0.9369 | 8.54 s | 20.11 s | 97.68 s | $0.029414¶ | 47,690 / 1,374 | ≈$0.1688§ |
+| Novel | Kontext v13 default | 0.5259 | 0.6662 | 0.4654 | 0.7922 | 0.5181 | 0.5521 | 9.89 s | 19.37 s | 83.51 s | $0.017840 | 47,508 / 1,088 | ≈$0.1629§ |
+| Novel | LightRAG 1.5.6 | **0.8567** | 0.9945* | 0.8498 | 0.9272 | 0.8201 | **0.9407** | 6.66 s | 17.88 s | 117.30 s | $0.049371 | 58,705 / 1,351 | ≈$0.2022§ |
+| Novel | Microsoft GraphRAG 3.1.1 | 0.7716 | 0.9816* | 0.7668 | 0.8651 | 0.7434 | 0.8763 | 0.40 s | 10.97 s | 136.36 s | $0.088326 | 43,492 / 1,653 | ≈$0.1624§ |
+
+Context precision is deliberately omitted from this compact table. `*` marks
+package-sensitive nDCG: LightRAG and Microsoft GraphRAG package a large native
+context as one evidence record, while Kontext exposes separately scored evidence
+windows, so their raw ranking/noise values are not directly comparable. `‡`
+means the Medical v15 row represents the same 407,518 embedding
+input tokens already paid for by the v13 run: 1,385 document, 2,062 query, and
+5,893 expanded-query vectors were reused, with zero new vectors or embedding
+input tokens. A fresh index or new query workload is not free. `¶` is the
+preserved pre-fix v15 Novel run cost; its whole-batch cache invalidation was
+fixed but the benchmark was not rerun to manufacture a cheaper number. `§` is
+an API-equivalent estimate
+from the preserved stage-specific tokens, treating all input as uncached: answer
+GPT-5.6 Terra at $2 input/$12 output and judge GPT-5.6 Sol at $4 input/$20 output
+per million tokens, using the
+[official OpenAI model prices](https://developers.openai.com/api/docs/models/compare)
+on 2026-08-24. The benchmark actually used the local Codex CLI, so this is not an
+API invoice or a per-query Codex subscription charge. The token and cost columns
+cover answer+judge only; Kontext query expansion and reranking CLI tokens were
+not fully metered, so they must not be presented as total LLM compute cost. The
+detailed report includes confidence intervals and the public BEIR
+SciFact/NFCorpus retrieval guardrails:
+[cross-framework evaluation](./bench/data/rag-eval-v2/cross-framework-all-datasets-2026-08-23.md).
+
+#### How the three latency columns were measured
+
+The latency columns come from the 2026-08-24/29 clean latency campaign
+(protocol `clean-latency-v1.1`; accepted composite suite under
+`bench/data/rag-eval-v2/runs/clean-latency-corrective-attempt6-2026-08-28/`).
+Earlier invalid attempts remain preserved beside it. These values replace the
+earlier speed figures outright rather than adjusting them, because several of
+those were measured while other benchmarks shared one local Codex queue and so
+recorded other jobs' queue wait. Novel Kontext v15 previously read 972.11 s and
+Novel LightRAG 3,386.57 s; rows that had never been flagged as contaminated
+reproduced within 1.3–1.9x, which is the check that the protocol isolates
+contamination instead of moving every number.
+
+Every row reuses its finished warm index with no index build and no new
+embeddings, and a cache miss fails closed. All four systems draw the same
+deterministic 200-query sample per dataset (seed 20260814, one shared sample
+digest), one system runs at a time, and retrieval, answer, and judge each run at
+concurrency 1, batch size 1, with no retries. Percentiles are nearest-rank.
+
+- **Warm retrieval p95** is retrieval only. Index construction is excluded;
+  recorded index-build time and cost are reported separately in the detailed
+  comparison rather than folded into request latency.
+- **Query-to-answer p95** is retrieval plus answer latency. This is the
+  user-facing number: the judge is an evaluation step, not part of answering.
+- **Eval E2E p95** adds the judge call and describes the evaluation pipeline
+  only. It must not be read as user-perceived latency.
+
+A run is accepted only when its retrieval and answer stages carry no latency
+above 600 s, no queue, throttle, quota, or usage-limit error, and no
+inter-completion gap in the 10–20 minute throttle-wave band. Rejected and
+aborted runs are preserved beside the accepted ones under `invalid-*`,
+`aborted-*`, and `pre-expansion-latency-fix/` rather than deleted or blended.
+Two measurement bugs were found and fixed during the campaign: a cached
+multi-query expansion's stored latency was being added to each query's reported
+retrieval latency even though a cache hit spends no wall clock, and the judge
+waited 1,800 s before giving up on a call the protocol had already disqualified
+at 600 s. Both fixes are covered by unit tests. Quality columns are unchanged
+throughout: they come from the 2026-08-22/23 scored runs on the same sample, and
+this campaign re-measured latency only.
+
+### Official evaluation contract
+
+No single aggregate “overall score” is used. A system must report the layers
+separately so a retrieval gain cannot hide a grounding or abstention regression.
+
+| Layer | Primary metric | What it checks |
+|---|---|---|
+| Retrieval | Evidence Recall@K | Whether the evidence required for the answer was actually found |
+| Retrieval order | nDCG@K | Whether important evidence was ranked near the front |
+| Retrieval noise | Context Precision | What fraction of retrieved evidence is relevant |
+| Answer coverage | Claim Recall | Whether required answer claims were omitted |
+| Grounding | Strict Faithfulness / Claim Support Precision | Whether every generated claim is entailed by retrieved evidence |
+| Citations | Citation Precision / Recall / F1 | Whether citations support their claims and cover the claims that need them |
+| Out-of-scope handling | Answerable/Unanswerable Joint Accuracy | Whether the system answers supported questions and abstains outside the KB |
+| Stability | Robustness Drop | Performance loss after document-order, paraphrase, or distractor perturbations |
+| Writing quality | Clarity / Conciseness / Fluency | Whether the response is readable without unnecessary wording |
+
+Metrics that require labels or paired perturbations are reported as unavailable,
+not fabricated. Historical score files retain the fields available under their
+original frozen judge contract.
 
 ---
 

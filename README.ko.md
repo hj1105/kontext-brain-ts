@@ -2,33 +2,64 @@
 
 [English](./README.md) | **한국어**
 
-> AI 에이전트를 위한 Evidence 기반 N-layer 지식 그래프 RAG - TypeScript / Node.js
+**코딩 에이전트가 코드를 바꾸기 전에, 조직의 맥락을 먼저 쥐여줍니다.**
+
+Kontext는 코드를 결정·도메인 규칙·출처 근거에 연결하고, 각 변경을 어떤 맥락이
+지배했는지 증명합니다.
 
 [![node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
 [![pnpm](https://img.shields.io/badge/pnpm-9-orange)](https://pnpm.io)
 [![typescript](https://img.shields.io/badge/typescript-5.x-blue)](https://www.typescriptlang.org/)
 
+```text
+Without Kontext
+
+Task
+ ↓
+LLM searches random docs
+ ↓
+code
+
+With Kontext
+
+Task
+ ↓
+applicable decisions + evidence + code symbols
+ ↓
+Context Receipt
+ ↓
+code
+ ↓
+verification
+```
+
+어떤 문서가 관련 있는지 에이전트가 추측하면, 아무도 검증할 수 없는 변경이 나옵니다.
+Kontext는 지금 수정하는 심볼을 실제로 지배하는 결정과 규칙을 찾아 그것만 건네고,
+무엇을 받았는지 명시한 Context Receipt를 남깁니다. 리뷰어는 diff만이 아니라 맥락을
+확인할 수 있습니다.
+
+- **문서가 아니라 결정.** 승인된 결정·도메인 용어·불변 조건이 규범 계층이고, 수집한
+  자료는 자체 ID와 구간을 가진 Evidence로 남습니다.
+- **변경 단위로 좁힙니다.** 거버넌스는 코드 심볼별로 해석되므로, 어떤 심볼이 옆 영역의
+  승인된 결정을 물려받지 않습니다.
+- **감사 가능합니다.** 모든 변경은 그것을 지배한 맥락의 receipt를 함께 갖습니다.
+
+처음이라면 [이 프로젝트는 무엇인가](#이-프로젝트는-무엇인가)와
+[빠른 시작](#빠른-시작)을 먼저 보세요. 검색 품질 수치는 아래쪽
+[성능](#성능-현재-retrieval-candidate)에 있습니다.
+
+---
+
+## 이 프로젝트는 무엇인가
+
 kontext-brain은 여러 소스의 지식을 평면적인 벡터 인덱스로만 취급하지 않고 Resource,
 source-native Chunk, Entity, Fact, ACL-aware Evidence로 구조화하는 검색 프레임워크입니다.
-함께 제공되는 RAG 평가 하네스의 기본값은 **v13 anchored-evidence stack**입니다. 원본
-질문을 축으로 한 multi-query 검색, 그래프/vector/BM25 fusion, coverage-aware reranking,
-source hydration, 근거 필요 조건을 따르는 답변 생성을 포함합니다. 자세한 내용은
-[RAG evaluation v2](./bench/src/rag-eval-v2/README.md)와
-[development report](./bench/data/rag-eval-v2/cross-framework-all-datasets-2026-08-23.md)를 참고하세요.
-
-평가 프로파일은 보고된 데이터셋에서 반복적으로 조정됐고, 일부 비교는 미리 계산한
-Kontext KG를 사용하며, raw run directory는 커밋하지 않습니다. 따라서 이 결과는
-독립적으로 재현된 최종 리더보드가 아니라 **회귀 검증 근거**로 봐야 합니다.
 
 Production 경로는 외부 시스템을 source of truth로 유지하면서 Evidence 기반 파생 인덱스를
 관리합니다. 질문은 접근 가능한 Resource, Chunk, Entity, Fact와 선택적 Ontology anchor에서
 시작할 수 있으며, bounded best-first **Lift → Expand → Ground** 탐색을 수행합니다. 답변에는
 Evidence로 선택된 source Chunk만 hydration합니다. Ontology-first staged routing은 하위 호환을
 위해 남아 있지만 production N-layer retrieval의 정의는 아닙니다.
-
----
-
-## 이 프로젝트는 무엇인가
 
 8개의 배포 가능한 패키지와 벤치마크 하네스로 구성된 모듈형 monorepo입니다.
 
@@ -365,6 +396,13 @@ Production search adapter는 instance KG 전체를 memory에 hydration하지 않
 ---
 
 ## 성능: 현재 retrieval candidate
+
+RAG 평가 하네스의 기본값은 **v13 anchored-evidence stack**입니다. 원본 질문을 축으로 한
+multi-query 검색, 그래프/vector/BM25 fusion, coverage-aware reranking, source hydration,
+근거 필요 조건을 따르는 답변 생성을 포함합니다. 평가 프로파일은 보고된 데이터셋에서
+반복적으로 조정됐고, 일부 비교는 미리 계산한 Kontext KG를 사용하며, raw run directory는
+커밋하지 않습니다. 따라서 이 결과는 독립적으로 재현된 최종 리더보드가 아니라
+**회귀 검증 근거**로 봐야 합니다.
 
 2026-08-25 평가는 GraphRAG-Bench Medical 2,062개와 Novel 2,010개의 전체 retrieval 질의를
 포함합니다. 현재 quality candidate는 **source-hydrated direct hybrid retrieval**입니다.
