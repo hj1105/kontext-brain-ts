@@ -1,0 +1,345 @@
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { parse } from "yaml";
+import { readConfigDocument } from "../src/kontext-config-file.js";
+import { runOntologyCli } from "../src/ontology-cli.js";
+import { addSource, checkSources, summarizeSources } from "../src/ontology-source-inventory.js";
+
+const roots: string[] = [];
+
+function makeConfig(mcp: string): string {
+  const root = mkdtempSync(join(tmpdir(), "kontext-inventory-"));
+  roots.push(root);
+  mkdirSync(join(root, "docs"));
+  writeFileSync(join(root, "docs", "a.md"), "# Alpha\n\nfirst\n");
+  writeFileSync(join(root, "docs", "b.md"), "# Beta\n\nsecond\n");
+  const config = join(root, "kontext.yaml");
+  writeFileSync(
+    config,
+    [
+      "llm:",
+      "  traversal: {provider: none, model: none}",
+      "  reasoning: {provider: none, model: none}",
+      mcp,
+      "",
+    ].join("\n"),
+  );
+  return config;
+}
+
+function localMcp(root: string): string {
+  return [
+    "mcp:",
+    "  - name: repo-docs",
+    "    transport: local",
+    `    path: ${root}`,
+    "    include: [docs]",
+  ].join("\n");
+}
+
+afterEach(() => {
+  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+  vi.restoreAllMocks();
+});
+
+async function run(argv: readonly string[]): Promise<{ code: number; printed: string }> {
+  const out = vi.spyOn(process.stdout, "write").mockReturnValue(true);
+  const code = await runOntologyCli(argv);
+  const printed = out.mock.calls.map((call) => String(call[0])).join("");
+  out.mockRestore();
+  return { code, printed };
+}
+
+describe("summarizeSources", () => {
+  it("reports the address that actually applies to each transport", () => {
+    const config = makeConfig(
+      [
+        "mcp:",
+        "  - {name: local, transport: local, path: /repo}",
+        "  - {name: remote, transport: sse, url: 'https://example.invalid'}",
+        "  - {name: spawned, transport: stdio, command: server, args: [--mcp]}",
+      ].join("\n"),
+    );
+    expect(summarizeSources(readConfigDocument(config))).toEqual([
+      { name: "local", transport: "local", type: null, target: "/repo" },
+      { name: "remote", transport: "sse", type: null, target: "https://example.invalid" },
+      { name: "spawned", transport: "stdio", type: null, target: "server --mcp" },
+    ]);
+  });
+});
+
+describe("summarizeSources tolerance", () => {
+  it("keeps listing when one entry carries values this build does not know", () => {
+    // A row copied from another agent must not fail the whole listing and hide
+    // every other source from the surface.
+    const config = makeConfig(
+      [
+        "mcp:",
+        "  - {name: odd, transport: http, url: 'https://x.invalid'}",
+        "  - {name: scalar-args, transport: stdio, command: server, args: 3}",
+        "  - {name: docs, transport: local, path: /repo}",
+      ].join("\n"),
+    );
+    const sources = summarizeSources(readConfigDocument(config));
+    expect(sources.map((s) => s.name)).toEqual(["odd", "scalar-args", "docs"]);
+    expect(sources[0]?.transport).toBe("sse");
+    expect(sources[1]).toMatchObject({ transport: "stdio", target: "server" });
+  });
+});
+
+describe("addSource", () => {
+  const empty = { path: "kontext.yaml", data: {} };
+
+  it("keeps only the fields the chosen transport uses", () => {
+    const document = addSource(empty, {
+      name: "notion",
+      transport: "sse",
+      url: "https://mcp.notion.invalid",
+      type: "notion",
+      command: "ignored-for-sse",
+    });
+    expect(summarizeSources(document)).toEqual([
+      { name: "notion", transport: "sse", type: "notion", target: "https://mcp.notion.invalid" },
+    ]);
+    expect(JSON.stringify(document.data)).not.toContain("ignored-for-sse");
+  });
+
+  it("refuses a source that is missing its address", () => {
+    expect(() => addSource(empty, { name: "a", transport: "sse" })).toThrow(/needs its URL/);
+    expect(() => addSource(empty, { name: "a", transport: "stdio" })).toThrow(/needs the command/);
+    expect(() => addSource(empty, { name: "a", transport: "local" })).toThrow(
+      /needs the directory/,
+    );
+    expect(() => addSource(empty, { name: "  ", transport: "local", path: "/x" })).toThrow(
+      /needs a name/,
+    );
+  });
+
+  it("refuses an unrecognised layer instead of silently using the Notion adapter", () => {
+    expect(() =>
+      addSource(empty, { name: "a", transport: "sse", url: "https://x.invalid", type: "notionn" }),
+    ).toThrow(/Unknown layer/);
+    // An absent layer is legitimate and means the default adapter.
+    expect(() =>
+      addSource(empty, { name: "a", transport: "sse", url: "https://x.invalid" }),
+    ).not.toThrow();
+  });
+
+  it("refuses to overwrite an existing name", () => {
+    const first = addSource(empty, { name: "docs", transport: "local", path: "/repo" });
+    expect(() =>
+      addSource(first, { name: "docs", transport: "sse", url: "https://x.invalid" }),
+    ).toThrow(/already exists/);
+  });
+});
+
+describe("checkSources", () => {
+  it("reports each source separately instead of stopping at the first failure", async () => {
+    const config = makeConfig(
+      [
+        "mcp:",
+        "  - {name: broken, transport: stdio, command: /nonexistent/server}",
+        "  - {name: docs, transport: local, path: .}",
+      ].join("\n"),
+    );
+    const results = await checkSources(readConfigDocument(config));
+    expect(results.map((r) => r.name)).toEqual(["broken", "docs"]);
+    expect(results[0]).toMatchObject({ ok: false, resourceCount: null });
+    expect(results[0]?.error).toBeTruthy();
+    expect(results[1]).toMatchObject({ ok: true });
+  });
+});
+
+describe("checkSources connector lifetime", () => {
+  it("closes every probe connector, including one that failed to answer", async () => {
+    // A stdio source spawns its MCP server on first use; leaving it open leaks one
+    // server process per source per check.
+    const closed: string[] = [];
+    const connectors = new Map<
+      string,
+      { name: string; listResources: () => Promise<[]>; close: () => Promise<void> }
+    >();
+    for (const [name, fails] of [
+      ["docs", false],
+      ["broken", true],
+    ] as const) {
+      connectors.set(name, {
+        name,
+        listResources: async () => {
+          if (fails) throw new Error("refused");
+          return [];
+        },
+        close: async () => {
+          closed.push(name);
+        },
+      });
+    }
+    const inventory = await import("../src/ontology-source-inventory.js");
+    const connectorModule = await import("../src/ontology-source-connectors.js");
+    const spy = vi
+      .spyOn(connectorModule, "createSourceConnector")
+      .mockImplementation((entry) => connectors.get(entry.name) as never);
+    try {
+      const config = makeConfig(
+        [
+          "mcp:",
+          "  - {name: docs, transport: local, path: /repo}",
+          "  - {name: broken, transport: local, path: /repo}",
+        ].join("\n"),
+      );
+      const results = await inventory.checkSources(readConfigDocument(config));
+      expect(results.map((r) => r.ok)).toEqual([true, false]);
+      expect(closed.sort()).toEqual(["broken", "docs"]);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+});
+
+describe("checkSources deadline", () => {
+  it("gives up on a silent source instead of waiting out the client's own timeout", async () => {
+    const connectorModule = await import("../src/ontology-source-connectors.js");
+    const spy = vi.spyOn(connectorModule, "createSourceConnector").mockImplementation(
+      () =>
+        ({
+          name: "silent",
+          listResources: () => new Promise(() => {}),
+          close: async () => {},
+        }) as never,
+    );
+    try {
+      const config = makeConfig("mcp:\n  - {name: silent, transport: local, path: /repo}");
+      const started = Date.now();
+      const results = await checkSources(readConfigDocument(config), 60);
+      expect(Date.now() - started).toBeLessThan(2000);
+      expect(results[0]).toMatchObject({ ok: false });
+      expect(results[0]?.error).toMatch(/No answer within/);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+});
+
+describe("checkSources with an unusable entry", () => {
+  it("reports the bad entry and still checks the rest", async () => {
+    // A half-written entry throws before a connector exists; the failure must stay
+    // scoped to that source instead of discarding every other source's result.
+    const config = makeConfig(
+      [
+        "mcp:",
+        "  - {name: half-written, transport: sse}",
+        "  - {name: docs, transport: local, path: .}",
+      ].join("\n"),
+    );
+    const results = await checkSources(readConfigDocument(config));
+    expect(results.map((r) => r.name)).toEqual(["half-written", "docs"]);
+    expect(results[0]).toMatchObject({ ok: false });
+    expect(results[0]?.error).toMatch(/requires 'url'/);
+    expect(results[1]).toMatchObject({ ok: true });
+  });
+});
+
+describe("kontext-ontology CLI surface", () => {
+  it("lists configured sources and says so when there are none", async () => {
+    const empty = makeConfig("mcp: []");
+    expect((await run(["list", "--config", empty])).printed).toContain("No sources configured");
+
+    const config = makeConfig(localMcp("/repo"));
+    const { code, printed } = await run(["list", "--config", config]);
+    expect(code).toBe(0);
+    expect(printed).toContain("repo-docs");
+    expect(printed).toContain("local");
+  });
+
+  it("emits JSON a surface can render per source", async () => {
+    const config = makeConfig(localMcp("/repo"));
+    const { printed } = await run(["list", "--config", config, "--json"]);
+    expect(JSON.parse(printed)).toEqual({
+      command: "list",
+      ok: true,
+      sources: [{ name: "repo-docs", transport: "local", type: null, target: "/repo" }],
+    });
+  });
+
+  it("adds a source directly and writes only when asked", async () => {
+    const config = makeConfig("mcp: []");
+    const preview = await run([
+      "add",
+      "--config",
+      config,
+      "--name",
+      "notion",
+      "--transport",
+      "sse",
+      "--url",
+      "https://mcp.notion.invalid",
+      "--type",
+      "notion",
+    ]);
+    expect(preview.code).toBe(0);
+    expect(parse(readFileSync(config, "utf8")).mcp).toEqual([]);
+
+    const saved = await run([
+      "add",
+      "--config",
+      config,
+      "--name",
+      "notion",
+      "--transport",
+      "sse",
+      "--url",
+      "https://mcp.notion.invalid",
+      "--type",
+      "notion",
+      "--write",
+    ]);
+    expect(saved.code).toBe(0);
+    expect(parse(readFileSync(config, "utf8")).mcp).toEqual([
+      { name: "notion", transport: "sse", url: "https://mcp.notion.invalid", type: "notion" },
+    ]);
+  });
+
+  it("fails with a usable message when add is missing its required flags", async () => {
+    const config = makeConfig("mcp: []");
+    const { code, printed } = await run(["add", "--config", config, "--name", "x"]);
+    expect(code).toBe(1);
+    expect(printed).toContain("--transport");
+  });
+
+  it("reports a duplicate name as a failure rather than a silent replace", async () => {
+    const config = makeConfig(localMcp("/repo"));
+    const { code, printed } = await run([
+      "add",
+      "--config",
+      config,
+      "--name",
+      "repo-docs",
+      "--transport",
+      "local",
+      "--path",
+      "/other",
+      "--write",
+    ]);
+    expect(code).toBe(1);
+    expect(printed).toContain("already exists");
+    expect(parse(readFileSync(config, "utf8")).mcp[0].path).toBe("/repo");
+  });
+
+  it("rejects an unrecognised --from instead of scanning nothing", async () => {
+    const config = makeConfig("mcp: []");
+    const { code, printed } = await run(["import-mcp", "--config", config, "--from", "codexx"]);
+    expect(code).toBe(1);
+    expect(printed).toContain("Unknown --from");
+  });
+
+  it("exits non-zero when a checked source is unreachable", async () => {
+    const config = makeConfig(
+      "mcp:\n  - {name: broken, transport: stdio, command: /nonexistent/server}",
+    );
+    const { code, printed } = await run(["check", "--config", config, "--json"]);
+    expect(code).toBe(1);
+    expect(JSON.parse(printed)).toMatchObject({ command: "check", ok: false });
+  });
+});

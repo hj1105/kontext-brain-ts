@@ -1,6 +1,9 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
+import {
+  StdioClientTransport,
+  getDefaultEnvironment,
+} from "@modelcontextprotocol/sdk/client/stdio.js";
 
 export interface MCPResource {
   readonly id: string;
@@ -33,6 +36,10 @@ export interface MCPConnector {
 export class StdioMCPConnector implements MCPConnector {
   private client: Client | null = null;
   private readyPromise: Promise<void> | null = null;
+  // Why: closing through the client only tears down a transport that finished
+  // connecting. A server that never answers would otherwise outlive this process
+  // as an orphan holding its pipes, one per failed probe.
+  private transport: StdioClientTransport | null = null;
 
   constructor(
     public readonly name: string,
@@ -55,8 +62,12 @@ export class StdioMCPConnector implements MCPConnector {
     const transport = new StdioClientTransport({
       command: this.command,
       args: [...this.args],
-      env: this.env,
+      // Why: the SDK replaces the child environment when `env` is given rather than
+      // extending it, so passing a server's own few variables alone would strip PATH
+      // and the command would not resolve.
+      env: this.env ? { ...getDefaultEnvironment(), ...this.env } : undefined,
     });
+    this.transport = transport;
     const client = new Client(
       { name: `kontext-client-${this.name}`, version: "0.1.0" },
       { capabilities: {} },
@@ -96,10 +107,16 @@ export class StdioMCPConnector implements MCPConnector {
   }
 
   async close(): Promise<void> {
-    if (this.client) {
-      await this.client.close();
-      this.client = null;
+    const { client, transport } = this;
+    this.client = null;
+    this.transport = null;
+    this.readyPromise = null;
+    if (client) {
+      await client.close();
+      return;
     }
+    // The handshake never finished, so the spawned server is still running.
+    await transport?.close();
   }
 }
 

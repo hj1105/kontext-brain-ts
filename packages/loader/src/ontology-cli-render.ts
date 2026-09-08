@@ -1,0 +1,98 @@
+import type { OntologyCliOptions, OntologyCliResult } from "./ontology-cli.js";
+
+/** Text rendering for the ontology commands; `--json` callers get the result verbatim. */
+
+function pad(value: string, width: number): string {
+  return value.length >= width ? value : value + " ".repeat(width - value.length);
+}
+
+function renderList(result: Extract<OntologyCliResult, { command: "list" }>): string {
+  if (result.sources.length === 0) {
+    return "No sources configured. Run import-mcp or add.\n";
+  }
+  const lines = [`${result.sources.length} source(s):`];
+  const width = Math.max(...result.sources.map((source) => source.name.length));
+  for (const source of result.sources) {
+    const type = source.type ? ` type=${source.type}` : "";
+    lines.push(`  ${pad(source.name, width)}  ${source.transport}${type}  ${source.target}`);
+  }
+  return `${lines.join("\n")}\n`;
+}
+
+function renderImport(result: Extract<OntologyCliResult, { command: "import-mcp" }>): string {
+  if (result.discovered.length === 0) {
+    return "No MCP servers found. Checked Claude Code and Codex; pass --project for project-scoped ones.\n";
+  }
+  const lines: string[] = [];
+  for (const item of result.discovered) {
+    const mark = item.alreadyPresent ? " " : "+";
+    const scope = item.scope ? ` (${item.scope})` : "";
+    const type = item.type ? ` type=${item.type}` : "";
+    lines.push(`${mark} ${item.name}  from ${item.origin}${scope}${type}`);
+  }
+  lines.push("");
+  lines.push(
+    `Added ${result.added.length}, already present ${result.discovered.length - result.added.length}.`,
+  );
+  lines.push(result.written ? "Saved." : "Nothing written. Re-run with --write to save.");
+  return `${lines.join("\n")}\n`;
+}
+
+function renderCheck(result: Extract<OntologyCliResult, { command: "check" }>): string {
+  const lines = [`Checking ${result.sources.length} source(s):`];
+  for (const source of result.sources) {
+    lines.push(
+      source.ok
+        ? `  ok      ${source.name}  ${source.resourceCount} resources`
+        : `  FAILED  ${source.name}  ${source.error ?? "unknown error"}`,
+    );
+  }
+  lines.push("");
+  const failures = result.sources.filter((source) => !source.ok).length;
+  lines.push(
+    failures === 0
+      ? "All sources reachable."
+      : `${failures} source(s) unreachable. Fix them before setup.`,
+  );
+  return `${lines.join("\n")}\n`;
+}
+
+function renderSetup(result: Extract<OntologyCliResult, { command: "setup" }>): string {
+  const lines = [
+    `Nodes created ${result.nodesCreated}, reused ${result.nodesReused}`,
+    `Documents classified ${result.documentsClassified}, unmapped ${result.documentsUnmapped}`,
+    `Nodes: ${result.nodeIds.join(", ")}`,
+    "",
+    result.written
+      ? `Saved ${result.nodeIds.length} ontology node(s).`
+      : `${result.nodeIds.length} node(s) ready. Re-run with --write to save them.`,
+  ];
+  return `${lines.join("\n")}\n`;
+}
+
+export function renderResult(result: OntologyCliResult, options: OntologyCliOptions): string {
+  if (options.json) {
+    return `${JSON.stringify(result, null, 2)}\n`;
+  }
+  if (!result.ok && "error" in result) {
+    return `${result.error}\n`;
+  }
+  switch (result.command) {
+    case "list":
+      return renderList(result as Extract<OntologyCliResult, { command: "list" }>);
+    case "import-mcp":
+      return renderImport(result as Extract<OntologyCliResult, { command: "import-mcp" }>);
+    case "add": {
+      const added = result as Extract<OntologyCliResult, { command: "add" }>;
+      return added.written
+        ? `Added source '${added.name}'.\n`
+        : `Source '${added.name}' is valid. Re-run with --write to save it.\n`;
+    }
+    case "check":
+      return renderCheck(result as Extract<OntologyCliResult, { command: "check" }>);
+    case "setup":
+      return renderSetup(result as Extract<OntologyCliResult, { command: "setup" }>);
+    default:
+      return `${JSON.stringify(result)}\n`;
+  }
+}

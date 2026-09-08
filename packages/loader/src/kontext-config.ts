@@ -21,8 +21,15 @@ export const MCPConfigSchema = z.object({
   args: z.array(z.string()).optional(),
   /** "notion" | "jira" | "github_pr" | "slack" | undefined */
   type: z.string().optional(),
-  /** "stdio" | "sse" — defaults to "sse" if url is given, "stdio" if command is given */
-  transport: z.enum(["stdio", "sse"]).optional(),
+  /** "stdio" | "sse" | "local" — defaults to "sse" if url is given, "stdio" if command is given */
+  transport: z.enum(["stdio", "sse", "local"]).optional(),
+  /** For the "local" transport: repository directory whose Markdown is the source. */
+  path: z.string().optional(),
+  /** For the "local" transport: subdirectories to walk, relative to `path`. */
+  include: z.array(z.string()).optional(),
+  /** Environment for a stdio server. Imported definitions often carry one, and a
+   * server that needs it does not start without it. */
+  env: z.record(z.string()).optional(),
 });
 
 export type MCPConfigDto = z.infer<typeof MCPConfigSchema>;

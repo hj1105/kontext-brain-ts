@@ -22,5 +22,8 @@
     "@kontext-brain/mcp": "workspace:*",
     "yaml": "^2.7.0",
     "zod": "^3.24.1"
+  },
+  "bin": {
+    "kontext-ontology": "./dist/ontology-cli-main.js"
   }
 }

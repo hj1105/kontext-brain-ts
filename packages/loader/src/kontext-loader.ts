@@ -40,8 +40,6 @@ import {
   type MCPKnowledgeSynchronizer,
   type MCPLayerAdapter,
   MCPLayerAdapterFactory,
-  SseMCPConnector,
-  StdioMCPConnector,
 } from "@kontext-brain/mcp";
 import { parse as parseYaml } from "yaml";
 import { KontextAgent } from "./kontext-agent.js";
@@ -61,6 +59,7 @@ import {
   OntologyGraphBuilder,
   validateOntologyConfiguration,
 } from "./ontology-graph-builder.js";
+import { createSourceConnector } from "./ontology-source-connectors.js";
 
 function resolvePromptTemplates(_language: string): PromptTemplates {
   return DefaultPromptTemplates;
@@ -90,16 +89,6 @@ function toPipelineStep(dto: NonNullable<KontextConfig["pipeline"]>[number]): Pi
     fetchFull: dto.fetchFull,
     threshold: dto.threshold,
   };
-}
-
-function createConnector(dto: MCPConfigDto): MCPConnector {
-  const transport = dto.transport ?? (dto.command ? "stdio" : "sse");
-  if (transport === "stdio") {
-    if (!dto.command) throw new Error(`MCP '${dto.name}': stdio transport requires 'command'`);
-    return new StdioMCPConnector(dto.name, dto.command, dto.args ?? []);
-  }
-  if (!dto.url) throw new Error(`MCP '${dto.name}': sse transport requires 'url'`);
-  return new SseMCPConnector(dto.name, dto.url);
 }
 
 function createLayerAdapter(dto: MCPConfigDto, connector: MCPConnector): MCPLayerAdapter {
@@ -203,7 +192,7 @@ export class KontextLoader {
     }
 
     // MCP connectors + layer adapters
-    const mcpConnectors: MCPConnector[] = config.mcp.map(createConnector);
+    const mcpConnectors: MCPConnector[] = config.mcp.map(createSourceConnector);
     const mcpLayerAdapters: MCPLayerAdapter[] = config.mcp.map((dto, i) => {
       const connector = mcpConnectors[i];
       if (!connector) {
