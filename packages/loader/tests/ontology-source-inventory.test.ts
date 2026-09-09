@@ -134,6 +134,10 @@ describe("addSource", () => {
         code: true,
       },
     ]);
+    // Why: a local checkout reads code exactly like a clone does; the flag was
+    // once kept only for git and a local source silently stayed documents-only.
+    const local = addSource(empty, { name: "repo", transport: "local", path: "/repo", code: true });
+    expect(readMCPEntries(local)[0]?.code).toBe(true);
     const server = addSource(empty, {
       name: "notion",
       transport: "sse",

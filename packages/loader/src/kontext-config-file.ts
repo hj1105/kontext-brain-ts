@@ -58,6 +58,21 @@ export function writeConfigDocument(document: KontextConfigDocument): void {
   writeFileSync(document.path, stringify(document.data, { lineWidth: 0 }), "utf8");
 }
 
+/**
+ * The model used when kontext.yaml names none: the user's logged-in Codex CLI,
+ * which a ChatGPT subscription already covers. A host that only adds sources
+ * writes a file without `llm`, and setup must still have something to run.
+ */
+export const DEFAULT_LLM_CONFIG = {
+  traversal: { provider: "codex", model: "codex" },
+  reasoning: { provider: "codex", model: "codex" },
+} as const;
+
+export function withDefaultLlm(document: KontextConfigDocument): KontextConfigDocument {
+  if (document.data.llm !== undefined && document.data.llm !== null) return document;
+  return { ...document, data: { ...document.data, llm: structuredClone(DEFAULT_LLM_CONFIG) } };
+}
+
 export function readMCPEntries(document: KontextConfigDocument): MCPConfigDto[] {
   const raw = document.data.mcp;
   if (!Array.isArray(raw)) return [];

@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import { stringify as stringifyYaml } from "yaml";
 import type { AgentConfigKind } from "./agent-mcp-config-import.js";
 import {
   GitHubListingError,
@@ -10,6 +11,7 @@ import {
   readConfigDocument,
   readMCPEntries,
   toOntologyYamlNodes,
+  withDefaultLlm,
   withOntology,
   writeConfigDocument,
 } from "./kontext-config-file.js";
@@ -276,7 +278,7 @@ subscription already covers. ollama runs locally.
 
 export interface OntologyCliDeps {
   /** Overrides how the agent is built, so setup can run without a paid model. */
-  readonly loadAgent?: (configPath: string) => Promise<KontextAgent>;
+  readonly loadAgent?: (configPath: string, yaml: string) => Promise<KontextAgent>;
   /** Overrides the GitHub lookup, so tests need neither gh nor the network. */
   readonly listRepositories?: (owner: string) => Promise<GitHubRepositoryListing>;
 }
@@ -340,7 +342,8 @@ async function execute(
       ...(options.project ? { projectDirectory: options.project } : {}),
       ...(options.markdown ? { markdownRoot: options.markdown } : {}),
     });
-    if (options.write && outcome.added.length > 0) writeConfigDocument(outcome.document);
+    if (options.write && outcome.added.length > 0)
+      writeConfigDocument(withDefaultLlm(outcome.document));
     return {
       command,
       ok: true,
@@ -368,7 +371,7 @@ async function execute(
       ...(options.source.env ? { env: options.source.env } : {}),
       ...(options.source.code ? { code: true } : {}),
     });
-    if (options.write) writeConfigDocument(next);
+    if (options.write) writeConfigDocument(withDefaultLlm(next));
     return { command, ok: true, name, written: options.write };
   }
 
@@ -384,15 +387,19 @@ async function execute(
     if (readMCPEntries(document).length === 0) {
       return { command, ok: false, error: `No sources in ${options.config}.` };
     }
-    const loadAgent = deps.loadAgent ?? ((path: string) => KontextLoader.fromFile(path));
-    const agent = await loadAgent(options.config);
+    // Why: a file that only lists sources has no model yet; setup runs it with the
+    // default and, when writing, records that choice so the file says what ran.
+    const effective = withDefaultLlm(document);
+    const loadAgent =
+      deps.loadAgent ?? ((_path: string, yaml: string) => KontextLoader.fromYaml(yaml));
+    const agent = await loadAgent(options.config, stringifyYaml(effective.data, { lineWidth: 0 }));
     const result = await agent.autoSetup(options.targetNodes);
     const graph = agent.ontologyGraph;
     const nodes = toOntologyYamlNodes([...graph.nodes.values()], [...graph.edges]);
     if (nodes.length === 0) {
       return { command, ok: false, error: "No ontology nodes were produced." };
     }
-    if (options.write) writeConfigDocument(withOntology(document, nodes));
+    if (options.write) writeConfigDocument(withOntology(effective, nodes));
     return {
       command,
       ok: true,

@@ -196,6 +196,7 @@ export function addSource(
     }
     entry.path = request.path.trim();
     if (request.include && request.include.length > 0) entry.include = [...request.include];
+    if (request.code) entry.code = true;
   }
   const type = request.type?.trim();
   if (type) {

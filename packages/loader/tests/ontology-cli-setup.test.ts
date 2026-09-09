@@ -114,6 +114,33 @@ async function runSetup(
 }
 
 describe("kontext-ontology setup", () => {
+  it("runs a file that names no model on the logged-in Codex and records that choice", async () => {
+    const root = mkdtempSync(join(tmpdir(), "kontext-ontology-setup-nollm-"));
+    roots.push(root);
+    mkdirSync(join(root, "docs"));
+    writeFileSync(join(root, "docs", "decisions.md"), "# Billing\n\nRound half up.\n");
+    const config = join(root, "kontext.yaml");
+    writeFileSync(
+      config,
+      ["mcp:", "  - name: docs", "    transport: local", `    path: ${root}`, ""].join("\n"),
+    );
+    const model = new ScriptedChatModel();
+    let handed = "";
+    const out = vi.spyOn(process.stdout, "write").mockReturnValue(true);
+    const code = await runOntologyCli(["setup", "--config", config, "--write", "--json"], {
+      loadAgent: (_path, yaml) => {
+        handed = yaml;
+        // Why: the scripted registry stands in for the real Codex CLI, whose provider name this asserts.
+        const scripted = yaml.replaceAll("provider: codex", "provider: scripted");
+        return new KontextLoader({ llmRegistry: scriptedRegistry(model) }).fromYaml(scripted);
+      },
+    });
+    out.mockRestore();
+    expect(code, handed).toBe(0);
+    expect(handed).toContain("provider: codex");
+    expect(readFileSync(config, "utf8")).toMatch(/llm:\n\s+traversal:\n\s+provider: codex/);
+  });
+
   it("builds an ontology from local Markdown and saves it into the config", async () => {
     const { config } = makeWorkspace();
     const { code, printed, model } = await runSetup(config, ["--write"]);
