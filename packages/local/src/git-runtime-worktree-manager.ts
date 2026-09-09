@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { access, mkdir, realpath } from "node:fs/promises";
+import { access, mkdir, realpath, stat, symlink } from "node:fs/promises";
 import path from "node:path";
 import {
   type RuntimeWorktree,
@@ -8,10 +8,21 @@ import {
   deterministicWorktreeId,
 } from "@kontext-brain/orchestrator";
 
+/**
+ * Untracked directories a fresh worktree lacks but verifiers need, such as an
+ * installed node_modules. They are linked from the user's checkout rather than
+ * reinstalled, the same way Kondex shares one install across agent worktrees.
+ */
+export interface RuntimeWorktreeLinks {
+  readonly sourcePath: string;
+  readonly directories: readonly string[];
+}
+
 export class GitRuntimeWorktreeManager implements RuntimeWorktreePort {
   constructor(
     private readonly repositoryPath: string,
     private readonly worktreeRoot: string,
+    private readonly links?: RuntimeWorktreeLinks,
   ) {}
 
   async prepare(input: Parameters<RuntimeWorktreePort["prepare"]>[0]): Promise<RuntimeWorktree> {
@@ -38,6 +49,7 @@ export class GitRuntimeWorktreeManager implements RuntimeWorktreePort {
       if (currentBranch !== branchName) {
         throw new Error(`Existing worktree uses unexpected branch ${currentBranch}`);
       }
+      await this.linkDirectories(workspacePath);
       return runtimeWorktree(input, workspacePath, branchName);
     }
     const branchExists =
@@ -61,7 +73,33 @@ export class GitRuntimeWorktreeManager implements RuntimeWorktreePort {
         input.baseRevision,
       ]);
     }
+    await this.linkDirectories(workspacePath);
     return runtimeWorktree(input, workspacePath, branchName);
+  }
+
+  private async linkDirectories(workspacePath: string): Promise<void> {
+    if (!this.links) return;
+    const sourceRoot = path.resolve(this.links.sourcePath);
+    for (const directory of this.links.directories) {
+      const source = path.resolve(sourceRoot, directory);
+      const target = path.resolve(workspacePath, directory);
+      if (!isWithin(sourceRoot, source) || !isWithin(workspacePath, target)) {
+        throw new Error(`Linked directory ${directory} escapes the workspace`);
+      }
+      // Why: nothing to share, or the worktree already has its own; never replace either.
+      if (!(await isDirectory(source)) || (await exists(target))) continue;
+      await mkdir(path.dirname(target), { recursive: true });
+      // Why: a junction needs no privilege on Windows; POSIX ignores the type.
+      await symlink(source, target, process.platform === "win32" ? "junction" : "dir");
+    }
+  }
+}
+
+async function isDirectory(filePath: string): Promise<boolean> {
+  try {
+    return (await stat(filePath)).isDirectory();
+  } catch {
+    return false;
   }
 }
 

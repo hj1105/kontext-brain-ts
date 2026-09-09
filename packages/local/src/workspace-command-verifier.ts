@@ -19,10 +19,23 @@ const definitionSchema = z
     timeoutMilliseconds: z.number().int().min(1_000).max(1_800_000).optional(),
   })
   .strict();
+// Why: relative, no traversal, one segment deep enough for node_modules or .venv;
+// anything else could alias a path outside the worktree.
+const linkedDirectorySchema = z
+  .string()
+  .min(1)
+  .max(255)
+  .refine(
+    (value) => !path.isAbsolute(value) && !value.split(/[\\/]/).some((s) => s === "" || s === ".."),
+    "linked directories are workspace-relative and may not traverse",
+  );
 const configSchema = z
   .object({
     schemaVersion: z.literal(1),
     verifiers: z.array(definitionSchema),
+    // Untracked directories the verifier commands need (installed dependencies),
+    // linked from the source checkout into every runtime worktree.
+    linkedDirectories: z.array(linkedDirectorySchema).max(32).optional(),
   })
   .strict();
 const packageSchema = z
@@ -298,4 +311,23 @@ export async function listDeclaredWorkspaceVerifiers(
     // Not a package workspace; only declared verifiers apply.
   }
   return declared;
+}
+
+/**
+ * Directories `.kontext/verifiers.json` asks to be linked into runtime worktrees.
+ * A missing or unreadable file declares none; the verifier run reports the
+ * broken file when it matters.
+ */
+export async function readWorkspaceLinkedDirectories(
+  workspacePath: string,
+  configPath = path.join(".kontext", "verifiers.json"),
+): Promise<readonly string[]> {
+  const absoluteConfigPath = path.resolve(workspacePath, configPath);
+  if (!isWithinOrEqual(workspacePath, absoluteConfigPath)) return [];
+  try {
+    const config = configSchema.parse(JSON.parse(await readFile(absoluteConfigPath, "utf8")));
+    return config.linkedDirectories ?? [];
+  } catch {
+    return [];
+  }
 }

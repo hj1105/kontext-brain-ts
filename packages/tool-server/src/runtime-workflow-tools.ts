@@ -1,7 +1,11 @@
 import { createHash } from "node:crypto";
 import path from "node:path";
 import type { PreparedTaskContextStore, TaskContextStateProvider } from "@kontext-brain/context";
-import { FileRuntimeLeaseStore, GitRuntimeWorktreeManager } from "@kontext-brain/local";
+import {
+  FileRuntimeLeaseStore,
+  GitRuntimeWorktreeManager,
+  readWorkspaceLinkedDirectories,
+} from "@kontext-brain/local";
 import {
   type AgentRuntimePort,
   type DurableVerificationCoordinator,
@@ -179,7 +183,10 @@ export class LocalKontextRuntimeOperations implements KontextRuntimeOperations {
       request.taskId,
       repositoryPath,
     );
-    const manager = new GitRuntimeWorktreeManager(executionRepository, worktreeRoot);
+    const manager = new GitRuntimeWorktreeManager(executionRepository, worktreeRoot, {
+      sourcePath: repositoryPath,
+      directories: await readWorkspaceLinkedDirectories(repositoryPath),
+    });
     const contextRouter = new KontextTaskWorkflowToolRouter(this.workflow, this.now, this.bindings);
     const allowedByEvidence = providersAllowedByEvidence(
       current.evidence,

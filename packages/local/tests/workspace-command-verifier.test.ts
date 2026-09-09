@@ -3,7 +3,11 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { VerifierInfrastructureError } from "@kontext-brain/orchestrator";
 import { afterEach, describe, expect, it } from "vitest";
-import { WorkspaceCommandVerifierAdapter, listDeclaredWorkspaceVerifiers } from "../src/index.js";
+import {
+  WorkspaceCommandVerifierAdapter,
+  listDeclaredWorkspaceVerifiers,
+  readWorkspaceLinkedDirectories,
+} from "../src/index.js";
 
 const temporaryDirectories: string[] = [];
 
@@ -108,6 +112,23 @@ describe("listDeclaredWorkspaceVerifiers", () => {
       { kind: "test", ref: "workspace:test" },
       { kind: "typecheck", ref: "workspace:typecheck" },
     ]);
+  });
+
+  it("reads linked directories and refuses ones that traverse", async () => {
+    const workspacePath = await mkdtemp(path.join(tmpdir(), "kontext-verifier-links-"));
+    temporaryDirectories.push(workspacePath);
+    await mkdir(path.join(workspacePath, ".kontext"));
+    const file = path.join(workspacePath, ".kontext", "verifiers.json");
+    await writeFile(
+      file,
+      JSON.stringify({ schemaVersion: 1, verifiers: [], linkedDirectories: ["node_modules"] }),
+    );
+    expect(await readWorkspaceLinkedDirectories(workspacePath)).toEqual(["node_modules"]);
+    await writeFile(
+      file,
+      JSON.stringify({ schemaVersion: 1, verifiers: [], linkedDirectories: ["../secrets"] }),
+    );
+    expect(await readWorkspaceLinkedDirectories(workspacePath)).toEqual([]);
   });
 
   it("declares nothing for a workspace without definitions or a package.json", async () => {
