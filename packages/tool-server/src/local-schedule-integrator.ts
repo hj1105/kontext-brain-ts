@@ -261,7 +261,14 @@ export class LocalScheduleIntegrator {
     );
 
     let review: Awaited<ReturnType<IndependentReviewCoordinator["review"]>> | undefined;
-    if (prepared.contract.risk !== "low") {
+    // Why: the full plan demands independent review for any acceptance criterion that names
+    // it, even on a low-risk Task; skipping it there would leave that criterion inconclusive.
+    const acceptanceNeedsReview = prepared.contract.acceptance.some(
+      (criterion) =>
+        criterion.verifier.kind === "manual_review" &&
+        criterion.verifier.ref === "kontext:independent-review",
+    );
+    if (prepared.contract.risk !== "low" || acceptanceNeedsReview) {
       const diff = await integrator.diff(workspace);
       if (Buffer.byteLength(diff) > maxReviewPacketBytes) {
         throw new Error(`Independent review packet exceeds ${maxReviewPacketBytes} bytes`);

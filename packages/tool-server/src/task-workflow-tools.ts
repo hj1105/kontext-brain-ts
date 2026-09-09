@@ -157,6 +157,26 @@ export class InMemoryWriteAuthorizationBindingStore implements WriteAuthorizatio
   }
 }
 
+/** The same Logic Work Item, symbols, paths and Task context: one continued observation. */
+function continuesBinding(
+  existing: WriteAuthorizationBinding,
+  request: BeginLogicRequest,
+  receipt: ContextReceipt,
+  allowedPaths: readonly string[],
+): boolean {
+  return (
+    existing.request.taskId === request.taskId &&
+    existing.request.logic.workItemId === request.logic.workItemId &&
+    sameStrings(existing.request.logic.plannedSymbolIds, request.logic.plannedSymbolIds) &&
+    sameStrings(existing.allowedPaths, allowedPaths) &&
+    existing.receipt.contextDigest === receipt.contextDigest
+  );
+}
+
+function sameStrings(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
 export function sameBindingGeneration(
   current: WriteAuthorizationBinding | undefined,
   expected: WriteAuthorizationBinding,
@@ -201,6 +221,13 @@ export class KontextTaskWorkflowToolRouter {
       ? normalizeReceiptPaths(workspacePath, result.receipt.allowedPaths)
       : undefined;
     if (result.receipt && allowedPaths) {
+      // Why: a resumed worker fetches a new receipt in a worktree it already edited;
+      // observing from a fresh baseline would report those edits as no change at all.
+      const existing = await this.bindings.get(workspacePath);
+      if (existing && continuesBinding(existing, request, result.receipt, allowedPaths)) {
+        await this.bindings.put(workspacePath, { ...existing, request, receipt: result.receipt });
+        return result;
+      }
       const baseline = await captureWorkspaceSnapshot(workspacePath, allowedPaths);
       const symbolBaseline = await captureWorkspaceCodeSymbols(
         workspacePath,

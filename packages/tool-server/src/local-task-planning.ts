@@ -6,6 +6,7 @@ import { loadLocalKnowledgePrincipal } from "./local-knowledge-principal.js";
 import { LocalTaskCreationOperations } from "./local-task-creation.js";
 import { collectPersonalTaskContext, prepareTaskWorkspace } from "./local-task-preparation.js";
 import {
+  type TaskPlanProposal,
   type TaskPlanRecord,
   type TaskPlanRefinement,
   type TaskPlanRefinementRequest,
@@ -266,7 +267,9 @@ export class LocalTaskPlanningOperations {
         Buffer.byteLength(session.output) > 512 * 1024
       )
         throw new Error("Planner did not return a completed bounded proposal");
-      const proposal = taskPlanProposalSchema.parse(JSON.parse(session.output));
+      const proposal = normalizeReviewVerifiers(
+        taskPlanProposalSchema.parse(JSON.parse(session.output)),
+      );
       await prepareTaskWorkspace(
         this.dataDirectory,
         { ...workspace, expectedCodeRevision: workspace.codeRevision },
@@ -349,6 +352,36 @@ function safePreflightDiagnostic(message: string): string {
     : "Planning could not be completed; inspect the selected workspace and source permissions.";
 }
 
+const INDEPENDENT_REVIEW_REF = "kontext:independent-review";
+
+/**
+ * Why: the coordinator's independent review is the only manual_review anything
+ * can run. A review ref the planner wrote itself would block every Change Bundle,
+ * and a worker can never satisfy a manual_review in its own required verifiers.
+ */
+function normalizeReviewVerifiers(proposal: TaskPlanProposal): TaskPlanProposal {
+  return {
+    contract: {
+      ...proposal.contract,
+      acceptance: proposal.contract.acceptance.map((criterion) =>
+        criterion.verifier.kind === "manual_review"
+          ? { ...criterion, verifier: { kind: "manual_review", ref: INDEPENDENT_REVIEW_REF } }
+          : criterion,
+      ),
+    },
+    logicPlans: proposal.logicPlans.map((plan) =>
+      plan.requiredVerifiers
+        ? {
+            ...plan,
+            requiredVerifiers: plan.requiredVerifiers.filter(
+              (verifier) => verifier.kind !== "manual_review",
+            ),
+          }
+        : plan,
+    ),
+  };
+}
+
 function planningPrompt(
   goal: string,
   context: Awaited<ReturnType<typeof collectPersonalTaskContext>>,
@@ -363,8 +396,9 @@ function planningPrompt(
     "Return one JSON object only: {contract:{intent,acceptance:[{criterionId,statement,verifier:{kind,ref}}],nonGoals:[],targets:[],risk},logicPlans:[{workItemId,plannedSymbolIds:[],plannedSymbols:[{plannedSymbolId,intendedIdentity:{relativePath,kind,qualifiedName,language},responsibility}],allowedPaths:[],dependsOn:[],requiredVerifiers:[]}]}.",
     "risk is low/medium/high; verifier kind is test/typecheck/build/lint/query/manual_review. Never claim a verifier passed.",
     declaredVerifiers.length > 0
-      ? `Choose acceptance and requiredVerifiers only from the workspace's trusted verifier definitions, exactly as written: ${JSON.stringify(declaredVerifiers)}. Add manual_review only where no definition can prove a criterion. Kontext runs kontext:semantic-sync, kontext:stable-symbol-identity, kontext:domain-term-check and kontext:graph-query-check itself; do not list them.`
-      : "This workspace declares no trusted verifier definitions (.kontext/verifiers.json or standard package.json scripts), so no lint/test/typecheck/build verifier can run; use manual_review and say so in the contract.",
+      ? `Choose acceptance and requiredVerifiers only from the workspace's trusted verifier definitions, exactly as written: ${JSON.stringify(declaredVerifiers)}. Kontext runs kontext:semantic-sync, kontext:stable-symbol-identity, kontext:domain-term-check and kontext:graph-query-check itself; do not list them.`
+      : "This workspace declares no trusted verifier definitions (.kontext/verifiers.json or standard package.json scripts), so no lint/test/typecheck/build verifier can run; say so in the contract.",
+    `The only manual_review verifier is exactly {"kind":"manual_review","ref":"${INDEPENDENT_REVIEW_REF}"}, supplied by the coordinator's independent review of the whole change; use it only in acceptance, never in a Logic Work Item's requiredVerifiers (leave requiredVerifiers empty rather than inventing one), and never write your own review wording as a verifier ref.`,
     "Symbol kind is function/method/constructor/getter/setter/named_arrow. Omit language if unknown. Omit taskId, capabilityId and boundSymbolId; the host owns these.",
     `User goal: ${JSON.stringify(goal)}`,
     `Code revision: ${context.state.codeRevision}`,

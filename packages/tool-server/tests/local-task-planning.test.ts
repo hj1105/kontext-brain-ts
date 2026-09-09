@@ -400,6 +400,52 @@ it.each(["dirty", "unborn", "folder"] as const)(
   },
 );
 
+it("routes every manual_review to the independent review and keeps it out of work items", async () => {
+  const h = await fixture();
+  h.plan.mockResolvedValueOnce({
+    sessionId: "fixture-session",
+    provider: "codex" as const,
+    status: "completed" as const,
+    output: JSON.stringify({
+      ...proposal,
+      contract: {
+        ...proposal.contract,
+        acceptance: [
+          ...proposal.contract.acceptance,
+          {
+            criterionId: "comment",
+            statement: "The Why comment explains the override.",
+            verifier: { kind: "manual_review", ref: "Review the comment wording." },
+          },
+        ],
+      },
+      logicPlans: proposal.logicPlans.map((plan) => ({
+        ...plan,
+        requiredVerifiers: [
+          { kind: "manual_review", ref: "Review the comment wording." },
+          { kind: "test", ref: "workspace:test" },
+        ],
+      })),
+    }),
+    events: [],
+    startedAt: new Date().toISOString(),
+    completedAt: new Date().toISOString(),
+  });
+  expect((await h.operations.startPlan(h.request)).created).toBe(true);
+  const reviewed = await h.settled();
+  expect(reviewed.status, reviewed.diagnostic).toBe("review");
+  expect(reviewed.proposal?.contract.acceptance.map((criterion) => criterion.verifier)).toEqual([
+    { kind: "test", ref: "workspace:test" },
+    { kind: "manual_review", ref: "kontext:independent-review" },
+  ]);
+  expect(reviewed.proposal?.logicPlans[0]?.requiredVerifiers).toEqual([
+    { kind: "test", ref: "workspace:test" },
+  ]);
+  expect(h.plan.mock.calls[0]?.[0]?.prompt).toContain(
+    "never in a Logic Work Item's requiredVerifiers",
+  );
+});
+
 it("tells the planner exactly which workspace verifiers exist", async () => {
   const h = await fixture();
   // Why: no declared verifiers means the contract must not invent lint/test commands.

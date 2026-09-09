@@ -1,3 +1,6 @@
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import type {
   BeginLogicRequest,
   CompiledTaskContext,
@@ -6,12 +9,20 @@ import type {
   RefreshTaskContextRequest,
   TaskContextRefreshResult,
 } from "@kontext-brain/context";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import {
+  InMemoryWriteAuthorizationBindingStore,
   type KontextTaskWorkflowOperations,
   KontextTaskWorkflowToolRouter,
   workflowToolResult,
 } from "../src/index.js";
+
+const temporaryDirectories: string[] = [];
+afterEach(async () => {
+  await Promise.all(
+    temporaryDirectories.splice(0).map((directory) => rm(directory, { recursive: true })),
+  );
+});
 
 class RecordingWorkflow implements KontextTaskWorkflowOperations {
   prepared?: PrepareTaskRequest;
@@ -100,6 +111,48 @@ describe("KontextTaskWorkflowToolRouter", () => {
     expect(workflow.begun?.issuedAt).toBe("2026-08-28T00:01:00.000Z");
     expect(workflow.begun?.expiresAt).toBe("2026-08-28T00:11:00.000Z");
     expect(workflow.refreshed?.taskId).toBe(contract.taskId);
+  });
+
+  it("keeps the first observation baseline when a resumed worker fetches a new receipt", async () => {
+    const workspacePath = await mkdtemp(path.join(tmpdir(), "kontext-workflow-resume-"));
+    temporaryDirectories.push(workspacePath);
+    await mkdir(path.join(workspacePath, "src"));
+    await writeFile(path.join(workspacePath, "src", "tool.ts"), "export const tool = 1;\n");
+    const workflow = new RecordingWorkflow();
+    const bindings = new InMemoryWriteAuthorizationBindingStore();
+    const router = new KontextTaskWorkflowToolRouter(
+      workflow,
+      () => new Date("2026-08-28T00:01:00.000Z"),
+      bindings,
+    );
+    const begin = {
+      taskId: contract.taskId,
+      workspacePath,
+      logic: { workItemId: "work-item:tool", plannedSymbolIds: ["planned-symbol:tool"] },
+      runtimeProvider: "codex" as const,
+      receiptTtlSeconds: 600,
+      totalTokenBudget: 10_000,
+      optionalEvidenceTokenBudget: 1_000,
+    };
+
+    await router.beginLogic(begin);
+    const first = await bindings.get(workspacePath);
+    // The worker edits, its session ends, and the resumed session begins again.
+    await writeFile(path.join(workspacePath, "src", "tool.ts"), "export const tool = 2;\n");
+    await router.beginLogic(begin);
+    const resumed = await bindings.get(workspacePath);
+
+    expect(resumed?.initialBaseline).toEqual(first?.initialBaseline);
+    expect(resumed?.symbolBaseline).toEqual(first?.symbolBaseline);
+    expect(resumed?.receipt.issuedAt).toBe(workflow.begun?.issuedAt);
+
+    // Why: another Logic Work Item in the same worktree is a new observation, not a resume.
+    await router.beginLogic({
+      ...begin,
+      logic: { workItemId: "work-item:other", plannedSymbolIds: ["planned-symbol:other"] },
+    });
+    const other = await bindings.get(workspacePath);
+    expect(other?.initialBaseline.revision).not.toBe(first?.initialBaseline.revision);
   });
 
   it("authorizes only provider-native write targets in receipt-bound exact paths", async () => {
