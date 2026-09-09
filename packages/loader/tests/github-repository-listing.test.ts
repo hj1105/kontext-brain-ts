@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   type GitHubApiRunner,
   GitHubListingError,
+  ghExecutableCandidates,
   listGitHubRepositories,
   parseGitHubOwner,
 } from "../src/index.js";
@@ -121,5 +122,22 @@ describe("listGitHubRepositories", () => {
     });
     expect(requested).toHaveLength(2);
     expect(listing.repositories).toHaveLength(101);
+  });
+});
+
+describe("ghExecutableCandidates", () => {
+  it("tries PATH first, then the places a Dock-launched app cannot see", () => {
+    expect(ghExecutableCandidates({ HOME: "/Users/me" }, "darwin")).toEqual([
+      "gh",
+      "/opt/homebrew/bin/gh",
+      "/usr/local/bin/gh",
+      "/home/linuxbrew/.linuxbrew/bin/gh",
+      "/Users/me/.local/bin/gh",
+      "/Users/me/.nix-profile/bin/gh",
+    ]);
+    expect(ghExecutableCandidates({ ProgramFiles: "D:\\PF" }, "win32")).toEqual([
+      "gh",
+      "D:\\PF\\GitHub CLI\\gh.exe",
+    ]);
   });
 });

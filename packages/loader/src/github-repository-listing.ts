@@ -97,12 +97,35 @@ export async function listGitHubRepositories(
   return { owner, kind: "user", repositories: parseLines(user.stdout) };
 }
 
+/**
+ * Where gh lives when PATH does not say: a desktop app launched from the Dock
+ * inherits a PATH without Homebrew, while the user's terminal has it.
+ */
+export function ghExecutableCandidates(
+  env: NodeJS.ProcessEnv,
+  platform: NodeJS.Platform = process.platform,
+): readonly string[] {
+  if (platform === "win32") {
+    const programFiles = env.ProgramFiles ?? "C:\\Program Files";
+    return ["gh", `${programFiles}\\GitHub CLI\\gh.exe`];
+  }
+  const home = env.HOME ?? "";
+  return [
+    "gh",
+    "/opt/homebrew/bin/gh",
+    "/usr/local/bin/gh",
+    "/home/linuxbrew/.linuxbrew/bin/gh",
+    ...(home ? [`${home}/.local/bin/gh`, `${home}/.nix-profile/bin/gh`] : []),
+  ];
+}
+
 function ghRunner(env: NodeJS.ProcessEnv): GitHubApiRunner {
-  return (endpoint, jq) =>
+  const candidates = ghExecutableCandidates(env);
+  const runWith = (executable: string, args: readonly string[]): Promise<GitHubApiResult> =>
     new Promise((resolve) => {
       execFile(
-        "gh",
-        ["api", endpoint, "--paginate", "--jq", jq],
+        executable,
+        [...args],
         // Why: a large organization returns thousands of lines; the default buffer truncates them.
         { env, maxBuffer: 64 * 1024 * 1024, windowsHide: true },
         (error, stdout, stderr) => {
@@ -120,6 +143,15 @@ function ghRunner(env: NodeJS.ProcessEnv): GitHubApiRunner {
         },
       );
     });
+  return async (endpoint, jq) => {
+    const args = ["api", endpoint, "--paginate", "--jq", jq];
+    let result: GitHubApiResult = { exitCode: 127, stdout: "", stderr: "gh is not installed" };
+    for (const executable of candidates) {
+      result = await runWith(executable, args);
+      if (result.exitCode !== 127) return result;
+    }
+    return result;
+  };
 }
 
 async function listThroughRest(

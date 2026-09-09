@@ -17,8 +17,22 @@ import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
 
 const repositoryRoot = path.resolve(fileURLToPath(new URL("..", import.meta.url)));
-const entryPoint = path.join(repositoryRoot, "packages/tool-server/src/task-cli.ts");
-const outputPath = path.join(repositoryRoot, "plugins/kontext-brain/server.mjs");
+/**
+ * Two single-file programs ship beside each other: the task tool server the
+ * agents talk to, and the ontology CLI a host drives to connect sources and
+ * build the ontology. A packaged host has no checkout to run the CLI from, so
+ * it must be one file too.
+ */
+const bundles = [
+  {
+    entryPoint: path.join(repositoryRoot, "packages/tool-server/src/task-cli.ts"),
+    outputPath: path.join(repositoryRoot, "plugins/kontext-brain/server.mjs"),
+  },
+  {
+    entryPoint: path.join(repositoryRoot, "packages/loader/src/ontology-cli-main.ts"),
+    outputPath: path.join(repositoryRoot, "plugins/kontext-brain/ontology-cli.mjs"),
+  },
+];
 const banner = `#!/usr/bin/env node
 import { createRequire as __kontextCreateRequire } from "node:module";
 import { dirname as __kontextDirname } from "node:path";
@@ -27,7 +41,7 @@ const require = __kontextCreateRequire(import.meta.url);
 const __filename = __kontextFileURLToPath(import.meta.url);
 const __dirname = __kontextDirname(__filename);`;
 
-async function bundle() {
+async function bundle({ entryPoint, outputPath }) {
   const result = await build({
     entryPoints: [entryPoint],
     outfile: outputPath,
@@ -53,24 +67,27 @@ function digest(value) {
 }
 
 const check = process.argv.includes("--check");
-const generated = await bundle();
-
-if (check) {
-  const existing = await readFile(outputPath, "utf8").catch(() => undefined);
-  if (existing === undefined) {
-    process.stderr.write(`Missing ${path.relative(repositoryRoot, outputPath)}\n`);
-    process.exit(1);
+let stale = false;
+for (const target of bundles) {
+  const generated = await bundle(target);
+  const relative = path.relative(repositoryRoot, target.outputPath);
+  if (check) {
+    const existing = await readFile(target.outputPath, "utf8").catch(() => undefined);
+    if (existing === undefined) {
+      process.stderr.write(`Missing ${relative}\n`);
+      stale = true;
+    } else if (digest(existing) !== digest(generated)) {
+      process.stderr.write(`${relative} is stale.\n`);
+      stale = true;
+    } else {
+      process.stdout.write(`${relative} matches its source.\n`);
+    }
+  } else {
+    await writeFile(target.outputPath, generated, { mode: 0o755 });
+    process.stdout.write(`Wrote ${relative} (${(generated.length / 1_048_576).toFixed(1)} MiB)\n`);
   }
-  if (digest(existing) !== digest(generated)) {
-    process.stderr.write(
-      "The plugin bundle is stale. Run `node scripts/bundle-plugin.mjs` and commit the result.\n",
-    );
-    process.exit(1);
-  }
-  process.stdout.write("The plugin bundle matches its source.\n");
-} else {
-  await writeFile(outputPath, generated, { mode: 0o755 });
-  process.stdout.write(
-    `Wrote ${path.relative(repositoryRoot, outputPath)} (${(generated.length / 1_048_576).toFixed(1)} MiB)\n`,
-  );
+}
+if (check && stale) {
+  process.stderr.write("Run `node scripts/bundle-plugin.mjs` and commit the result.\n");
+  process.exit(1);
 }
