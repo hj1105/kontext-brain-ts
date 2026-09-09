@@ -343,3 +343,199 @@ describe("kontext-ontology CLI surface", () => {
     expect(JSON.parse(printed)).toMatchObject({ command: "check", ok: false });
   });
 });
+
+// --- git transport -----------------------------------------------------------
+
+import { execFileSync } from "node:child_process";
+import { readMCPEntries } from "../src/kontext-config-file.js";
+
+function gitIn(cwd: string, args: readonly string[]): void {
+  execFileSync("git", [...args], {
+    cwd,
+    stdio: "ignore",
+    env: {
+      ...process.env,
+      GIT_AUTHOR_NAME: "Fixture",
+      GIT_AUTHOR_EMAIL: "fixture@example.invalid",
+      GIT_COMMITTER_NAME: "Fixture",
+      GIT_COMMITTER_EMAIL: "fixture@example.invalid",
+    },
+  });
+}
+
+/** A bare "remote" plus a seed clone that pushes Markdown to it. */
+function makeRemoteRepository(): { url: string; seed: string } {
+  const root = mkdtempSync(join(tmpdir(), "kontext-git-source-"));
+  roots.push(root);
+  const bare = join(root, "remote.git");
+  const seed = join(root, "seed");
+  mkdirSync(bare);
+  gitIn(bare, ["init", "--quiet", "--bare", "--initial-branch=main"]);
+  mkdirSync(join(seed, "docs"), { recursive: true });
+  gitIn(seed, ["init", "--quiet", "--initial-branch=main"]);
+  writeFileSync(join(seed, "docs", "decisions.md"), "# Decisions\n\nRetry twice.\n");
+  gitIn(seed, ["add", "."]);
+  gitIn(seed, ["commit", "--quiet", "-m", "seed"]);
+  gitIn(seed, ["remote", "add", "origin", bare]);
+  gitIn(seed, ["push", "--quiet", "origin", "main"]);
+  return { url: `file://${bare}`, seed };
+}
+
+describe("git sources", () => {
+  it("adds a repository by URL and records the ref and layer", () => {
+    const config = makeConfig("mcp: []");
+    const next = addSource(readConfigDocument(config), {
+      name: "handbook",
+      transport: "git",
+      url: "https://example.invalid/team/handbook.git",
+      ref: "main",
+      include: ["docs"],
+    });
+    expect(readMCPEntries(next)).toEqual([
+      {
+        name: "handbook",
+        transport: "git",
+        url: "https://example.invalid/team/handbook.git",
+        ref: "main",
+        include: ["docs"],
+      },
+    ]);
+    expect(summarizeSources(next)).toEqual([
+      {
+        name: "handbook",
+        transport: "git",
+        type: null,
+        target: "https://example.invalid/team/handbook.git (main)",
+      },
+    ]);
+  });
+
+  it("refuses a git source without a repository URL", () => {
+    const config = makeConfig("mcp: []");
+    expect(() =>
+      addSource(readConfigDocument(config), { name: "handbook", transport: "git" }),
+    ).toThrow(/repository URL/);
+  });
+
+  it("clones the repository, reads its Markdown, and picks up later commits", async () => {
+    const cache = mkdtempSync(join(tmpdir(), "kontext-git-cache-"));
+    roots.push(cache);
+    vi.stubEnv("KONTEXT_GIT_SOURCE_CACHE", cache);
+    const remote = makeRemoteRepository();
+    const config = makeConfig(
+      ["mcp:", "  - name: handbook", "    transport: git", `    url: ${remote.url}`].join("\n"),
+    );
+
+    const first = await checkSources(readConfigDocument(config));
+    expect(first).toEqual([{ name: "handbook", ok: true, resourceCount: 1, error: null }]);
+
+    writeFileSync(join(remote.seed, "docs", "terms.md"), "# Terms\n\nEstablished term.\n");
+    gitIn(remote.seed, ["add", "."]);
+    gitIn(remote.seed, ["commit", "--quiet", "-m", "terms"]);
+    gitIn(remote.seed, ["push", "--quiet", "origin", "main"]);
+
+    // Why: a stale checkout would build the ontology from documents the team has
+    // since changed, so a second check must see the new file without any reset.
+    const second = await checkSources(readConfigDocument(config));
+    expect(second).toEqual([{ name: "handbook", ok: true, resourceCount: 2, error: null }]);
+  });
+
+  it("reports an unreachable repository as that source's failure, not a crash", async () => {
+    const cache = mkdtempSync(join(tmpdir(), "kontext-git-cache-"));
+    roots.push(cache);
+    vi.stubEnv("KONTEXT_GIT_SOURCE_CACHE", cache);
+    const config = makeConfig(
+      [
+        "mcp:",
+        "  - name: missing",
+        "    transport: git",
+        `    url: file://${join(cache, "does-not-exist.git")}`,
+      ].join("\n"),
+    );
+    const results = await checkSources(readConfigDocument(config));
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject({ name: "missing", ok: false, resourceCount: null });
+    expect(results[0]?.error).toMatch(/git clone failed/);
+  });
+
+  it("adds a git source and a stdio environment through the CLI", async () => {
+    const config = makeConfig("mcp: []");
+    const added = await run([
+      "add",
+      "--config",
+      config,
+      "--name",
+      "handbook",
+      "--transport",
+      "git",
+      "--url",
+      "https://example.invalid/team/handbook.git",
+      "--ref",
+      "release",
+      "--write",
+      "--json",
+    ]);
+    expect(added.code).toBe(0);
+    const withEnv = await run([
+      "add",
+      "--config",
+      config,
+      "--name",
+      "github",
+      "--transport",
+      "stdio",
+      "--command",
+      "npx",
+      "--arg",
+      "-y",
+      "--arg",
+      "@modelcontextprotocol/server-github",
+      "--env",
+      "GITHUB_PERSONAL_ACCESS_TOKEN=ghp_example",
+      "--env",
+      "GITHUB_API_URL=https://ghe.example.invalid/api/v3",
+      "--write",
+      "--json",
+    ]);
+    expect(withEnv.code).toBe(0);
+    const entries = parse(readFileSync(config, "utf8")).mcp;
+    expect(entries).toEqual([
+      {
+        name: "handbook",
+        transport: "git",
+        url: "https://example.invalid/team/handbook.git",
+        ref: "release",
+      },
+      {
+        name: "github",
+        transport: "stdio",
+        command: "npx",
+        args: ["-y", "@modelcontextprotocol/server-github"],
+        env: {
+          GITHUB_PERSONAL_ACCESS_TOKEN: "ghp_example",
+          GITHUB_API_URL: "https://ghe.example.invalid/api/v3",
+        },
+      },
+    ]);
+  });
+
+  it("rejects a malformed --env instead of storing half a variable", async () => {
+    const config = makeConfig("mcp: []");
+    const result = await run([
+      "add",
+      "--config",
+      config,
+      "--name",
+      "github",
+      "--transport",
+      "stdio",
+      "--command",
+      "npx",
+      "--env",
+      "NO_EQUALS_SIGN",
+      "--json",
+    ]);
+    expect(result.code).not.toBe(0);
+    expect(result.printed).toMatch(/--env needs KEY=VALUE/);
+  });
+});

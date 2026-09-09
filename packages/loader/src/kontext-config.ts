@@ -15,14 +15,17 @@ export const LLMConfigSchema = z.object({
 
 export const MCPConfigSchema = z.object({
   name: z.string(),
-  /** For stdio: command. For SSE: URL. */
+  /** For stdio: command. For SSE: URL. For git: the repository URL to clone. */
   url: z.string().optional(),
+  /** For the "git" transport: branch or tag to read; the remote default when omitted. */
+  ref: z.string().optional(),
   command: z.string().optional(),
   args: z.array(z.string()).optional(),
   /** "notion" | "jira" | "github_pr" | "slack" | undefined */
   type: z.string().optional(),
-  /** "stdio" | "sse" | "local" — defaults to "sse" if url is given, "stdio" if command is given */
-  transport: z.enum(["stdio", "sse", "local"]).optional(),
+  /** "stdio" | "sse" | "local" | "git" — defaults to "sse" if url is given, "stdio" if command is
+   * given. "git" clones `url` and reads its Markdown like a local source. */
+  transport: z.enum(["stdio", "sse", "local", "git"]).optional(),
   /** For the "local" transport: repository directory whose Markdown is the source. */
   path: z.string().optional(),
   /** For the "local" transport: subdirectories to walk, relative to `path`. */

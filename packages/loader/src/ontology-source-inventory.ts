@@ -22,25 +22,27 @@ import { createSourceConnector } from "./ontology-source-connectors.js";
 export const ONTOLOGY_SOURCE_TYPES = ["notion", "jira", "github_pr", "slack"] as const;
 export type OntologySourceType = (typeof ONTOLOGY_SOURCE_TYPES)[number];
 
+export type OntologySourceTransport = "stdio" | "sse" | "local" | "git";
+
 export interface OntologySourceSummary {
   readonly name: string;
-  readonly transport: "stdio" | "sse" | "local";
+  readonly transport: OntologySourceTransport;
   readonly type: string | null;
   /** The one address field that applies to this transport. */
   readonly target: string;
 }
 
-const KNOWN_TRANSPORTS = new Set(["stdio", "sse", "local"]);
+const KNOWN_TRANSPORTS = new Set<string>(["stdio", "sse", "local", "git"]);
 
 /**
  * A config file can name a transport this build does not know — an `http` entry
  * copied from another agent, say. Reporting the closest known transport keeps one
  * odd row from failing the whole listing and hiding every other source.
  */
-export function transportOf(entry: MCPConfigDto): "stdio" | "sse" | "local" {
+export function transportOf(entry: MCPConfigDto): OntologySourceTransport {
   const declared = entry.transport;
   if (declared && KNOWN_TRANSPORTS.has(declared)) {
-    return declared as "stdio" | "sse" | "local";
+    return declared as OntologySourceTransport;
   }
   return entry.path ? "local" : entry.command ? "stdio" : "sse";
 }
@@ -48,6 +50,10 @@ export function transportOf(entry: MCPConfigDto): "stdio" | "sse" | "local" {
 function targetOf(entry: MCPConfigDto): string {
   const transport = transportOf(entry);
   if (transport === "local") return typeof entry.path === "string" ? entry.path : "";
+  if (transport === "git") {
+    const url = typeof entry.url === "string" ? entry.url : "";
+    return entry.ref ? `${url} (${entry.ref})` : url;
+  }
   if (transport === "stdio") {
     // Why: `args` written as a scalar would make the spread throw and kill the command.
     const args = Array.isArray(entry.args) ? entry.args : [];
@@ -128,10 +134,12 @@ export function importAgentSources(
 
 export interface AddSourceRequest {
   readonly name: string;
-  readonly transport: "stdio" | "sse" | "local";
+  readonly transport: OntologySourceTransport;
   readonly command?: string;
   readonly args?: readonly string[];
   readonly url?: string;
+  /** git: branch or tag to read. */
+  readonly ref?: string;
   readonly path?: string;
   readonly include?: readonly string[];
   readonly type?: string;
@@ -168,6 +176,13 @@ export function addSource(
   } else if (request.transport === "sse") {
     if (!request.url?.trim()) throw new OntologySourceError("An SSE source needs its URL.");
     entry.url = request.url.trim();
+  } else if (request.transport === "git") {
+    if (!request.url?.trim()) {
+      throw new OntologySourceError("A git source needs the repository URL to clone.");
+    }
+    entry.url = request.url.trim();
+    if (request.ref?.trim()) entry.ref = request.ref.trim();
+    if (request.include && request.include.length > 0) entry.include = [...request.include];
   } else {
     if (!request.path?.trim()) {
       throw new OntologySourceError("A local source needs the directory to read.");

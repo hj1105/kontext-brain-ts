@@ -32,13 +32,15 @@ export interface OntologyCliOptions {
   readonly fromError: string | undefined;
   readonly source: {
     readonly name: string | undefined;
-    readonly transport: "stdio" | "sse" | "local" | undefined;
+    readonly transport: "stdio" | "sse" | "local" | "git" | undefined;
     readonly command: string | undefined;
     readonly args: readonly string[] | undefined;
     readonly url: string | undefined;
+    readonly ref: string | undefined;
     readonly path: string | undefined;
     readonly include: readonly string[] | undefined;
     readonly type: string | undefined;
+    readonly env: Record<string, string> | undefined;
   };
 }
 
@@ -59,13 +61,15 @@ export function parseOntologyCliOptions(argv: readonly string[]): OntologyCliOpt
   let json = false;
   let fromError: string | undefined;
   let name: string | undefined;
-  let transport: "stdio" | "sse" | "local" | undefined;
+  let transport: "stdio" | "sse" | "local" | "git" | undefined;
   let command: string | undefined;
   let args: string[] | undefined;
   let url: string | undefined;
   let path: string | undefined;
   let include: string[] | undefined;
   let type: string | undefined;
+  let ref: string | undefined;
+  let env: Record<string, string> | undefined;
 
   let flagError: string | undefined;
   for (let index = 0; index < argv.length; index += 1) {
@@ -131,7 +135,22 @@ export function parseOntologyCliOptions(argv: readonly string[]): OntologyCliOpt
         break;
       case "--transport": {
         const raw = take();
-        if (raw === "stdio" || raw === "sse" || raw === "local") transport = raw;
+        if (raw === "stdio" || raw === "sse" || raw === "local" || raw === "git") transport = raw;
+        break;
+      }
+      case "--ref":
+        ref = take();
+        break;
+      case "--env": {
+        // Why: a stdio server that needs a token does not start without it, and the
+        // config already carries `env`; this is the only way to set it from a surface.
+        const raw = take();
+        const separator = raw?.indexOf("=") ?? -1;
+        if (raw === undefined || separator <= 0) {
+          flagError ??= `--env needs KEY=VALUE, got '${raw ?? ""}'.`;
+          break;
+        }
+        env = { ...(env ?? {}), [raw.slice(0, separator)]: raw.slice(separator + 1) };
         break;
       }
       case "--command":
@@ -189,7 +208,7 @@ export function parseOntologyCliOptions(argv: readonly string[]): OntologyCliOpt
     write,
     json,
     fromError: fromError ?? flagError,
-    source: { name, transport, command, args, url, path, include, type },
+    source: { name, transport, command, args, url, ref, path, include, type, env },
   };
 }
 
@@ -213,11 +232,13 @@ Options:
   --markdown <dir>       Also add the directory's Markdown as a source
 
   --name <name>          Source name (add)
-  --transport stdio|sse|local
+  --transport stdio|sse|local|git
   --command <command>    stdio: the command that starts the server
   --arg <value>          stdio: one argument; repeat for each (comma-safe)
   --args a,b             stdio: arguments, comma separated (loses embedded commas)
-  --url <url>            sse: the server URL
+  --url <url>            sse: the server URL; git: the repository to clone
+  --ref <name>           git: branch or tag to read (default: the remote default)
+  --env KEY=VALUE        stdio: environment for the server; repeat for each
   --path <dir>           local: directory whose Markdown is read
   --include-dir <dir>    local: one subdirectory; repeat for each
   --include a,b          local: subdirectories, comma separated
@@ -306,9 +327,11 @@ async function execute(
       ...(options.source.command ? { command: options.source.command } : {}),
       ...(options.source.args ? { args: options.source.args } : {}),
       ...(options.source.url ? { url: options.source.url } : {}),
+      ...(options.source.ref ? { ref: options.source.ref } : {}),
       ...(options.source.path ? { path: options.source.path } : {}),
       ...(options.source.include ? { include: options.source.include } : {}),
       ...(options.source.type ? { type: options.source.type } : {}),
+      ...(options.source.env ? { env: options.source.env } : {}),
     });
     if (options.write) writeConfigDocument(next);
     return { command, ok: true, name, written: options.write };

@@ -4,6 +4,7 @@ import {
   SseMCPConnector,
   StdioMCPConnector,
 } from "@kontext-brain/mcp";
+import { materializeGitSource } from "./git-source-checkout.js";
 import type { MCPConfigDto } from "./kontext-config.js";
 
 /**
@@ -17,6 +18,15 @@ export function createSourceConnector(dto: MCPConfigDto): MCPConnector {
   if (transport === "local") {
     if (!dto.path) throw new Error(`MCP '${dto.name}': local transport requires 'path'`);
     return new LocalMarkdownConnector(dto.name, dto.path, {
+      ...(dto.include ? { include: dto.include } : {}),
+    });
+  }
+  if (transport === "git") {
+    if (!dto.url) throw new Error(`MCP '${dto.name}': git transport requires 'url'`);
+    // A checkout is just a directory of Markdown once it exists, so the local
+    // connector reads it and nothing downstream learns a new source kind.
+    const directory = materializeGitSource(dto.url, dto.ref ? { ref: dto.ref } : {});
+    return new LocalMarkdownConnector(dto.name, directory, {
       ...(dto.include ? { include: dto.include } : {}),
     });
   }
