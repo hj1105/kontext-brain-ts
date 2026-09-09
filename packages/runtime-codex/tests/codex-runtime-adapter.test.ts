@@ -163,6 +163,7 @@ describe("CodexRuntimeAdapter worker tool server", () => {
     args: ["/data/plugins/kontext-brain/server.mjs"],
     env: { KONTEXT_PLUGIN_DATA: "/data/kontext", ELECTRON_RUN_AS_NODE: "1" },
     startupTimeoutSeconds: 30,
+    toolsApprovalMode: "auto" as const,
   };
   const workerRun = { exitCode: 0, stdout: "", stderr: "", lines: [] as string[] };
 
@@ -171,7 +172,7 @@ describe("CodexRuntimeAdapter worker tool server", () => {
     const adapter = new CodexRuntimeAdapter({ runner, environment: {}, mcpServer });
     await adapter.start(workInput());
     const args = runner.inputs[0]?.args ?? [];
-    expect(args.slice(0, 9)).toEqual([
+    expect(args.slice(0, 11)).toEqual([
       "exec",
       "-c",
       'mcp_servers.kontext_brain.command="C:\\\\Program Files\\\\Kondex\\\\Kondex.exe"',
@@ -181,6 +182,8 @@ describe("CodexRuntimeAdapter worker tool server", () => {
       'mcp_servers.kontext_brain.env={KONTEXT_PLUGIN_DATA="/data/kontext",ELECTRON_RUN_AS_NODE="1"}',
       "-c",
       "mcp_servers.kontext_brain.startup_timeout_sec=30",
+      "-c",
+      'mcp_servers.kontext_brain.default_tools_approval_mode="auto"',
     ]);
     expect(args.slice(-6)).toEqual([
       "--json",

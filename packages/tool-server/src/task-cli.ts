@@ -299,6 +299,9 @@ function workerToolServer(dataDirectory: string): RuntimeMcpServer | undefined {
     // and is ignored by a real Node binary. No host-management token travels here.
     env: { KONTEXT_PLUGIN_DATA: dataDirectory, ELECTRON_RUN_AS_NODE: "1" },
     startupTimeoutSeconds: 30,
+    // Why: otherwise Codex refuses kontext_begin_logic as "requires approval, but
+    // approval policy is never" — the very call the worker is required to make.
+    toolsApprovalMode: "auto",
   };
 }
 

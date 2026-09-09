@@ -21,6 +21,12 @@ export interface RuntimeMcpServer {
   readonly args: readonly string[];
   readonly env?: Readonly<Record<string, string>>;
   readonly startupTimeoutSeconds?: number;
+  /**
+   * Codex asks before calling any tool it cannot see is read-only, and a
+   * non-interactive session answers every such question with "no". The task
+   * tools are the worker's contract, so the server that owns them decides.
+   */
+  readonly toolsApprovalMode?: "auto" | "writes" | "approve";
 }
 
 export interface CodexRuntimeAdapterOptions {
@@ -175,6 +181,9 @@ export class CodexRuntimeAdapter implements AgentRuntimePort {
       ...(env ? ["-c", `${key}.env={${env}}`] : []),
       ...(server.startupTimeoutSeconds
         ? ["-c", `${key}.startup_timeout_sec=${server.startupTimeoutSeconds}`]
+        : []),
+      ...(server.toolsApprovalMode
+        ? ["-c", `${key}.default_tools_approval_mode=${tomlString(server.toolsApprovalMode)}`]
         : []),
     ];
   }
