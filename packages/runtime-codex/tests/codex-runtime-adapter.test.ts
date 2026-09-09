@@ -155,3 +155,73 @@ function sequenceClock(): () => Date {
     return value;
   };
 }
+
+describe("CodexRuntimeAdapter worker tool server", () => {
+  const mcpServer = {
+    name: "kontext_brain",
+    command: "C:\\Program Files\\Kondex\\Kondex.exe",
+    args: ["/data/plugins/kontext-brain/server.mjs"],
+    env: { KONTEXT_PLUGIN_DATA: "/data/kontext", ELECTRON_RUN_AS_NODE: "1" },
+    startupTimeoutSeconds: 30,
+  };
+  const workerRun = { exitCode: 0, stdout: "", stderr: "", lines: [] as string[] };
+
+  it("hands an implementation session the task tool server as config overrides", async () => {
+    const runner = new RecordingRunner([workerRun]);
+    const adapter = new CodexRuntimeAdapter({ runner, environment: {}, mcpServer });
+    await adapter.start(workInput());
+    const args = runner.inputs[0]?.args ?? [];
+    expect(args.slice(0, 9)).toEqual([
+      "exec",
+      "-c",
+      'mcp_servers.kontext_brain.command="C:\\\\Program Files\\\\Kondex\\\\Kondex.exe"',
+      "-c",
+      'mcp_servers.kontext_brain.args=["/data/plugins/kontext-brain/server.mjs"]',
+      "-c",
+      'mcp_servers.kontext_brain.env={KONTEXT_PLUGIN_DATA="/data/kontext",ELECTRON_RUN_AS_NODE="1"}',
+      "-c",
+      "mcp_servers.kontext_brain.startup_timeout_sec=30",
+    ]);
+    expect(args.slice(-6)).toEqual([
+      "--json",
+      "--sandbox",
+      "workspace-write",
+      "--cd",
+      "/workspace",
+      "-",
+    ]);
+  });
+
+  it("keeps the tool server away from read-only review and planning", async () => {
+    const runner = new RecordingRunner([workerRun, workerRun]);
+    const adapter = new CodexRuntimeAdapter({ runner, environment: {}, mcpServer });
+    await adapter.start({ ...workInput(), executionRole: "independent_review" });
+    await adapter.plan({
+      executionRole: "planning",
+      planningId: "plan-1",
+      workspacePath: "/workspace",
+      prompt: "plan",
+      codeRevision: "rev",
+      contextDigest: "sha256:digest",
+    });
+    for (const input of runner.inputs) {
+      expect(input.args).not.toContain("-c");
+      expect(input.args).toContain("read-only");
+    }
+  });
+
+  it("resumes with the same server so a checkpointed worker keeps its tools", async () => {
+    const runner = new RecordingRunner([workerRun]);
+    const adapter = new CodexRuntimeAdapter({ runner, environment: {}, mcpServer });
+    await adapter.resume("codex-session-1", workInput());
+    expect(runner.inputs[0]?.args.slice(0, 2)).toEqual(["exec", "-c"]);
+    expect(runner.inputs[0]?.args).toContain("resume");
+  });
+
+  it("adds nothing when no server is configured", async () => {
+    const runner = new RecordingRunner([workerRun]);
+    const adapter = new CodexRuntimeAdapter({ runner, environment: {} });
+    await adapter.start(workInput());
+    expect(runner.inputs[0]?.args).not.toContain("-c");
+  });
+});

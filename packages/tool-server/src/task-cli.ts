@@ -15,7 +15,7 @@ import {
   VerifierRegistry,
 } from "@kontext-brain/orchestrator";
 import { ClaudeCodeRuntimeAdapter } from "@kontext-brain/runtime-claude";
-import { CodexRuntimeAdapter } from "@kontext-brain/runtime-codex";
+import { CodexRuntimeAdapter, type RuntimeMcpServer } from "@kontext-brain/runtime-codex";
 import { FileIntegratedTaskStateStore } from "./file-integrated-task-state-store.js";
 import { FileWriteAuthorizationBindingStore } from "./file-write-authorization-binding-store.js";
 import { FileWriteAuthorizationEventStore } from "./file-write-authorization-event-store.js";
@@ -95,7 +95,10 @@ async function main(): Promise<void> {
     bindings,
     dataDirectory,
     [
-      new CodexRuntimeAdapter({ environment: subscriptionRuntimeEnvironment(dataDirectory) }),
+      new CodexRuntimeAdapter({
+        environment: subscriptionRuntimeEnvironment(dataDirectory),
+        mcpServer: workerToolServer(dataDirectory),
+      }),
       new ClaudeCodeRuntimeAdapter({
         pluginPath: currentPluginRoot(),
         environment: subscriptionRuntimeEnvironment(dataDirectory),
@@ -277,6 +280,26 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isWriteToolName(value: unknown): value is "apply_patch" | "Write" | "Edit" {
   return value === "apply_patch" || value === "Write" || value === "Edit";
+}
+
+/**
+ * A worker must reach the same task tool server this process is, over the same
+ * data directory, so its Context Receipt and Change Bundle land where the
+ * scheduler reads them. Claude gets that through the plugin directory; Codex
+ * only loads servers from the user's config, so the worker is handed this entry.
+ */
+function workerToolServer(dataDirectory: string): RuntimeMcpServer | undefined {
+  const entry = process.argv[1] ? path.resolve(process.argv[1]) : undefined;
+  if (!entry) return undefined;
+  return {
+    name: "kontext_brain",
+    command: process.execPath,
+    args: [entry],
+    // Why: under Electron the executable is Electron itself; this flag makes it Node
+    // and is ignored by a real Node binary. No host-management token travels here.
+    env: { KONTEXT_PLUGIN_DATA: dataDirectory, ELECTRON_RUN_AS_NODE: "1" },
+    startupTimeoutSeconds: 30,
+  };
 }
 
 function currentPluginRoot(): string | undefined {

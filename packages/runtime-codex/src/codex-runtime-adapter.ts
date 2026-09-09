@@ -9,8 +9,23 @@ import {
 } from "@kontext-brain/orchestrator";
 import { type RuntimeCommandRunner, SpawnRuntimeCommandRunner } from "./process-runner.js";
 
+/**
+ * The Kontext task tool server a worker session must be able to call. Codex
+ * loads MCP servers from the user's config, which an isolated runtime worktree
+ * never sees; without this the worker is told to consult Kontext Brain and
+ * submit a Change Bundle while holding no tool that could do either.
+ */
+export interface RuntimeMcpServer {
+  readonly name: string;
+  readonly command: string;
+  readonly args: readonly string[];
+  readonly env?: Readonly<Record<string, string>>;
+  readonly startupTimeoutSeconds?: number;
+}
+
 export interface CodexRuntimeAdapterOptions {
   readonly cliPath?: string;
+  readonly mcpServer?: RuntimeMcpServer;
   readonly environment?: Readonly<Record<string, string>>;
   readonly allowApiBilling?: boolean;
   readonly timeoutMilliseconds?: number;
@@ -21,6 +36,7 @@ export interface CodexRuntimeAdapterOptions {
 export class CodexRuntimeAdapter implements AgentRuntimePort {
   readonly provider = "codex" as const;
   private readonly cliPath: string;
+  private readonly mcpServer?: RuntimeMcpServer;
   private readonly environment: Readonly<Record<string, string>>;
   private readonly allowApiBilling: boolean;
   private readonly timeoutMilliseconds: number;
@@ -30,6 +46,7 @@ export class CodexRuntimeAdapter implements AgentRuntimePort {
 
   constructor(options: CodexRuntimeAdapterOptions = {}) {
     this.cliPath = options.cliPath ?? "codex";
+    this.mcpServer = options.mcpServer;
     this.environment = options.environment ?? stringEnvironment(process.env);
     this.allowApiBilling = options.allowApiBilling ?? false;
     this.timeoutMilliseconds = options.timeoutMilliseconds ?? 2 * 60 * 60_000;
@@ -108,12 +125,15 @@ export class CodexRuntimeAdapter implements AgentRuntimePort {
 
   async start(input: RuntimeWorkInput): Promise<RuntimeSession> {
     this.assertBillingPath();
+    const review = input.executionRole === "independent_review";
     return this.execute(
       [
         "exec",
+        // Why: review judges a diff and returns JSON; it must not be able to write through the tools.
+        ...(review ? [] : this.mcpServerOverrides()),
         "--json",
         "--sandbox",
-        input.executionRole === "independent_review" ? "read-only" : "workspace-write",
+        review ? "read-only" : "workspace-write",
         "--cd",
         input.workspacePath,
         "-",
@@ -133,10 +153,30 @@ export class CodexRuntimeAdapter implements AgentRuntimePort {
   async resume(providerSessionId: string, input: RuntimeWorkInput): Promise<RuntimeSession> {
     this.assertBillingPath();
     return this.execute(
-      ["exec", "resume", providerSessionId, "-", "--json"],
+      ["exec", ...this.mcpServerOverrides(), "resume", providerSessionId, "-", "--json"],
       input,
       providerSessionId,
     );
+  }
+
+  /** `-c` overrides that add the task tool server to this one `codex exec` invocation. */
+  private mcpServerOverrides(): readonly string[] {
+    const server = this.mcpServer;
+    if (!server) return [];
+    const key = `mcp_servers.${server.name}`;
+    const env = Object.entries(server.env ?? {})
+      .map(([name, value]) => `${name}=${tomlString(value)}`)
+      .join(",");
+    return [
+      "-c",
+      `${key}.command=${tomlString(server.command)}`,
+      "-c",
+      `${key}.args=[${server.args.map(tomlString).join(",")}]`,
+      ...(env ? ["-c", `${key}.env={${env}}`] : []),
+      ...(server.startupTimeoutSeconds
+        ? ["-c", `${key}.startup_timeout_sec=${server.startupTimeoutSeconds}`]
+        : []),
+    ];
   }
 
   async terminate(providerSessionId: string): Promise<void> {
@@ -205,6 +245,11 @@ export class CodexRuntimeAdapter implements AgentRuntimePort {
       throw new Error("Codex API billing is selected but has not been explicitly allowed");
     }
   }
+}
+
+/** JSON string escaping is a valid TOML basic string, which is what `-c` parses. */
+function tomlString(value: string): string {
+  return JSON.stringify(value);
 }
 
 function workerPrompt(input: RuntimeWorkInput | RuntimePlanningInput): string {
