@@ -25,8 +25,11 @@ export interface RuntimeMcpServer {
    * Codex asks before calling any tool it cannot see is read-only, and a
    * non-interactive session answers every such question with "no". The task
    * tools are the worker's contract, so the server that owns them decides.
+   * Only `approve` pre-approves; `auto` is Codex's default and still asks
+   * (measured against codex-cli 0.153 — the rejection reads "requires approval,
+   * but approval policy is never").
    */
-  readonly toolsApprovalMode?: "auto" | "writes" | "approve";
+  readonly toolsApprovalMode?: "auto" | "prompt" | "writes" | "approve";
 }
 
 export interface CodexRuntimeAdapterOptions {

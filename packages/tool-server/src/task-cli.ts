@@ -301,7 +301,7 @@ function workerToolServer(dataDirectory: string): RuntimeMcpServer | undefined {
     startupTimeoutSeconds: 30,
     // Why: otherwise Codex refuses kontext_begin_logic as "requires approval, but
     // approval policy is never" — the very call the worker is required to make.
-    toolsApprovalMode: "auto",
+    toolsApprovalMode: "approve",
   };
 }
 
