@@ -34,6 +34,32 @@ const DEFAULT_MAX_FILES = 2000;
 /** Enough for a title, summary and the opening decision; full text is read on fetch. */
 const DESCRIPTION_CHARS = 400;
 
+/** Files under `include` (or the root) whose name ends with one of `extensions`, skipping `exclude` directories anywhere. */
+export function walkSourceFiles(
+  root: string,
+  options: {
+    readonly extensions: readonly string[];
+    readonly include?: readonly string[];
+    readonly exclude?: readonly string[];
+    readonly maxFiles?: number;
+  },
+): string[] {
+  const found: string[] = [];
+  const roots = (options.include ?? [""]).map((part) => (part ? join(root, part) : root));
+  for (const directory of roots) {
+    walk(
+      directory,
+      options.extensions,
+      options.exclude ?? DEFAULT_EXCLUDE,
+      options.maxFiles ?? DEFAULT_MAX_FILES,
+      found,
+    );
+  }
+  return found;
+}
+
+export const LOCAL_SOURCE_DEFAULT_EXCLUDE: readonly string[] = DEFAULT_EXCLUDE;
+
 function walk(
   directory: string,
   extensions: readonly string[],

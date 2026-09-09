@@ -30,6 +30,9 @@ export const MCPConfigSchema = z.object({
   path: z.string().optional(),
   /** For the "local" transport: subdirectories to walk, relative to `path`. */
   include: z.array(z.string()).optional(),
+  /** local/git: also read source files through the code providers, so a file
+   * lands on the ontology node beside the documents that govern it. */
+  code: z.boolean().optional(),
   /** Environment for a stdio server. Imported definitions often carry one, and a
    * server that needs it does not start without it. */
   env: z.record(z.string()).optional(),

@@ -35,12 +35,12 @@ importers:
       '@kontext-brain/code':
         specifier: workspace:*
         version: link:../packages/code
-      '@kontext-brain/core':
-        specifier: workspace:*
-        version: link:../packages/core
       '@kontext-brain/context':
         specifier: workspace:*
         version: link:../packages/context
+      '@kontext-brain/core':
+        specifier: workspace:*
+        version: link:../packages/core
       '@kontext-brain/llm':
         specifier: workspace:*
         version: link:../packages/llm
@@ -162,6 +162,9 @@ importers:
 
   packages/loader:
     dependencies:
+      '@kontext-brain/code':
+        specifier: workspace:*
+        version: link:../code
       '@kontext-brain/core':
         specifier: workspace:*
         version: link:../core

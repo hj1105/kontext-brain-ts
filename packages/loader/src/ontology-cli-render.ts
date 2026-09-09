@@ -70,6 +70,30 @@ function renderSetup(result: Extract<OntologyCliResult, { command: "setup" }>): 
   return `${lines.join("\n")}\n`;
 }
 
+function renderRepositories(
+  result: Extract<OntologyCliResult, { command: "github-repos" }>,
+): string {
+  const lines = [
+    `${result.owner} (${result.kind}) has ${result.repositories.length} repositor${result.repositories.length === 1 ? "y" : "ies"}:`,
+  ];
+  for (const repository of result.repositories) {
+    const flags = [
+      repository.private ? "private" : "public",
+      ...(repository.archived ? ["archived"] : []),
+      ...(repository.fork ? ["fork"] : []),
+    ].join(", ");
+    lines.push(
+      `  ${repository.fullName}  ${repository.language ?? "-"}  ${flags}  ${repository.cloneUrl}`,
+    );
+  }
+  lines.push(
+    "",
+    "Add one with: kontext-ontology add --name <name> --transport git --url <clone url> [--code] --write",
+    "",
+  );
+  return lines.join("\n");
+}
+
 export function renderResult(result: OntologyCliResult, options: OntologyCliOptions): string {
   if (options.json) {
     return `${JSON.stringify(result, null, 2)}\n`;
@@ -88,6 +112,8 @@ export function renderResult(result: OntologyCliResult, options: OntologyCliOpti
         ? `Added source '${added.name}'.\n`
         : `Source '${added.name}' is valid. Re-run with --write to save it.\n`;
     }
+    case "github-repos":
+      return renderRepositories(result as Extract<OntologyCliResult, { command: "github-repos" }>);
     case "check":
       return renderCheck(result as Extract<OntologyCliResult, { command: "check" }>);
     case "setup":

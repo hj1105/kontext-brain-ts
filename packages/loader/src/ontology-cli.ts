@@ -1,5 +1,10 @@
 import { resolve } from "node:path";
 import type { AgentConfigKind } from "./agent-mcp-config-import.js";
+import {
+  GitHubListingError,
+  type GitHubRepositoryListing,
+  listGitHubRepositories,
+} from "./github-repository-listing.js";
 import type { KontextAgent } from "./kontext-agent.js";
 import {
   readConfigDocument,
@@ -26,6 +31,8 @@ export interface OntologyCliOptions {
   readonly project: string | undefined;
   readonly markdown: string | undefined;
   readonly targetNodes: number | undefined;
+  /** github-repos: organization or user, as a name or a github.com URL. */
+  readonly owner: string | undefined;
   readonly write: boolean;
   readonly json: boolean;
   /** Set when --from named something that is not a supported agent. */
@@ -41,6 +48,7 @@ export interface OntologyCliOptions {
     readonly include: readonly string[] | undefined;
     readonly type: string | undefined;
     readonly env: Record<string, string> | undefined;
+    readonly code: boolean;
   };
 }
 
@@ -57,6 +65,8 @@ export function parseOntologyCliOptions(argv: readonly string[]): OntologyCliOpt
   let project: string | undefined;
   let markdown: string | undefined;
   let targetNodes: number | undefined;
+  let owner: string | undefined;
+  let code = false;
   let write = false;
   let json = false;
   let fromError: string | undefined;
@@ -133,6 +143,12 @@ export function parseOntologyCliOptions(argv: readonly string[]): OntologyCliOpt
       case "--name":
         name = take();
         break;
+      case "--owner":
+        owner = take();
+        break;
+      case "--code":
+        code = true;
+        break;
       case "--transport": {
         const raw = take();
         if (raw === "stdio" || raw === "sse" || raw === "local" || raw === "git") transport = raw;
@@ -208,7 +224,8 @@ export function parseOntologyCliOptions(argv: readonly string[]): OntologyCliOpt
     write,
     json,
     fromError: fromError ?? flagError,
-    source: { name, transport, command, args, url, ref, path, include, type, env },
+    owner,
+    source: { name, transport, command, args, url, ref, path, include, type, env, code },
   };
 }
 
@@ -221,6 +238,7 @@ Commands:
   add          Add one source directly, for a provider no other agent knows
   check        Connect every configured source and report what it exposes
   setup        Build the ontology from the connected sources and save it
+  github-repos List an organization's repositories to pick sources from
 
 Options:
   --config <path>        Config file (default: ${DEFAULT_CONFIG})
@@ -238,6 +256,7 @@ Options:
   --args a,b             stdio: arguments, comma separated (loses embedded commas)
   --url <url>            sse: the server URL; git: the repository to clone
   --ref <name>           git: branch or tag to read (default: the remote default)
+  --code                 local/git: read source files too, not only Markdown
   --env KEY=VALUE        stdio: environment for the server; repeat for each
   --path <dir>           local: directory whose Markdown is read
   --include-dir <dir>    local: one subdirectory; repeat for each
@@ -245,6 +264,7 @@ Options:
   --type notion|jira|github_pr|slack
 
   --target-nodes <n>     Ontology node-count override (setup)
+  --owner <org|url>      github-repos: the organization or user to list (uses gh)
 
 Run import-mcp or add, then check, then setup.
 
@@ -257,6 +277,8 @@ subscription already covers. ollama runs locally.
 export interface OntologyCliDeps {
   /** Overrides how the agent is built, so setup can run without a paid model. */
   readonly loadAgent?: (configPath: string) => Promise<KontextAgent>;
+  /** Overrides the GitHub lookup, so tests need neither gh nor the network. */
+  readonly listRepositories?: (owner: string) => Promise<GitHubRepositoryListing>;
 }
 
 export type OntologyCliResult =
@@ -269,6 +291,7 @@ export type OntologyCliResult =
       written: boolean;
     }
   | { command: "add"; ok: true; name: string; written: boolean }
+  | ({ command: "github-repos"; ok: true } & GitHubRepositoryListing)
   | {
       command: "check";
       ok: boolean;
@@ -293,6 +316,17 @@ async function execute(
 ): Promise<OntologyCliResult> {
   if (options.fromError !== undefined) {
     return { command, ok: false, error: options.fromError };
+  }
+  if (command === "github-repos") {
+    // Why: listing needs no config; a workspace without kontext.yaml can still pick sources.
+    if (!options.owner) return { command, ok: false, error: "github-repos needs --owner." };
+    try {
+      const listing = await (deps.listRepositories ?? listGitHubRepositories)(options.owner);
+      return { command, ok: true, ...listing };
+    } catch (error) {
+      if (error instanceof GitHubListingError) return { command, ok: false, error: error.message };
+      throw error;
+    }
   }
   const document = readConfigDocument(options.config);
 
@@ -332,6 +366,7 @@ async function execute(
       ...(options.source.include ? { include: options.source.include } : {}),
       ...(options.source.type ? { type: options.source.type } : {}),
       ...(options.source.env ? { env: options.source.env } : {}),
+      ...(options.source.code ? { code: true } : {}),
     });
     if (options.write) writeConfigDocument(next);
     return { command, ok: true, name, written: options.write };

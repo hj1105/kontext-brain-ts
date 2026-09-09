@@ -30,6 +30,8 @@ export interface OntologySourceSummary {
   readonly type: string | null;
   /** The one address field that applies to this transport. */
   readonly target: string;
+  /** local/git: source files are read as well as Markdown. */
+  readonly code: boolean;
 }
 
 const KNOWN_TRANSPORTS = new Set<string>(["stdio", "sse", "local", "git"]);
@@ -70,6 +72,7 @@ export function summarizeSources(
     transport: transportOf(entry),
     type: typeof entry.type === "string" ? entry.type : null,
     target: targetOf(entry),
+    code: entry.code === true,
   }));
 }
 
@@ -124,6 +127,7 @@ export function importAgentSources(
       transport: transportOf(config),
       type: config.type ?? null,
       target: targetOf(config),
+      code: config.code === true,
       origin: origin?.origin ?? "local-markdown",
       scope: origin?.scope ?? null,
       alreadyPresent: existingNames.has(config.name),
@@ -144,6 +148,8 @@ export interface AddSourceRequest {
   readonly include?: readonly string[];
   readonly type?: string;
   readonly env?: Readonly<Record<string, string>>;
+  /** local/git: read source files as well as Markdown. */
+  readonly code?: boolean;
 }
 
 export class OntologySourceError extends Error {
@@ -183,6 +189,7 @@ export function addSource(
     entry.url = request.url.trim();
     if (request.ref?.trim()) entry.ref = request.ref.trim();
     if (request.include && request.include.length > 0) entry.include = [...request.include];
+    if (request.code) entry.code = true;
   } else {
     if (!request.path?.trim()) {
       throw new OntologySourceError("A local source needs the directory to read.");

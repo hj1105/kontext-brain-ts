@@ -63,9 +63,15 @@ describe("summarizeSources", () => {
       ].join("\n"),
     );
     expect(summarizeSources(readConfigDocument(config))).toEqual([
-      { name: "local", transport: "local", type: null, target: "/repo" },
-      { name: "remote", transport: "sse", type: null, target: "https://example.invalid" },
-      { name: "spawned", transport: "stdio", type: null, target: "server --mcp" },
+      { name: "local", transport: "local", type: null, target: "/repo", code: false },
+      {
+        name: "remote",
+        transport: "sse",
+        type: null,
+        target: "https://example.invalid",
+        code: false,
+      },
+      { name: "spawned", transport: "stdio", type: null, target: "server --mcp", code: false },
     ]);
   });
 });
@@ -101,9 +107,40 @@ describe("addSource", () => {
       command: "ignored-for-sse",
     });
     expect(summarizeSources(document)).toEqual([
-      { name: "notion", transport: "sse", type: "notion", target: "https://mcp.notion.invalid" },
+      {
+        name: "notion",
+        transport: "sse",
+        type: "notion",
+        target: "https://mcp.notion.invalid",
+        code: false,
+      },
     ]);
     expect(JSON.stringify(document.data)).not.toContain("ignored-for-sse");
+  });
+
+  it("records that a repository's code is read too, only where code can be read", () => {
+    const document = addSource(empty, {
+      name: "handbook",
+      transport: "git",
+      url: "https://github.com/org/handbook.git",
+      code: true,
+    });
+    expect(summarizeSources(document)).toEqual([
+      {
+        name: "handbook",
+        transport: "git",
+        type: null,
+        target: "https://github.com/org/handbook.git",
+        code: true,
+      },
+    ]);
+    const server = addSource(empty, {
+      name: "notion",
+      transport: "sse",
+      url: "https://mcp.notion.invalid",
+      code: true,
+    });
+    expect(JSON.stringify(server.data)).not.toContain("code");
   });
 
   it("refuses a source that is missing its address", () => {
@@ -259,7 +296,9 @@ describe("kontext-ontology CLI surface", () => {
     expect(JSON.parse(printed)).toEqual({
       command: "list",
       ok: true,
-      sources: [{ name: "repo-docs", transport: "local", type: null, target: "/repo" }],
+      sources: [
+        { name: "repo-docs", transport: "local", type: null, target: "/repo", code: false },
+      ],
     });
   });
 
@@ -406,6 +445,7 @@ describe("git sources", () => {
         transport: "git",
         type: null,
         target: "https://example.invalid/team/handbook.git (main)",
+        code: false,
       },
     ]);
   });
@@ -537,5 +577,62 @@ describe("git sources", () => {
     ]);
     expect(result.code).not.toBe(0);
     expect(result.printed).toMatch(/--env needs KEY=VALUE/);
+  });
+});
+
+describe("kontext-ontology github-repos", () => {
+  const listing = {
+    owner: "modapl",
+    kind: "organization" as const,
+    repositories: [
+      {
+        name: "handbook",
+        fullName: "modapl/handbook",
+        url: "https://github.com/modapl/handbook",
+        cloneUrl: "https://github.com/modapl/handbook.git",
+        defaultBranch: "main",
+        private: true,
+        archived: false,
+        fork: false,
+        language: "TypeScript",
+        description: null,
+        pushedAt: "2026-09-01T00:00:00Z",
+      },
+    ],
+  };
+
+  it("lists an owner's repositories as JSON without touching any config", async () => {
+    const owners: string[] = [];
+    const out = vi.spyOn(process.stdout, "write").mockReturnValue(true);
+    const code = await runOntologyCli(
+      [
+        "github-repos",
+        "--owner",
+        "https://github.com/modapl",
+        "--json",
+        "--config",
+        "/nonexistent/kontext.yaml",
+      ],
+      {
+        listRepositories: async (owner) => {
+          owners.push(owner);
+          return listing;
+        },
+      },
+    );
+    const printed = out.mock.calls.map((call) => String(call[0])).join("");
+    out.mockRestore();
+    expect(code).toBe(0);
+    expect(owners).toEqual(["https://github.com/modapl"]);
+    expect(JSON.parse(printed)).toEqual({ command: "github-repos", ok: true, ...listing });
+  });
+
+  it("needs an owner", async () => {
+    const { code, printed } = await run(["github-repos", "--json"]);
+    expect(code).toBe(1);
+    expect(JSON.parse(printed)).toMatchObject({
+      ok: false,
+      error: expect.stringContaining("--owner"),
+    });
   });
 });
