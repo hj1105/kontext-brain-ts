@@ -25,6 +25,8 @@ import {
 } from "@kontext-brain/spec";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  EvidenceBackedQueryVerifierAdapter,
+  KONTEXT_EVIDENCE_VERIFIERS,
   LocalKontextCompletionOperations,
   type SidecarChangeEvidenceProvider,
 } from "../src/index.js";
@@ -250,6 +252,105 @@ describe("LocalKontextCompletionOperations", () => {
     expect(
       result.executions.every((execution) => execution.run.codeRevision === resultRevision),
     ).toBe(true);
+  });
+
+  it("judges the built-in fast verifiers from the evidence the check itself observed", async () => {
+    const current = new InMemoryTaskContextStateProvider();
+    current.set(contract.taskId, {
+      codeRevision: resultRevision,
+      sourceFreshnessDigest: snapshot.sourceFreshnessDigest,
+      effectiveScopes: snapshot.effectiveScopes,
+      normativeRecords: [],
+      normativeRevisionCatalog: [],
+      conflicts: [],
+      evidence: [],
+      logicPlans: [workItem],
+    });
+    const prepared = new InMemoryPreparedTaskContextStore();
+    await prepared.put({ contract, snapshot, additionalRequiredEvidenceIds: [] });
+    const directory = await mkdtemp(path.join(tmpdir(), "kontext-local-completion-"));
+    temporaryDirectories.push(directory);
+    const evidenceVerifiers = new EvidenceBackedQueryVerifierAdapter();
+    const registry = new VerifierRegistry();
+    for (const verifier of KONTEXT_EVIDENCE_VERIFIERS)
+      registry.register(verifier, evidenceVerifiers);
+    const coordinator = new DurableVerificationCoordinator(
+      new VerificationCoordinator(registry),
+      new InMemoryVerificationRetryQueue(),
+    );
+    const check = {
+      taskId: contract.taskId,
+      workItemId: workItem.workItemId,
+      workspacePath: directory,
+      tier: "fast" as const,
+      observedAt: "2026-08-28T13:01:00.000Z",
+      nextAttemptAt: "2026-08-28T13:10:00.000Z",
+    };
+    type Checked = {
+      readonly executions: readonly { readonly run: { readonly result: string } }[];
+    };
+
+    const primed = new LocalKontextCompletionOperations(
+      current,
+      prepared,
+      new FileTaskCompletionArtifactStore(directory),
+      new FileQuarantineStore(directory),
+      coordinator,
+      fixedChangeEvidence(),
+      undefined,
+      (binding, evidence) => evidenceVerifiers.prime(binding, evidence),
+    );
+    const passed = (await primed.checkChange(check)) as Checked;
+    expect(passed.executions.map((execution) => execution.run.result)).toEqual(
+      KONTEXT_EVIDENCE_VERIFIERS.map(() => "passed"),
+    );
+
+    // Why: checkChange refuses drifted evidence before verifying, so the adapter's own
+    // failure verdict is the guard for any caller that reaches it another way.
+    const drifted = new EvidenceBackedQueryVerifierAdapter();
+    drifted.prime(
+      { workspacePath: directory, codeRevision: resultRevision },
+      {
+        ...(await fixedChangeEvidence().observe({
+          workspacePath: directory,
+          taskId: contract.taskId,
+          workItem,
+        })),
+        plannedSymbolBindings: [],
+        plannedSymbolIssues: [
+          { plannedSymbolId: "symbol:handler", code: "identity_not_found", candidateSymbolIds: [] },
+        ],
+      },
+    );
+    const identity = await drifted.execute({
+      workspacePath: directory,
+      codeRevision: resultRevision,
+      contextDigest: snapshot.contextDigest,
+      observedAt: check.observedAt,
+      requirement: {
+        tier: "fast",
+        verifier: { kind: "query", ref: "kontext:stable-symbol-identity" },
+        subjectIds: workItem.plannedSymbolIds,
+      },
+    });
+    expect(identity.result).toBe("failed");
+
+    // Why: without an observation to judge, the verifier is inconclusive rather than passed.
+    const unprimed = new LocalKontextCompletionOperations(
+      current,
+      prepared,
+      new FileTaskCompletionArtifactStore(directory),
+      new FileQuarantineStore(directory),
+      new DurableVerificationCoordinator(
+        new VerificationCoordinator(registry),
+        new InMemoryVerificationRetryQueue(),
+      ),
+      fixedChangeEvidence({ currentCodeRevision: "commit:unseen" }),
+    );
+    const inconclusive = (await unprimed.checkChange(check)) as Checked;
+    expect(new Set(inconclusive.executions.map((execution) => execution.run.result))).toEqual(
+      new Set(["inconclusive"]),
+    );
   });
 
   it("refuses to verify sidecar evidence that escapes the planned symbols", async () => {

@@ -257,3 +257,45 @@ function isNodeError(value: unknown): value is NodeJS.ErrnoException {
 }
 
 export const workspaceVerifierKinds: readonly VerifierKind[] = verifierKinds;
+
+/**
+ * Every verifier this adapter would run in the workspace: the declared
+ * definitions plus the standard package.json scripts that exist. Planning reads
+ * this so a contract never names a check the workspace cannot execute.
+ */
+export async function listDeclaredWorkspaceVerifiers(
+  workspacePath: string,
+  configPath = path.join(".kontext", "verifiers.json"),
+): Promise<readonly VerifierRef[]> {
+  const declared: VerifierRef[] = [];
+  const seen = new Set<string>();
+  const add = (verifier: VerifierRef) => {
+    const key = verifierKey(verifier);
+    if (seen.has(key)) return;
+    seen.add(key);
+    declared.push({ kind: verifier.kind, ref: verifier.ref });
+  };
+  const absoluteConfigPath = path.resolve(workspacePath, configPath);
+  if (isWithinOrEqual(workspacePath, absoluteConfigPath)) {
+    try {
+      const config = configSchema.parse(JSON.parse(await readFile(absoluteConfigPath, "utf8")));
+      for (const definition of config.verifiers) add(definition);
+    } catch (error) {
+      // Why: a missing file declares nothing; a broken one is reported when a verifier runs.
+      if (!(isNodeError(error) && error.code === "ENOENT")) return declared;
+    }
+  }
+  try {
+    const packageJson = packageSchema.parse(
+      JSON.parse(await readFile(path.join(workspacePath, "package.json"), "utf8")),
+    );
+    for (const [key, script] of standardScripts) {
+      if (!packageJson.scripts?.[script]) continue;
+      const [kind, ref] = key.split("\u0000") as [VerifierKind, string];
+      add({ kind, ref });
+    }
+  } catch {
+    // Not a package workspace; only declared verifiers apply.
+  }
+  return declared;
+}

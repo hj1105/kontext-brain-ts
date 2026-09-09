@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { VerifierInfrastructureError } from "@kontext-brain/orchestrator";
 import { afterEach, describe, expect, it } from "vitest";
-import { WorkspaceCommandVerifierAdapter } from "../src/index.js";
+import { WorkspaceCommandVerifierAdapter, listDeclaredWorkspaceVerifiers } from "../src/index.js";
 
 const temporaryDirectories: string[] = [];
 
@@ -84,6 +84,36 @@ describe("WorkspaceCommandVerifierAdapter", () => {
         observedAt: "2026-08-29T01:00:00.000Z",
       }),
     ).rejects.toBeInstanceOf(VerifierInfrastructureError);
+  });
+});
+
+describe("listDeclaredWorkspaceVerifiers", () => {
+  it("lists declared definitions and only the standard scripts that exist", async () => {
+    const workspacePath = await workspace([
+      {
+        kind: "lint",
+        ref: "pnpm run check:code-quality:changed",
+        command: "pnpm",
+        args: ["run", "x"],
+      },
+      // Why: a declared definition wins over the standard script of the same ref.
+      { kind: "test", ref: "workspace:test", command: process.execPath, args: [] },
+    ]);
+    await writeFile(
+      path.join(workspacePath, "package.json"),
+      JSON.stringify({ scripts: { test: "vitest", typecheck: "tsc" } }),
+    );
+    expect(await listDeclaredWorkspaceVerifiers(workspacePath)).toEqual([
+      { kind: "lint", ref: "pnpm run check:code-quality:changed" },
+      { kind: "test", ref: "workspace:test" },
+      { kind: "typecheck", ref: "workspace:typecheck" },
+    ]);
+  });
+
+  it("declares nothing for a workspace without definitions or a package.json", async () => {
+    const workspacePath = await mkdtemp(path.join(tmpdir(), "kontext-verifier-empty-"));
+    temporaryDirectories.push(workspacePath);
+    expect(await listDeclaredWorkspaceVerifiers(workspacePath)).toEqual([]);
   });
 });
 

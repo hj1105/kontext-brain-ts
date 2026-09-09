@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { TaskContextWorkflow } from "@kontext-brain/context";
 import {
@@ -15,11 +15,19 @@ import {
   VerifierRegistry,
 } from "@kontext-brain/orchestrator";
 import { ClaudeCodeRuntimeAdapter } from "@kontext-brain/runtime-claude";
-import { CodexRuntimeAdapter, type RuntimeMcpServer } from "@kontext-brain/runtime-codex";
+import {
+  CodexRuntimeAdapter,
+  type RuntimeMcpServer,
+  type RuntimeWriteHooks,
+} from "@kontext-brain/runtime-codex";
 import { FileIntegratedTaskStateStore } from "./file-integrated-task-state-store.js";
 import { FileWriteAuthorizationBindingStore } from "./file-write-authorization-binding-store.js";
 import { FileWriteAuthorizationEventStore } from "./file-write-authorization-event-store.js";
 import { takeHostKnowledgeCapability } from "./host-knowledge-tools.js";
+import {
+  EvidenceBackedQueryVerifierAdapter,
+  KONTEXT_EVIDENCE_VERIFIERS,
+} from "./kontext-evidence-verifiers.js";
 import { LocalKontextCompletionOperations } from "./local-completion-operations.js";
 import { LocalKnowledgeOperations } from "./local-knowledge-operations.js";
 import { LocalPostWriteObserver } from "./local-post-write-observer.js";
@@ -73,6 +81,10 @@ async function main(): Promise<void> {
   const integratedTasks = new FileIntegratedTaskStateStore(dataDirectory);
   const retryQueue = new FileVerificationRetryQueue(dataDirectory);
   const verifierRegistry = new VerifierRegistry();
+  const evidenceVerifiers = new EvidenceBackedQueryVerifierAdapter();
+  for (const verifier of KONTEXT_EVIDENCE_VERIFIERS) {
+    verifierRegistry.register(verifier, evidenceVerifiers);
+  }
   registerWorkspaceCommandVerifiers(verifierRegistry);
   const durableVerification = new DurableVerificationCoordinator(
     new VerificationCoordinator(verifierRegistry),
@@ -87,6 +99,7 @@ async function main(): Promise<void> {
     durableVerification,
     changeEvidence,
     integratedTasks,
+    (binding, evidence) => evidenceVerifiers.prime(binding, evidence),
   );
   const runtimeOperations = new LocalKontextRuntimeOperations(
     currentState,
@@ -98,6 +111,7 @@ async function main(): Promise<void> {
       new CodexRuntimeAdapter({
         environment: subscriptionRuntimeEnvironment(dataDirectory),
         mcpServer: workerToolServer(dataDirectory),
+        writeHooks: workerWriteHooks(dataDirectory),
       }),
       new ClaudeCodeRuntimeAdapter({
         pluginPath: currentPluginRoot(),
@@ -302,6 +316,60 @@ function workerToolServer(dataDirectory: string): RuntimeMcpServer | undefined {
     // Why: otherwise Codex refuses kontext_begin_logic as "requires approval, but
     // approval policy is never" — the very call the worker is required to make.
     toolsApprovalMode: "approve",
+  };
+}
+
+/**
+ * The same write hooks the plugin installs for Codex, addressed absolutely so an
+ * isolated runtime worktree can run them. Hooks inherit the worker's environment,
+ * which already carries KONTEXT_PLUGIN_DATA; the entry runs under this process's
+ * executable, so Electron hosts need the run-as-node switch spelled into the command.
+ */
+function workerWriteHooks(dataDirectory: string): RuntimeWriteHooks | undefined {
+  const entry = process.argv[1] ? path.resolve(process.argv[1]) : undefined;
+  if (!entry) return undefined;
+  if (process.platform === "win32") {
+    const wrapper = writeWindowsHookWrappers(dataDirectory, entry);
+    if (!wrapper) return undefined;
+    return { authorizeCommand: wrapper.authorize, observeCommand: wrapper.observe };
+  }
+  const run = (flag: string) =>
+    `ELECTRON_RUN_AS_NODE=1 ${shellQuote(process.execPath)} ${shellQuote(entry)} ${flag}`;
+  return {
+    authorizeCommand: run("--authorize-write-hook"),
+    observeCommand: run("--observe-write-hook"),
+  };
+}
+
+function shellQuote(value: string): string {
+  return `'${value.replaceAll("'", `'\''`)}'`;
+}
+
+/**
+ * Codex on Windows spawns a hook command as one token rather than through
+ * cmd.exe, so the command has to be a script path. Paths cmd.exe would mangle
+ * are not attempted; the worker then runs without write hooks and its writes
+ * quarantine, which the schedule reports rather than hides.
+ */
+function writeWindowsHookWrappers(
+  dataDirectory: string,
+  entry: string,
+): { authorize: string; observe: string } | undefined {
+  const directory = path.join(dataDirectory, "worker-hooks");
+  const safe = /^[A-Za-z0-9_:\\/.-]+$/;
+  if (!safe.test(directory) || !safe.test(process.execPath) || !safe.test(entry)) return undefined;
+  mkdirSync(directory, { recursive: true });
+  const write = (name: string, flag: string) => {
+    const file = path.join(directory, `${name}.cmd`);
+    writeFileSync(
+      file,
+      `@echo off\r\nset ELECTRON_RUN_AS_NODE=1\r\n"${process.execPath}" "${entry}" ${flag} %*\r\n`,
+    );
+    return file;
+  };
+  return {
+    authorize: write("authorize-write", "--authorize-write-hook"),
+    observe: write("observe-write", "--observe-write-hook"),
   };
 }
 

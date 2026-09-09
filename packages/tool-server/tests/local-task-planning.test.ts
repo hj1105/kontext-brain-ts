@@ -171,6 +171,7 @@ async function fixture() {
     operations,
     request,
     settled,
+    git,
   };
 }
 
@@ -398,6 +399,44 @@ it.each(["dirty", "unborn", "folder"] as const)(
     ).rejects.toThrow(/seed.*changed/i);
   },
 );
+
+it("tells the planner exactly which workspace verifiers exist", async () => {
+  const h = await fixture();
+  // Why: no declared verifiers means the contract must not invent lint/test commands.
+  expect((await h.operations.startPlan(h.request)).created).toBe(true);
+  await h.settled();
+  const bare = h.plan.mock.calls[0]?.[0];
+  expect(bare?.prompt).toContain("declares no trusted verifier definitions");
+
+  await mkdir(path.join(h.workspacePath, ".kontext"));
+  await writeFile(
+    path.join(h.workspacePath, ".kontext", "verifiers.json"),
+    JSON.stringify({
+      schemaVersion: 1,
+      verifiers: [{ kind: "lint", ref: "pnpm run check:code-quality:changed", command: "pnpm" }],
+    }),
+  );
+  await h.git(["add", "--", ".kontext/verifiers.json"]);
+  await h.git([
+    "-c",
+    "user.name=Fixture",
+    "-c",
+    "user.email=fixture@example.invalid",
+    "-c",
+    "commit.gpgsign=false",
+    "commit",
+    "--no-verify",
+    "--quiet",
+    "-m",
+    "verifiers",
+  ]);
+  const declared = { ...h.request, requestId: randomUUID() };
+  expect((await h.operations.startPlan(declared)).created).toBe(true);
+  await h.settled(declared.requestId);
+  const sent = h.plan.mock.calls[1]?.[0];
+  expect(sent?.prompt).toContain('[{"kind":"lint","ref":"pnpm run check:code-quality:changed"}]');
+  expect(sent?.prompt).toContain("do not list them");
+});
 
 it("generates a provenance-backed proposal and creates a Task only after exact explicit approval", async () => {
   const h = await fixture();

@@ -37,7 +37,10 @@ import type {
   IntegratedTaskState,
   IntegratedTaskStateStore,
 } from "./file-integrated-task-state-store.js";
-import type { SidecarChangeEvidenceProvider } from "./sidecar-change-evidence.js";
+import type {
+  SidecarChangeEvidence,
+  SidecarChangeEvidenceProvider,
+} from "./sidecar-change-evidence.js";
 import { captureWorkspaceSnapshot } from "./workspace-change-observer.js";
 
 export class LocalKontextCompletionOperations implements KontextCompletionOperations {
@@ -49,6 +52,10 @@ export class LocalKontextCompletionOperations implements KontextCompletionOperat
     private readonly verification: DurableVerificationCoordinator,
     private readonly changeEvidence: SidecarChangeEvidenceProvider,
     private readonly integratedTasks?: IntegratedTaskStateStore,
+    private readonly primeEvidence?: (
+      binding: { workspacePath: string; codeRevision: string },
+      evidence: SidecarChangeEvidence,
+    ) => void,
   ) {}
 
   async checkChange(request: CheckChangeRequest): Promise<unknown> {
@@ -66,6 +73,11 @@ export class LocalKontextCompletionOperations implements KontextCompletionOperat
     });
     assertCheckEvidence(evidence, workItem, prepared, request.observedAt);
     const invariantVerifiers = boundInvariantVerifiers(current, prepared);
+    // The built-in fast checks judge exactly this observation; hand it over before the plan runs.
+    this.primeEvidence?.(
+      { workspacePath: request.workspacePath, codeRevision: evidence.currentCodeRevision },
+      evidence,
+    );
     const plan =
       request.tier === "fast"
         ? createFastVerificationPlan({

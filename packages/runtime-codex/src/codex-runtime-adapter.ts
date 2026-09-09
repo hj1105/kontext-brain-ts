@@ -32,9 +32,24 @@ export interface RuntimeMcpServer {
   readonly toolsApprovalMode?: "auto" | "prompt" | "writes" | "approve";
 }
 
+/**
+ * Codex runs hook commands only from hooks.json files it already trusts, which an
+ * isolated runtime worktree never has. These commands are injected as config
+ * overrides for one `codex exec`; the sidecar wrote them itself, so it also asks
+ * Codex to skip persisted hook trust for that invocation.
+ */
+export interface RuntimeWriteHooks {
+  /** Runs before apply_patch; must exit non-zero to block an unauthorized write. */
+  readonly authorizeCommand: string;
+  /** Runs after apply_patch or a shell command; reconciles what actually changed. */
+  readonly observeCommand: string;
+  readonly timeoutSeconds?: number;
+}
+
 export interface CodexRuntimeAdapterOptions {
   readonly cliPath?: string;
   readonly mcpServer?: RuntimeMcpServer;
+  readonly writeHooks?: RuntimeWriteHooks;
   readonly environment?: Readonly<Record<string, string>>;
   readonly allowApiBilling?: boolean;
   readonly timeoutMilliseconds?: number;
@@ -46,6 +61,7 @@ export class CodexRuntimeAdapter implements AgentRuntimePort {
   readonly provider = "codex" as const;
   private readonly cliPath: string;
   private readonly mcpServer?: RuntimeMcpServer;
+  private readonly writeHooks?: RuntimeWriteHooks;
   private readonly environment: Readonly<Record<string, string>>;
   private readonly allowApiBilling: boolean;
   private readonly timeoutMilliseconds: number;
@@ -56,6 +72,7 @@ export class CodexRuntimeAdapter implements AgentRuntimePort {
   constructor(options: CodexRuntimeAdapterOptions = {}) {
     this.cliPath = options.cliPath ?? "codex";
     this.mcpServer = options.mcpServer;
+    this.writeHooks = options.writeHooks;
     this.environment = options.environment ?? stringEnvironment(process.env);
     this.allowApiBilling = options.allowApiBilling ?? false;
     this.timeoutMilliseconds = options.timeoutMilliseconds ?? 2 * 60 * 60_000;
@@ -139,7 +156,7 @@ export class CodexRuntimeAdapter implements AgentRuntimePort {
       [
         "exec",
         // Why: review judges a diff and returns JSON; it must not be able to write through the tools.
-        ...(review ? [] : this.mcpServerOverrides()),
+        ...(review ? [] : [...this.mcpServerOverrides(), ...this.writeHookOverrides()]),
         "--json",
         "--sandbox",
         review ? "read-only" : "workspace-write",
@@ -162,10 +179,36 @@ export class CodexRuntimeAdapter implements AgentRuntimePort {
   async resume(providerSessionId: string, input: RuntimeWorkInput): Promise<RuntimeSession> {
     this.assertBillingPath();
     return this.execute(
-      ["exec", ...this.mcpServerOverrides(), "resume", providerSessionId, "-", "--json"],
+      [
+        "exec",
+        ...this.mcpServerOverrides(),
+        ...this.writeHookOverrides(),
+        "resume",
+        providerSessionId,
+        "-",
+        "--json",
+      ],
       input,
       providerSessionId,
     );
+  }
+
+  /** `-c` overrides that install the write hooks for this one `codex exec` invocation. */
+  private writeHookOverrides(): readonly string[] {
+    const hooks = this.writeHooks;
+    if (!hooks) return [];
+    const timeout = hooks.timeoutSeconds ?? 60;
+    const entry = (matcher: string, command: string) =>
+      `[{matcher=${tomlString(matcher)},hooks=[{type="command",command=${tomlString(command)},timeout=${timeout}}]}]`;
+    return [
+      "-c",
+      `hooks.PreToolUse=${entry("^apply_patch$", hooks.authorizeCommand)}`,
+      "-c",
+      `hooks.PostToolUse=${entry("^(apply_patch|Bash)$", hooks.observeCommand)}`,
+      // Why: Codex silently skips hooks it has no persisted trust for; the sidecar
+      // authored these commands, so it vouches for them for this invocation only.
+      "--dangerously-bypass-hook-trust",
+    ];
   }
 
   /** `-c` overrides that add the task tool server to this one `codex exec` invocation. */
@@ -290,9 +333,12 @@ function workerPrompt(input: RuntimeWorkInput | RuntimePlanningInput): string {
     `- Capability: ${input.workItem.capabilityId}`,
     `- Planned behavior symbols: ${input.workItem.plannedSymbolIds.join(", ")}`,
     `- Exact allowed paths: ${input.workItem.allowedPaths.join(", ")}`,
-    "- Consult Kontext Brain before implementing each behavior-bearing symbol.",
+    "- Consult Kontext Brain before implementing each behavior-bearing symbol: call kontext_begin_logic with this Task, this Logic Work Item, its exact Planned Symbol IDs, this workspace path and the codex provider; continue only when status is current and editingAllowed is true. Keep its contextDigest and receipt.receiptId.",
+    "- Edit only with apply_patch, and only the exact allowed paths; Kontext observes each apply_patch.",
+    "- After each affected symbol call kontext_check_change with tier fast; at the Logic Work Item checkpoint call it with tier targeted. The sidecar derives the revision, patch digest, changed paths and changed symbols — never compute or guess them.",
+    "- Build the Change Bundle only from what those calls returned: patchDigest, changedPaths and changedSymbolIds from the last kontext_check_change observedPatch; resultRevision from its executions[].run.codeRevision; verificationRunIds from executions[].run.verificationRunId; contextReceiptIds from the receipt kontext_begin_logic returned; taskContextDigest from its contextDigest; baseRevision from the base code revision above.",
     "- Do not broaden paths, evidence, verifiers, or capability scope.",
-    "- Do not merge. Finish by submitting a Change Bundle to the main orchestrator.",
+    "- Do not merge. Finish by submitting that Change Bundle with kontext_submit_change_bundle and resolving every issue it reports.",
     input.checkpoint
       ? `- Continue from checkpoint ${input.checkpoint.checkpointId}; do not resume its ${input.checkpoint.provider} conversation.`
       : "",

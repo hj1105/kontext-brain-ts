@@ -105,7 +105,7 @@ describe("CodexRuntimeAdapter", () => {
 
     expect(runner.inputs[0]?.args).toContain("read-only");
     expect(runner.inputs[0]?.stdin).toContain("Work read-only");
-    expect(runner.inputs[0]?.stdin).not.toContain("Change Bundle to the main orchestrator");
+    expect(runner.inputs[0]?.stdin).not.toContain("kontext_submit_change_bundle");
   });
 });
 
@@ -219,6 +219,57 @@ describe("CodexRuntimeAdapter worker tool server", () => {
     await adapter.resume("codex-session-1", workInput());
     expect(runner.inputs[0]?.args.slice(0, 2)).toEqual(["exec", "-c"]);
     expect(runner.inputs[0]?.args).toContain("resume");
+  });
+
+  it("installs the sidecar write hooks for one exec and vouches for them itself", async () => {
+    const runner = new RecordingRunner([workerRun, workerRun]);
+    const adapter = new CodexRuntimeAdapter({
+      runner,
+      environment: {},
+      mcpServer,
+      writeHooks: {
+        authorizeCommand:
+          "ELECTRON_RUN_AS_NODE=1 '/app/Kondex' '/data/server.mjs' --authorize-write-hook",
+        observeCommand:
+          "ELECTRON_RUN_AS_NODE=1 '/app/Kondex' '/data/server.mjs' --observe-write-hook",
+        timeoutSeconds: 45,
+      },
+    });
+    await adapter.start(workInput());
+    await adapter.resume("codex-session-1", workInput());
+    for (const input of runner.inputs) {
+      const args = input.args;
+      const pre = args.indexOf(
+        "-c",
+        args.indexOf('mcp_servers.kontext_brain.default_tools_approval_mode="approve"'),
+      );
+      expect(args.slice(pre, pre + 5)).toEqual([
+        "-c",
+        `hooks.PreToolUse=[{matcher="^apply_patch$",hooks=[{type="command",command="ELECTRON_RUN_AS_NODE=1 '/app/Kondex' '/data/server.mjs' --authorize-write-hook",timeout=45}]}]`,
+        "-c",
+        `hooks.PostToolUse=[{matcher="^(apply_patch|Bash)$",hooks=[{type="command",command="ELECTRON_RUN_AS_NODE=1 '/app/Kondex' '/data/server.mjs' --observe-write-hook",timeout=45}]}]`,
+        // Why: config-injected hooks are skipped silently unless trust is bypassed for them.
+        "--dangerously-bypass-hook-trust",
+      ]);
+    }
+    // Why: the worker must assemble its Change Bundle from sidecar observations, not guesses.
+    const prompt = runner.inputs[0]?.stdin ?? "";
+    expect(prompt).toContain("kontext_check_change observedPatch");
+    expect(prompt).toContain("executions[].run.verificationRunId");
+    expect(prompt).toContain("never compute or guess them");
+  });
+
+  it("keeps write hooks away from read-only review", async () => {
+    const runner = new RecordingRunner([workerRun]);
+    const adapter = new CodexRuntimeAdapter({
+      runner,
+      environment: {},
+      mcpServer,
+      writeHooks: { authorizeCommand: "authorize", observeCommand: "observe" },
+    });
+    await adapter.start({ ...workInput(), executionRole: "independent_review" });
+    expect(runner.inputs[0]?.args).not.toContain("--dangerously-bypass-hook-trust");
+    expect(runner.inputs[0]?.args.join(" ")).not.toContain("hooks.");
   });
 
   it("adds nothing when no server is configured", async () => {

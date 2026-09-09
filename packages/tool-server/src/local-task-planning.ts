@@ -1,4 +1,6 @@
+import { listDeclaredWorkspaceVerifiers } from "@kontext-brain/local";
 import type { AgentRuntimePort } from "@kontext-brain/orchestrator";
+import type { VerifierRef } from "@kontext-brain/spec";
 import { FileTaskPlanStore } from "./file-task-plan-store.js";
 import { loadLocalKnowledgePrincipal } from "./local-knowledge-principal.js";
 import { LocalTaskCreationOperations } from "./local-task-creation.js";
@@ -239,7 +241,8 @@ export class LocalTaskPlanningOperations {
         workspace.codeRevision,
         context.state.sourceFreshnessDigest,
       );
-      const prompt = [planningPrompt(record.request.goal, context), refinement]
+      const declaredVerifiers = await listDeclaredWorkspaceVerifiers(workspace.repositoryPath);
+      const prompt = [planningPrompt(record.request.goal, context, declaredVerifiers), refinement]
         .filter(Boolean)
         .join("\n\n");
       if (Buffer.byteLength(prompt) > 512 * 1024)
@@ -349,6 +352,7 @@ function safePreflightDiagnostic(message: string): string {
 function planningPrompt(
   goal: string,
   context: Awaited<ReturnType<typeof collectPersonalTaskContext>>,
+  declaredVerifiers: readonly VerifierRef[],
 ): string {
   return [
     "You are the main Kontext coordinator. Inspect this workspace and propose a concrete implementation plan for the user goal.",
@@ -357,7 +361,10 @@ function planningPrompt(
     "Use the supplied effective normative revisions and actual Evidence; keep existing domain terminology. Identify missing requirements rather than inventing facts.",
     "Split implementation into behavior-bearing Planned Symbols with one owning Logic Work Item each, exact allowedPaths and acyclic dependsOn IDs.",
     "Return one JSON object only: {contract:{intent,acceptance:[{criterionId,statement,verifier:{kind,ref}}],nonGoals:[],targets:[],risk},logicPlans:[{workItemId,plannedSymbolIds:[],plannedSymbols:[{plannedSymbolId,intendedIdentity:{relativePath,kind,qualifiedName,language},responsibility}],allowedPaths:[],dependsOn:[],requiredVerifiers:[]}]}.",
-    "risk is low/medium/high; verifier kind is test/typecheck/build/lint/query/manual_review. Use workspace commands that actually exist, never claim they passed.",
+    "risk is low/medium/high; verifier kind is test/typecheck/build/lint/query/manual_review. Never claim a verifier passed.",
+    declaredVerifiers.length > 0
+      ? `Choose acceptance and requiredVerifiers only from the workspace's trusted verifier definitions, exactly as written: ${JSON.stringify(declaredVerifiers)}. Add manual_review only where no definition can prove a criterion. Kontext runs kontext:semantic-sync, kontext:stable-symbol-identity, kontext:domain-term-check and kontext:graph-query-check itself; do not list them.`
+      : "This workspace declares no trusted verifier definitions (.kontext/verifiers.json or standard package.json scripts), so no lint/test/typecheck/build verifier can run; use manual_review and say so in the contract.",
     "Symbol kind is function/method/constructor/getter/setter/named_arrow. Omit language if unknown. Omit taskId, capabilityId and boundSymbolId; the host owns these.",
     `User goal: ${JSON.stringify(goal)}`,
     `Code revision: ${context.state.codeRevision}`,
