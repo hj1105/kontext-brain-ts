@@ -16,5 +16,6 @@ export * from "./local-knowledge-principal.js";
 export * from "./local-knowledge-runtime.js";
 export * from "./github-repository-listing.js";
 export * from "./local-code-connector.js";
+export * from "./code-knowledge-source.js";
 export * from "./ontology-source-inventory.js";
 export * from "./ontology-cli-render.js";

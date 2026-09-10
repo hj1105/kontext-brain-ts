@@ -1,4 +1,5 @@
 import path from "node:path";
+import type { CodeResourceSyncPort } from "@kontext-brain/code";
 import {
   FileResourceContentStore,
   InMemoryOntologyProposalQueue,
@@ -24,6 +25,8 @@ export interface LocalKnowledgeRuntime {
   readonly dataDirectory: string;
   readonly repository: KnowledgeGraphRepository;
   readonly mcpKnowledgeSynchronizer: MCPKnowledgeSynchronizer;
+  /** Symbol-level code projection writes through the same use case as documents. */
+  readonly codeResourceSync: CodeResourceSyncPort;
   readonly ontologyProposalQueue: OntologyProposalQueue;
 }
 
@@ -57,6 +60,7 @@ export async function createLocalKnowledgeRuntime(
     dataDirectory,
     repository,
     mcpKnowledgeSynchronizer: new MCPKnowledgeSynchronizer(resourceSync, adapters),
+    codeResourceSync: resourceSync,
     ontologyProposalQueue: new InMemoryOntologyProposalQueue(),
   };
 }

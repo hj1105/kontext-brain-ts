@@ -329,6 +329,7 @@ export type OntologyCliResult =
       written: boolean;
       /** The knowledge graph the documents were written into; null when none was given. */
       knowledgeStore: string | null;
+      codeFilesSynced: number;
     }
   | { command: string; ok: false; error: string };
 
@@ -442,6 +443,7 @@ async function execute(
       nodeIds: nodes.map((node) => node.id),
       written: options.write,
       knowledgeStore: knowledge?.dataDirectory ?? null,
+      codeFilesSynced: result.codeFilesSynced,
     };
   }
 

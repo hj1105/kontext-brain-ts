@@ -2,6 +2,8 @@ import { readFileSync, statSync } from "node:fs";
 import { dirname, extname, join, relative, sep } from "node:path";
 import {
   type CodeLanguage,
+  CodeKnowledgeSynchronizer,
+  CodeResourceSnapshotAdapter,
   type CodeSymbolRecord,
   type LanguageCodeProvider,
   PythonCodeProvider,
@@ -14,6 +16,11 @@ import {
   type MCPResource,
   walkSourceFiles,
 } from "@kontext-brain/mcp";
+import type {
+  CodeKnowledgeSource,
+  CodeKnowledgeSyncInput,
+  CodeKnowledgeSyncReport,
+} from "./code-knowledge-source.js";
 
 /**
  * Exposes a repository's code as ontology documents, one per directory: a
@@ -90,7 +97,7 @@ export function isCodeModuleId(resourceId: string): boolean {
   return resourceId.endsWith("/");
 }
 
-export class LocalCodeConnector implements MCPConnector {
+export class LocalCodeConnector implements MCPConnector, CodeKnowledgeSource {
   private readonly providers: ReadonlyMap<CodeLanguage, LanguageCodeProvider>;
   private modules: readonly CodeModule[] | undefined;
 
@@ -249,6 +256,56 @@ export class LocalCodeConnector implements MCPConnector {
     };
   }
 
+  /**
+   * Projects every module's files into the knowledge graph at symbol level. A
+   * module's files are analyzed together so imports between them resolve; each
+   * file becomes its own Resource carrying the module's ontology nodes.
+   */
+  async syncCodeKnowledge(input: CodeKnowledgeSyncInput): Promise<CodeKnowledgeSyncReport> {
+    const adapter = new CodeResourceSnapshotAdapter();
+    let filesSynced = 0;
+    let filesFailed = 0;
+    for (const module of this.collect()) {
+      const ontologyNodeIds = input.nodeIdsFor(module.id);
+      const byLanguage = new Map<CodeLanguage, AnalyzedFile[]>();
+      for (const file of module.files) {
+        const group = byLanguage.get(file.language);
+        if (group) group.push(file);
+        else byLanguage.set(file.language, [file]);
+      }
+      for (const [language, files] of byLanguage) {
+        const provider = this.providers.get(language);
+        if (!provider) continue;
+        const synchronizer = new CodeKnowledgeSynchronizer(input.resourceSync, provider, adapter);
+        const project = files.flatMap((file) => {
+          try {
+            return [{ path: file.id, content: readFileSync(file.path, "utf8") }];
+          } catch {
+            return [];
+          }
+        });
+        for (const file of project) {
+          try {
+            await synchronizer.sync({
+              codebaseId: this.name,
+              targetPath: file.path,
+              files: project,
+              organizationId: input.organizationId,
+              acl: { organizationWide: true },
+              ontologyNodeIds,
+            });
+            filesSynced += 1;
+          } catch {
+            // Why: one file the provider cannot analyze must not stop the rest of the
+            // repository from becoming knowledge; the count says how many were left out.
+            filesFailed += 1;
+          }
+        }
+      }
+    }
+    return { filesSynced, filesFailed };
+  }
+
   async search(query: string): Promise<MCPData[]> {
     const needle = query.trim().toLowerCase();
     if (needle === "") return [];
@@ -294,7 +351,7 @@ function exportedNames(symbols: readonly CodeSymbolRecord[]): string[] {
  * resource to the connector that understands its id. Both halves share the
  * source name, so provenance still says which repository a fact came from.
  */
-export class LocalRepositoryConnector implements MCPConnector {
+export class LocalRepositoryConnector implements MCPConnector, CodeKnowledgeSource {
   readonly name: string;
 
   constructor(
@@ -319,6 +376,10 @@ export class LocalRepositoryConnector implements MCPConnector {
 
   fetchResource(resourceId: string): Promise<MCPData> {
     return this.owner(resourceId).fetchResource(resourceId);
+  }
+
+  syncCodeKnowledge(input: CodeKnowledgeSyncInput): Promise<CodeKnowledgeSyncReport> {
+    return this.code.syncCodeKnowledge(input);
   }
 
   async search(query: string): Promise<MCPData[]> {

@@ -96,6 +96,43 @@ describe("LocalCodeConnector", () => {
   });
 });
 
+describe("LocalCodeConnector.syncCodeKnowledge", () => {
+  it("projects each file into the graph at symbol level with its module's ontology nodes", async () => {
+    const root = await repository();
+    const snapshots: Array<{
+      source: { connectorId: string; externalId: string; type: string };
+      ontologyNodeIds?: readonly string[];
+      entities?: readonly { name: string }[];
+      chunks: readonly unknown[];
+    }> = [];
+    const report = await new LocalCodeConnector("handbook", root).syncCodeKnowledge({
+      organizationId: "org",
+      resourceSync: {
+        async execute(snapshot) {
+          snapshots.push(snapshot);
+          return { resourceId: snapshot.source.externalId, changed: true } as never;
+        },
+        async remove() {
+          return true;
+        },
+      },
+      nodeIdsFor: (moduleId) => (moduleId === "src/billing/" ? ["Billing"] : ["Pricing"]),
+    });
+    expect(report).toEqual({ filesSynced: 2, filesFailed: 0 });
+    const ids = snapshots
+      .map((snapshot) => `${snapshot.source.connectorId}:${snapshot.source.externalId}`)
+      .sort();
+    expect(ids).toEqual(["code:handbook:src/billing/invoice.ts", "code:handbook:src/pricing.py"]);
+    const invoice = snapshots.find((snapshot) => snapshot.source.externalId.endsWith("invoice.ts"));
+    expect(invoice?.source.type).toBe("typescript-module");
+    expect(invoice?.ontologyNodeIds).toEqual(["Billing"]);
+    expect(invoice?.entities?.map((entity) => entity.name)).toEqual(
+      expect.arrayContaining(["computeTotal", "InvoiceLedger"]),
+    );
+    expect(invoice?.chunks.length).toBeGreaterThan(1);
+  });
+});
+
 describe("createSourceConnector with code", () => {
   it("reads documents and code modules as one source, routing fetches by id", async () => {
     const root = await repository();

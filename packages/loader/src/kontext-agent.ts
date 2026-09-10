@@ -50,6 +50,8 @@ import {
   computeMCPResourceContentHash,
 } from "@kontext-brain/mcp";
 import { parse as parseYaml } from "yaml";
+import type { CodeResourceSyncPort } from "@kontext-brain/code";
+import { isCodeKnowledgeSource } from "./code-knowledge-source.js";
 import {
   OntologyDocumentSchema,
   type OntologyUpdatesConfig,
@@ -68,6 +70,8 @@ export interface AutoSetupResult {
   readonly documentsClassified: number;
   readonly documentsUnmapped: number;
   readonly ontologyYaml: string;
+  /** Source files projected into the knowledge graph at symbol level. */
+  readonly codeFilesSynced: number;
 }
 
 export interface SyncMCPResult {
@@ -111,6 +115,7 @@ export interface KontextAgentDeps {
   ontologyProposalQueue?: OntologyProposalQueue;
   knowledgeRetriever?: BidirectionalNLayerRetriever;
   mcpKnowledgeSynchronizer?: MCPKnowledgeSynchronizer;
+  codeResourceSync?: CodeResourceSyncPort;
   answerValidator?: AnswerGroundingValidator;
   mcpRefresh?: MCPRefreshConfiguration;
   ontologyUpdates?: OntologyUpdatesConfig;
@@ -146,6 +151,7 @@ export class KontextAgent {
   private ontologyContentHash?: string;
   private readonly knowledgeRetriever?: BidirectionalNLayerRetriever;
   private readonly mcpKnowledgeSynchronizer?: MCPKnowledgeSynchronizer;
+  private readonly codeResourceSync?: CodeResourceSyncPort;
   private readonly answerValidator: AnswerGroundingValidator;
   private readonly mcpRefresh: MCPRefreshConfiguration;
   private readonly ontologyUpdates: OntologyUpdatesConfig;
@@ -175,6 +181,7 @@ export class KontextAgent {
     this.ontologyContentHash = deps.ontologyContentHash;
     this.knowledgeRetriever = deps.knowledgeRetriever;
     this.mcpKnowledgeSynchronizer = deps.mcpKnowledgeSynchronizer;
+    this.codeResourceSync = deps.codeResourceSync;
     this.answerValidator = deps.answerValidator ?? new CitationAnswerValidator();
     this.mcpRefresh = deps.mcpRefresh ?? {
       enabled: true,
@@ -440,6 +447,7 @@ export class KontextAgent {
       .map((key) => this.mcpResourceCache.get(key))
       .filter((record): record is SerializableResourceRecord => record !== undefined);
     const contentChangedRecords = await this.refreshKnowledgeResources(currentRecords, removed);
+    await this.syncCodeKnowledge();
     for (const record of removed) {
       this.mcpResourceCache.delete(resourceKey(record.connectorName, record.resourceId));
     }
@@ -595,6 +603,7 @@ export class KontextAgent {
         documentsClassified: 0,
         documentsUnmapped: 0,
         ontologyYaml: "",
+        codeFilesSynced: 0,
       };
     }
 
@@ -641,6 +650,7 @@ export class KontextAgent {
       )
       .filter((record): record is SerializableResourceRecord => record !== undefined);
     const refreshedRecords = await this.refreshKnowledgeResources(allRecords, []);
+    const codeFilesSynced = await this.syncCodeKnowledge();
     await this.rebuildMetaIndex();
     const classifiedRecords = refreshedRecords.filter((record) => record.nodeIds.length > 0);
     if (this.hasVectorStep()) {
@@ -657,6 +667,7 @@ export class KontextAgent {
     return {
       nodesCreated: new Set(newNodes.map((node) => node.id)).size,
       nodesReused: initialNodeCount,
+      codeFilesSynced,
       documentsClassified: classifiedRecords.length,
       documentsUnmapped: classification.unmapped.length,
       ontologyYaml: yaml,
@@ -867,6 +878,24 @@ export class KontextAgent {
       if (record.contentSignature !== contentSignature) changed.push(refreshed);
     }
     return changed;
+  }
+
+  /** Code sources project their symbols after documents are classified, inheriting module nodes. */
+  private async syncCodeKnowledge(): Promise<number> {
+    const resourceSync = this.codeResourceSync;
+    if (!resourceSync) return 0;
+    let synced = 0;
+    for (const connector of this.mcpConnectors) {
+      if (!isCodeKnowledgeSource(connector)) continue;
+      const report = await connector.syncCodeKnowledge({
+        organizationId: this.organizationId,
+        resourceSync,
+        nodeIdsFor: (moduleId) =>
+          this.mcpResourceCache.get(resourceKey(connector.name, moduleId))?.nodeIds ?? [],
+      });
+      synced += report.filesSynced;
+    }
+    return synced;
   }
 
   private hasVectorStep(): boolean {

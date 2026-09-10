@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import type { CodeResourceSyncPort } from "@kontext-brain/code";
 import {
   type BidirectionalNLayerRetriever,
   ContentFetcherRegistry,
@@ -117,6 +118,8 @@ export interface KontextLoaderOptions {
     /** Absent for a local build, which writes knowledge but answers questions elsewhere. */
     readonly knowledgeRetriever?: BidirectionalNLayerRetriever;
     readonly mcpKnowledgeSynchronizer: MCPKnowledgeSynchronizer;
+    /** Lets code sources project their symbols into the same graph. */
+    readonly codeResourceSync?: CodeResourceSyncPort;
     readonly ontologyProposalQueue: OntologyProposalQueue;
     readonly ontologyActivation?: KnowledgeOntologyActivationPort;
   };
@@ -352,6 +355,7 @@ export class KontextLoader {
       organizationId: this.knowledgeRuntime?.organizationId ?? stateId,
       knowledgeRetriever: this.knowledgeRuntime?.knowledgeRetriever,
       mcpKnowledgeSynchronizer: this.knowledgeRuntime?.mcpKnowledgeSynchronizer,
+      codeResourceSync: this.knowledgeRuntime?.codeResourceSync,
       ontologyProposalQueue: this.knowledgeRuntime?.ontologyProposalQueue,
       mcpRefresh: config.sync,
       ontologyUpdates: config.ontologyUpdates,
