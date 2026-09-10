@@ -8,6 +8,7 @@ export * from "./local-workspace-observation-service.js";
 export * from "./task-workflow-tools.js";
 export * from "./completion-workflow-tools.js";
 export * from "./local-completion-operations.js";
+export * from "./local-knowledge-search-operations.js";
 export * from "./kontext-evidence-verifiers.js";
 export * from "./local-verification-recovery.js";
 export * from "./task-tool-server.js";

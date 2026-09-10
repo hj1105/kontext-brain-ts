@@ -1,4 +1,10 @@
-import { resolve } from "node:path";
+import path, { resolve } from "node:path";
+import {
+  FileResourceContentStore,
+  type KnowledgeSearchResult,
+  LocalKnowledgeSearch,
+  SqliteKnowledgeGraphRepository,
+} from "@kontext-brain/core";
 import { stringify as stringifyYaml } from "yaml";
 import type { AgentConfigKind } from "./agent-mcp-config-import.js";
 import {
@@ -16,6 +22,7 @@ import {
   writeConfigDocument,
 } from "./kontext-config-file.js";
 import { KontextLoader } from "./kontext-loader.js";
+import { loadLocalKnowledgePrincipal } from "./local-knowledge-principal.js";
 import {
   type LocalKnowledgeRuntime,
   createLocalKnowledgeRuntime,
@@ -40,8 +47,13 @@ export interface OntologyCliOptions {
   readonly targetNodes: number | undefined;
   /** github-repos: organization or user, as a name or a github.com URL. */
   readonly owner: string | undefined;
-  /** setup: sidecar data directory whose knowledge graph the build writes into. */
+  /** setup/query: sidecar data directory holding the knowledge graph. */
   readonly dataDirectory: string | undefined;
+  /** query: the question to search the knowledge graph with. */
+  readonly question: string | undefined;
+  readonly limit: number | undefined;
+  /** query: restrict hits to resources on these ontology nodes. */
+  readonly nodes: readonly string[];
   readonly write: boolean;
   readonly json: boolean;
   /** Set when --from named something that is not a supported agent. */
@@ -76,6 +88,9 @@ export function parseOntologyCliOptions(argv: readonly string[]): OntologyCliOpt
   let targetNodes: number | undefined;
   let owner: string | undefined;
   let dataDirectory: string | undefined;
+  let question: string | undefined;
+  let limit: number | undefined;
+  const nodes: string[] = [];
   let code = false;
   let write = false;
   let json = false;
@@ -159,6 +174,22 @@ export function parseOntologyCliOptions(argv: readonly string[]): OntologyCliOpt
       case "--data-dir":
         dataDirectory = take();
         break;
+      case "--question":
+        question = take();
+        break;
+      case "--node": {
+        const raw = take();
+        if (raw) nodes.push(raw);
+        break;
+      }
+      case "--limit": {
+        const raw = take();
+        if (raw) {
+          if (!/^\d+$/.test(raw)) flagError ??= `--limit must be a whole number, got '${raw}'.`;
+          else limit = Number(raw);
+        }
+        break;
+      }
       case "--code":
         code = true;
         break;
@@ -239,6 +270,9 @@ export function parseOntologyCliOptions(argv: readonly string[]): OntologyCliOpt
     fromError: fromError ?? flagError,
     owner,
     dataDirectory: resolveKontextDataDirectory(dataDirectory),
+    question,
+    limit,
+    nodes,
     source: { name, transport, command, args, url, ref, path, include, type, env, code },
   };
 }
@@ -253,6 +287,7 @@ Commands:
   check        Connect every configured source and report what it exposes
   setup        Build the ontology from the connected sources and save it
   github-repos List an organization's repositories to pick sources from
+  query        Search the knowledge graph a build wrote (needs --data-dir)
 
 Options:
   --config <path>        Config file (default: ${DEFAULT_CONFIG})
@@ -281,7 +316,10 @@ Options:
   --owner <org|url>      github-repos: the organization or user to list (uses gh)
   --data-dir <dir>       setup: write documents into this sidecar's knowledge graph
                          (default: $KONTEXT_PLUGIN_DATA; without it only the node
-                         schema is saved)
+                         schema is saved). query: the graph to search.
+  --question <text>      query: what to look for
+  --limit <n>            query: hits to return (default 10)
+  --node <id>            query: only resources on this ontology node; repeat for each
 
 Run import-mcp or add, then check, then setup.
 
@@ -313,6 +351,7 @@ export type OntologyCliResult =
     }
   | { command: "add"; ok: true; name: string; written: boolean }
   | ({ command: "github-repos"; ok: true } & GitHubRepositoryListing)
+  | ({ command: "query"; ok: true; dataDirectory: string } & KnowledgeSearchResult)
   | {
       command: "check";
       ok: boolean;
@@ -340,6 +379,24 @@ async function execute(
 ): Promise<OntologyCliResult> {
   if (options.fromError !== undefined) {
     return { command, ok: false, error: options.fromError };
+  }
+  if (command === "query") {
+    if (!options.dataDirectory) {
+      return { command, ok: false, error: "query needs --data-dir (or KONTEXT_PLUGIN_DATA)." };
+    }
+    if (!options.question) return { command, ok: false, error: "query needs --question." };
+    const principal = await loadLocalKnowledgePrincipal(options.dataDirectory);
+    const search = new LocalKnowledgeSearch(
+      await SqliteKnowledgeGraphRepository.open(options.dataDirectory),
+      new FileResourceContentStore(path.join(options.dataDirectory, "knowledge-content")),
+    );
+    const result = await search.search({
+      question: options.question,
+      principal,
+      ...(options.limit === undefined ? {} : { limit: options.limit }),
+      ...(options.nodes.length > 0 ? { ontologyNodeIds: options.nodes } : {}),
+    });
+    return { command, ok: true, dataDirectory: options.dataDirectory, ...result };
   }
   if (command === "github-repos") {
     // Why: listing needs no config; a workspace without kontext.yaml can still pick sources.

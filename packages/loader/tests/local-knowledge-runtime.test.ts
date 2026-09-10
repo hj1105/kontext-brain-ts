@@ -136,6 +136,24 @@ describe("kontext-ontology setup with a data directory", () => {
     expect(codeChunks.length).toBeGreaterThanOrEqual(2);
     expect(mentions.length).toBeGreaterThanOrEqual(1);
     expect(mentions.every((mention) => mention.entityId.includes("code-symbol:"))).toBe(true);
+
+    // The same graph answers a question with Evidence-cited chunks, filtered by node.
+    const asked = vi.spyOn(process.stdout, "write").mockReturnValue(true);
+    const queryCode = await runOntologyCli([
+      "query",
+      "--data-dir",
+      data,
+      "--question",
+      "refund within days",
+      "--node",
+      "Billing",
+      "--json",
+    ]);
+    const answer = JSON.parse(asked.mock.calls.map((call) => String(call[0])).join(""));
+    asked.mockRestore();
+    expect(queryCode).toBe(0);
+    expect(answer.hits[0]?.source.externalId).toBe("docs/refunds.md");
+    expect(answer.hits[0]?.evidenceId).toContain("|source|");
     const first = billing[0];
     if (!first) throw new Error("expected a Billing resource");
     const chunks = await graph.listChunks(principal.organizationId, first.resourceId);

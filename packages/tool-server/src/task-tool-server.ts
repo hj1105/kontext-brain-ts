@@ -14,6 +14,10 @@ import {
   registerHostKnowledgeTools,
 } from "./host-knowledge-tools.js";
 import {
+  LocalKnowledgeSearchOperations,
+  searchKnowledgeToolShape,
+} from "./local-knowledge-search-operations.js";
+import {
   cancelScheduleToolShape,
   getScheduleToolShape,
   inspectRuntimesToolShape,
@@ -153,6 +157,7 @@ export class KontextTaskToolServer {
     completionOperations?: KontextCompletionOperations,
     runtimeOperations?: KontextRuntimeOperations,
     hostKnowledge?: HostKnowledgeOperations,
+    knowledgeSearch?: LocalKnowledgeSearchOperations,
   ) {
     registerTaskWorkflowTools(
       this.server,
@@ -162,6 +167,15 @@ export class KontextTaskToolServer {
       runtimeOperations,
     );
     if (hostKnowledge) registerHostKnowledgeTools(this.server, hostKnowledge);
+    if (knowledgeSearch) {
+      this.server.tool(
+        "kontext_search_knowledge",
+        "Search the local knowledge graph — connected documents and code modules with their ontology nodes — and get Evidence-cited chunks. Ask here before reading repositories file by file.",
+        searchKnowledgeToolShape,
+        { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+        async (input) => workflowToolResult(await knowledgeSearch.searchKnowledge(input)),
+      );
+    }
   }
 
   async start(): Promise<void> {

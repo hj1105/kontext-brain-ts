@@ -1,8 +1,8 @@
 import { readFileSync, statSync } from "node:fs";
 import { dirname, extname, join, relative, sep } from "node:path";
 import {
-  type CodeLanguage,
   CodeKnowledgeSynchronizer,
+  type CodeLanguage,
   CodeResourceSnapshotAdapter,
   type CodeSymbolRecord,
   type LanguageCodeProvider,

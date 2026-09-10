@@ -30,6 +30,7 @@ import {
 } from "./kontext-evidence-verifiers.js";
 import { LocalKontextCompletionOperations } from "./local-completion-operations.js";
 import { LocalKnowledgeOperations } from "./local-knowledge-operations.js";
+import { LocalKnowledgeSearchOperations } from "./local-knowledge-search-operations.js";
 import { LocalPostWriteObserver } from "./local-post-write-observer.js";
 import { LocalRegisteredIntegrationOperations } from "./local-registered-integration.js";
 import { LocalRegisteredScheduleOperations } from "./local-registered-schedules.js";
@@ -179,6 +180,7 @@ async function main(): Promise<void> {
           ]),
         }
       : undefined,
+    new LocalKnowledgeSearchOperations(dataDirectory),
   ).start();
 }
 

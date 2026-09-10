@@ -112,6 +112,21 @@ export function renderResult(result: OntologyCliResult, options: OntologyCliOpti
         ? `Added source '${added.name}'.\n`
         : `Source '${added.name}' is valid. Re-run with --write to save it.\n`;
     }
+    case "query": {
+      const query = result as Extract<OntologyCliResult, { command: "query" }>;
+      const lines = [
+        `${query.hits.length} hit(s) over ${query.chunksScanned} chunks in ${query.resourcesScanned} resources:`,
+      ];
+      for (const hit of query.hits) {
+        lines.push(
+          `  ${hit.score.toFixed(2)}  ${hit.source.connectorId}:${hit.source.externalId}  [${hit.ontologyNodeIds.join(", ")}]`,
+          `      ${hit.text.replace(/\s+/g, " ").slice(0, 160)}`,
+          `      evidence ${hit.evidenceId}`,
+        );
+      }
+      lines.push("");
+      return lines.join("\n");
+    }
     case "github-repos":
       return renderRepositories(result as Extract<OntologyCliResult, { command: "github-repos" }>);
     case "check":

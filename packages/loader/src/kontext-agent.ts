@@ -1,3 +1,4 @@
+import type { CodeResourceSyncPort } from "@kontext-brain/code";
 import {
   type AnswerGroundingValidator,
   type BidirectionalNLayerRetriever,
@@ -50,7 +51,6 @@ import {
   computeMCPResourceContentHash,
 } from "@kontext-brain/mcp";
 import { parse as parseYaml } from "yaml";
-import type { CodeResourceSyncPort } from "@kontext-brain/code";
 import { isCodeKnowledgeSource } from "./code-knowledge-source.js";
 import {
   OntologyDocumentSchema,

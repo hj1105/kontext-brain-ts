@@ -93,6 +93,10 @@ export class SqliteKnowledgeUnit implements KnowledgeGraphUnitOfWork {
   async saveResource(value: ResourceRecord): Promise<void> {
     this.save("resource", value.resourceId, value);
   }
+  /** Every resource of the organization; the local search scans them all. */
+  async listResources(): Promise<readonly ResourceRecord[]> {
+    return this.list("resource");
+  }
   async listChunks(id: string): Promise<readonly ChunkRecord[]> {
     return this.list("chunk", "resource_id", id).sort((a, b) => a.position - b.position);
   }

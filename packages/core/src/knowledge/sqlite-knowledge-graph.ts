@@ -144,6 +144,9 @@ export class SqliteKnowledgeGraphRepository implements KnowledgeGraphRepository 
   getResource(org: string, id: string) {
     return this.read(org, (unit) => unit.getResource(id));
   }
+  listResources(org: string) {
+    return this.read(org, (unit) => unit.listResources());
+  }
   listResourcesByOntologyNode(org: string, id: string) {
     return this.read(org, (unit) => unit.listResourcesByOntologyNode(id));
   }
