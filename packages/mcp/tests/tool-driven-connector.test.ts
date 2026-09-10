@@ -92,6 +92,12 @@ describe("ToolDrivenMCPConnector", () => {
     const fetched = await connector.fetchResource("7");
     expect(fetched.content).toBe("Decision for issue 7");
     expect(server.calls[1]).toEqual({ name: "get_issue", args: { number: "7" } });
+    // Why: a check on a mapped server still counts its tools through the wrapper.
+    expect(hasToolAccess(connector)).toBe(true);
+    expect((await connector.listTools()).map((tool) => tool.name)).toEqual([
+      "list_issues",
+      "get_issue",
+    ]);
   });
 
   it("names the tool and path when a listing does not yield an array", async () => {

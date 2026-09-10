@@ -11,7 +11,8 @@
  * or generated bundle no longer matches the current source.
  */
 import { createHash } from "node:crypto";
-import { readFile, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
@@ -41,11 +42,33 @@ const require = __kontextCreateRequire(import.meta.url);
 const __filename = __kontextFileURLToPath(import.meta.url);
 const __dirname = __kontextDirname(__filename);`;
 
+/**
+ * Workspace packages point their `exports` at dist/, so a bundle built after a
+ * source edit but before `pnpm build` silently carried the previous package.
+ * Resolving every @kontext-brain/* import to its src/index.ts makes the bundle
+ * follow the source it sits beside, with no separate build step to forget.
+ */
+async function workspaceSourceAliases() {
+  const packagesDirectory = path.join(repositoryRoot, "packages");
+  const aliases = {};
+  for (const directory of await readdir(packagesDirectory)) {
+    const manifestPath = path.join(packagesDirectory, directory, "package.json");
+    const entry = path.join(packagesDirectory, directory, "src/index.ts");
+    if (!existsSync(manifestPath) || !existsSync(entry)) continue;
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+    if (typeof manifest.name === "string") aliases[manifest.name] = entry;
+  }
+  return aliases;
+}
+
+const alias = await workspaceSourceAliases();
+
 async function bundle({ entryPoint, outputPath }) {
   const result = await build({
     entryPoints: [entryPoint],
     outfile: outputPath,
     bundle: true,
+    alias,
     platform: "node",
     format: "esm",
     target: "node20",

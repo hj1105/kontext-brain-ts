@@ -81,7 +81,7 @@ function asText(value: unknown): string {
   return JSON.stringify(value);
 }
 
-export class ToolDrivenMCPConnector implements MCPConnector {
+export class ToolDrivenMCPConnector implements MCPConnector, MCPToolAccess {
   readonly name: string;
 
   constructor(
@@ -144,6 +144,15 @@ export class ToolDrivenMCPConnector implements MCPConnector {
 
   async search(_query: string): Promise<MCPData[]> {
     return [];
+  }
+
+  // Why: a mapped server is still a tool server; inspection and checks must see its tools.
+  listTools(): Promise<readonly MCPToolSummary[]> {
+    return this.base.listTools();
+  }
+
+  callTool(name: string, args: Readonly<Record<string, unknown>>): Promise<ToolCallOutcome> {
+    return this.base.callTool(name, args);
   }
 
   async close(): Promise<void> {

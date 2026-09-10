@@ -573,6 +573,58 @@ describe("git sources", () => {
     expect(results[0]?.error).toMatch(/git clone failed/);
   });
 
+  it("adds an HTTP server with a header and maps its tools through the CLI", async () => {
+    const config = makeConfig("mcp: []");
+    const added = await run([
+      "add",
+      "--config",
+      config,
+      "--name",
+      "pages",
+      "--transport",
+      "http",
+      "--url",
+      "https://example.invalid/mcp",
+      "--header",
+      "Authorization=Bearer ${QA_TOKEN}",
+      "--write",
+      "--json",
+    ]);
+    expect(added.code).toBe(0);
+    const mapped = await run([
+      "map",
+      "--config",
+      config,
+      "--name",
+      "pages",
+      "--list-tool",
+      "search_pages",
+      "--items",
+      "data.pages",
+      "--id",
+      "id",
+      "--read-tool",
+      "read_page",
+      "--read-arg",
+      "page_id",
+      "--content",
+      "text",
+      "--write",
+      "--json",
+    ]);
+    expect(mapped.code).toBe(0);
+    const entry = readMCPEntries(readConfigDocument(config))[0];
+    expect(entry).toMatchObject({
+      transport: "http",
+      url: "https://example.invalid/mcp",
+      headers: { Authorization: "Bearer ${QA_TOKEN}" },
+      documents: {
+        list: { tool: "search_pages", items: "data.pages", id: "id" },
+        read: { tool: "read_page", idArgument: "page_id", content: "text" },
+      },
+    });
+  });
+
   it("adds a git source and a stdio environment through the CLI", async () => {
     const config = makeConfig("mcp: []");
     const added = await run([

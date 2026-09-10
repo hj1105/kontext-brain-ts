@@ -313,7 +313,15 @@ export function parseOntologyCliOptions(argv: readonly string[]): OntologyCliOpt
         break;
       case "--transport": {
         const raw = take();
-        if (raw === "stdio" || raw === "sse" || raw === "local" || raw === "git") transport = raw;
+        if (
+          raw === "stdio" ||
+          raw === "sse" ||
+          raw === "http" ||
+          raw === "local" ||
+          raw === "git"
+        ) {
+          transport = raw;
+        }
         break;
       }
       case "--ref":

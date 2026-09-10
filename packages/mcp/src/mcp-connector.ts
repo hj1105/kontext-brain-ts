@@ -73,6 +73,16 @@ function resourcesThrough(result: Awaited<ReturnType<Client["listResources"]>>):
   }));
 }
 
+/** A tools-only server answers "method not found" on resources/list; that is no documents, not a failure. */
+async function listResourcesTolerant(client: Client): Promise<MCPResource[]> {
+  try {
+    return resourcesThrough(await client.listResources());
+  } catch (error) {
+    if (String(error).includes("-32601")) return [];
+    throw error;
+  }
+}
+
 /** Header values may name environment variables as `${NAME}`; a token then never sits in a file. */
 export function resolveHeaderValues(
   headers: Readonly<Record<string, string>> | undefined,
@@ -136,14 +146,7 @@ export class StdioMCPConnector implements MCPConnector, MCPToolAccess {
   }
 
   async listResources(): Promise<MCPResource[]> {
-    const client = await this.ensureConnected();
-    const result = await client.listResources();
-    return result.resources.map((r) => ({
-      id: r.uri,
-      name: r.name,
-      description: r.description ?? "",
-      mimeType: r.mimeType ?? null,
-    }));
+    return listResourcesTolerant(await this.ensureConnected());
   }
 
   async fetchResource(resourceId: string): Promise<MCPData> {
@@ -221,14 +224,7 @@ export class SseMCPConnector implements MCPConnector, MCPToolAccess {
   }
 
   async listResources(): Promise<MCPResource[]> {
-    const client = await this.ensureConnected();
-    const result = await client.listResources();
-    return result.resources.map((r) => ({
-      id: r.uri,
-      name: r.name,
-      description: r.description ?? "",
-      mimeType: r.mimeType ?? null,
-    }));
+    return listResourcesTolerant(await this.ensureConnected());
   }
 
   async fetchResource(resourceId: string): Promise<MCPData> {
@@ -294,14 +290,7 @@ export class HttpMCPConnector implements MCPConnector, MCPToolAccess {
   }
 
   async listResources(): Promise<MCPResource[]> {
-    const client = await this.ensureConnected();
-    try {
-      return resourcesThrough(await client.listResources());
-    } catch (error) {
-      // Why: a tools-only server answers "method not found"; that is no documents, not a failure.
-      if (String(error).includes("-32601")) return [];
-      throw error;
-    }
+    return listResourcesTolerant(await this.ensureConnected());
   }
 
   async fetchResource(resourceId: string): Promise<MCPData> {
