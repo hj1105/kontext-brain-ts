@@ -31,11 +31,33 @@ export const emptyClassification: ClassificationResult = {
  * Classifies documents into existing ontology nodes via LLM.
  * Documents that do not fit remain unmapped and produce reviewable proposals.
  */
+export interface DocumentClassifierOptions {
+  /** Documents per model call. One call over a whole organization's code never returns in time. */
+  readonly maxDocumentsPerBatch?: number;
+  /** Calls in flight at once; the model answers each batch independently. */
+  readonly concurrency?: number;
+  /** Description text per document in the prompt; a barrel's export list says little past this. */
+  readonly maxDescriptionChars?: number;
+}
+
+const DEFAULT_BATCH = 80;
+const DEFAULT_CONCURRENCY = 3;
+const DEFAULT_DESCRIPTION_CHARS = 200;
+
 export class DocumentClassifier {
+  private readonly batchSize: number;
+  private readonly concurrency: number;
+  private readonly descriptionChars: number;
+
   constructor(
     private readonly adapter: LLMAdapter,
     private readonly templates: PromptTemplates = DefaultPromptTemplates,
-  ) {}
+    options: DocumentClassifierOptions = {},
+  ) {
+    this.batchSize = Math.max(1, options.maxDocumentsPerBatch ?? DEFAULT_BATCH);
+    this.concurrency = Math.max(1, options.concurrency ?? DEFAULT_CONCURRENCY);
+    this.descriptionChars = Math.max(0, options.maxDescriptionChars ?? DEFAULT_DESCRIPTION_CHARS);
+  }
 
   async classify(
     documents: readonly MCPResourceInfo[],
@@ -46,35 +68,47 @@ export class DocumentClassifier {
     const nodeList = Array.from(existingNodes.entries())
       .map(([id, n]) => `${id}: ${n.description}`)
       .join("\n");
+    const validNodeIds = new Set(existingNodes.keys());
 
-    const docList = documents
-      .map((d, i) => {
-        const desc = d.description.trim() ? ` — ${d.description}` : "";
-        return `[${i}] ${d.title}${desc}`;
-      })
-      .join("\n");
-
-    const response = await this.adapter.complete(
-      this.templates.documentClassification,
-      `Ontology nodes:\n${nodeList}\n\nDocuments:\n${docList}`,
-      "Classify each document into the best matching node.",
-    );
-
-    const { indexMappings, unmappedIndices } = parseClassification(
-      response,
-      documents.length,
-      new Set(existingNodes.keys()),
-    );
+    // Why batches: the prompt grows with every document and a single call over an
+    // organization's code exceeded the model's time budget; each batch is answered
+    // on its own and the results merge by document identity.
+    const batches: MCPResourceInfo[][] = [];
+    for (let start = 0; start < documents.length; start += this.batchSize) {
+      batches.push(documents.slice(start, start + this.batchSize));
+    }
+    const batchResults = await mapWithConcurrency(batches, this.concurrency, async (batch) => {
+      const response = await this.adapter.complete(
+        this.templates.documentClassification,
+        `Ontology nodes:\n${nodeList}\n\nDocuments:\n${this.describe(batch)}`,
+        "Classify each document into the best matching node.",
+      );
+      return parseClassification(response, batch.length, validNodeIds);
+    });
 
     const docMappings = new Map<string, MCPResourceInfo[]>();
-    for (const [nodeId, indices] of indexMappings) {
-      docMappings.set(nodeId, indices.map((i) => documents[i]).filter(isDefined));
-    }
+    const unmappedDocs: MCPResourceInfo[] = [];
+    batchResults.forEach(({ indexMappings, unmappedIndices }, batchIndex) => {
+      const batch = batches[batchIndex] ?? [];
+      for (const [nodeId, indices] of indexMappings) {
+        const list = docMappings.get(nodeId) ?? [];
+        list.push(...indices.map((i) => batch[i]).filter(isDefined));
+        docMappings.set(nodeId, list);
+      }
+      unmappedDocs.push(...unmappedIndices.map((i) => batch[i]).filter(isDefined));
+    });
 
-    const unmappedDocs = unmappedIndices.map((i) => documents[i]).filter(isDefined);
     let proposals: OntologyProposalDraft[] = [];
     if (unmappedDocs.length > 0) {
-      proposals = await this.proposeNewNodes(unmappedDocs);
+      const proposalBatches: MCPResourceInfo[][] = [];
+      for (let start = 0; start < unmappedDocs.length; start += this.batchSize) {
+        proposalBatches.push(unmappedDocs.slice(start, start + this.batchSize));
+      }
+      proposals = (
+        await mapWithConcurrency(proposalBatches, this.concurrency, (batch) =>
+          this.proposeNewNodes(batch),
+        )
+      ).flat();
     }
 
     const mappedDocs = new Set<MCPResourceInfo>();
@@ -82,6 +116,16 @@ export class DocumentClassifier {
     const unmapped = unmappedDocs.filter((d) => !mappedDocs.has(d));
 
     return { mappings: docMappings, newNodes: [], unmapped, proposals };
+  }
+
+  private describe(documents: readonly MCPResourceInfo[]): string {
+    return documents
+      .map((d, i) => {
+        const description = d.description.trim().slice(0, this.descriptionChars);
+        const desc = description ? ` — ${description}` : "";
+        return `[${i}] ${d.title}${desc}`;
+      })
+      .join("\n");
   }
 
   private async proposeNewNodes(
@@ -129,6 +173,26 @@ export class DocumentClassifier {
 
 function isDefined<T>(value: T | undefined): value is T {
   return value !== undefined;
+}
+
+/** Runs `work` over `items`, at most `limit` at a time, keeping result order. */
+async function mapWithConcurrency<T, R>(
+  items: readonly T[],
+  limit: number,
+  work: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let next = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) {
+      const index = next;
+      next += 1;
+      const item = items[index] as T;
+      results[index] = await work(item);
+    }
+  });
+  await Promise.all(workers);
+  return results;
 }
 
 function parseClassification(
