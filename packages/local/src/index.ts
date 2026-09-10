@@ -12,5 +12,6 @@ export * from "./local-file-mutation-lock.js";
 export * from "./plugin-data-directory.js";
 export * from "./task-context-state-assembler.js";
 export * from "./workspace-command-verifier.js";
+export * from "./workspace-verifier-detection.js";
 export * from "./git-runtime-worktree-manager.js";
 export * from "./git-change-bundle-integrator.js";

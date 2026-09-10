@@ -397,7 +397,7 @@ function planningPrompt(
     "risk is low/medium/high; verifier kind is test/typecheck/build/lint/query/manual_review. Never claim a verifier passed.",
     declaredVerifiers.length > 0
       ? `Choose acceptance and requiredVerifiers only from the workspace's trusted verifier definitions, exactly as written: ${JSON.stringify(declaredVerifiers)}. Kontext runs kontext:semantic-sync, kontext:stable-symbol-identity, kontext:domain-term-check and kontext:graph-query-check itself; do not list them.`
-      : "This workspace declares no trusted verifier definitions (.kontext/verifiers.json or standard package.json scripts), so no lint/test/typecheck/build verifier can run; say so in the contract.",
+      : "This workspace declares no verifiers in its manifests (package.json scripts, pyproject, go.mod, Cargo.toml, Makefile) or in .kontext/verifiers.json, so no lint/test/typecheck/build verifier can run; say so in the contract.",
     `The only manual_review verifier is exactly {"kind":"manual_review","ref":"${INDEPENDENT_REVIEW_REF}"}, supplied by the coordinator's independent review of the whole change; use it only in acceptance, never in a Logic Work Item's requiredVerifiers (leave requiredVerifiers empty rather than inventing one), and never write your own review wording as a verifier ref.`,
     "Symbol kind is function/method/constructor/getter/setter/named_arrow. Omit language if unknown. Omit taskId, capabilityId and boundSymbolId; the host owns these.",
     `User goal: ${JSON.stringify(goal)}`,

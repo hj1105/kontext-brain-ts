@@ -8,6 +8,10 @@ import {
 } from "@kontext-brain/orchestrator";
 import type { VerifierKind, VerifierRef } from "@kontext-brain/spec";
 import { z } from "zod";
+import {
+  defaultLinkedDirectories,
+  detectWorkspaceVerifiers,
+} from "./workspace-verifier-detection.js";
 
 const verifierKinds = ["test", "typecheck", "build", "lint", "query", "manual_review"] as const;
 const definitionSchema = z
@@ -38,12 +42,6 @@ const configSchema = z
     linkedDirectories: z.array(linkedDirectorySchema).max(32).optional(),
   })
   .strict();
-const packageSchema = z
-  .object({
-    packageManager: z.string().optional(),
-    scripts: z.record(z.string()).optional(),
-  })
-  .passthrough();
 
 type VerifierDefinition = z.infer<typeof definitionSchema>;
 
@@ -53,12 +51,9 @@ export interface WorkspaceCommandVerifierOptions {
   readonly outputLimitBytes?: number;
 }
 
-const standardScripts = new Map<string, string>([
-  ["typecheck\u0000workspace:typecheck", "typecheck"],
-  ["test\u0000workspace:test", "test"],
-  ["build\u0000workspace:build", "build"],
-  ["lint\u0000workspace:lint", "lint"],
-]);
+const STANDARD_REFS = new Set(
+  ["typecheck", "test", "build", "lint"].map((kind) => `${kind}\u0000workspace:${kind}`),
+);
 
 export class WorkspaceCommandVerifierAdapter implements VerifierAdapter {
   private readonly configPath: string;
@@ -138,27 +133,20 @@ async function standardDefinition(
   workspacePath: string,
   verifier: VerifierRef,
 ): Promise<VerifierDefinition | undefined> {
-  const script = standardScripts.get(verifierKey(verifier));
-  if (!script) return undefined;
-  let packageJson: z.infer<typeof packageSchema>;
-  try {
-    packageJson = packageSchema.parse(
-      JSON.parse(await readFile(path.join(workspacePath, "package.json"), "utf8")),
-    );
-  } catch (error) {
+  if (!STANDARD_REFS.has(verifierKey(verifier))) return undefined;
+  const detected = (await detectWorkspaceVerifiers(workspacePath)).find(
+    (candidate) => candidate.kind === verifier.kind && candidate.ref === verifier.ref,
+  );
+  if (!detected) {
     throw new VerifierInfrastructureError(
-      `Cannot resolve workspace script ${script}: ${errorMessage(error)}`,
+      `No manifest in the workspace declares ${verifier.kind} (${verifier.ref}); add a script or .kontext/verifiers.json`,
     );
   }
-  if (!packageJson.scripts?.[script]) {
-    throw new VerifierInfrastructureError(`Workspace package.json has no "${script}" script`);
-  }
-  const command = packageManagerCommand(packageJson.packageManager);
   return {
     kind: verifier.kind,
     ref: verifier.ref,
-    command,
-    args: ["run", script],
+    command: detected.command,
+    args: [...detected.args],
   };
 }
 
@@ -174,11 +162,6 @@ async function requireWorkspace(workspacePath: string): Promise<string> {
       `Verifier workspace is unavailable: ${errorMessage(error)}`,
     );
   }
-}
-
-function packageManagerCommand(packageManager: string | undefined): string {
-  const name = packageManager?.split("@", 1)[0];
-  return name === "pnpm" || name === "yarn" || name === "bun" || name === "npm" ? name : "npm";
 }
 
 async function executeDefinition(
@@ -298,17 +281,8 @@ export async function listDeclaredWorkspaceVerifiers(
       if (!(isNodeError(error) && error.code === "ENOENT")) return declared;
     }
   }
-  try {
-    const packageJson = packageSchema.parse(
-      JSON.parse(await readFile(path.join(workspacePath, "package.json"), "utf8")),
-    );
-    for (const [key, script] of standardScripts) {
-      if (!packageJson.scripts?.[script]) continue;
-      const [kind, ref] = key.split("\u0000") as [VerifierKind, string];
-      add({ kind, ref });
-    }
-  } catch {
-    // Not a package workspace; only declared verifiers apply.
+  for (const detected of await detectWorkspaceVerifiers(workspacePath)) {
+    add({ kind: detected.kind, ref: detected.ref });
   }
   return declared;
 }
@@ -323,11 +297,19 @@ export async function readWorkspaceLinkedDirectories(
   configPath = path.join(".kontext", "verifiers.json"),
 ): Promise<readonly string[]> {
   const absoluteConfigPath = path.resolve(workspacePath, configPath);
-  if (!isWithinOrEqual(workspacePath, absoluteConfigPath)) return [];
-  try {
-    const config = configSchema.parse(JSON.parse(await readFile(absoluteConfigPath, "utf8")));
-    return config.linkedDirectories ?? [];
-  } catch {
-    return [];
+  const declared: string[] = [];
+  if (isWithinOrEqual(workspacePath, absoluteConfigPath)) {
+    try {
+      const config = configSchema.parse(JSON.parse(await readFile(absoluteConfigPath, "utf8")));
+      declared.push(...(config.linkedDirectories ?? []));
+    } catch {
+      // A missing or broken file declares nothing; the verifier run reports the broken file.
+    }
   }
+  // Why: installed dependencies are what every verifier needs and what a git
+  // worktree never has; a project should not have to say so.
+  for (const directory of await defaultLinkedDirectories(workspacePath)) {
+    if (!declared.includes(directory)) declared.push(directory);
+  }
+  return declared;
 }

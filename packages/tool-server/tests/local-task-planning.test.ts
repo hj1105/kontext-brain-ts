@@ -452,7 +452,7 @@ it("tells the planner exactly which workspace verifiers exist", async () => {
   expect((await h.operations.startPlan(h.request)).created).toBe(true);
   await h.settled();
   const bare = h.plan.mock.calls[0]?.[0];
-  expect(bare?.prompt).toContain("declares no trusted verifier definitions");
+  expect(bare?.prompt).toContain("declares no verifiers in its manifests");
 
   await mkdir(path.join(h.workspacePath, ".kontext"));
   await writeFile(
