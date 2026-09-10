@@ -114,7 +114,8 @@ export interface KontextLoaderOptions {
   mappingRegistry?: NodeMappingRegistry;
   knowledgeRuntime?: {
     readonly organizationId: string;
-    readonly knowledgeRetriever: BidirectionalNLayerRetriever;
+    /** Absent for a local build, which writes knowledge but answers questions elsewhere. */
+    readonly knowledgeRetriever?: BidirectionalNLayerRetriever;
     readonly mcpKnowledgeSynchronizer: MCPKnowledgeSynchronizer;
     readonly ontologyProposalQueue: OntologyProposalQueue;
     readonly ontologyActivation?: KnowledgeOntologyActivationPort;

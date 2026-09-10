@@ -16,6 +16,11 @@ import {
   writeConfigDocument,
 } from "./kontext-config-file.js";
 import { KontextLoader } from "./kontext-loader.js";
+import {
+  type LocalKnowledgeRuntime,
+  createLocalKnowledgeRuntime,
+  resolveKontextDataDirectory,
+} from "./local-knowledge-runtime.js";
 import { renderResult } from "./ontology-cli-render.js";
 import {
   OntologySourceError,
@@ -35,6 +40,8 @@ export interface OntologyCliOptions {
   readonly targetNodes: number | undefined;
   /** github-repos: organization or user, as a name or a github.com URL. */
   readonly owner: string | undefined;
+  /** setup: sidecar data directory whose knowledge graph the build writes into. */
+  readonly dataDirectory: string | undefined;
   readonly write: boolean;
   readonly json: boolean;
   /** Set when --from named something that is not a supported agent. */
@@ -68,6 +75,7 @@ export function parseOntologyCliOptions(argv: readonly string[]): OntologyCliOpt
   let markdown: string | undefined;
   let targetNodes: number | undefined;
   let owner: string | undefined;
+  let dataDirectory: string | undefined;
   let code = false;
   let write = false;
   let json = false;
@@ -148,6 +156,9 @@ export function parseOntologyCliOptions(argv: readonly string[]): OntologyCliOpt
       case "--owner":
         owner = take();
         break;
+      case "--data-dir":
+        dataDirectory = take();
+        break;
       case "--code":
         code = true;
         break;
@@ -227,6 +238,7 @@ export function parseOntologyCliOptions(argv: readonly string[]): OntologyCliOpt
     json,
     fromError: fromError ?? flagError,
     owner,
+    dataDirectory: resolveKontextDataDirectory(dataDirectory),
     source: { name, transport, command, args, url, ref, path, include, type, env, code },
   };
 }
@@ -267,6 +279,9 @@ Options:
 
   --target-nodes <n>     Ontology node-count override (setup)
   --owner <org|url>      github-repos: the organization or user to list (uses gh)
+  --data-dir <dir>       setup: write documents into this sidecar's knowledge graph
+                         (default: $KONTEXT_PLUGIN_DATA; without it only the node
+                         schema is saved)
 
 Run import-mcp or add, then check, then setup.
 
@@ -278,7 +293,11 @@ subscription already covers. ollama runs locally.
 
 export interface OntologyCliDeps {
   /** Overrides how the agent is built, so setup can run without a paid model. */
-  readonly loadAgent?: (configPath: string, yaml: string) => Promise<KontextAgent>;
+  readonly loadAgent?: (
+    configPath: string,
+    yaml: string,
+    knowledge: LocalKnowledgeRuntime | undefined,
+  ) => Promise<KontextAgent>;
   /** Overrides the GitHub lookup, so tests need neither gh nor the network. */
   readonly listRepositories?: (owner: string) => Promise<GitHubRepositoryListing>;
 }
@@ -308,6 +327,8 @@ export type OntologyCliResult =
       documentsUnmapped: number;
       nodeIds: readonly string[];
       written: boolean;
+      /** The knowledge graph the documents were written into; null when none was given. */
+      knowledgeStore: string | null;
     }
   | { command: string; ok: false; error: string };
 
@@ -390,9 +411,20 @@ async function execute(
     // Why: a file that only lists sources has no model yet; setup runs it with the
     // default and, when writing, records that choice so the file says what ran.
     const effective = withDefaultLlm(document);
+    // Why: with a data directory the build also writes every document's content
+    // into the sidecar's knowledge graph; without one only the schema survives.
+    const knowledge = options.dataDirectory
+      ? await createLocalKnowledgeRuntime(options.dataDirectory, readMCPEntries(effective))
+      : undefined;
     const loadAgent =
-      deps.loadAgent ?? ((_path: string, yaml: string) => KontextLoader.fromYaml(yaml));
-    const agent = await loadAgent(options.config, stringifyYaml(effective.data, { lineWidth: 0 }));
+      deps.loadAgent ??
+      ((_path: string, yaml: string, runtime: LocalKnowledgeRuntime | undefined) =>
+        KontextLoader.fromYaml(yaml, runtime ? { knowledgeRuntime: runtime } : {}));
+    const agent = await loadAgent(
+      options.config,
+      stringifyYaml(effective.data, { lineWidth: 0 }),
+      knowledge,
+    );
     const result = await agent.autoSetup(options.targetNodes);
     const graph = agent.ontologyGraph;
     const nodes = toOntologyYamlNodes([...graph.nodes.values()], [...graph.edges]);
@@ -409,6 +441,7 @@ async function execute(
       documentsUnmapped: result.documentsUnmapped,
       nodeIds: nodes.map((node) => node.id),
       written: options.write,
+      knowledgeStore: knowledge?.dataDirectory ?? null,
     };
   }
 
