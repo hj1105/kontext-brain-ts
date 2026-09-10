@@ -98,6 +98,10 @@ export class GenericMCPLayerAdapter implements MCPLayerAdapter {
 }
 
 export const MCPLayerAdapterFactory = {
+  /** Any MCP server whose resources carry a name; nothing provider-specific is assumed. */
+  custom(connector: MCPConnector): GenericMCPLayerAdapter {
+    return new GenericMCPLayerAdapter(DataSource.CUSTOM, connector.name, connector);
+  },
   notion(connector: MCPConnector): GenericMCPLayerAdapter {
     return new GenericMCPLayerAdapter(DataSource.NOTION, connector.name, connector, {
       titleExtractor: (r) => r.name,

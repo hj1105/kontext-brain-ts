@@ -112,6 +112,30 @@ export function renderResult(result: OntologyCliResult, options: OntologyCliOpti
         ? `Added source '${added.name}'.\n`
         : `Source '${added.name}' is valid. Re-run with --write to save it.\n`;
     }
+    case "map": {
+      const mapped = result as Extract<OntologyCliResult, { command: "map" }>;
+      return mapped.written
+        ? `Saved the document mapping for '${mapped.name}'.\n`
+        : `Mapping for '${mapped.name}' is valid. Re-run with --write to save it.\n`;
+    }
+    case "inspect": {
+      const inspected = result as Extract<OntologyCliResult, { command: "inspect" }>;
+      const lines = [
+        `${inspected.name} (${inspected.transport}): ${inspected.resourceCount} resource(s), ${inspected.tools.length} tool(s)`,
+      ];
+      for (const tool of inspected.tools) {
+        lines.push(`  ${tool.name}  ${tool.description.replace(/\s+/g, " ").slice(0, 120)}`);
+      }
+      if (inspected.resourceCount === 0 && inspected.tools.length > 0) {
+        lines.push(
+          "",
+          "This server exposes tools, not resources. Map documents with:",
+          "  kontext-ontology add … --list-tool <tool> --items <path> --id <path> --title <path> --read-tool <tool> --read-arg <name> --content <path>",
+        );
+      }
+      lines.push("");
+      return lines.join("\n");
+    }
     case "nodes": {
       const listing = result as Extract<OntologyCliResult, { command: "nodes" }>;
       const lines = [`${listing.nodes.length} ontology node(s):`];

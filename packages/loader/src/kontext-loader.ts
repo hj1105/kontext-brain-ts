@@ -106,7 +106,8 @@ function createLayerAdapter(dto: MCPConfigDto, connector: MCPConnector): MCPLaye
     case "slack":
       return MCPLayerAdapterFactory.slack(connector);
     default:
-      return MCPLayerAdapterFactory.notion(connector);
+      // Why: an unknown or absent layer is a plain MCP source, not a Notion one.
+      return MCPLayerAdapterFactory.custom(connector);
   }
 }
 

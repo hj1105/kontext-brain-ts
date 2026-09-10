@@ -1,8 +1,11 @@
 import {
+  HttpMCPConnector,
   LocalMarkdownConnector,
   type MCPConnector,
+  type MCPToolAccess,
   SseMCPConnector,
   StdioMCPConnector,
+  ToolDrivenMCPConnector,
 } from "@kontext-brain/mcp";
 import { materializeGitSource } from "./git-source-checkout.js";
 import type { MCPConfigDto } from "./kontext-config.js";
@@ -28,10 +31,24 @@ export function createSourceConnector(dto: MCPConfigDto): MCPConnector {
   }
   if (transport === "stdio") {
     if (!dto.command) throw new Error(`MCP '${dto.name}': stdio transport requires 'command'`);
-    return new StdioMCPConnector(dto.name, dto.command, dto.args ?? [], dto.env);
+    return withDocumentMapping(
+      dto,
+      new StdioMCPConnector(dto.name, dto.command, dto.args ?? [], dto.env),
+    );
   }
-  if (!dto.url) throw new Error(`MCP '${dto.name}': sse transport requires 'url'`);
-  return new SseMCPConnector(dto.name, dto.url);
+  if (!dto.url) throw new Error(`MCP '${dto.name}': ${transport} transport requires 'url'`);
+  if (transport === "http") {
+    return withDocumentMapping(dto, new HttpMCPConnector(dto.name, dto.url, dto.headers));
+  }
+  return withDocumentMapping(dto, new SseMCPConnector(dto.name, dto.url, dto.headers));
+}
+
+/** A server that lists documents through tools is read through its declared mapping. */
+function withDocumentMapping(
+  dto: MCPConfigDto,
+  connector: MCPConnector & MCPToolAccess,
+): MCPConnector {
+  return dto.documents ? new ToolDrivenMCPConnector(connector, dto.documents) : connector;
 }
 
 function repositoryConnector(dto: MCPConfigDto, directory: string): MCPConnector {

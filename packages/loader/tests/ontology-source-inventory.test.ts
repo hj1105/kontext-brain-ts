@@ -5,7 +5,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { parse } from "yaml";
 import { readConfigDocument } from "../src/kontext-config-file.js";
 import { runOntologyCli } from "../src/ontology-cli.js";
-import { addSource, checkSources, summarizeSources } from "../src/ontology-source-inventory.js";
+import {
+  addSource,
+  checkSources,
+  setDocumentMapping,
+  summarizeSources,
+} from "../src/ontology-source-inventory.js";
 
 const roots: string[] = [];
 
@@ -83,7 +88,7 @@ describe("summarizeSources tolerance", () => {
     const config = makeConfig(
       [
         "mcp:",
-        "  - {name: odd, transport: http, url: 'https://x.invalid'}",
+        "  - {name: odd, transport: carrier-pigeon, url: 'https://x.invalid'}",
         "  - {name: scalar-args, transport: stdio, command: server, args: 3}",
         "  - {name: docs, transport: local, path: /repo}",
       ].join("\n"),
@@ -145,6 +150,68 @@ describe("addSource", () => {
       code: true,
     });
     expect(JSON.stringify(server.data)).not.toContain("code");
+  });
+
+  it("adds an HTTP server with headers and a tool document mapping", () => {
+    const document = addSource(empty, {
+      name: "notion",
+      transport: "http",
+      url: "https://mcp.notion.com/mcp",
+      headers: { Authorization: "Bearer ${NOTION_TOKEN}" },
+      documents: {
+        list: {
+          tool: "search",
+          arguments: { query: "" },
+          items: "results",
+          id: "id",
+          title: "title",
+        },
+        read: { tool: "fetch", idArgument: "id", content: "text" },
+      },
+    });
+    const [entry] = readMCPEntries(document);
+    expect(entry).toMatchObject({
+      name: "notion",
+      transport: "http",
+      url: "https://mcp.notion.com/mcp",
+      headers: { Authorization: "Bearer ${NOTION_TOKEN}" },
+      documents: { list: { tool: "search" }, read: { tool: "fetch", idArgument: "id" } },
+    });
+    expect(summarizeSources(document)[0]).toMatchObject({
+      transport: "http",
+      target: "https://mcp.notion.com/mcp",
+    });
+    expect(() =>
+      addSource(empty, {
+        name: "docs",
+        transport: "local",
+        path: "/docs",
+        documents: { list: { tool: "x", id: "id" }, read: { tool: "y", idArgument: "id" } },
+      }),
+    ).toThrow(/applies to an MCP server/);
+  });
+
+  it("sets a document mapping on an existing server and refuses one on files", () => {
+    const withServer = addSource(empty, {
+      name: "gh",
+      transport: "stdio",
+      command: "npx",
+      args: ["-y", "@modelcontextprotocol/server-github"],
+    });
+    const mapped = setDocumentMapping(withServer, "gh", {
+      list: { tool: "search_issues", items: "items", id: "number", title: "title" },
+      read: { tool: "get_issue", idArgument: "issue_number", content: "body" },
+    });
+    expect(readMCPEntries(mapped)[0]?.documents?.list.tool).toBe("search_issues");
+    expect(readMCPEntries(setDocumentMapping(mapped, "gh", null))[0]?.documents).toBeUndefined();
+    const files = addSource(empty, { name: "docs", transport: "local", path: "/docs" });
+    expect(() =>
+      setDocumentMapping(files, "docs", {
+        list: { tool: "x", id: "id" },
+        read: { tool: "y", idArgument: "id" },
+      }),
+    ).toThrow(/applies to an MCP server/);
+    expect(() => setDocumentMapping(files, "nope", null)).toThrow(/No source named/);
   });
 
   it("refuses a source that is missing its address", () => {
@@ -471,7 +538,9 @@ describe("git sources", () => {
     );
 
     const first = await checkSources(readConfigDocument(config));
-    expect(first).toEqual([{ name: "handbook", ok: true, resourceCount: 1, error: null }]);
+    expect(first).toEqual([
+      { name: "handbook", ok: true, resourceCount: 1, toolCount: null, error: null },
+    ]);
 
     writeFileSync(join(remote.seed, "docs", "terms.md"), "# Terms\n\nEstablished term.\n");
     gitIn(remote.seed, ["add", "."]);
@@ -481,7 +550,9 @@ describe("git sources", () => {
     // Why: a stale checkout would build the ontology from documents the team has
     // since changed, so a second check must see the new file without any reset.
     const second = await checkSources(readConfigDocument(config));
-    expect(second).toEqual([{ name: "handbook", ok: true, resourceCount: 2, error: null }]);
+    expect(second).toEqual([
+      { name: "handbook", ok: true, resourceCount: 2, toolCount: null, error: null },
+    ]);
   });
 
   it("reports an unreachable repository as that source's failure, not a crash", async () => {

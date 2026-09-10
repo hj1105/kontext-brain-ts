@@ -4,6 +4,8 @@ import {
   StdioClientTransport,
   getDefaultEnvironment,
 } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import type { MCPToolAccess, MCPToolSummary, ToolCallOutcome } from "./tool-driven-connector.js";
 
 export interface MCPResource {
   readonly id: string;
@@ -29,11 +31,68 @@ export interface MCPConnector {
   search(query: string): Promise<MCPData[]>;
 }
 
+/** Tools and resources through the SDK client, shared by every transport. */
+async function listToolsThrough(client: Client): Promise<readonly MCPToolSummary[]> {
+  const result = await client.listTools();
+  return result.tools.map((tool) => ({
+    name: tool.name,
+    description: tool.description ?? "",
+    inputSchema: tool.inputSchema,
+  }));
+}
+
+async function callToolThrough(
+  client: Client,
+  name: string,
+  args: Readonly<Record<string, unknown>>,
+): Promise<ToolCallOutcome> {
+  const result = await client.callTool({ name, arguments: { ...args } });
+  const blocks = Array.isArray(result.content) ? result.content : [];
+  const text = blocks
+    .map((block) => ("text" in block && typeof block.text === "string" ? block.text : ""))
+    .filter((part) => part !== "")
+    .join("\n");
+  let data: unknown = result.structuredContent;
+  if (data === undefined) {
+    // Why: most servers return JSON as a text block; parsed, it can be walked by path.
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = text;
+    }
+  }
+  return { text, data, isError: result.isError === true };
+}
+
+function resourcesThrough(result: Awaited<ReturnType<Client["listResources"]>>): MCPResource[] {
+  return result.resources.map((r) => ({
+    id: r.uri,
+    name: r.name,
+    description: r.description ?? "",
+    mimeType: r.mimeType ?? null,
+  }));
+}
+
+/** Header values may name environment variables as `${NAME}`; a token then never sits in a file. */
+export function resolveHeaderValues(
+  headers: Readonly<Record<string, string>> | undefined,
+  env: NodeJS.ProcessEnv = process.env,
+): Record<string, string> {
+  const resolved: Record<string, string> = {};
+  for (const [key, value] of Object.entries(headers ?? {})) {
+    resolved[key] = value.replace(
+      /\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g,
+      (_, name: string) => env[name] ?? "",
+    );
+  }
+  return resolved;
+}
+
 /**
  * Connects to an MCP server over stdio (spawning a subprocess).
  * Standard transport for local MCP servers.
  */
-export class StdioMCPConnector implements MCPConnector {
+export class StdioMCPConnector implements MCPConnector, MCPToolAccess {
   private client: Client | null = null;
   private readyPromise: Promise<void> | null = null;
   // Why: closing through the client only tears down a transport that finished
@@ -101,6 +160,14 @@ export class StdioMCPConnector implements MCPConnector {
     };
   }
 
+  async listTools(): Promise<readonly MCPToolSummary[]> {
+    return listToolsThrough(await this.ensureConnected());
+  }
+
+  async callTool(name: string, args: Readonly<Record<string, unknown>>): Promise<ToolCallOutcome> {
+    return callToolThrough(await this.ensureConnected(), name, args);
+  }
+
   async search(_query: string): Promise<MCPData[]> {
     // Standard MCP doesn't define a search method for resources; return empty.
     return [];
@@ -124,17 +191,26 @@ export class StdioMCPConnector implements MCPConnector {
  * Connects to an MCP server over SSE (HTTP).
  * Use for remote MCP servers.
  */
-export class SseMCPConnector implements MCPConnector {
+export class SseMCPConnector implements MCPConnector, MCPToolAccess {
   private client: Client | null = null;
 
   constructor(
     public readonly name: string,
     private readonly url: string,
+    private readonly headers: Readonly<Record<string, string>> = {},
   ) {}
 
   private async ensureConnected(): Promise<Client> {
     if (this.client) return this.client;
-    const transport = new SSEClientTransport(new URL(this.url));
+    const headers = resolveHeaderValues(this.headers);
+    const transport = new SSEClientTransport(new URL(this.url), {
+      requestInit: { headers },
+      // Why: the event stream is opened with its own fetch, which does not see requestInit.
+      eventSourceInit: {
+        fetch: (input, init) =>
+          fetch(input, { ...init, headers: { ...headers, ...(init?.headers as object) } }),
+      },
+    });
     const client = new Client(
       { name: `kontext-client-${this.name}`, version: "0.1.0" },
       { capabilities: {} },
@@ -167,6 +243,82 @@ export class SseMCPConnector implements MCPConnector {
       metadata: {},
       fetchedAt: new Date(),
     };
+  }
+
+  async listTools(): Promise<readonly MCPToolSummary[]> {
+    return listToolsThrough(await this.ensureConnected());
+  }
+
+  async callTool(name: string, args: Readonly<Record<string, unknown>>): Promise<ToolCallOutcome> {
+    return callToolThrough(await this.ensureConnected(), name, args);
+  }
+
+  async search(_query: string): Promise<MCPData[]> {
+    return [];
+  }
+
+  async close(): Promise<void> {
+    if (this.client) {
+      await this.client.close();
+      this.client = null;
+    }
+  }
+}
+
+/**
+ * Connects over Streamable HTTP, the current remote MCP transport. Hosted
+ * servers (Notion, Linear, GitHub) speak this; a bearer token or API key goes
+ * in `headers`, with `${ENV_NAME}` values read from the environment.
+ */
+export class HttpMCPConnector implements MCPConnector, MCPToolAccess {
+  private client: Client | null = null;
+
+  constructor(
+    public readonly name: string,
+    private readonly url: string,
+    private readonly headers: Readonly<Record<string, string>> = {},
+  ) {}
+
+  private async ensureConnected(): Promise<Client> {
+    if (this.client) return this.client;
+    const transport = new StreamableHTTPClientTransport(new URL(this.url), {
+      requestInit: { headers: resolveHeaderValues(this.headers) },
+    });
+    const client = new Client(
+      { name: `kontext-client-${this.name}`, version: "0.1.0" },
+      { capabilities: {} },
+    );
+    await client.connect(transport);
+    this.client = client;
+    return client;
+  }
+
+  async listResources(): Promise<MCPResource[]> {
+    const client = await this.ensureConnected();
+    try {
+      return resourcesThrough(await client.listResources());
+    } catch (error) {
+      // Why: a tools-only server answers "method not found"; that is no documents, not a failure.
+      if (String(error).includes("-32601")) return [];
+      throw error;
+    }
+  }
+
+  async fetchResource(resourceId: string): Promise<MCPData> {
+    const client = await this.ensureConnected();
+    const result = await client.readResource({ uri: resourceId });
+    const text = result.contents
+      .map((c) => ("text" in c && typeof c.text === "string" ? c.text : ""))
+      .join("\n");
+    return { resourceId, content: text, metadata: {}, fetchedAt: new Date() };
+  }
+
+  async listTools(): Promise<readonly MCPToolSummary[]> {
+    return listToolsThrough(await this.ensureConnected());
+  }
+
+  async callTool(name: string, args: Readonly<Record<string, unknown>>): Promise<ToolCallOutcome> {
+    return callToolThrough(await this.ensureConnected(), name, args);
   }
 
   async search(_query: string): Promise<MCPData[]> {

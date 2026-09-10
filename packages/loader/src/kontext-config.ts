@@ -23,9 +23,31 @@ export const MCPConfigSchema = z.object({
   args: z.array(z.string()).optional(),
   /** "notion" | "jira" | "github_pr" | "slack" | undefined */
   type: z.string().optional(),
-  /** "stdio" | "sse" | "local" | "git" — defaults to "sse" if url is given, "stdio" if command is
-   * given. "git" clones `url` and reads its Markdown like a local source. */
-  transport: z.enum(["stdio", "sse", "local", "git"]).optional(),
+  /** "stdio" | "sse" | "http" | "local" | "git" — defaults to "sse" if url is given, "stdio" if
+   * command is given. "git" clones `url` and reads its Markdown like a local source. */
+  transport: z.enum(["stdio", "sse", "http", "local", "git"]).optional(),
+  /** sse/http: request headers; `${NAME}` values are read from the environment. */
+  headers: z.record(z.string()).optional(),
+  /** stdio/sse/http servers that expose tools rather than resources: which tool lists
+   * documents and which reads one, with paths into their results. */
+  documents: z
+    .object({
+      list: z.object({
+        tool: z.string().min(1),
+        arguments: z.record(z.unknown()).optional(),
+        items: z.string().optional(),
+        id: z.string().min(1),
+        title: z.string().optional(),
+        description: z.string().optional(),
+      }),
+      read: z.object({
+        tool: z.string().min(1),
+        idArgument: z.string().min(1),
+        arguments: z.record(z.unknown()).optional(),
+        content: z.string().optional(),
+      }),
+    })
+    .optional(),
   /** For the "local" transport: repository directory whose Markdown is the source. */
   path: z.string().optional(),
   /** For the "local" transport: subdirectories to walk, relative to `path`. */

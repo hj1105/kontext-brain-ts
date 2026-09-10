@@ -1,4 +1,4 @@
-import type { MCPConnector } from "@kontext-brain/mcp";
+import { type MCPConnector, hasToolAccess } from "@kontext-brain/mcp";
 import {
   type AgentConfigKind,
   discoverAgentMCPServers,
@@ -22,7 +22,7 @@ import { createSourceConnector } from "./ontology-source-connectors.js";
 export const ONTOLOGY_SOURCE_TYPES = ["notion", "jira", "github_pr", "slack"] as const;
 export type OntologySourceType = (typeof ONTOLOGY_SOURCE_TYPES)[number];
 
-export type OntologySourceTransport = "stdio" | "sse" | "local" | "git";
+export type OntologySourceTransport = "stdio" | "sse" | "http" | "local" | "git";
 
 export interface OntologySourceSummary {
   readonly name: string;
@@ -34,7 +34,7 @@ export interface OntologySourceSummary {
   readonly code: boolean;
 }
 
-const KNOWN_TRANSPORTS = new Set<string>(["stdio", "sse", "local", "git"]);
+const KNOWN_TRANSPORTS = new Set<string>(["stdio", "sse", "http", "local", "git"]);
 
 /**
  * A config file can name a transport this build does not know — an `http` entry
@@ -150,6 +150,33 @@ export interface AddSourceRequest {
   readonly env?: Readonly<Record<string, string>>;
   /** local/git: read source files as well as Markdown. */
   readonly code?: boolean;
+  /** sse/http: request headers; `${NAME}` values come from the environment at run time. */
+  readonly headers?: Readonly<Record<string, string>>;
+  /** stdio/sse/http servers that expose tools: how to list and read documents through them. */
+  readonly documents?: MCPConfigDto["documents"];
+}
+
+/**
+ * Sets or replaces how an existing MCP source lists and reads documents. The
+ * mapping is what turns a tools-only server into a document source, and it is
+ * chosen after looking at the server, so it arrives separately from `add`.
+ */
+export function setDocumentMapping(
+  document: KontextConfigDocument,
+  name: string,
+  mapping: NonNullable<MCPConfigDto["documents"]> | null,
+): KontextConfigDocument {
+  const entries = readMCPEntries(document);
+  const index = entries.findIndex((entry) => entry.name === name);
+  if (index < 0) throw new OntologySourceError(`No source named '${name}'.`);
+  const entry = entries[index] as MCPConfigDto;
+  const transport = transportOf(entry);
+  if (transport === "local" || transport === "git") {
+    throw new OntologySourceError("A document mapping applies to an MCP server, not to files.");
+  }
+  const { documents: _previous, ...rest } = entry;
+  const next = (mapping ? { ...rest, documents: mapping } : rest) as MCPConfigDto;
+  return withMCPEntries(document, [...entries.slice(0, index), next, ...entries.slice(index + 1)]);
 }
 
 export class OntologySourceError extends Error {
@@ -179,9 +206,16 @@ export function addSource(
     }
     entry.command = request.command.trim();
     if (request.args && request.args.length > 0) entry.args = [...request.args];
-  } else if (request.transport === "sse") {
-    if (!request.url?.trim()) throw new OntologySourceError("An SSE source needs its URL.");
+  } else if (request.transport === "sse" || request.transport === "http") {
+    if (!request.url?.trim()) {
+      throw new OntologySourceError(
+        `An ${request.transport === "http" ? "HTTP" : "SSE"} source needs its URL.`,
+      );
+    }
     entry.url = request.url.trim();
+    if (request.headers && Object.keys(request.headers).length > 0) {
+      entry.headers = { ...request.headers };
+    }
   } else if (request.transport === "git") {
     if (!request.url?.trim()) {
       throw new OntologySourceError("A git source needs the repository URL to clone.");
@@ -197,6 +231,12 @@ export function addSource(
     entry.path = request.path.trim();
     if (request.include && request.include.length > 0) entry.include = [...request.include];
     if (request.code) entry.code = true;
+  }
+  if (request.documents) {
+    if (request.transport === "local" || request.transport === "git") {
+      throw new OntologySourceError("A document mapping applies to an MCP server, not to files.");
+    }
+    entry.documents = request.documents;
   }
   const type = request.type?.trim();
   if (type) {
@@ -217,7 +257,50 @@ export interface SourceCheckResult {
   readonly name: string;
   readonly ok: boolean;
   readonly resourceCount: number | null;
+  /** Tools the server exposes; null for file sources. A tools-only server shows 0 resources here. */
+  readonly toolCount: number | null;
   readonly error: string | null;
+}
+
+export interface SourceInspection {
+  readonly name: string;
+  readonly transport: OntologySourceTransport;
+  readonly resourceCount: number;
+  readonly tools: readonly { name: string; description: string; inputSchema: unknown }[];
+}
+
+/**
+ * What one server exposes, for a person choosing the tool that lists documents
+ * and the tool that reads one. Reads only; nothing is written or ingested.
+ */
+export async function inspectSource(
+  document: KontextConfigDocument,
+  name: string,
+  timeoutMs: number = SOURCE_CHECK_TIMEOUT_MS,
+): Promise<SourceInspection> {
+  const entry = readMCPEntries(document).find((candidate) => candidate.name === name);
+  if (!entry) throw new OntologySourceError(`No source named '${name}'.`);
+  const transport = transportOf(entry);
+  // Why the bare server: a declared document mapping would hide the tools it is built from.
+  const connector = createSourceConnector({ ...entry, documents: undefined });
+  try {
+    const resources = await withDeadline(connector.listResources(), timeoutMs).catch(() => []);
+    const tools = hasToolAccess(connector)
+      ? await withDeadline(connector.listTools(), timeoutMs)
+      : [];
+    return {
+      name,
+      transport,
+      resourceCount: resources.length,
+      tools: tools.map((tool) => ({
+        name: tool.name,
+        description: tool.description,
+        inputSchema: tool.inputSchema,
+      })),
+    };
+  } finally {
+    await release(connector);
+  }
 }
 
 /**
@@ -274,13 +357,25 @@ export async function checkSources(
     try {
       connector = createSourceConnector(entry);
       const resources = await withDeadline((connector as MCPConnector).listResources(), timeoutMs);
-      results.push({ name: entry.name, ok: true, resourceCount: resources.length, error: null });
+      const toolCount = hasToolAccess(connector)
+        ? await withDeadline(connector.listTools(), timeoutMs)
+            .then((tools) => tools.length)
+            .catch(() => 0)
+        : null;
+      results.push({
+        name: entry.name,
+        ok: true,
+        resourceCount: resources.length,
+        toolCount,
+        error: null,
+      });
     } catch (error) {
       // Why: one unreachable source must not hide the state of the others.
       results.push({
         name: entry.name,
         ok: false,
         resourceCount: null,
+        toolCount: null,
         error: error instanceof Error ? error.message : String(error),
       });
     } finally {

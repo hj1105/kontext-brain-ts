@@ -22,6 +22,7 @@ import {
   withOntology,
   writeConfigDocument,
 } from "./kontext-config-file.js";
+import type { MCPConfigDto } from "./kontext-config.js";
 import { KontextLoader } from "./kontext-loader.js";
 import { loadLocalKnowledgePrincipal } from "./local-knowledge-principal.js";
 import {
@@ -33,9 +34,12 @@ import { OntologyBuildProgressWriter } from "./ontology-build-progress-file.js";
 import { renderResult } from "./ontology-cli-render.js";
 import {
   OntologySourceError,
+  type SourceInspection,
   addSource,
   checkSources,
   importAgentSources,
+  inspectSource,
+  setDocumentMapping,
   summarizeSources,
 } from "./ontology-source-inventory.js";
 
@@ -62,7 +66,7 @@ export interface OntologyCliOptions {
   readonly fromError: string | undefined;
   readonly source: {
     readonly name: string | undefined;
-    readonly transport: "stdio" | "sse" | "local" | "git" | undefined;
+    readonly transport: "stdio" | "sse" | "http" | "local" | "git" | undefined;
     readonly command: string | undefined;
     readonly args: readonly string[] | undefined;
     readonly url: string | undefined;
@@ -72,6 +76,50 @@ export interface OntologyCliOptions {
     readonly type: string | undefined;
     readonly env: Record<string, string> | undefined;
     readonly code: boolean;
+    readonly headers: Record<string, string> | undefined;
+    readonly documents: DocumentMapping | undefined;
+  };
+}
+
+type DocumentMapping = NonNullable<MCPConfigDto["documents"]>;
+
+/** Assembles a tool document mapping from flags; partial flags are a mistake worth naming. */
+function documentMapping(
+  flags: {
+    listTool?: string;
+    listArgs?: Record<string, unknown>;
+    items?: string;
+    id?: string;
+    title?: string;
+    description?: string;
+    readTool?: string;
+    readArg?: string;
+    readArgs?: Record<string, unknown>;
+    content?: string;
+  },
+  fail: (message: string) => void,
+): DocumentMapping | undefined {
+  const any = Object.values(flags).some((value) => value !== undefined);
+  if (!any) return undefined;
+  if (!flags.listTool || !flags.id || !flags.readTool || !flags.readArg) {
+    fail("A document mapping needs --list-tool, --id, --read-tool and --read-arg.");
+    return undefined;
+  }
+  return {
+    list: {
+      tool: flags.listTool,
+      ...(flags.listArgs ? { arguments: flags.listArgs } : {}),
+      ...(flags.items ? { items: flags.items } : {}),
+      id: flags.id,
+      ...(flags.title ? { title: flags.title } : {}),
+      ...(flags.description ? { description: flags.description } : {}),
+    },
+    read: {
+      tool: flags.readTool,
+      idArgument: flags.readArg,
+      ...(flags.readArgs ? { arguments: flags.readArgs } : {}),
+      ...(flags.content ? { content: flags.content } : {}),
+    },
   };
 }
 
@@ -94,11 +142,24 @@ export function parseOntologyCliOptions(argv: readonly string[]): OntologyCliOpt
   let limit: number | undefined;
   const nodes: string[] = [];
   let code = false;
+  let headers: Record<string, string> | undefined;
+  const mapping: {
+    listTool?: string;
+    listArgs?: Record<string, unknown>;
+    items?: string;
+    id?: string;
+    title?: string;
+    description?: string;
+    readTool?: string;
+    readArg?: string;
+    readArgs?: Record<string, unknown>;
+    content?: string;
+  } = {};
   let write = false;
   let json = false;
   let fromError: string | undefined;
   let name: string | undefined;
-  let transport: "stdio" | "sse" | "local" | "git" | undefined;
+  let transport: "stdio" | "sse" | "http" | "local" | "git" | undefined;
   let command: string | undefined;
   let args: string[] | undefined;
   let url: string | undefined;
@@ -195,6 +256,61 @@ export function parseOntologyCliOptions(argv: readonly string[]): OntologyCliOpt
       case "--code":
         code = true;
         break;
+      case "--header": {
+        const raw = take();
+        if (raw) {
+          const separator = raw.indexOf("=");
+          if (separator <= 0) flagError ??= `--header needs KEY=VALUE, got '${raw}'.`;
+          else headers = { ...headers, [raw.slice(0, separator)]: raw.slice(separator + 1) };
+        }
+        break;
+      }
+      case "--list-tool":
+        mapping.listTool = take();
+        break;
+      case "--list-args": {
+        const raw = take();
+        if (raw) {
+          try {
+            mapping.listArgs = JSON.parse(raw) as Record<string, unknown>;
+          } catch {
+            flagError ??= "--list-args must be a JSON object.";
+          }
+        }
+        break;
+      }
+      case "--items":
+        mapping.items = take();
+        break;
+      case "--id":
+        mapping.id = take();
+        break;
+      case "--title":
+        mapping.title = take();
+        break;
+      case "--description":
+        mapping.description = take();
+        break;
+      case "--read-tool":
+        mapping.readTool = take();
+        break;
+      case "--read-arg":
+        mapping.readArg = take();
+        break;
+      case "--read-args": {
+        const raw = take();
+        if (raw) {
+          try {
+            mapping.readArgs = JSON.parse(raw) as Record<string, unknown>;
+          } catch {
+            flagError ??= "--read-args must be a JSON object.";
+          }
+        }
+        break;
+      }
+      case "--content":
+        mapping.content = take();
+        break;
       case "--transport": {
         const raw = take();
         if (raw === "stdio" || raw === "sse" || raw === "local" || raw === "git") transport = raw;
@@ -275,7 +391,23 @@ export function parseOntologyCliOptions(argv: readonly string[]): OntologyCliOpt
     question,
     limit,
     nodes,
-    source: { name, transport, command, args, url, ref, path, include, type, env, code },
+    source: {
+      name,
+      transport,
+      command,
+      args,
+      url,
+      ref,
+      path,
+      include,
+      type,
+      env,
+      code,
+      headers,
+      documents: documentMapping(mapping, (message) => {
+        flagError ??= message;
+      }),
+    },
   };
 }
 
@@ -286,6 +418,8 @@ Commands:
   list         Show the sources the config already names
   import-mcp   Add MCP servers already configured for Claude Code or Codex
   add          Add one source directly, for a provider no other agent knows
+  inspect      Show what one MCP source exposes: tools and resources (--name)
+  map          Set how a tool server lists and reads documents (--name + mapping flags)
   check        Connect every configured source and report what it exposes
   setup        Build the ontology from the connected sources and save it
   github-repos List an organization's repositories to pick sources from
@@ -302,7 +436,7 @@ Options:
   --markdown <dir>       Also add the directory's Markdown as a source
 
   --name <name>          Source name (add)
-  --transport stdio|sse|local|git
+  --transport stdio|sse|http|local|git
   --command <command>    stdio: the command that starts the server
   --arg <value>          stdio: one argument; repeat for each (comma-safe)
   --args a,b             stdio: arguments, comma separated (loses embedded commas)
@@ -310,6 +444,18 @@ Options:
   --ref <name>           git: branch or tag to read (default: the remote default)
   --code                 local/git: read source files too, not only Markdown
   --env KEY=VALUE        stdio: environment for the server; repeat for each
+  --header KEY=VALUE     sse/http: request header; a \${NAME} value is read from the
+                         environment at run time; repeat for each
+  --list-tool <name>     tool servers: the tool that lists documents
+  --list-args <json>     fixed arguments for the listing tool
+  --items <path>         path to the array of items in its result (default: the result)
+  --id <path>            path to a document id inside an item (required with --list-tool)
+  --title <path>         path to a title inside an item
+  --description <path>   path to a description inside an item
+  --read-tool <name>     the tool that reads one document (required with --list-tool)
+  --read-arg <name>      the argument that receives the document id (required)
+  --read-args <json>     fixed arguments for the reading tool
+  --content <path>       path to the text in its result (default: the tool's text)
   --path <dir>           local: directory whose Markdown is read
   --include-dir <dir>    local: one subdirectory; repeat for each
   --include a,b          local: subdirectories, comma separated
@@ -364,6 +510,8 @@ export type OntologyCliResult =
       written: boolean;
     }
   | { command: "add"; ok: true; name: string; written: boolean }
+  | ({ command: "inspect"; ok: true } & SourceInspection)
+  | { command: "map"; ok: true; name: string; written: boolean }
   | ({ command: "github-repos"; ok: true } & GitHubRepositoryListing)
   | ({ command: "query"; ok: true; dataDirectory: string } & KnowledgeSearchResult)
   | {
@@ -486,6 +634,25 @@ async function execute(
     };
   }
 
+  if (command === "inspect") {
+    if (!options.source.name) return { command, ok: false, error: "inspect needs --name." };
+    return { command, ok: true, ...(await inspectSource(document, options.source.name)) };
+  }
+
+  if (command === "map") {
+    if (!options.source.name) return { command, ok: false, error: "map needs --name." };
+    if (!options.source.documents) {
+      return {
+        command,
+        ok: false,
+        error: "map needs --list-tool, --id, --read-tool and --read-arg (plus optional paths).",
+      };
+    }
+    const next = setDocumentMapping(document, options.source.name, options.source.documents);
+    if (options.write) writeConfigDocument(withDefaultLlm(next));
+    return { command, ok: true, name: options.source.name, written: options.write };
+  }
+
   if (command === "add") {
     const { name, transport } = options.source;
     if (!name || !transport) {
@@ -503,6 +670,8 @@ async function execute(
       ...(options.source.type ? { type: options.source.type } : {}),
       ...(options.source.env ? { env: options.source.env } : {}),
       ...(options.source.code ? { code: true } : {}),
+      ...(options.source.headers ? { headers: options.source.headers } : {}),
+      ...(options.source.documents ? { documents: options.source.documents } : {}),
     });
     if (options.write) writeConfigDocument(withDefaultLlm(next));
     return { command, ok: true, name, written: options.write };
