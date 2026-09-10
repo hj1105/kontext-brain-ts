@@ -11,6 +11,7 @@ export * from "./agent-mcp-config-import.js";
 export * from "./kontext-config-file.js";
 export * from "./ontology-cli.js";
 export * from "./ontology-source-connectors.js";
+export * from "./git-source-checkout.js";
 export * from "./github-repository-listing.js";
 export * from "./local-code-connector.js";
 export * from "./ontology-source-inventory.js";
