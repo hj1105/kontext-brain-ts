@@ -5,7 +5,11 @@ import {
   LocalKnowledgeSearch,
   SqliteKnowledgeGraphRepository,
 } from "@kontext-brain/core";
-import { loadLocalKnowledgePrincipal } from "@kontext-brain/loader";
+import {
+  createTextEmbedder,
+  loadLocalKnowledgePrincipal,
+  readEmbeddingSettings,
+} from "@kontext-brain/loader";
 import { z } from "zod";
 
 /**
@@ -30,11 +34,24 @@ export class LocalKnowledgeSearchOperations {
   async searchKnowledge(input: unknown): Promise<KnowledgeSearchResult> {
     const request = searchKnowledgeSchema.parse(input);
     const principal = await loadLocalKnowledgePrincipal(this.dataDirectory);
-    // Why one instance: it caches chunk text per resource content hash across questions.
+    // Why one instance: it caches chunk text per resource content hash across questions,
+    // and keeps the embedding model loaded.
     this.search ??= new LocalKnowledgeSearch(
       await SqliteKnowledgeGraphRepository.open(this.dataDirectory),
       new FileResourceContentStore(path.join(this.dataDirectory, "knowledge-content")),
+      this.embedder(),
     );
     return this.search.search({ ...request, principal });
+  }
+
+  /** The space the last build embedded in; lexical when none was recorded or it cannot be built. */
+  private embedder() {
+    const settings = readEmbeddingSettings(this.dataDirectory);
+    if (!settings) return null;
+    try {
+      return createTextEmbedder(settings, { dataDirectory: this.dataDirectory });
+    } catch {
+      return null;
+    }
   }
 }

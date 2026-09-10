@@ -1,6 +1,7 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import path, { join } from "node:path";
+import { type TextEmbedder, normalizeVector } from "@kontext-brain/core";
 import { LLMProviderRegistry } from "@kontext-brain/llm";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
@@ -53,6 +54,22 @@ function registry(): LLMProviderRegistry {
   return llm;
 }
 
+/** Concept axes stand in for a model: refund words share one axis whatever the wording. */
+const toyEmbedder: TextEmbedder = {
+  model: "toy:v1",
+  async embed(texts) {
+    return texts.map((text) => {
+      const vector = new Float32Array(3);
+      const lower = text.toLowerCase();
+      if (/refund|money back/.test(lower)) vector[0] = 1;
+      if (/invoice|billing/.test(lower)) vector[1] = 1;
+      vector[2] = 0.1;
+      return normalizeVector(vector);
+    });
+  },
+};
+const withToyEmbedder = { createEmbedder: () => toyEmbedder };
+
 describe("resolveKontextDataDirectory", () => {
   it("prefers the flag, then the sidecar's environment, else nothing", () => {
     expect(resolveKontextDataDirectory("/a", { KONTEXT_PLUGIN_DATA: "/b" })).toBe("/a");
@@ -102,6 +119,7 @@ describe("kontext-ontology setup with a data directory", () => {
             ...(knowledge ? { knowledgeRuntime: knowledge } : {}),
             ...(buildProgress ? { buildProgress } : {}),
           }).fromYaml(yaml),
+        ...withToyEmbedder,
       },
     );
     const printed = out.mock.calls.map((call) => String(call[0])).join("");
@@ -109,6 +127,13 @@ describe("kontext-ontology setup with a data directory", () => {
     const result = JSON.parse(printed);
     expect(code, printed).toBe(0);
     expect(result.knowledgeStore).toBe(data);
+    // Every chunk the sync wrote got a vector in the configured (default, built-in) space.
+    expect(result.embedding.provider).toBe("builtin");
+    expect(result.embeddingError).toBeNull();
+    expect(result.chunksEmbedded).toBeGreaterThan(0);
+    expect(JSON.parse(readFileSync(path.join(data, "embedding.json"), "utf8")).provider).toBe(
+      "builtin",
+    );
     // Two Markdown documents and one code module document; one source file projected.
     expect(result.documentsClassified).toBe(3);
     expect(result.codeFilesSynced).toBe(1);
@@ -144,28 +169,34 @@ describe("kontext-ontology setup with a data directory", () => {
 
     // The same graph answers a question with Evidence-cited chunks, filtered by node.
     const asked = vi.spyOn(process.stdout, "write").mockReturnValue(true);
-    const queryCode = await runOntologyCli([
-      "query",
-      "--data-dir",
-      data,
-      "--question",
-      "refund within days",
-      "--node",
-      "Billing",
-      "--json",
-    ]);
+    const queryCode = await runOntologyCli(
+      [
+        "query",
+        "--data-dir",
+        data,
+        "--question",
+        "money back within days",
+        "--node",
+        "Billing",
+        "--json",
+      ],
+      withToyEmbedder,
+    );
     const answer = JSON.parse(asked.mock.calls.map((call) => String(call[0])).join(""));
     asked.mockRestore();
     expect(queryCode).toBe(0);
     expect(answer.hits[0]?.source.externalId).toBe("docs/refunds.md");
     expect(answer.hits[0]?.evidenceId).toContain("|source|");
+    // "money back" shares no word with the refund page; the vector side found it.
+    expect(answer.mode).toBe("hybrid");
+    expect(answer.hits[0]?.similarity).toBeGreaterThan(0.9);
 
     // The build left a finished progress record where a host polls for it.
     const progress = JSON.parse(readFileSync(ontologyProgressPath(data, config), "utf8"));
     expect(progress.finished).toBe(true);
     expect(progress.ok).toBe(true);
-    // The last phase a build reports is code projection (or sync when a source has no code).
-    expect(["sync", "code"]).toContain(progress.phase);
+    // The last phase a build reports is embedding, after sync and code projection.
+    expect(progress.phase).toBe("embed");
     expect(progress.total).toBeGreaterThan(0);
 
     // Nodes list what the graph filed under each of them.

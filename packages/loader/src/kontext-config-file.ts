@@ -1,7 +1,11 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import type { Edge, OntologyNode } from "@kontext-brain/core";
 import { type Document, isMap, parseDocument, stringify } from "yaml";
-import type { MCPConfigDto } from "./kontext-config.js";
+import {
+  type EmbeddingConfigDto,
+  EmbeddingConfigSchema,
+  type MCPConfigDto,
+} from "./kontext-config.js";
 
 /**
  * Read/modify/write access to `kontext.yaml`. Setup writes generated content
@@ -71,6 +75,23 @@ export const DEFAULT_LLM_CONFIG = {
 export function withDefaultLlm(document: KontextConfigDocument): KontextConfigDocument {
   if (document.data.llm !== undefined && document.data.llm !== null) return document;
   return { ...document, data: { ...document.data, llm: structuredClone(DEFAULT_LLM_CONFIG) } };
+}
+
+/** The `embedding:` section as written, or undefined when the file leaves it to the default. */
+export function readEmbeddingConfig(
+  document: KontextConfigDocument,
+): EmbeddingConfigDto | undefined {
+  const raw = document.data.embedding;
+  if (typeof raw !== "object" || raw === null) return undefined;
+  const parsed = EmbeddingConfigSchema.safeParse(raw);
+  return parsed.success ? parsed.data : undefined;
+}
+
+export function withEmbedding(
+  document: KontextConfigDocument,
+  embedding: EmbeddingConfigDto,
+): KontextConfigDocument {
+  return { ...document, data: { ...document.data, embedding: { ...embedding } } };
 }
 
 export function readMCPEntries(document: KontextConfigDocument): MCPConfigDto[] {

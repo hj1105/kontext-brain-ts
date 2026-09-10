@@ -16,3 +16,5 @@ bench/data/code-quality-eval/
 # measurement ran four merged pull requests behind its own source.
 plugins/kontext-brain/server.mjs
 plugins/kontext-brain/ontology-cli.mjs
+plugins/kontext-brain/ort-wasm-simd-threaded.mjs
+plugins/kontext-brain/ort-wasm-simd-threaded.wasm

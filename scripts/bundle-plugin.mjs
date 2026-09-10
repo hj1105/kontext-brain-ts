@@ -13,6 +13,7 @@
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { readFile, readdir, writeFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
@@ -63,6 +64,20 @@ async function workspaceSourceAliases() {
 
 const alias = await workspaceSourceAliases();
 
+/**
+ * The built-in embedder runs ONNX Runtime's WebAssembly build. Its JavaScript is
+ * bundled like everything else, but the .wasm binary and its loader are fetched
+ * at run time from a directory, so they travel beside the bundle as plain files.
+ */
+const wasmAssets = (() => {
+  const loaderRequire = createRequire(path.join(repositoryRoot, "packages/loader/package.json"));
+  const distDirectory = path.dirname(loaderRequire.resolve("onnxruntime-web"));
+  return ["ort-wasm-simd-threaded.mjs", "ort-wasm-simd-threaded.wasm"].map((name) => ({
+    source: path.join(distDirectory, name),
+    outputPath: path.join(repositoryRoot, "plugins/kontext-brain", name),
+  }));
+})();
+
 async function bundle({ entryPoint, outputPath }) {
   const result = await build({
     entryPoints: [entryPoint],
@@ -91,6 +106,20 @@ function digest(value) {
 
 const check = process.argv.includes("--check");
 let stale = false;
+for (const asset of wasmAssets) {
+  const generated = await readFile(asset.source);
+  const relative = path.relative(repositoryRoot, asset.outputPath);
+  if (check) {
+    const existing = await readFile(asset.outputPath).catch(() => undefined);
+    if (existing === undefined || digest(existing) !== digest(generated)) {
+      process.stderr.write(`${relative} is ${existing === undefined ? "missing" : "stale"}.\n`);
+      stale = true;
+    }
+    continue;
+  }
+  await writeFile(asset.outputPath, generated);
+  process.stdout.write(`Wrote ${relative} (${(generated.length / 1024 / 1024).toFixed(1)} MiB)\n`);
+}
 for (const target of bundles) {
   const generated = await bundle(target);
   const relative = path.relative(repositoryRoot, target.outputPath);

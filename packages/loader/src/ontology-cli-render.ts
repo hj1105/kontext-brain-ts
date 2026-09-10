@@ -1,4 +1,5 @@
 import type { OntologyCliOptions, OntologyCliResult } from "./ontology-cli.js";
+import type { EmbeddingSettings } from "./text-embedder-factory.js";
 
 /** Text rendering for the ontology commands; `--json` callers get the result verbatim. */
 
@@ -16,6 +17,7 @@ function renderList(result: Extract<OntologyCliResult, { command: "list" }>): st
     const type = source.type ? ` type=${source.type}` : "";
     lines.push(`  ${pad(source.name, width)}  ${source.transport}${type}  ${source.target}`);
   }
+  lines.push(`Search embedding: ${describeEmbedding(result.embedding)}`);
   return `${lines.join("\n")}\n`;
 }
 
@@ -57,11 +59,20 @@ function renderCheck(result: Extract<OntologyCliResult, { command: "check" }>): 
   return `${lines.join("\n")}\n`;
 }
 
+function describeEmbedding(settings: EmbeddingSettings): string {
+  if (settings.provider === "none") return "none (lexical search only)";
+  const where = settings.baseUrl ? ` at ${settings.baseUrl}` : "";
+  return `${settings.provider} ${settings.model}${where}`;
+}
+
 function renderSetup(result: Extract<OntologyCliResult, { command: "setup" }>): string {
   const lines = [
     `Nodes created ${result.nodesCreated}, reused ${result.nodesReused}`,
     `Documents classified ${result.documentsClassified}, unmapped ${result.documentsUnmapped}`,
     `Nodes: ${result.nodeIds.join(", ")}`,
+    result.embeddingError
+      ? `Embedding failed (${describeEmbedding(result.embedding)}): ${result.embeddingError}; search stays lexical.`
+      : `Chunks embedded ${result.chunksEmbedded} (${describeEmbedding(result.embedding)})`,
     "",
     result.written
       ? `Saved ${result.nodeIds.length} ontology node(s).`
@@ -112,6 +123,16 @@ export function renderResult(result: OntologyCliResult, options: OntologyCliOpti
         ? `Added source '${added.name}'.\n`
         : `Source '${added.name}' is valid. Re-run with --write to save it.\n`;
     }
+    case "embedding": {
+      const chosen = result as Extract<OntologyCliResult, { command: "embedding" }>;
+      return chosen.written
+        ? `Search embedding set to ${describeEmbedding(chosen.embedding)}.\n`
+        : `Search embedding would be ${describeEmbedding(chosen.embedding)}. Re-run with --write to save it.\n`;
+    }
+    case "embed": {
+      const done = result as Extract<OntologyCliResult, { command: "embed" }>;
+      return `Embedded ${done.chunksEmbedded} of ${done.chunksTotal} chunk(s) with ${describeEmbedding(done.embedding)}.\n`;
+    }
     case "map": {
       const mapped = result as Extract<OntologyCliResult, { command: "map" }>;
       return mapped.written
@@ -152,7 +173,7 @@ export function renderResult(result: OntologyCliResult, options: OntologyCliOpti
     case "query": {
       const query = result as Extract<OntologyCliResult, { command: "query" }>;
       const lines = [
-        `${query.hits.length} hit(s) over ${query.chunksScanned} chunks in ${query.resourcesScanned} resources:`,
+        `${query.hits.length} hit(s) over ${query.chunksScanned} chunks in ${query.resourcesScanned} resources (${query.mode}${query.embeddingError ? `; ${query.embeddingError}` : ""}):`,
       ];
       for (const hit of query.hits) {
         lines.push(

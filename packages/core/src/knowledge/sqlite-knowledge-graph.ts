@@ -6,6 +6,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import type { ResourceSource } from "./domain.js";
 import type { KnowledgeGraphRepository, KnowledgeGraphUnitOfWork } from "./ports.js";
 import { SqliteKnowledgeUnit } from "./sqlite-knowledge-unit.js";
+import { bytesToVector, vectorToBytes } from "./text-embedder.js";
 
 /** Local durable graph; SQLite owns atomic commit, process locks and crash rollback. */
 export class SqliteKnowledgeGraphRepository implements KnowledgeGraphRepository {
@@ -83,6 +84,15 @@ export class SqliteKnowledgeGraphRepository implements KnowledgeGraphRepository 
       db.exec(
         "CREATE INDEX IF NOT EXISTS knowledge_source ON knowledge_records (organization_id, kind, json_extract(payload, '$.source.connectorId'), json_extract(payload, '$.source.externalId'))",
       );
+      // Why a separate table: vectors are a derived index over chunks, per model;
+      // they are rebuilt when the embedder changes and never carry graph meaning.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS knowledge_chunk_vectors (
+          organization_id TEXT NOT NULL, model TEXT NOT NULL, chunk_id TEXT NOT NULL,
+          content_hash TEXT NOT NULL, vector BLOB NOT NULL,
+          PRIMARY KEY (organization_id, model, chunk_id)
+        ) STRICT;
+      `);
       await retryBusy(() => db.exec("COMMIT"));
     } catch (error) {
       try {
@@ -170,6 +180,96 @@ export class SqliteKnowledgeGraphRepository implements KnowledgeGraphRepository 
   }
   listFactEvents(org: string, id: string) {
     return this.read(org, (unit) => unit.listFactEvents(id));
+  }
+
+  /** Chunk id to the content hash its stored vector was computed from. */
+  async listChunkVectorHashes(org: string, model: string): Promise<ReadonlyMap<string, string>> {
+    requireOrganization(org);
+    const db = this.connection();
+    try {
+      const rows = db
+        .prepare(
+          "SELECT chunk_id, content_hash FROM knowledge_chunk_vectors WHERE organization_id = ? AND model = ?",
+        )
+        .all(org, model);
+      return new Map(rows.map((row) => [String(row.chunk_id), String(row.content_hash)]));
+    } finally {
+      db.close();
+    }
+  }
+
+  async listChunkVectors(org: string, model: string): Promise<ReadonlyMap<string, Float32Array>> {
+    requireOrganization(org);
+    const db = this.connection();
+    try {
+      const rows = db
+        .prepare(
+          "SELECT chunk_id, vector FROM knowledge_chunk_vectors WHERE organization_id = ? AND model = ?",
+        )
+        .all(org, model);
+      const vectors = new Map<string, Float32Array>();
+      for (const row of rows) {
+        if (row.vector instanceof Uint8Array) {
+          vectors.set(String(row.chunk_id), bytesToVector(row.vector));
+        }
+      }
+      return vectors;
+    } finally {
+      db.close();
+    }
+  }
+
+  async saveChunkVectors(
+    org: string,
+    model: string,
+    entries: readonly { chunkId: string; contentHash: string; vector: Float32Array }[],
+  ): Promise<void> {
+    requireOrganization(org);
+    const db = this.connection();
+    try {
+      await retryBusy(() => db.exec("BEGIN IMMEDIATE"));
+      const statement = db.prepare(
+        "INSERT OR REPLACE INTO knowledge_chunk_vectors (organization_id, model, chunk_id, content_hash, vector) VALUES (?, ?, ?, ?, ?)",
+      );
+      for (const entry of entries) {
+        statement.run(org, model, entry.chunkId, entry.contentHash, vectorToBytes(entry.vector));
+      }
+      await retryBusy(() => db.exec("COMMIT"));
+    } catch (error) {
+      try {
+        db.exec("ROLLBACK");
+      } catch {
+        /* Preserve the original failure. */
+      }
+      throw error;
+    } finally {
+      db.close();
+    }
+  }
+
+  /** Vectors of chunks that no longer exist, left behind by a re-sync. */
+  async deleteOrphanChunkVectors(org: string): Promise<number> {
+    requireOrganization(org);
+    const db = this.connection();
+    try {
+      await retryBusy(() => db.exec("BEGIN IMMEDIATE"));
+      const result = db
+        .prepare(
+          "DELETE FROM knowledge_chunk_vectors WHERE organization_id = ? AND chunk_id NOT IN (SELECT record_key FROM knowledge_records WHERE organization_id = ? AND kind = 'chunk')",
+        )
+        .run(org, org);
+      await retryBusy(() => db.exec("COMMIT"));
+      return Number(result.changes);
+    } catch (error) {
+      try {
+        db.exec("ROLLBACK");
+      } catch {
+        /* Preserve the original failure. */
+      }
+      throw error;
+    } finally {
+      db.close();
+    }
   }
 }
 

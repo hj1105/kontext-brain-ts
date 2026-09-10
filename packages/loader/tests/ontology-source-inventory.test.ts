@@ -370,7 +370,51 @@ describe("kontext-ontology CLI surface", () => {
       sources: [
         { name: "repo-docs", transport: "local", type: null, target: "/repo", code: false },
       ],
+      embedding: {
+        provider: "builtin",
+        model: "Xenova/multilingual-e5-small",
+        baseUrl: null,
+        apiKeyEnv: null,
+      },
     });
+  });
+
+  it("records the search embedding choice in kontext.yaml and reports it on list", async () => {
+    const config = makeConfig(localMcp("/repo"));
+    const refused = await run(["embedding", "--config", config, "--provider", "bogus", "--json"]);
+    expect(refused.code).toBe(1);
+    expect(refused.printed).toMatch(/--provider must be builtin, ollama, openai or none/);
+    const chosen = await run([
+      "embedding",
+      "--config",
+      config,
+      "--provider",
+      "ollama",
+      "--model",
+      "bge-m3",
+      "--write",
+      "--json",
+    ]);
+    expect(chosen.code).toBe(0);
+    expect(JSON.parse(chosen.printed)).toEqual({
+      command: "embedding",
+      ok: true,
+      written: true,
+      embedding: {
+        provider: "ollama",
+        model: "bge-m3",
+        baseUrl: "http://127.0.0.1:11434",
+        apiKeyEnv: null,
+      },
+    });
+    expect(parse(readFileSync(config, "utf8")).embedding).toEqual({
+      provider: "ollama",
+      model: "bge-m3",
+    });
+    const listed = await run(["list", "--config", config, "--json"]);
+    expect(JSON.parse(listed.printed).embedding.model).toBe("bge-m3");
+    const off = await run(["embedding", "--config", config, "--provider", "none", "--write"]);
+    expect(off.printed).toContain("none (lexical search only)");
   });
 
   it("adds a source directly and writes only when asked", async () => {

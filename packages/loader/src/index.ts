@@ -14,6 +14,8 @@ export * from "./ontology-source-connectors.js";
 export * from "./git-source-checkout.js";
 export * from "./local-knowledge-principal.js";
 export * from "./local-knowledge-runtime.js";
+export * from "./builtin-text-embedder.js";
+export * from "./text-embedder-factory.js";
 export * from "./ontology-build-progress-file.js";
 export * from "./github-repository-listing.js";
 export * from "./local-code-connector.js";

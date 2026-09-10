@@ -159,8 +159,24 @@ export const PipelineStepDtoSchema = z.object({
   threshold: z.number().default(0),
 });
 
+/**
+ * How chunks are embedded for semantic search. `builtin` runs a small model in
+ * process (downloaded once, no other software); `ollama` and `openai` call a
+ * server; `none` keeps search lexical. Absent means builtin.
+ */
+export const EmbeddingConfigSchema = z.object({
+  provider: z.enum(["builtin", "ollama", "openai", "none"]),
+  model: z.string().min(1).optional(),
+  /** ollama/openai: server address. */
+  baseUrl: z.string().min(1).optional(),
+  /** openai: name of the environment variable holding the API key; the key itself is never stored. */
+  apiKeyEnv: z.string().min(1).optional(),
+});
+export type EmbeddingConfigDto = z.infer<typeof EmbeddingConfigSchema>;
+
 export const KontextConfigSchema = z.object({
   llm: LLMConfigSchema,
+  embedding: EmbeddingConfigSchema.optional(),
   mcp: z.array(MCPConfigSchema).default([]),
   ontology: z.array(OntologyNodeConfigSchema).default([]),
   storage: StorageConfigSchema.default({ type: "memory" }),

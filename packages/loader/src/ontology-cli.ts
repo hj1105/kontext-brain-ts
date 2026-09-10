@@ -1,10 +1,12 @@
 import path, { resolve } from "node:path";
 import {
+  type ChunkEmbeddingOutcome,
   FileResourceContentStore,
   type KnowledgeSearchResult,
   LocalKnowledgeSearch,
   type OntologyBuildProgressSink,
   SqliteKnowledgeGraphRepository,
+  embedMissingChunks,
 } from "@kontext-brain/core";
 import { stringify as stringifyYaml } from "yaml";
 import type { AgentConfigKind } from "./agent-mcp-config-import.js";
@@ -16,9 +18,11 @@ import {
 import type { KontextAgent } from "./kontext-agent.js";
 import {
   readConfigDocument,
+  readEmbeddingConfig,
   readMCPEntries,
   toOntologyYamlNodes,
   withDefaultLlm,
+  withEmbedding,
   withOntology,
   writeConfigDocument,
 } from "./kontext-config-file.js";
@@ -42,6 +46,15 @@ import {
   setDocumentMapping,
   summarizeSources,
 } from "./ontology-source-inventory.js";
+import {
+  type EmbeddingProvider,
+  type EmbeddingSettings,
+  createTextEmbedder,
+  readEmbeddingSettings,
+  resolveEmbeddingSettings,
+  toEmbeddingConfig,
+  writeEmbeddingSettings,
+} from "./text-embedder-factory.js";
 
 const DEFAULT_CONFIG = "kontext.yaml";
 
@@ -64,6 +77,13 @@ export interface OntologyCliOptions {
   readonly json: boolean;
   /** Set when --from named something that is not a supported agent. */
   readonly fromError: string | undefined;
+  /** embedding: how chunks are embedded for search; only the flags given are set. */
+  readonly embedding: {
+    readonly provider: EmbeddingProvider | undefined;
+    readonly model: string | undefined;
+    readonly baseUrl: string | undefined;
+    readonly apiKeyEnv: string | undefined;
+  };
   readonly source: {
     readonly name: string | undefined;
     readonly transport: "stdio" | "sse" | "http" | "local" | "git" | undefined;
@@ -143,6 +163,10 @@ export function parseOntologyCliOptions(argv: readonly string[]): OntologyCliOpt
   const nodes: string[] = [];
   let code = false;
   let headers: Record<string, string> | undefined;
+  let provider: EmbeddingProvider | undefined;
+  let embeddingModel: string | undefined;
+  let baseUrl: string | undefined;
+  let apiKeyEnv: string | undefined;
   const mapping: {
     listTool?: string;
     listArgs?: Record<string, unknown>;
@@ -236,6 +260,24 @@ export function parseOntologyCliOptions(argv: readonly string[]): OntologyCliOpt
         break;
       case "--data-dir":
         dataDirectory = take();
+        break;
+      case "--provider": {
+        const raw = take();
+        if (raw === "builtin" || raw === "ollama" || raw === "openai" || raw === "none") {
+          provider = raw;
+        } else if (raw) {
+          flagError ??= `--provider must be builtin, ollama, openai or none, got '${raw}'.`;
+        }
+        break;
+      }
+      case "--model":
+        embeddingModel = take();
+        break;
+      case "--base-url":
+        baseUrl = take();
+        break;
+      case "--api-key-env":
+        apiKeyEnv = take();
         break;
       case "--question":
         question = take();
@@ -399,6 +441,7 @@ export function parseOntologyCliOptions(argv: readonly string[]): OntologyCliOpt
     question,
     limit,
     nodes,
+    embedding: { provider, model: embeddingModel, baseUrl, apiKeyEnv },
     source: {
       name,
       transport,
@@ -432,6 +475,8 @@ Commands:
   setup        Build the ontology from the connected sources and save it
   github-repos List an organization's repositories to pick sources from
   query        Search the knowledge graph a build wrote (needs --data-dir)
+  embedding    Choose how chunks are embedded for search: --provider builtin|ollama|openai|none
+  embed        Embed chunks that have no vector yet, without rebuilding (--data-dir)
   nodes        List ontology nodes with the documents filed under each (--data-dir)
 
 Options:
@@ -477,6 +522,10 @@ Options:
   --question <text>      query: what to look for
   --limit <n>            query: hits to return (default 10)
   --node <id>            query: only resources on this ontology node; repeat for each
+  --provider <name>      embedding: builtin (in-process model, default), ollama, openai, none
+  --model <id>           embedding: model for the provider (hub id, Ollama name or API model)
+  --base-url <url>       embedding: server address for ollama/openai
+  --api-key-env <NAME>   embedding: environment variable holding the openai key
 
 Run import-mcp or add, then check, then setup.
 
@@ -506,10 +555,18 @@ export interface OntologyCliDeps {
   ) => Promise<KontextAgent>;
   /** Overrides the GitHub lookup, so tests need neither gh nor the network. */
   readonly listRepositories?: (owner: string) => Promise<GitHubRepositoryListing>;
+  /** Overrides how the embedder is built, so tests never download a model. */
+  readonly createEmbedder?: typeof createTextEmbedder;
 }
 
 export type OntologyCliResult =
-  | { command: "list"; ok: true; sources: ReturnType<typeof summarizeSources> }
+  | {
+      command: "list";
+      ok: true;
+      sources: ReturnType<typeof summarizeSources>;
+      /** How search embeds chunks for this workspace, defaults filled in. */
+      embedding: EmbeddingSettings;
+    }
   | {
       command: "import-mcp";
       ok: true;
@@ -522,6 +579,13 @@ export type OntologyCliResult =
   | { command: "map"; ok: true; name: string; written: boolean }
   | ({ command: "github-repos"; ok: true } & GitHubRepositoryListing)
   | ({ command: "query"; ok: true; dataDirectory: string } & KnowledgeSearchResult)
+  | { command: "embedding"; ok: true; embedding: EmbeddingSettings; written: boolean }
+  | ({
+      command: "embed";
+      ok: true;
+      dataDirectory: string;
+      embedding: EmbeddingSettings;
+    } & ChunkEmbeddingOutcome)
   | {
       command: "nodes";
       ok: true;
@@ -545,8 +609,23 @@ export type OntologyCliResult =
       /** The knowledge graph the documents were written into; null when none was given. */
       knowledgeStore: string | null;
       codeFilesSynced: number;
+      /** Chunks given a vector after the sync; 0 without a data directory or with provider none. */
+      chunksEmbedded: number;
+      embedding: EmbeddingSettings;
+      /** Set when embedding was configured but failed; the build itself still succeeded. */
+      embeddingError: string | null;
     }
   | { command: string; ok: false; error: string };
+
+/** Query and embed work from the settings a build recorded beside the graph, else the file's. */
+function embeddingSettingsFor(
+  document: { readonly data: Record<string, unknown> } | undefined,
+  dataDirectory: string,
+): EmbeddingSettings {
+  return document
+    ? resolveEmbeddingSettings(readEmbeddingConfig(document as never))
+    : (readEmbeddingSettings(dataDirectory) ?? resolveEmbeddingSettings(undefined));
+}
 
 async function execute(
   command: string,
@@ -562,9 +641,21 @@ async function execute(
     }
     if (!options.question) return { command, ok: false, error: "query needs --question." };
     const principal = await loadLocalKnowledgePrincipal(options.dataDirectory);
+    // Why the recorded settings: the question must be embedded in the space the build wrote.
+    const settings = embeddingSettingsFor(undefined, options.dataDirectory);
+    let embedder: ReturnType<typeof createTextEmbedder> = null;
+    let embeddingError: string | undefined;
+    try {
+      embedder = (deps.createEmbedder ?? createTextEmbedder)(settings, {
+        dataDirectory: options.dataDirectory,
+      });
+    } catch (error) {
+      embeddingError = error instanceof Error ? error.message : String(error);
+    }
     const search = new LocalKnowledgeSearch(
       await SqliteKnowledgeGraphRepository.open(options.dataDirectory),
       new FileResourceContentStore(path.join(options.dataDirectory, "knowledge-content")),
+      embedder,
     );
     const result = await search.search({
       question: options.question,
@@ -572,7 +663,49 @@ async function execute(
       ...(options.limit === undefined ? {} : { limit: options.limit }),
       ...(options.nodes.length > 0 ? { ontologyNodeIds: options.nodes } : {}),
     });
-    return { command, ok: true, dataDirectory: options.dataDirectory, ...result };
+    return {
+      command,
+      ok: true,
+      dataDirectory: options.dataDirectory,
+      ...result,
+      ...(embeddingError && !result.embeddingError ? { embeddingError } : {}),
+    };
+  }
+  if (command === "embed") {
+    if (!options.dataDirectory) {
+      return { command, ok: false, error: "embed needs --data-dir (or KONTEXT_PLUGIN_DATA)." };
+    }
+    const document = readConfigDocument(options.config);
+    const settings = resolveEmbeddingSettings(readEmbeddingConfig(document));
+    writeEmbeddingSettings(options.dataDirectory, settings);
+    const embedder = (deps.createEmbedder ?? createTextEmbedder)(settings, {
+      dataDirectory: options.dataDirectory,
+    });
+    if (!embedder) {
+      return { command, ok: false, error: "embedding.provider is none; nothing to embed." };
+    }
+    const principal = await loadLocalKnowledgePrincipal(options.dataDirectory);
+    const progress = new OntologyBuildProgressWriter(options.dataDirectory, options.config);
+    try {
+      const outcome = await embedMissingChunks(
+        await SqliteKnowledgeGraphRepository.open(options.dataDirectory),
+        new FileResourceContentStore(path.join(options.dataDirectory, "knowledge-content")),
+        embedder,
+        principal.organizationId,
+        { onProgress: progress.sink },
+      );
+      progress.finish({ ok: true });
+      return {
+        command,
+        ok: true,
+        dataDirectory: options.dataDirectory,
+        embedding: settings,
+        ...outcome,
+      };
+    } catch (error) {
+      progress.finish({ ok: false, error: error instanceof Error ? error.message : String(error) });
+      throw error;
+    }
   }
   if (command === "nodes") {
     const document = readConfigDocument(options.config);
@@ -622,7 +755,35 @@ async function execute(
   const document = readConfigDocument(options.config);
 
   if (command === "list") {
-    return { command, ok: true, sources: summarizeSources(document) };
+    return {
+      command,
+      ok: true,
+      sources: summarizeSources(document),
+      embedding: resolveEmbeddingSettings(readEmbeddingConfig(document)),
+    };
+  }
+
+  if (command === "embedding") {
+    if (!options.embedding.provider) {
+      return {
+        command,
+        ok: false,
+        error: "embedding needs --provider builtin|ollama|openai|none.",
+      };
+    }
+    const settings = resolveEmbeddingSettings({
+      provider: options.embedding.provider,
+      ...(options.embedding.model ? { model: options.embedding.model } : {}),
+      ...(options.embedding.baseUrl ? { baseUrl: options.embedding.baseUrl } : {}),
+      ...(options.embedding.apiKeyEnv ? { apiKeyEnv: options.embedding.apiKeyEnv } : {}),
+    });
+    if (options.write) {
+      writeConfigDocument(withDefaultLlm(withEmbedding(document, toEmbeddingConfig(settings))));
+      // Why also here: search reads the data directory, and a changed choice must reach it
+      // before the next build runs.
+      if (options.dataDirectory) writeEmbeddingSettings(options.dataDirectory, settings);
+    }
+    return { command, ok: true, embedding: settings, written: options.write };
   }
 
   if (command === "import-mcp") {
@@ -739,6 +900,38 @@ async function execute(
       });
       throw error;
     }
+    // Why after the sync: vectors index chunks that now exist; a failure here leaves a
+    // lexical-only graph, which is still a built ontology, so it is reported, not thrown.
+    const embeddingSettings = resolveEmbeddingSettings(readEmbeddingConfig(document));
+    let chunksEmbedded = 0;
+    let embeddingError: string | null = null;
+    if (knowledge && options.dataDirectory) {
+      writeEmbeddingSettings(options.dataDirectory, embeddingSettings);
+      try {
+        const embedder = (deps.createEmbedder ?? createTextEmbedder)(embeddingSettings, {
+          dataDirectory: options.dataDirectory,
+          onDownload: (event) =>
+            progress?.sink({
+              phase: "embed",
+              done: event.receivedBytes,
+              total: event.totalBytes ?? 0,
+              message: `download ${event.file}`,
+            }),
+        });
+        if (embedder) {
+          const outcome = await embedMissingChunks(
+            await SqliteKnowledgeGraphRepository.open(options.dataDirectory),
+            new FileResourceContentStore(path.join(options.dataDirectory, "knowledge-content")),
+            embedder,
+            knowledge.organizationId,
+            { onProgress: progress?.sink },
+          );
+          chunksEmbedded = outcome.chunksEmbedded;
+        }
+      } catch (error) {
+        embeddingError = error instanceof Error ? error.message : String(error);
+      }
+    }
     progress?.finish({ ok: true });
     const graph = agent.ontologyGraph;
     const nodes = toOntologyYamlNodes([...graph.nodes.values()], [...graph.edges]);
@@ -757,6 +950,9 @@ async function execute(
       written: options.write,
       knowledgeStore: knowledge?.dataDirectory ?? null,
       codeFilesSynced: result.codeFilesSynced,
+      chunksEmbedded,
+      embedding: embeddingSettings,
+      embeddingError,
     };
   }
 
