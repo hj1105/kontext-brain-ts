@@ -149,6 +149,19 @@ describe("remote embedders", () => {
     expect(Array.from(second ?? [])).toEqual([1, 0, 0]);
   });
 
+  it("names the address when the server cannot be reached at all", async () => {
+    const embedder = new OllamaTextEmbedder({
+      model: "x",
+      baseUrl: "http://127.0.0.1:1",
+      fetch: async () => {
+        throw Object.assign(new TypeError("fetch failed"), { cause: { code: "ECONNREFUSED" } });
+      },
+    });
+    await expect(embedder.embed(["a"], "query")).rejects.toThrow(
+      /Could not reach http:\/\/127\.0\.0\.1:1\/api\/embed \(ECONNREFUSED\); is the server running\?/,
+    );
+  });
+
   it("names the endpoint and status when a server refuses", async () => {
     const embedder = new OllamaTextEmbedder({
       model: "x",

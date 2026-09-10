@@ -16,11 +16,18 @@ async function postJson(
   body: unknown,
   headers: Record<string, string>,
 ): Promise<unknown> {
-  const response = await fetchImpl(url, {
-    method: "POST",
-    headers: { "content-type": "application/json", ...headers },
-    body: JSON.stringify(body),
-  });
+  let response: Response;
+  try {
+    response = await fetchImpl(url, {
+      method: "POST",
+      headers: { "content-type": "application/json", ...headers },
+      body: JSON.stringify(body),
+    });
+  } catch (error) {
+    // Why: "fetch failed" names nothing; the address tells a person what to start or fix.
+    const cause = (error as { cause?: { code?: string } }).cause?.code;
+    throw new Error(`Could not reach ${url}${cause ? ` (${cause})` : ""}; is the server running?`);
+  }
   if (!response.ok) {
     const text = (await response.text().catch(() => "")).slice(0, 300);
     throw new Error(`${url} answered ${response.status}${text ? `: ${text}` : ""}`);
