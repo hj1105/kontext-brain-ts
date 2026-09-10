@@ -4,6 +4,7 @@ import type { OntologyProposalDraft } from "../knowledge/ontology-proposals.js";
 import type { LLMAdapter } from "../query/llm-adapter.js";
 import type { PromptTemplates } from "../query/prompt-templates.js";
 import { DefaultPromptTemplates } from "../query/prompt-templates.js";
+import { mapWithConcurrency } from "./bounded-concurrency.js";
 
 export interface MCPResourceInfo {
   readonly id: string;
@@ -40,8 +41,8 @@ export interface DocumentClassifierOptions {
   readonly maxDescriptionChars?: number;
 }
 
-const DEFAULT_BATCH = 80;
-const DEFAULT_CONCURRENCY = 3;
+const DEFAULT_BATCH = 100;
+const DEFAULT_CONCURRENCY = 4;
 const DEFAULT_DESCRIPTION_CHARS = 200;
 
 export class DocumentClassifier {
@@ -173,26 +174,6 @@ export class DocumentClassifier {
 
 function isDefined<T>(value: T | undefined): value is T {
   return value !== undefined;
-}
-
-/** Runs `work` over `items`, at most `limit` at a time, keeping result order. */
-async function mapWithConcurrency<T, R>(
-  items: readonly T[],
-  limit: number,
-  work: (item: T) => Promise<R>,
-): Promise<R[]> {
-  const results: R[] = new Array(items.length);
-  let next = 0;
-  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
-    while (next < items.length) {
-      const index = next;
-      next += 1;
-      const item = items[index] as T;
-      results[index] = await work(item);
-    }
-  });
-  await Promise.all(workers);
-  return results;
 }
 
 function parseClassification(

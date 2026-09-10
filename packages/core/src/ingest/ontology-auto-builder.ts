@@ -3,6 +3,7 @@ import { createNode } from "../graph/ontology-node.js";
 import type { LLMAdapter } from "../query/llm-adapter.js";
 import type { PromptTemplates } from "../query/prompt-templates.js";
 import { DefaultPromptTemplates } from "../query/prompt-templates.js";
+import { mapWithConcurrency, stratifiedSample } from "./bounded-concurrency.js";
 
 export interface SourceDocument {
   readonly id: string;
@@ -76,6 +77,13 @@ function inferTargetNodeCount(documentCount: number, categoryCount: number): num
  *   3. Cluster categories into N nodes with level/parentId (LLM)
  *   4. Infer edges between nodes (LLM)
  */
+/** Documents read for topic discovery; enough to see every source's themes. */
+const MAX_CATEGORY_SAMPLE = 300;
+/** Model calls in flight during discovery. */
+const MAX_CONCURRENT_CALLS = 3;
+/** Categories handed to node design; beyond this the prompt repeats itself. */
+const MAX_CATEGORIES = 150;
+
 export class OntologyAutoBuilder {
   constructor(
     private readonly adapter: LLMAdapter,
@@ -96,12 +104,26 @@ export class OntologyAutoBuilder {
   }
 
   private async extractCategories(docs: readonly SourceDocument[]): Promise<string[]> {
+    // Why sample: topics of a corpus show in a few hundred documents drawn from
+    // every source; reading all of an organization's files here would cost
+    // thousands of model calls before a single node exists. Classification
+    // later covers every document, in batches.
+    const sample = stratifiedSample(docs, MAX_CATEGORY_SAMPLE, (doc) => doc.metadata.source ?? "");
     const batches: SourceDocument[][] = [];
-    for (let i = 0; i < docs.length; i += this.batchSize) {
-      batches.push(docs.slice(i, i + this.batchSize));
+    for (let i = 0; i < sample.length; i += this.batchSize) {
+      batches.push(sample.slice(i, i + this.batchSize));
     }
-    const results = await Promise.all(batches.map((b) => this.extractBatchCategories(b)));
-    return Array.from(new Set(results.flat()));
+    const results = await mapWithConcurrency(batches, MAX_CONCURRENT_CALLS, (b) =>
+      this.extractBatchCategories(b),
+    );
+    const frequency = new Map<string, number>();
+    for (const category of results.flat()) {
+      frequency.set(category, (frequency.get(category) ?? 0) + 1);
+    }
+    // Most common first, so the prompt cap below keeps the topics the corpus repeats.
+    return Array.from(frequency.entries())
+      .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
+      .map(([category]) => category);
   }
 
   private async extractBatchCategories(batch: readonly SourceDocument[]): Promise<string[]> {
@@ -147,7 +169,9 @@ export class OntologyAutoBuilder {
       .slice(0, 100)
       .map((d) => `- ${d.title}`)
       .join("\n");
-    const catList = rawCategories.join(", ");
+    // Why: the node count is inferred from every topic found, but the prompt lists
+    // only the most frequent — past this many the list repeats itself.
+    const catList = rawCategories.slice(0, MAX_CATEGORIES).join(", ");
 
     const response = await this.adapter.complete(
       this.templates.nodeDesign(targetNodeCount),

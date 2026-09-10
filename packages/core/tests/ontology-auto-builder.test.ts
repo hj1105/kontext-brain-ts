@@ -31,6 +31,48 @@ function createDocuments(count: number) {
   }));
 }
 
+class ThrottleAwareLLM extends CapturingLLM {
+  extractionCalls = 0;
+  inFlight = 0;
+  peakInFlight = 0;
+
+  override async complete(systemPrompt: string): Promise<string> {
+    if (systemPrompt.includes("extract common topic categories")) {
+      this.extractionCalls += 1;
+      this.inFlight += 1;
+      this.peakInFlight = Math.max(this.peakInFlight, this.inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 3));
+      this.inFlight -= 1;
+    }
+    return super.complete(systemPrompt);
+  }
+}
+
+describe("OntologyAutoBuilder discovery over a large corpus", () => {
+  it("samples documents across sources and keeps model calls bounded", async () => {
+    const llm = new ThrottleAwareLLM();
+    const builder = new OntologyAutoBuilder(llm);
+    const big = Array.from({ length: 2000 }, (_, index) => ({
+      id: `big-${index}`,
+      title: `Big ${index}`,
+      metadata: { source: "big-repo" },
+    }));
+    const small = Array.from({ length: 5 }, (_, index) => ({
+      id: `small-${index}`,
+      title: `Small ${index}`,
+      metadata: { source: "small-repo" },
+    }));
+
+    await builder.build([new InMemoryDocumentSource([...big, ...small])]);
+
+    // Why: 2005 documents would be 101 discovery calls; a 300-document sample is 15.
+    expect(llm.extractionCalls).toBe(15);
+    expect(llm.peakInFlight).toBeLessThanOrEqual(3);
+    // The node count still reflects the whole corpus, not the sample.
+    expect(llm.nodeDesignPrompts[0]).toContain("design approximately");
+  });
+});
+
 describe("OntologyAutoBuilder node-count selection", () => {
   it("infers the target from corpus size and topic diversity by default", async () => {
     const llm = new CapturingLLM();

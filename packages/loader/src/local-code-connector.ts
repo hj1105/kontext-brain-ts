@@ -1,5 +1,5 @@
 import { readFileSync, statSync } from "node:fs";
-import { extname, join, relative, sep } from "node:path";
+import { dirname, extname, join, relative, sep } from "node:path";
 import {
   type CodeLanguage,
   type CodeSymbolRecord,
@@ -16,20 +16,39 @@ import {
 } from "@kontext-brain/mcp";
 
 /**
- * Exposes a repository's source files as ontology documents. The classifier
- * reasons about a file from its path and the behaviour it exports, which is
- * what the code providers extract; the body is read only when a file is fetched.
+ * Exposes a repository's code as ontology documents, one per directory: a
+ * module is the unit an ontology node governs, and a directory's exported
+ * symbols say what it does. Per-file documents would put an organization's
+ * whole tree through the classifier — tens of thousands of prompts — for a
+ * placement that files in one directory almost always share.
  * Test files are skipped by default because they describe the behaviour a
- * neighbouring module already carries and would double every node's membership.
+ * neighbouring module already carries.
  */
 
 export interface LocalCodeOptions {
   readonly include?: readonly string[];
   readonly exclude?: readonly string[];
+  /** Source files scanned per source. */
   readonly maxFiles?: number;
+  /** Directory modules exposed per source; the ones exporting most come first. */
+  readonly maxModules?: number;
   /** Larger files are generated or vendored far more often than written; skip them. */
   readonly maxFileBytes?: number;
   readonly includeTests?: boolean;
+}
+
+interface AnalyzedFile {
+  readonly id: string;
+  readonly path: string;
+  readonly language: CodeLanguage;
+  readonly exportedNames: readonly string[];
+}
+
+interface CodeModule {
+  /** Directory relative to the root, with a trailing slash; the root is `./`. */
+  readonly id: string;
+  readonly directory: string;
+  readonly files: readonly AnalyzedFile[];
 }
 
 const LANGUAGE_BY_EXTENSION: ReadonlyMap<string, CodeLanguage> = new Map([
@@ -52,19 +71,28 @@ const DEFAULT_EXCLUDE = [
   "site-packages",
 ];
 const DEFAULT_MAX_FILES = 1500;
+// Why 80: an organization of 70 repositories then classifies in tens of batches, not hundreds.
+const DEFAULT_MAX_MODULES = 80;
 const DEFAULT_MAX_FILE_BYTES = 256 * 1024;
 const TEST_FILE =
   /(\.(test|spec)\.[cm]?[jt]sx?$)|(^|\/)(__tests__|tests?)\/|(^|\/)test_[^/]+\.py$|_test\.py$|(^|\/)conftest\.py$/;
 const DECLARATION_FILE = /\.d\.[cm]?ts$/;
 /** Enough names to say what a module does; a barrel that re-exports hundreds is described by its path. */
 const MAX_SYMBOL_NAMES = 40;
+const ROOT_MODULE_ID = "./";
 
 export function codeLanguageForPath(filePath: string): CodeLanguage | undefined {
   return LANGUAGE_BY_EXTENSION.get(extname(filePath).toLowerCase());
 }
 
+/** Module ids end with a slash; document ids are file paths. */
+export function isCodeModuleId(resourceId: string): boolean {
+  return resourceId.endsWith("/");
+}
+
 export class LocalCodeConnector implements MCPConnector {
   private readonly providers: ReadonlyMap<CodeLanguage, LanguageCodeProvider>;
+  private modules: readonly CodeModule[] | undefined;
 
   constructor(
     public readonly name: string,
@@ -109,60 +137,113 @@ export class LocalCodeConnector implements MCPConnector {
     return relative(this.root, path).split(sep).join("/");
   }
 
-  private describe(id: string, text: string): string {
+  private analyze(path: string): AnalyzedFile | undefined {
+    const id = this.idOf(path);
     const language = codeLanguageForPath(id);
     const provider = language ? this.providers.get(language) : undefined;
-    if (!language || !provider) return "source module";
+    if (!language || !provider) return undefined;
+    let text: string;
+    try {
+      text = readFileSync(path, "utf8");
+    } catch {
+      return undefined;
+    }
     try {
       const analysis = provider.analyze({
         codebaseId: this.name,
         targetPath: id,
         files: [{ path: id, content: text }],
       });
-      const names = exportedNames(analysis.symbols);
-      return names.length > 0
-        ? `${language} · exports ${names.join(", ")}`
-        : `${language} module without exported symbols`;
+      return { id, path, language, exportedNames: exportedNames(analysis.symbols) };
     } catch {
-      // Why: a file the provider cannot parse is still a document at a path; the
-      // classifier can place it by that path alone.
-      return `${language} module`;
+      // Why: a file the provider cannot parse is still part of its module; the
+      // module is then described by its path and the files that do parse.
+      return { id, path, language, exportedNames: [] };
     }
+  }
+
+  /** Directory modules, most-exporting first, capped; computed once per connector. */
+  private collect(): readonly CodeModule[] {
+    if (this.modules) return this.modules;
+    const byDirectory = new Map<string, AnalyzedFile[]>();
+    for (const path of this.files()) {
+      const file = this.analyze(path);
+      if (!file) continue;
+      const directory = dirname(file.id);
+      const key = directory === "." ? "" : directory;
+      const files = byDirectory.get(key);
+      if (files) files.push(file);
+      else byDirectory.set(key, [file]);
+    }
+    const limit = this.options.maxModules ?? DEFAULT_MAX_MODULES;
+    const modules = Array.from(byDirectory.entries()).map(([directory, files]) => ({
+      id: directory === "" ? ROOT_MODULE_ID : `${directory}/`,
+      directory,
+      files: [...files].sort((left, right) => left.id.localeCompare(right.id)),
+    }));
+    modules.sort(
+      (left, right) =>
+        exportCount(right) - exportCount(left) ||
+        right.files.length - left.files.length ||
+        left.id.length - right.id.length ||
+        left.id.localeCompare(right.id),
+    );
+    this.modules = modules.slice(0, limit);
+    return this.modules;
+  }
+
+  private describe(module: CodeModule): string {
+    const languages = Array.from(new Set(module.files.map((file) => file.language))).join("/");
+    const names: string[] = [];
+    for (const file of module.files) {
+      for (const name of file.exportedNames) {
+        if (names.length >= MAX_SYMBOL_NAMES) break;
+        if (!names.includes(name)) names.push(name);
+      }
+    }
+    const count = `${module.files.length} file${module.files.length === 1 ? "" : "s"}`;
+    return names.length > 0
+      ? `${languages} · ${count} · exports ${names.join(", ")}`
+      : `${languages} · ${count} without exported symbols`;
+  }
+
+  /** The module read as one document: each file with what it exports. */
+  private render(module: CodeModule): string {
+    const lines = [`# ${module.directory === "" ? "." : module.directory}`, ""];
+    for (const file of module.files) {
+      lines.push(
+        file.exportedNames.length > 0
+          ? `- ${file.id}: exports ${file.exportedNames.join(", ")}`
+          : `- ${file.id}`,
+      );
+    }
+    return `${lines.join("\n")}\n`;
+  }
+
+  private moduleOf(resourceId: string): CodeModule {
+    const module = this.collect().find((candidate) => candidate.id === resourceId);
+    if (!module) throw new Error(`local code '${this.name}': unknown module: ${resourceId}`);
+    return module;
   }
 
   async listResources(): Promise<MCPResource[]> {
-    const resources: MCPResource[] = [];
-    for (const path of this.files()) {
-      let text: string;
-      try {
-        text = readFileSync(path, "utf8");
-      } catch {
-        continue;
-      }
-      const id = this.idOf(path);
-      resources.push({
-        id,
-        name: id,
-        description: this.describe(id, text),
-        mimeType: `text/x-${codeLanguageForPath(id) ?? "source"}`,
-      });
-    }
-    return resources;
+    return this.collect().map((module) => ({
+      id: module.id,
+      name: module.directory === "" ? "." : module.directory,
+      description: this.describe(module),
+      mimeType: "text/x-code-module",
+    }));
   }
 
   async fetchResource(resourceId: string): Promise<MCPData> {
-    const path = join(this.root, resourceId);
-    const inside = relative(this.root, path);
-    if (inside.startsWith("..") || inside === "") {
-      throw new Error(`local code '${this.name}': resource outside root: ${resourceId}`);
-    }
+    const module = this.moduleOf(resourceId);
     return {
       resourceId,
-      content: readFileSync(path, "utf8"),
+      content: this.render(module),
       metadata: {
         source: this.name,
-        path: resourceId,
-        language: codeLanguageForPath(resourceId) ?? "unknown",
+        path: module.directory,
+        files: String(module.files.length),
       },
       fetchedAt: new Date(),
     };
@@ -172,24 +253,29 @@ export class LocalCodeConnector implements MCPConnector {
     const needle = query.trim().toLowerCase();
     if (needle === "") return [];
     const hits: MCPData[] = [];
-    for (const path of this.files()) {
-      let text: string;
-      try {
-        text = readFileSync(path, "utf8");
-      } catch {
-        continue;
-      }
-      if (!text.toLowerCase().includes(needle)) continue;
-      const id = this.idOf(path);
+    for (const module of this.collect()) {
+      const matches = module.files.some((file) => {
+        if (file.exportedNames.some((name) => name.toLowerCase().includes(needle))) return true;
+        try {
+          return readFileSync(file.path, "utf8").toLowerCase().includes(needle);
+        } catch {
+          return false;
+        }
+      });
+      if (!matches) continue;
       hits.push({
-        resourceId: id,
-        content: text,
-        metadata: { source: this.name, path: id, language: codeLanguageForPath(id) ?? "unknown" },
+        resourceId: module.id,
+        content: this.render(module),
+        metadata: { source: this.name, path: module.directory, files: String(module.files.length) },
         fetchedAt: new Date(),
       });
     }
     return hits;
   }
+}
+
+function exportCount(module: CodeModule): number {
+  return module.files.reduce((sum, file) => sum + file.exportedNames.length, 0);
 }
 
 function exportedNames(symbols: readonly CodeSymbolRecord[]): string[] {
@@ -205,8 +291,8 @@ function exportedNames(symbols: readonly CodeSymbolRecord[]): string[] {
 
 /**
  * One source that reads a repository's documents and its code, routing each
- * resource to the connector that understands its file type. Both halves share
- * the source name, so provenance still says which repository a fact came from.
+ * resource to the connector that understands its id. Both halves share the
+ * source name, so provenance still says which repository a fact came from.
  */
 export class LocalRepositoryConnector implements MCPConnector {
   readonly name: string;
@@ -220,7 +306,7 @@ export class LocalRepositoryConnector implements MCPConnector {
   }
 
   private owner(resourceId: string): MCPConnector {
-    return codeLanguageForPath(resourceId) ? this.code : this.documents;
+    return isCodeModuleId(resourceId) ? this.code : this.documents;
   }
 
   async listResources(): Promise<MCPResource[]> {

@@ -41,45 +41,63 @@ async function repository(): Promise<string> {
 }
 
 describe("LocalCodeConnector", () => {
-  it("describes each source file by its language and exported behaviour", async () => {
+  it("exposes one module per directory, described by language and exported behaviour", async () => {
     const root = await repository();
     const resources = await new LocalCodeConnector("handbook", root).listResources();
-    expect(resources.map((resource) => resource.id).sort()).toEqual([
-      "src/billing/invoice.ts",
-      "src/pricing.py",
-    ]);
-    const invoice = resources.find((resource) => resource.id === "src/billing/invoice.ts");
-    expect(invoice?.description).toContain("typescript");
-    expect(invoice?.description).toContain("computeTotal");
-    expect(invoice?.description).toContain("InvoiceLedger");
-    expect(invoice?.description).not.toContain("internalHelper");
-    expect(invoice?.mimeType).toBe("text/x-typescript");
-    const pricing = resources.find((resource) => resource.id === "src/pricing.py");
-    expect(pricing?.description).toContain("python");
+    expect(resources.map((resource) => resource.id).sort()).toEqual(["src/", "src/billing/"]);
+    const billing = resources.find((resource) => resource.id === "src/billing/");
+    expect(billing?.name).toBe("src/billing");
+    expect(billing?.description).toContain("typescript");
+    expect(billing?.description).toContain("1 file");
+    expect(billing?.description).toContain("computeTotal");
+    expect(billing?.description).toContain("InvoiceLedger");
+    expect(billing?.description).not.toContain("internalHelper");
+    expect(billing?.mimeType).toBe("text/x-code-module");
+    const src = resources.find((resource) => resource.id === "src/");
+    expect(src?.description).toContain("python");
+    expect(src?.description).toContain("apply_discount");
   });
 
-  it("reads a file back by id and refuses paths outside the root", async () => {
+  it("ranks modules by what they export and caps how many a source exposes", async () => {
+    const root = await repository();
+    const all = await new LocalCodeConnector("handbook", root).listResources();
+    const exportsOf = (description: string): number =>
+      (description.split("exports ")[1] ?? "").split(", ").filter(Boolean).length;
+    const ranked = [...all].sort(
+      (left, right) =>
+        exportsOf(right.description) - exportsOf(left.description) ||
+        left.id.length - right.id.length,
+    );
+    const [only] = await new LocalCodeConnector("handbook", root, {
+      maxModules: 1,
+    }).listResources();
+    expect(only?.id).toBe(ranked[0]?.id);
+    expect(all).toHaveLength(2);
+  });
+
+  it("reads a module back as its files and exports, and finds modules by content", async () => {
     const root = await repository();
     const connector = new LocalCodeConnector("handbook", root);
-    const fetched = await connector.fetchResource("src/pricing.py");
-    expect(fetched.content).toContain("apply_discount");
-    expect(fetched.metadata).toMatchObject({ source: "handbook", language: "python" });
-    await expect(connector.fetchResource("../etc/passwd")).rejects.toThrow(/outside root/);
+    const fetched = await connector.fetchResource("src/");
+    expect(fetched.content).toContain("# src");
+    expect(fetched.content).toContain("src/pricing.py: exports apply_discount, PriceBook");
+    expect(fetched.metadata).toMatchObject({ source: "handbook", path: "src", files: "1" });
+    await expect(connector.fetchResource("../etc/")).rejects.toThrow(/unknown module/);
     const hits = await connector.search("PriceBook");
-    expect(hits.map((hit) => hit.resourceId)).toEqual(["src/pricing.py"]);
+    expect(hits.map((hit) => hit.resourceId)).toEqual(["src/"]);
   });
 
   it("keeps test files only when asked", async () => {
     const root = await repository();
     const withTests = await new LocalCodeConnector("handbook", root, {
       includeTests: true,
-    }).listResources();
-    expect(withTests.map((resource) => resource.id)).toContain("src/billing/invoice.test.ts");
+    }).fetchResource("src/billing/");
+    expect(withTests.content).toContain("src/billing/invoice.test.ts");
   });
 });
 
 describe("createSourceConnector with code", () => {
-  it("reads documents and code as one source, routing fetches by file type", async () => {
+  it("reads documents and code modules as one source, routing fetches by id", async () => {
     const root = await repository();
     const connector = createSourceConnector({
       name: "handbook",
@@ -90,14 +108,12 @@ describe("createSourceConnector with code", () => {
     const resources = await connector.listResources();
     expect(resources.map((resource) => resource.id).sort()).toEqual([
       "docs/decisions.md",
-      "src/billing/invoice.ts",
-      "src/pricing.py",
+      "src/",
+      "src/billing/",
     ]);
     expect((await connector.fetchResource("docs/decisions.md")).content).toContain("Round half up");
-    expect((await connector.fetchResource("src/pricing.py")).content).toContain("apply_discount");
-    expect((await connector.search("discount")).map((hit) => hit.resourceId)).toEqual([
-      "src/pricing.py",
-    ]);
+    expect((await connector.fetchResource("src/")).content).toContain("apply_discount");
+    expect((await connector.search("discount")).map((hit) => hit.resourceId)).toEqual(["src/"]);
   });
 
   it("stays Markdown-only without the flag", async () => {
