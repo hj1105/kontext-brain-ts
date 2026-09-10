@@ -112,6 +112,19 @@ export function renderResult(result: OntologyCliResult, options: OntologyCliOpti
         ? `Added source '${added.name}'.\n`
         : `Source '${added.name}' is valid. Re-run with --write to save it.\n`;
     }
+    case "nodes": {
+      const listing = result as Extract<OntologyCliResult, { command: "nodes" }>;
+      const lines = [`${listing.nodes.length} ontology node(s):`];
+      for (const node of listing.nodes) {
+        const count = node.resourceCount === null ? "" : `  ${node.resourceCount} document(s)`;
+        lines.push(`  ${node.id}${node.parentId ? ` (under ${node.parentId})` : ""}${count}`);
+        for (const sample of node.samples.slice(0, 3)) {
+          lines.push(`      - ${sample.connectorId}:${sample.externalId}`);
+        }
+      }
+      lines.push("");
+      return lines.join("\n");
+    }
     case "query": {
       const query = result as Extract<OntologyCliResult, { command: "query" }>;
       const lines = [

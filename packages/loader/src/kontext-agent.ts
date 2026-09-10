@@ -1,4 +1,5 @@
 import type { CodeResourceSyncPort } from "@kontext-brain/code";
+import type { OntologyBuildProgressSink } from "@kontext-brain/core";
 import {
   type AnswerGroundingValidator,
   type BidirectionalNLayerRetriever,
@@ -116,6 +117,8 @@ export interface KontextAgentDeps {
   knowledgeRetriever?: BidirectionalNLayerRetriever;
   mcpKnowledgeSynchronizer?: MCPKnowledgeSynchronizer;
   codeResourceSync?: CodeResourceSyncPort;
+  /** Receives build phase progress; a host shows it while a long build runs. */
+  buildProgress?: OntologyBuildProgressSink;
   answerValidator?: AnswerGroundingValidator;
   mcpRefresh?: MCPRefreshConfiguration;
   ontologyUpdates?: OntologyUpdatesConfig;
@@ -152,6 +155,7 @@ export class KontextAgent {
   private readonly knowledgeRetriever?: BidirectionalNLayerRetriever;
   private readonly mcpKnowledgeSynchronizer?: MCPKnowledgeSynchronizer;
   private readonly codeResourceSync?: CodeResourceSyncPort;
+  private readonly buildProgress?: OntologyBuildProgressSink;
   private readonly answerValidator: AnswerGroundingValidator;
   private readonly mcpRefresh: MCPRefreshConfiguration;
   private readonly ontologyUpdates: OntologyUpdatesConfig;
@@ -182,6 +186,7 @@ export class KontextAgent {
     this.knowledgeRetriever = deps.knowledgeRetriever;
     this.mcpKnowledgeSynchronizer = deps.mcpKnowledgeSynchronizer;
     this.codeResourceSync = deps.codeResourceSync;
+    this.buildProgress = deps.buildProgress;
     this.answerValidator = deps.answerValidator ?? new CitationAnswerValidator();
     this.mcpRefresh = deps.mcpRefresh ?? {
       enabled: true,
@@ -595,7 +600,13 @@ export class KontextAgent {
     targetNodeCount: number | undefined,
     connectors: readonly MCPConnector[] = this.mcpConnectors,
   ): Promise<AutoSetupResult> {
+    this.buildProgress?.({ phase: "collect", done: 0, total: 0 });
     const resourceInfos = await this.collectAllResources(connectors);
+    this.buildProgress?.({
+      phase: "collect",
+      done: resourceInfos.length,
+      total: resourceInfos.length,
+    });
     if (resourceInfos.length === 0) {
       return {
         nodesCreated: 0,
@@ -617,13 +628,16 @@ export class KontextAgent {
         targetNodeCount,
         20,
         this.templates,
+        this.buildProgress,
       );
       const buildResult = await builder.build(documentSources);
       newNodes = buildResult.nodes;
       await this.expandGraph(buildResult.nodes, buildResult.edges);
     }
 
-    const classifier = new DocumentClassifier(this.router.traversalAdapter, this.templates);
+    const classifier = new DocumentClassifier(this.router.traversalAdapter, this.templates, {
+      onProgress: (done, total) => this.buildProgress?.({ phase: "classify", done, total }),
+    });
     const classification = await classifier.classify(resourceInfos, this.ontologySchemaGraph.nodes);
     await this.ontologyProposalQueue.enqueue(this.organizationId, classification.proposals);
 
@@ -859,7 +873,11 @@ export class KontextAgent {
     }
 
     const changed: SerializableResourceRecord[] = [];
+    let synced = 0;
+    this.buildProgress?.({ phase: "sync", done: 0, total: current.length });
     for (const record of current) {
+      synced += 1;
+      this.buildProgress?.({ phase: "sync", done: synced, total: current.length });
       const connector = this.mcpConnectors.find(
         (candidate) => candidate.name === record.connectorName,
       );
@@ -892,6 +910,8 @@ export class KontextAgent {
         resourceSync,
         nodeIdsFor: (moduleId) =>
           this.mcpResourceCache.get(resourceKey(connector.name, moduleId))?.nodeIds ?? [],
+        onProgress: (done, total) =>
+          this.buildProgress?.({ phase: "code", done, total, message: connector.name }),
       });
       synced += report.filesSynced;
     }

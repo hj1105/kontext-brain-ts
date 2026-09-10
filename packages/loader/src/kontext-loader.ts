@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import type { CodeResourceSyncPort } from "@kontext-brain/code";
+import type { OntologyBuildProgressSink } from "@kontext-brain/core";
 import {
   type BidirectionalNLayerRetriever,
   ContentFetcherRegistry,
@@ -111,6 +112,8 @@ function createLayerAdapter(dto: MCPConfigDto, connector: MCPConnector): MCPLaye
 
 export interface KontextLoaderOptions {
   llmRegistry?: LLMProviderRegistry;
+  /** Receives ontology build progress; the CLI writes it where a host can read it. */
+  buildProgress?: OntologyBuildProgressSink;
   storeRegistry?: OntologyStoreRegistry;
   mappingRegistry?: NodeMappingRegistry;
   knowledgeRuntime?: {
@@ -133,8 +136,10 @@ export class KontextLoader {
   private readonly storeRegistry: OntologyStoreRegistry;
   private readonly mappingRegistry: NodeMappingRegistry;
   private readonly knowledgeRuntime?: KontextLoaderOptions["knowledgeRuntime"];
+  private readonly buildProgress?: OntologyBuildProgressSink;
 
   constructor(options: KontextLoaderOptions = {}) {
+    this.buildProgress = options.buildProgress;
     this.llmRegistry = options.llmRegistry ?? new LLMProviderRegistry();
     this.storeRegistry = options.storeRegistry ?? new OntologyStoreRegistry();
     this.mappingRegistry = options.mappingRegistry ?? new NodeMappingRegistry();
@@ -356,6 +361,7 @@ export class KontextLoader {
       knowledgeRetriever: this.knowledgeRuntime?.knowledgeRetriever,
       mcpKnowledgeSynchronizer: this.knowledgeRuntime?.mcpKnowledgeSynchronizer,
       codeResourceSync: this.knowledgeRuntime?.codeResourceSync,
+      buildProgress: this.buildProgress,
       ontologyProposalQueue: this.knowledgeRuntime?.ontologyProposalQueue,
       mcpRefresh: config.sync,
       ontologyUpdates: config.ontologyUpdates,

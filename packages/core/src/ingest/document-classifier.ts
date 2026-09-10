@@ -39,6 +39,8 @@ export interface DocumentClassifierOptions {
   readonly concurrency?: number;
   /** Description text per document in the prompt; a barrel's export list says little past this. */
   readonly maxDescriptionChars?: number;
+  /** Called after each classification batch with batches done and total. */
+  readonly onProgress?: (done: number, total: number) => void;
 }
 
 const DEFAULT_BATCH = 100;
@@ -49,6 +51,7 @@ export class DocumentClassifier {
   private readonly batchSize: number;
   private readonly concurrency: number;
   private readonly descriptionChars: number;
+  private readonly onProgress: ((done: number, total: number) => void) | undefined;
 
   constructor(
     private readonly adapter: LLMAdapter,
@@ -58,6 +61,7 @@ export class DocumentClassifier {
     this.batchSize = Math.max(1, options.maxDocumentsPerBatch ?? DEFAULT_BATCH);
     this.concurrency = Math.max(1, options.concurrency ?? DEFAULT_CONCURRENCY);
     this.descriptionChars = Math.max(0, options.maxDescriptionChars ?? DEFAULT_DESCRIPTION_CHARS);
+    this.onProgress = options.onProgress;
   }
 
   async classify(
@@ -78,12 +82,16 @@ export class DocumentClassifier {
     for (let start = 0; start < documents.length; start += this.batchSize) {
       batches.push(documents.slice(start, start + this.batchSize));
     }
+    let completed = 0;
+    this.onProgress?.(0, batches.length);
     const batchResults = await mapWithConcurrency(batches, this.concurrency, async (batch) => {
       const response = await this.adapter.complete(
         this.templates.documentClassification,
         `Ontology nodes:\n${nodeList}\n\nDocuments:\n${this.describe(batch)}`,
         "Classify each document into the best matching node.",
       );
+      completed += 1;
+      this.onProgress?.(completed, batches.length);
       return parseClassification(response, batch.length, validNodeIds);
     });
 

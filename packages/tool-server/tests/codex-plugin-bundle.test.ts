@@ -49,6 +49,7 @@ describe("Codex plugin bundle", () => {
         "kontext_propose_transition",
         "kontext_refresh_task_context",
         "kontext_schedule_logic",
+        "kontext_search_knowledge",
         "kontext_submit_change_bundle",
       ]);
       expect(

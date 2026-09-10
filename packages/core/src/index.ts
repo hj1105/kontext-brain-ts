@@ -38,6 +38,7 @@ export * from "./query/answer-validator.js";
 // Ingest
 export * from "./ingest/ontology-auto-builder.js";
 export * from "./ingest/bounded-concurrency.js";
+export * from "./ingest/ontology-build-progress.js";
 export * from "./ingest/document-classifier.js";
 export * from "./ingest/ingest-pipeline.js";
 export * from "./ingest/entity-extractor.js";

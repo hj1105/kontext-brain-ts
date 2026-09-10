@@ -1,9 +1,13 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { LLMProviderRegistry } from "@kontext-brain/llm";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { loadLocalKnowledgePrincipal, resolveKontextDataDirectory } from "../src/index.js";
+import {
+  loadLocalKnowledgePrincipal,
+  ontologyProgressPath,
+  resolveKontextDataDirectory,
+} from "../src/index.js";
 import { KontextLoader } from "../src/kontext-loader.js";
 import { runOntologyCli } from "../src/ontology-cli.js";
 
@@ -92,10 +96,11 @@ describe("kontext-ontology setup with a data directory", () => {
       {
         // Why: the runtime is a loader option, not a fromYaml argument; the instance
         // method takes only the document.
-        loadAgent: (_path, yaml, knowledge) =>
+        loadAgent: (_path, yaml, knowledge, buildProgress) =>
           new KontextLoader({
             llmRegistry: registry(),
             ...(knowledge ? { knowledgeRuntime: knowledge } : {}),
+            ...(buildProgress ? { buildProgress } : {}),
           }).fromYaml(yaml),
       },
     );
@@ -154,6 +159,33 @@ describe("kontext-ontology setup with a data directory", () => {
     expect(queryCode).toBe(0);
     expect(answer.hits[0]?.source.externalId).toBe("docs/refunds.md");
     expect(answer.hits[0]?.evidenceId).toContain("|source|");
+
+    // The build left a finished progress record where a host polls for it.
+    const progress = JSON.parse(readFileSync(ontologyProgressPath(data, config), "utf8"));
+    expect(progress.finished).toBe(true);
+    expect(progress.ok).toBe(true);
+    // The last phase a build reports is code projection (or sync when a source has no code).
+    expect(["sync", "code"]).toContain(progress.phase);
+    expect(progress.total).toBeGreaterThan(0);
+
+    // Nodes list what the graph filed under each of them.
+    const listed = vi.spyOn(process.stdout, "write").mockReturnValue(true);
+    const nodesCode = await runOntologyCli([
+      "nodes",
+      "--config",
+      config,
+      "--data-dir",
+      data,
+      "--json",
+    ]);
+    const nodesResult = JSON.parse(listed.mock.calls.map((call) => String(call[0])).join(""));
+    listed.mockRestore();
+    expect(nodesCode).toBe(0);
+    expect(nodesResult.nodes.map((node: { id: string }) => node.id)).toEqual(["Billing"]);
+    expect(nodesResult.nodes[0].resourceCount).toBe(4);
+    expect(nodesResult.nodes[0].samples.map((sample: { title: string }) => sample.title)).toEqual(
+      expect.arrayContaining(["Billing", "Refunds", "src", "src/invoice.ts"]),
+    );
     const first = billing[0];
     if (!first) throw new Error("expected a Billing resource");
     const chunks = await graph.listChunks(principal.organizationId, first.resourceId);

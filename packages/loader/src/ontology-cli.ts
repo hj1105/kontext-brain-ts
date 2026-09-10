@@ -3,6 +3,7 @@ import {
   FileResourceContentStore,
   type KnowledgeSearchResult,
   LocalKnowledgeSearch,
+  type OntologyBuildProgressSink,
   SqliteKnowledgeGraphRepository,
 } from "@kontext-brain/core";
 import { stringify as stringifyYaml } from "yaml";
@@ -28,6 +29,7 @@ import {
   createLocalKnowledgeRuntime,
   resolveKontextDataDirectory,
 } from "./local-knowledge-runtime.js";
+import { OntologyBuildProgressWriter } from "./ontology-build-progress-file.js";
 import { renderResult } from "./ontology-cli-render.js";
 import {
   OntologySourceError,
@@ -288,6 +290,7 @@ Commands:
   setup        Build the ontology from the connected sources and save it
   github-repos List an organization's repositories to pick sources from
   query        Search the knowledge graph a build wrote (needs --data-dir)
+  nodes        List ontology nodes with the documents filed under each (--data-dir)
 
 Options:
   --config <path>        Config file (default: ${DEFAULT_CONFIG})
@@ -329,12 +332,23 @@ subscription already covers. ollama runs locally.
 `;
 }
 
+/** One ontology node with the documents the knowledge graph currently files under it. */
+export interface OntologyNodeMembers {
+  readonly id: string;
+  readonly description: string;
+  readonly parentId: string | null;
+  /** Null when no data directory was given, so membership could not be read. */
+  readonly resourceCount: number | null;
+  readonly samples: readonly { title: string; connectorId: string; externalId: string }[];
+}
+
 export interface OntologyCliDeps {
   /** Overrides how the agent is built, so setup can run without a paid model. */
   readonly loadAgent?: (
     configPath: string,
     yaml: string,
     knowledge: LocalKnowledgeRuntime | undefined,
+    buildProgress: OntologyBuildProgressSink | undefined,
   ) => Promise<KontextAgent>;
   /** Overrides the GitHub lookup, so tests need neither gh nor the network. */
   readonly listRepositories?: (owner: string) => Promise<GitHubRepositoryListing>;
@@ -352,6 +366,12 @@ export type OntologyCliResult =
   | { command: "add"; ok: true; name: string; written: boolean }
   | ({ command: "github-repos"; ok: true } & GitHubRepositoryListing)
   | ({ command: "query"; ok: true; dataDirectory: string } & KnowledgeSearchResult)
+  | {
+      command: "nodes";
+      ok: true;
+      nodes: readonly OntologyNodeMembers[];
+      knowledgeStore: string | null;
+    }
   | {
       command: "check";
       ok: boolean;
@@ -397,6 +417,40 @@ async function execute(
       ...(options.nodes.length > 0 ? { ontologyNodeIds: options.nodes } : {}),
     });
     return { command, ok: true, dataDirectory: options.dataDirectory, ...result };
+  }
+  if (command === "nodes") {
+    const document = readConfigDocument(options.config);
+    const raw = Array.isArray(document.data.ontology) ? document.data.ontology : [];
+    const nodes: OntologyNodeMembers[] = [];
+    let graph: SqliteKnowledgeGraphRepository | undefined;
+    let organizationId: string | undefined;
+    if (options.dataDirectory) {
+      organizationId = (await loadLocalKnowledgePrincipal(options.dataDirectory)).organizationId;
+      graph = await SqliteKnowledgeGraphRepository.open(options.dataDirectory);
+    }
+    for (const entry of raw) {
+      if (typeof entry !== "object" || entry === null) continue;
+      const node = entry as { id?: unknown; description?: unknown; parentId?: unknown };
+      if (typeof node.id !== "string") continue;
+      const members =
+        graph && organizationId
+          ? (await graph.listResourcesByOntologyNode(organizationId, node.id)).filter(
+              (resource) => resource.status === "active",
+            )
+          : [];
+      nodes.push({
+        id: node.id,
+        description: typeof node.description === "string" ? node.description : "",
+        parentId: typeof node.parentId === "string" ? node.parentId : null,
+        resourceCount: graph ? members.length : null,
+        samples: members.slice(0, 8).map((resource) => ({
+          title: resource.title,
+          connectorId: resource.source.connectorId,
+          externalId: resource.source.externalId,
+        })),
+      });
+    }
+    return { command, ok: true, nodes, knowledgeStore: options.dataDirectory ?? null };
   }
   if (command === "github-repos") {
     // Why: listing needs no config; a workspace without kontext.yaml can still pick sources.
@@ -474,16 +528,41 @@ async function execute(
     const knowledge = options.dataDirectory
       ? await createLocalKnowledgeRuntime(options.dataDirectory, readMCPEntries(effective))
       : undefined;
+    // Why a file: stdout carries one JSON result at the end, so a host reading
+    // progress during a multi-minute build needs somewhere else to look.
+    const progress = options.dataDirectory
+      ? new OntologyBuildProgressWriter(options.dataDirectory, options.config)
+      : undefined;
     const loadAgent =
       deps.loadAgent ??
-      ((_path: string, yaml: string, runtime: LocalKnowledgeRuntime | undefined) =>
-        KontextLoader.fromYaml(yaml, runtime ? { knowledgeRuntime: runtime } : {}));
-    const agent = await loadAgent(
-      options.config,
-      stringifyYaml(effective.data, { lineWidth: 0 }),
-      knowledge,
-    );
-    const result = await agent.autoSetup(options.targetNodes);
+      ((
+        _path: string,
+        yaml: string,
+        runtime: LocalKnowledgeRuntime | undefined,
+        buildProgress: OntologyBuildProgressSink | undefined,
+      ) =>
+        KontextLoader.fromYaml(yaml, {
+          ...(runtime ? { knowledgeRuntime: runtime } : {}),
+          ...(buildProgress ? { buildProgress } : {}),
+        }));
+    let result: Awaited<ReturnType<KontextAgent["autoSetup"]>>;
+    let agent: KontextAgent;
+    try {
+      agent = await loadAgent(
+        options.config,
+        stringifyYaml(effective.data, { lineWidth: 0 }),
+        knowledge,
+        progress?.sink,
+      );
+      result = await agent.autoSetup(options.targetNodes);
+    } catch (error) {
+      progress?.finish({
+        ok: false,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+    progress?.finish({ ok: true });
     const graph = agent.ontologyGraph;
     const nodes = toOntologyYamlNodes([...graph.nodes.values()], [...graph.edges]);
     if (nodes.length === 0) {

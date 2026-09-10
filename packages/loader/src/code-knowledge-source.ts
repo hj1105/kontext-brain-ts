@@ -13,6 +13,8 @@ export interface CodeKnowledgeSyncInput {
   readonly resourceSync: CodeResourceSyncPort;
   /** Ontology nodes the classifier assigned to a module document, by module id. */
   readonly nodeIdsFor: (moduleId: string) => readonly string[];
+  /** Called after each file with files done and total for this source. */
+  readonly onProgress?: (done: number, total: number) => void;
 }
 
 export interface CodeKnowledgeSyncReport {

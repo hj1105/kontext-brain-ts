@@ -265,7 +265,10 @@ export class LocalCodeConnector implements MCPConnector, CodeKnowledgeSource {
     const adapter = new CodeResourceSnapshotAdapter();
     let filesSynced = 0;
     let filesFailed = 0;
-    for (const module of this.collect()) {
+    const modules = this.collect();
+    const total = modules.reduce((sum, module) => sum + module.files.length, 0);
+    input.onProgress?.(0, total);
+    for (const module of modules) {
       const ontologyNodeIds = input.nodeIdsFor(module.id);
       const byLanguage = new Map<CodeLanguage, AnalyzedFile[]>();
       for (const file of module.files) {
@@ -300,6 +303,7 @@ export class LocalCodeConnector implements MCPConnector, CodeKnowledgeSource {
             // repository from becoming knowledge; the count says how many were left out.
             filesFailed += 1;
           }
+          input.onProgress?.(filesSynced + filesFailed, total);
         }
       }
     }

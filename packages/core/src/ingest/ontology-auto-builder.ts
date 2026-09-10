@@ -4,6 +4,7 @@ import type { LLMAdapter } from "../query/llm-adapter.js";
 import type { PromptTemplates } from "../query/prompt-templates.js";
 import { DefaultPromptTemplates } from "../query/prompt-templates.js";
 import { mapWithConcurrency, stratifiedSample } from "./bounded-concurrency.js";
+import type { OntologyBuildProgressSink } from "./ontology-build-progress.js";
 
 export interface SourceDocument {
   readonly id: string;
@@ -90,6 +91,7 @@ export class OntologyAutoBuilder {
     private readonly targetNodeCount?: number,
     private readonly batchSize = 20,
     private readonly templates: PromptTemplates = DefaultPromptTemplates,
+    private readonly progress?: OntologyBuildProgressSink,
   ) {}
 
   async build(sources: readonly DocumentSource[]): Promise<OntologyBuildResult> {
@@ -97,7 +99,9 @@ export class OntologyAutoBuilder {
     if (docs.length === 0) return emptyOntologyBuildResult;
 
     const categories = await this.extractCategories(docs);
+    this.progress?.({ phase: "design", done: 0, total: 1 });
     const nodes = await this.clusterToNodes(docs, categories);
+    this.progress?.({ phase: "design", done: 1, total: 1 });
     const edges = await this.inferEdges(nodes);
 
     return { nodes, edges, docCount: docs.length };
@@ -113,9 +117,14 @@ export class OntologyAutoBuilder {
     for (let i = 0; i < sample.length; i += this.batchSize) {
       batches.push(sample.slice(i, i + this.batchSize));
     }
-    const results = await mapWithConcurrency(batches, MAX_CONCURRENT_CALLS, (b) =>
-      this.extractBatchCategories(b),
-    );
+    let completed = 0;
+    this.progress?.({ phase: "discover", done: 0, total: batches.length });
+    const results = await mapWithConcurrency(batches, MAX_CONCURRENT_CALLS, async (b) => {
+      const categories = await this.extractBatchCategories(b);
+      completed += 1;
+      this.progress?.({ phase: "discover", done: completed, total: batches.length });
+      return categories;
+    });
     const frequency = new Map<string, number>();
     for (const category of results.flat()) {
       frequency.set(category, (frequency.get(category) ?? 0) + 1);
