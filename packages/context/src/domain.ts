@@ -16,6 +16,21 @@ export interface ContextEvidenceItem {
   readonly availability: ContextAvailability;
   readonly allowedRuntimeProviders: readonly string[];
   readonly relevance?: number;
+  readonly provenance?: ContextEvidenceProvenance;
+}
+
+export interface ContextEvidenceProvenance {
+  readonly resourceId: string;
+  readonly chunkId: string;
+  readonly resourceTitle: string;
+  readonly source: {
+    readonly connectorId: string;
+    readonly externalId: string;
+    readonly type: string;
+  };
+  readonly observedAt: string;
+  readonly contentHash: string;
+  readonly ontologyNodeIds: readonly string[];
 }
 
 export interface LogicContextTarget {
