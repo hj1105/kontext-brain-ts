@@ -73,6 +73,7 @@ export function validateCorpus(
   }
   if (
     !corpus.organizationId?.trim() ||
+    !corpus.runtimeProvider?.trim() ||
     !corpus.baseCodeRevision?.trim() ||
     !corpus.contextDigest?.trim() ||
     !corpus.sourceFreshnessDigest?.trim()
@@ -87,7 +88,7 @@ export function validateCorpus(
     throw new Error(`Invalid corpus snapshotAt: ${corpus.snapshotAt}`);
   const evidenceIds = new Set<string>();
   for (const evidence of corpus.evidence) {
-    validateEvidence(evidence, snapshot, taskPath);
+    validateEvidence(evidence, snapshot, taskPath, corpus.runtimeProvider);
     if (evidenceIds.has(evidence.evidenceId)) {
       throw new Error(`Duplicate corpus Evidence id: ${evidence.evidenceId}`);
     }
@@ -122,6 +123,11 @@ export function validateCorpus(
       revision.egress.allowedRuntimeProviders.length === 0
     ) {
       throw new Error("Normative revisions require canonical identity and provenance");
+    }
+    if (!revision.egress.allowedRuntimeProviders.includes(corpus.runtimeProvider)) {
+      throw new Error(
+        `Normative Revision ${revision.revisionId} is not available to ${corpus.runtimeProvider}`,
+      );
     }
     if (recordIds.has(revision.recordId)) {
       throw new Error(`Duplicate normative record id: ${revision.recordId}`);
@@ -158,6 +164,7 @@ export function buildContextBundle(
     arm,
     taskId: corpus.taskId,
     organizationId: corpus.organizationId,
+    runtimeProvider: corpus.runtimeProvider,
     baseCodeRevision: corpus.baseCodeRevision,
     contextDigest: corpus.contextDigest,
     sourceFreshnessDigest: corpus.sourceFreshnessDigest,
@@ -189,6 +196,7 @@ function validateEvidence(
   evidence: DeepSweEvidenceSnapshot,
   snapshot: number,
   taskPath: string,
+  runtimeProvider: string,
 ): void {
   if (
     !evidence.evidenceId?.trim() ||
@@ -199,8 +207,19 @@ function validateEvidence(
   ) {
     throw new Error("Corpus Evidence requires Evidence, Resource, Chunk, title, and text");
   }
-  if (!evidence.sourceUri?.trim() || !Array.isArray(evidence.ontologyNodeIds)) {
+  if (
+    !evidence.source?.connectorId?.trim() ||
+    !evidence.source.externalId?.trim() ||
+    !evidence.source.type?.trim() ||
+    !Array.isArray(evidence.ontologyNodeIds) ||
+    !Array.isArray(evidence.allowedRuntimeProviders) ||
+    evidence.allowedRuntimeProviders.length === 0 ||
+    evidence.allowedRuntimeProviders.some((provider) => !provider.trim())
+  ) {
     throw new Error(`Evidence ${evidence.evidenceId} has invalid provenance metadata`);
+  }
+  if (!evidence.allowedRuntimeProviders.includes(runtimeProvider)) {
+    throw new Error(`Evidence ${evidence.evidenceId} is not available to ${runtimeProvider}`);
   }
   const observedAt = Date.parse(evidence.observedAt);
   if (!Number.isFinite(observedAt) || observedAt > snapshot) {
@@ -210,14 +229,15 @@ function validateEvidence(
   if (expected !== sha256(evidence.text)) {
     throw new Error(`Evidence ${evidence.evidenceId} content hash does not match`);
   }
-  const sourcePath = fileSourcePath(evidence.sourceUri);
-  const segments = provenanceSegments(evidence.sourceUri);
+  const sourceReference = evidence.source.externalId;
+  const sourcePath = fileSourcePath(sourceReference);
+  const segments = provenanceSegments(sourceReference);
   if (segments.some((segment) => forbiddenSegments.has(segment.toLowerCase()))) {
-    throw new Error(`Forbidden benchmark artifact in corpus provenance: ${evidence.sourceUri}`);
+    throw new Error(`Forbidden benchmark artifact in corpus provenance: ${sourceReference}`);
   }
   if (!sourcePath) return;
   if (isWithin(path.resolve(sourcePath), path.resolve(taskPath))) {
-    throw new Error(`Task artifact cannot be a corpus source: ${evidence.sourceUri}`);
+    throw new Error(`Task artifact cannot be a corpus source: ${sourceReference}`);
   }
 }
 

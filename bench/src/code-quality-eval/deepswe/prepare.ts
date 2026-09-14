@@ -12,6 +12,7 @@ export async function prepareDeepSweEvaluation(
   options: DeepSwePrepareOptions,
 ): Promise<DeepSwePreparationManifest> {
   validateOptions(options);
+  const runtimeProvider = modelRuntimeProvider(options.model);
   const datasetTasksPath = path.resolve(options.datasetTasksPath);
   const deepSweRoot = path.dirname(datasetTasksPath);
   const discovered = await discoverTaskIds(datasetTasksPath);
@@ -49,6 +50,11 @@ export async function prepareDeepSweEvaluation(
     if (corpus.baseCodeRevision !== baseCommit) {
       throw new Error(
         `Corpus base code revision mismatch for ${taskId}: ${corpus.baseCodeRevision} != ${baseCommit}`,
+      );
+    }
+    if (corpus.runtimeProvider !== runtimeProvider) {
+      throw new Error(
+        `Corpus runtime provider mismatch for ${taskId}: ${corpus.runtimeProvider} != ${runtimeProvider}`,
       );
     }
     const instructionSha256 = sha256(stripPierCanary(instruction));
@@ -263,4 +269,15 @@ function validateOptions(options: DeepSwePrepareOptions): void {
     throw new Error("DeepSWE task limit must be a positive integer");
   }
   if (options.arms.length === 0) throw new Error("Select at least one DeepSWE arm");
+  modelRuntimeProvider(options.model);
+}
+
+function modelRuntimeProvider(model: string): string {
+  const separator = model.indexOf("/");
+  const provider = separator < 0 ? "" : model.slice(0, separator);
+  const name = separator < 0 ? "" : model.slice(separator + 1);
+  if (!provider.trim() || !name.trim()) {
+    throw new Error("DeepSWE model must use provider/model format");
+  }
+  return provider;
 }

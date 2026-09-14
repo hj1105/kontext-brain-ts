@@ -9,10 +9,16 @@ export interface DeepSweEvidenceSnapshot {
   readonly chunkId: string;
   readonly title: string;
   readonly text: string;
-  readonly sourceUri: string;
+  readonly sourceSpan?: string;
+  readonly source: {
+    readonly connectorId: string;
+    readonly externalId: string;
+    readonly type: string;
+  };
   readonly observedAt: string;
   readonly contentSha256: string;
   readonly ontologyNodeIds: readonly string[];
+  readonly allowedRuntimeProviders: readonly string[];
 }
 
 export interface DeepSweNormativeRecord {
@@ -27,6 +33,7 @@ export interface DeepSweContextCorpus {
   readonly schemaVersion: 1;
   readonly taskId: string;
   readonly organizationId: string;
+  readonly runtimeProvider: string;
   readonly baseCodeRevision: string;
   readonly contextDigest: string;
   readonly sourceFreshnessDigest: string;
@@ -44,6 +51,7 @@ export interface DeepSweContextBundle {
   readonly arm: DeepSweArm;
   readonly taskId: string;
   readonly organizationId: string;
+  readonly runtimeProvider: string;
   readonly baseCodeRevision: string;
   readonly contextDigest: string;
   readonly sourceFreshnessDigest: string;

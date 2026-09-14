@@ -38,12 +38,18 @@ importers:
       '@kontext-brain/core':
         specifier: workspace:*
         version: link:../packages/core
+      '@kontext-brain/context':
+        specifier: workspace:*
+        version: link:../packages/context
       '@kontext-brain/llm':
         specifier: workspace:*
         version: link:../packages/llm
       '@kontext-brain/loader':
         specifier: workspace:*
         version: link:../packages/loader
+      '@kontext-brain/local':
+        specifier: workspace:*
+        version: link:../packages/local
       '@kontext-brain/mcp':
         specifier: workspace:*
         version: link:../packages/mcp

@@ -50,12 +50,22 @@ describe("DeepSWE context corpus", () => {
         "/tmp/deep-swe/tasks/demo",
       ),
     ).toThrow(/unknown Evidence/);
+    expect(() =>
+      validateCorpus(
+        {
+          ...corpus,
+          evidence: [{ ...evidence, allowedRuntimeProviders: ["claude"] }],
+        },
+        corpus.taskId,
+        "/tmp/deep-swe/tasks/demo",
+      ),
+    ).toThrow(/not available to openai/);
   });
 
   it("rejects benchmark solution and verifier provenance from files or URLs", () => {
     const corpus = fixtureCorpus();
     const evidence = required(corpus.evidence[0]);
-    for (const sourceUri of [
+    for (const externalId of [
       "file:///tmp/deep-swe/tasks/demo/solution/solve.py",
       "https://github.com/datacurve-ai/deep-swe/blob/main/tasks/demo/verifier/test.sh",
     ]) {
@@ -63,7 +73,7 @@ describe("DeepSWE context corpus", () => {
         validateCorpus(
           {
             ...corpus,
-            evidence: [{ ...evidence, sourceUri }],
+            evidence: [{ ...evidence, source: { ...evidence.source, externalId } }],
           },
           corpus.taskId,
           "/tmp/deep-swe/tasks/demo",

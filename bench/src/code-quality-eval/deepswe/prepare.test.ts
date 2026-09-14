@@ -143,6 +143,59 @@ describe("DeepSWE evaluation preparation", () => {
       }),
     ).rejects.toThrow(/base code revision mismatch/);
   });
+
+  it("refuses a corpus frozen for a different runtime provider", async () => {
+    const fixture = await createFixture();
+    const corpusPath = path.join(fixture.corpora, "alpha-task.json");
+    const corpus = JSON.parse(await readFile(corpusPath, "utf8")) as Record<string, unknown>;
+    const evidence = (corpus.evidence as Record<string, unknown>[]).map((entry) => ({
+      ...entry,
+      allowedRuntimeProviders: ["openai", "claude"],
+    }));
+    const normativeRecords = (corpus.normativeRecords as Record<string, unknown>[]).map(
+      (record) => {
+        const revision = record.revision as Record<string, unknown>;
+        return {
+          ...record,
+          revision: {
+            ...revision,
+            egress: {
+              ...(revision.egress as Record<string, unknown>),
+              allowedRuntimeProviders: ["openai", "claude"],
+            },
+          },
+        };
+      },
+    );
+    await writeFile(
+      corpusPath,
+      `${JSON.stringify({ ...corpus, runtimeProvider: "claude", evidence, normativeRecords }, null, 2)}\n`,
+      "utf8",
+    );
+
+    await expect(
+      prepareDeepSweEvaluation({
+        repositoryRoot: "/repo",
+        datasetTasksPath: fixture.tasks,
+        corpusRoot: fixture.corpora,
+        runDirectory: fixture.run,
+        jobsDirectory: path.join(fixture.run, "jobs"),
+        pierBinary: "pier",
+        model: "openai/test-model",
+        reasoningEffort: "medium",
+        attempts: 1,
+        concurrency: 1,
+        sampleSeed: 0,
+        arms: ["baseline"],
+        taskIds: ["alpha-task"],
+        environment: "docker",
+        miniSweAgentVersion: "2.1.0",
+        deepSweRevision: fixture.revision,
+        pierRevision: "pier-0.3.1",
+        adapterRevision: "adapter-sha",
+      }),
+    ).rejects.toThrow(/runtime provider mismatch/);
+  });
 });
 
 async function createFixture(): Promise<{

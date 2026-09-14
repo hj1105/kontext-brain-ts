@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -26,17 +27,19 @@ def snippet(value: str, limit: int = 4000) -> str:
     return value if len(value) <= limit else value[: limit - 1] + "…"
 
 
-def present_evidence(evidence: dict[str, Any]) -> dict[str, Any]:
+def present_evidence(evidence: dict[str, Any], *, complete: bool = False) -> dict[str, Any]:
     return {
         "kind": "evidence",
         "evidenceId": evidence["evidenceId"],
         "resourceId": evidence["resourceId"],
         "chunkId": evidence["chunkId"],
         "title": evidence["title"],
-        "sourceUri": evidence["sourceUri"],
+        "sourceSpan": evidence.get("sourceSpan"),
+        "source": evidence["source"],
         "observedAt": evidence["observedAt"],
         "ontologyNodeIds": evidence.get("ontologyNodeIds", []),
-        "text": snippet(evidence["text"]),
+        "allowedRuntimeProviders": evidence["allowedRuntimeProviders"],
+        "text": evidence["text"] if complete else snippet(evidence["text"]),
     }
 
 
@@ -112,6 +115,53 @@ def ranked_records(
     return presented
 
 
+def mandatory_records(
+    bundle: dict[str, Any], path: str, symbol: str
+) -> list[dict[str, Any]]:
+    selected = []
+    for record in bundle.get("normativeRecords", []):
+        revision = record["revision"]
+        matches_symbol = any(
+            (selector.get("relativePath") or selector.get("qualifiedName"))
+            and (not selector.get("relativePath") or selector["relativePath"] == path)
+            and (not selector.get("qualifiedName") or selector["qualifiedName"] == symbol)
+            for selector in record.get("symbolSelectors", [])
+        )
+        if revision.get("scope", {}).get("kind") == "organization" or matches_symbol:
+            selected.append({**revision, "text": normative_text(revision)})
+    return sorted(selected, key=lambda revision: revision["recordId"])
+
+
+def required_evidence(
+    bundle: dict[str, Any], records: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    evidence_ids = set()
+    for record in records:
+        if record.get("organizationId") != bundle["organizationId"]:
+            raise ValueError("Mandatory record belongs to another Organization")
+        if bundle["runtimeProvider"] not in record.get("egress", {}).get(
+            "allowedRuntimeProviders", []
+        ):
+            raise ValueError("Mandatory record is unavailable to this runtime provider")
+        references = record.get("evidence", [])
+        if not references:
+            raise ValueError("Mandatory record has no provenance Evidence")
+        evidence_ids.update(reference["evidenceId"] for reference in references)
+    by_id = {evidence["evidenceId"]: evidence for evidence in bundle.get("evidence", [])}
+    sources = []
+    for evidence_id in sorted(evidence_ids):
+        evidence = by_id.get(evidence_id)
+        if evidence is None:
+            raise ValueError(f"Required Evidence is unavailable: {evidence_id}")
+        if bundle["runtimeProvider"] not in evidence.get("allowedRuntimeProviders", []):
+            raise ValueError("Required Evidence is unavailable to this runtime provider")
+        actual_hash = hashlib.sha256(evidence["text"].encode("utf-8")).hexdigest()
+        if evidence.get("contentSha256", "").removeprefix("sha256:") != actual_hash:
+            raise ValueError(f"Required Evidence content hash does not match: {evidence_id}")
+        sources.append(present_evidence(evidence, complete=True))
+    return sources
+
+
 def supporting_evidence(
     bundle: dict[str, Any], records: list[dict[str, Any]]
 ) -> list[dict[str, Any]]:
@@ -180,6 +230,7 @@ def execute(bundle: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:
         "arm": bundle["arm"],
         "taskId": bundle["taskId"],
         "organizationId": bundle["organizationId"],
+        "runtimeProvider": bundle["runtimeProvider"],
         "baseCodeRevision": bundle["baseCodeRevision"],
         "contextDigest": bundle["contextDigest"],
         "sourceFreshnessDigest": bundle["sourceFreshnessDigest"],
@@ -204,20 +255,23 @@ def execute(bundle: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:
         }
     if args.command == "begin-logic":
         query = " ".join((args.path, args.symbol, args.responsibility))
-        records = (
-            ranked_records(bundle, query, args.path, args.symbol, args.limit)
-            if bundle["arm"] == "kontext"
-            else []
-        )
-        sources = (
-            supporting_evidence(bundle, records)
-            if records
-            else (
-                []
-                if bundle["arm"] == "baseline"
-                else ranked_evidence(bundle, query, args.limit)
+        try:
+            records = (
+                mandatory_records(bundle, args.path, args.symbol)
+                if bundle["arm"] == "kontext"
+                else []
             )
-        )
+            sources = (
+                required_evidence(bundle, records)
+                if records
+                else (
+                    []
+                    if bundle["arm"] == "baseline"
+                    else ranked_evidence(bundle, query, args.limit)
+                )
+            )
+        except (KeyError, TypeError, ValueError) as error:
+            return {**common, "ok": False, "editingAllowed": False, "error": str(error)}
         return {
             **common,
             "editingAllowed": True,
