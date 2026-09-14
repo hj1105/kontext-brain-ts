@@ -21,6 +21,7 @@ describe("real OSS report", () => {
       generatedAt: "2026-09-02T00:00:00.000Z",
       runs: [run("baseline", false), run("kontext", true)],
     });
+    expect(report.schemaVersion).toBe(2);
     expect(report.evidenceStrength).toBe("smoke");
     expect(report.summaries.find((entry) => entry.arm === "kontext")?.taskSuccessRate).toBe(1);
     expect(renderRealOssMarkdown(report)).toContain("Ontology ingestion");
@@ -54,8 +55,13 @@ function run(arm: "baseline" | "kontext", withOntology: boolean): RealOssRunResu
             behaviorBearingSymbols: 200,
             provenanceResources: 4,
             normativeRecords: 3,
-            targetSymbolId: "code-symbol:1",
-            targetQualifiedName: "Blueprint.__init__",
+            targetSymbols: [
+              {
+                symbolId: "code-symbol:1",
+                qualifiedName: "Blueprint.__init__",
+                binding: "required",
+              },
+            ],
             governingRecordIds: ["decision:one"],
           },
         }

@@ -6,13 +6,19 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { CodeQualityArm, CodeQualityRunConfig } from "../contracts.js";
 import type { RealOssRunConfig } from "./contracts.js";
+import { djangoAnnotationPruningTask } from "./django-manifest.js";
 import { flaskBlueprintNameTask } from "./manifest.js";
 import { renderRealOssMarkdown } from "./report.js";
 import { runRealOssEvaluation } from "./runner.js";
 
 interface CliOptions extends RealOssRunConfig {
   readonly outputPath: string;
+  readonly taskInstanceId: string;
 }
+
+const tasks = new Map(
+  [flaskBlueprintNameTask, djangoAnnotationPruningTask].map((task) => [task.instanceId, task]),
+);
 
 async function main(): Promise<void> {
   if (process.argv.includes("--help") || process.argv.includes("-h")) {
@@ -23,10 +29,16 @@ async function main(): Promise<void> {
   const localEnvironment = path.join(repositoryRoot, ".env.local");
   if (existsSync(localEnvironment)) process.loadEnvFile(localEnvironment);
   const options = parseOptions(process.argv.slice(2), repositoryRoot);
+  const task = tasks.get(options.taskInstanceId);
+  if (!task) {
+    throw new Error(
+      `Unsupported task: ${options.taskInstanceId}. Choose one of ${[...tasks.keys()].join(", ")}`,
+    );
+  }
   await verifyBuiltArtifacts(repositoryRoot);
   const report = await runRealOssEvaluation({
     repositoryRoot,
-    task: flaskBlueprintNameTask,
+    task,
     config: options,
     dependencies: {
       onProgress: (message) => process.stderr.write(`${message}\n`),
@@ -54,6 +66,7 @@ async function main(): Promise<void> {
 
 function parseOptions(args: readonly string[], repositoryRoot: string): CliOptions {
   let runtime: CodeQualityRunConfig["runtime"] = "codex";
+  let taskInstanceId = flaskBlueprintNameTask.instanceId;
   let model: string | undefined;
   let reasoningEffort: CodeQualityRunConfig["reasoningEffort"] = "medium";
   let repetitions = 1;
@@ -74,6 +87,9 @@ function parseOptions(args: readonly string[], repositoryRoot: string): CliOptio
     const value = args[index + 1];
     if (!value) throw new Error(`Missing value for ${option}`);
     switch (option) {
+      case "--task":
+        taskInstanceId = value;
+        break;
       case "--runtime":
         if (value !== "codex" && value !== "claude") {
           throw new Error(`Unsupported runtime: ${value}`);
@@ -114,6 +130,7 @@ function parseOptions(args: readonly string[], repositoryRoot: string): CliOptio
   }
   return {
     runtime,
+    taskInstanceId,
     model: model ?? (runtime === "claude" ? "claude-opus-5" : "gpt-5.6-terra"),
     reasoningEffort,
     repetitions,
@@ -165,18 +182,19 @@ async function verifyBuiltArtifacts(repositoryRoot: string): Promise<void> {
 function helpText(): string {
   return `Usage: node --import tsx bench/src/code-quality-eval/real-oss/cli.ts [options]
 
-Runs a paired benchmark against the real pallets/flask repository at the
-SWE-bench Verified base commit for pallets__flask-5014. The source fix is never
-shown to agents; the upstream regression test patch is applied only by grading.
+Runs a paired benchmark against a real repository at a pinned SWE-bench
+Verified base commit. The source fix is never shown to agents; the upstream
+regression test patch is applied only by grading.
 
 Options:
+  --task <instance>       ${[...tasks.keys()].join(" or ")} (default: ${flaskBlueprintNameTask.instanceId})
   --runtime <name>        codex or claude (default: codex)
   --model <name>          model id (default: gpt-5.6-terra, or claude-opus-5)
   --reasoning <effort>    low, medium, high, or xhigh (default: medium)
   --arms <list>           baseline,rag,kontext subset (default: all three)
   --repetitions <count>   Paired repetitions (default: 1)
   --timeout-ms <ms>       Per-arm timeout (default: 600000)
-  --source <path>         Existing local pallets/flask clone containing the base commit
+  --source <path>         Existing local clone containing the selected base commit
   --cache-dir <path>      Clone cache used when --source is omitted
   --output <path>         JSON output path
   -h, --help              Show this help

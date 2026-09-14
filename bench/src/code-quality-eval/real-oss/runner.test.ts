@@ -32,17 +32,18 @@ describe("real OSS prompts", () => {
       task: flaskBlueprintNameTask,
       workspacePath: "/tmp/workspace",
       runtime: "codex",
-      target: {
-        workItemId: flaskBlueprintNameTask.target.workItemId,
-        plannedSymbolId: flaskBlueprintNameTask.target.plannedSymbolId,
-      },
+      targets: flaskBlueprintNameTask.targets.map((target) => ({
+        workItemId: target.workItemId,
+        plannedSymbolId: target.plannedSymbolId,
+      })),
       createdAt: "2026-09-02T00:00:00.000Z",
     });
     expect(prompt).toContain("kontext_prepare_task");
+    expect(prompt).toContain("one at a time and in order");
     expect(prompt).toContain("kontext_begin_logic once");
     expect(prompt).toContain("tier=fast");
     expect(prompt).toContain("tier=targeted");
-    expect(prompt).toContain(flaskBlueprintNameTask.target.plannedSymbolId);
+    expect(prompt).toContain(flaskBlueprintNameTask.targets[0]?.plannedSymbolId);
     expect(prompt).not.toContain("test_empty_name_not_allowed");
   });
 });

@@ -15,6 +15,7 @@ import type {
   RealOssNormativeRecord,
   RealOssOntologyStats,
   RealOssTask,
+  RealOssTaskTarget,
   RealOssWorkspace,
 } from "./contracts.js";
 
@@ -22,7 +23,7 @@ const organizationId = "personal:real-oss-code-quality";
 
 export interface RealOssStateAssembly {
   readonly assembly: unknown;
-  readonly target: RealOssLogicTarget;
+  readonly targets: readonly RealOssLogicTarget[];
   readonly ontology: RealOssOntologyStats;
 }
 
@@ -41,13 +42,25 @@ export async function buildRealOssStateAssembly(input: {
   const sync = new SyncResourceUseCase(repository, new InMemoryResourceContentStore());
   const provider = new PythonCodeProvider();
   const adapter = new CodeResourceSnapshotAdapter();
-  const pythonFiles = (await listFiles(path.join(input.workspace.workspacePath, "src")))
+  const pythonFiles = (
+    await Promise.all(
+      input.task.codeRoots.map((root) => listFiles(path.join(input.workspace.workspacePath, root))),
+    )
+  )
+    .flat()
     .filter((file) => file.endsWith(".py"))
     .map((file) => path.relative(input.workspace.workspacePath, file).replaceAll(path.sep, "/"))
+    .filter((file, index, files) => files.indexOf(file) === index)
     .sort();
   let codeSymbols = 0;
   let behaviorBearingSymbols = 0;
-  let targetSymbolId: string | undefined;
+  const targetSymbolIds = new Map<string, string>();
+  const targetsByPath = new Map<string, RealOssTaskTarget[]>();
+  for (const target of input.task.targets) {
+    const pathTargets = targetsByPath.get(target.relativePath) ?? [];
+    pathTargets.push(target);
+    targetsByPath.set(target.relativePath, pathTargets);
+  }
 
   for (const relativePath of pythonFiles) {
     const content = await readFile(path.join(input.workspace.workspacePath, relativePath), "utf8");
@@ -58,9 +71,10 @@ export async function buildRealOssStateAssembly(input: {
     });
     codeSymbols += analysis.symbols.length;
     behaviorBearingSymbols += analysis.symbols.filter((symbol) => symbol.behaviorBearing).length;
+    const fileTargets = targetsByPath.get(relativePath) ?? [];
     const ontologyNodeIds =
-      relativePath === input.task.target.relativePath
-        ? input.task.target.ontologyNodeIds
+      fileTargets.length > 0
+        ? [...new Set(fileTargets.flatMap((target) => target.ontologyNodeIds))]
         : [`code-module:${input.task.repository}:${relativePath}`];
     const normalized = adapter.normalize({
       analysis,
@@ -74,21 +88,25 @@ export async function buildRealOssStateAssembly(input: {
       // source identity for code modules.
       source: { ...normalized.source, type: "code-module" },
     });
-    if (relativePath === input.task.target.relativePath) {
-      const target = analysis.symbols.find(
-        (symbol) =>
-          symbol.identity.qualifiedName === input.task.target.qualifiedName &&
-          symbol.behaviorBearing,
+    for (const target of fileTargets) {
+      const symbol = analysis.symbols.find(
+        (candidate) =>
+          candidate.identity.qualifiedName === target.qualifiedName && candidate.behaviorBearing,
       );
-      if (!target) {
+      if (symbol) {
+        targetSymbolIds.set(target.plannedSymbolId, symbol.symbolId);
+      } else if (target.binding === "required") {
         throw new Error(
-          `Behavior-bearing target ${input.task.target.qualifiedName} was not found in ${relativePath}`,
+          `Behavior-bearing target ${target.qualifiedName} was not found in ${relativePath}`,
         );
       }
-      targetSymbolId = target.symbolId;
     }
   }
-  if (!targetSymbolId) throw new Error("Real OSS target symbol was not indexed");
+  for (const target of input.task.targets) {
+    if (target.binding === "required" && !targetSymbolIds.has(target.plannedSymbolId)) {
+      throw new Error(`Real OSS target symbol was not indexed: ${target.qualifiedName}`);
+    }
+  }
 
   for (const document of input.task.sourceDocuments) {
     await sync.execute({
@@ -141,37 +159,60 @@ export async function buildRealOssStateAssembly(input: {
     repository,
     new ExternalIdNormativeResourceReader((recordId) => revisionByRecord.get(recordId)),
   );
-  const resolution = await resolver.resolve({
-    organizationId,
-    codebaseId: input.task.codebaseId,
-    relativePath: input.task.target.relativePath,
-    plannedSymbolId: input.task.target.plannedSymbolId,
-  });
-  const expected = input.task.normativeRecords.map((record) => record.recordId).sort();
-  const actual = resolution.records.map((record) => record.recordId).sort();
-  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-    throw new Error(
-      `Real OSS ontology resolution mismatch: expected ${expected.join(", ")}; received ${actual.join(", ")}`,
-    );
-  }
+  const resolutions = await Promise.all(
+    input.task.targets.map(async (target) => {
+      const resolution = await resolver.resolve({
+        organizationId,
+        codebaseId: input.task.codebaseId,
+        relativePath: target.relativePath,
+        plannedSymbolId: target.plannedSymbolId,
+      });
+      const pathNodeIds = new Set(
+        (targetsByPath.get(target.relativePath) ?? []).flatMap(
+          (pathTarget) => pathTarget.ontologyNodeIds,
+        ),
+      );
+      const expected = input.task.normativeRecords
+        .filter((record) => record.ontologyNodeIds.some((nodeId) => pathNodeIds.has(nodeId)))
+        .map((record) => record.recordId)
+        .sort();
+      const actual = resolution.records.map((record) => record.recordId).sort();
+      if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+        throw new Error(
+          `Real OSS ontology resolution mismatch for ${target.qualifiedName}: expected ${expected.join(", ")}; received ${actual.join(", ")}`,
+        );
+      }
+      return { target, resolution };
+    }),
+  );
+  const governingRecordIds = [
+    ...new Set(
+      resolutions.flatMap(({ resolution }) => resolution.records.map((record) => record.recordId)),
+    ),
+  ].sort();
 
   const scope = { kind: "codebase", codebaseId: input.task.codebaseId } as const;
   const acceptedAt = latestObservedAt(input.task);
-  const target = {
-    workItemId: input.task.target.workItemId,
-    plannedSymbolId: input.task.target.plannedSymbolId,
-  };
+  const targets = input.task.targets.map((target) => ({
+    workItemId: target.workItemId,
+    plannedSymbolId: target.plannedSymbolId,
+  }));
   return {
-    target,
+    targets,
     ontology: {
       codeResources: pythonFiles.length,
       codeSymbols,
       behaviorBearingSymbols,
       provenanceResources: input.task.sourceDocuments.length,
       normativeRecords: input.task.normativeRecords.length,
-      targetSymbolId,
-      targetQualifiedName: input.task.target.qualifiedName,
-      governingRecordIds: actual,
+      targetSymbols: input.task.targets.map((target) => ({
+        qualifiedName: target.qualifiedName,
+        binding: target.binding,
+        ...(targetSymbolIds.get(target.plannedSymbolId)
+          ? { symbolId: targetSymbolIds.get(target.plannedSymbolId) }
+          : {}),
+      })),
+      governingRecordIds,
     },
     assembly: {
       taskId: input.task.taskId,
@@ -202,40 +243,42 @@ export async function buildRealOssStateAssembly(input: {
         availability: "current",
         allowedRuntimeProviders: [input.runtime],
       })),
-      logicPlans: [
-        {
-          workItemId: input.task.target.workItemId,
-          plannedSymbolIds: [input.task.target.plannedSymbolId],
-          plannedSymbols: [
-            {
-              plannedSymbolId: input.task.target.plannedSymbolId,
-              taskId: input.task.taskId,
-              intendedIdentity: {
-                codebaseId: input.task.codebaseId,
-                relativePath: input.task.target.relativePath,
-                language: "python",
-                kind: "method",
-                qualifiedName: input.task.target.qualifiedName,
-              },
-              responsibility: input.task.target.responsibility,
-              boundSymbolId: targetSymbolId,
+      logicPlans: input.task.targets.map((target) => ({
+        workItemId: target.workItemId,
+        plannedSymbolIds: [target.plannedSymbolId],
+        plannedSymbols: [
+          {
+            plannedSymbolId: target.plannedSymbolId,
+            taskId: input.task.taskId,
+            intendedIdentity: {
+              codebaseId: input.task.codebaseId,
+              relativePath: target.relativePath,
+              language: "python",
+              kind: target.symbolKind,
+              qualifiedName: target.qualifiedName,
             },
-          ],
-          allowedPaths: input.task.allowedPaths,
-          dependsOn: [],
-          requiredVerifiers: [
-            { kind: "test", ref: "swe-bench:FAIL_TO_PASS" },
-            { kind: "test", ref: "swe-bench:PASS_TO_PASS" },
-          ],
-          capabilityId: "capability:flask-blueprint-construction",
-        },
-      ],
-      governanceLinks: resolution.records.map((record) => ({
-        plannedSymbolId: input.task.target.plannedSymbolId,
-        recordId: record.recordId,
-        revisionId: record.revisionId,
-        origin: record.origin,
+            responsibility: target.responsibility,
+            ...(targetSymbolIds.get(target.plannedSymbolId)
+              ? { boundSymbolId: targetSymbolIds.get(target.plannedSymbolId) }
+              : {}),
+          },
+        ],
+        allowedPaths: [target.relativePath],
+        dependsOn: target.dependsOn ?? [],
+        requiredVerifiers: [
+          { kind: "test", ref: "swe-bench:FAIL_TO_PASS" },
+          { kind: "test", ref: "swe-bench:PASS_TO_PASS" },
+        ],
+        capabilityId: target.capabilityId,
       })),
+      governanceLinks: resolutions.flatMap(({ target, resolution }) =>
+        resolution.records.map((record) => ({
+          plannedSymbolId: target.plannedSymbolId,
+          recordId: record.recordId,
+          revisionId: record.revisionId,
+          origin: record.origin,
+        })),
+      ),
     },
   };
 }

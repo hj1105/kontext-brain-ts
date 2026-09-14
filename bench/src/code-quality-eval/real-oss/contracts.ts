@@ -40,6 +40,31 @@ export type RealOssNormativeRecord =
       readonly ontologyNodeIds: readonly string[];
     };
 
+export interface RealOssTaskTarget {
+  readonly workItemId: string;
+  readonly plannedSymbolId: string;
+  readonly relativePath: string;
+  readonly qualifiedName: string;
+  readonly symbolKind: "function" | "method";
+  readonly binding: "required" | "planned";
+  readonly responsibility: string;
+  readonly ontologyNodeIds: readonly string[];
+  readonly dependsOn?: readonly string[];
+  readonly capabilityId: string;
+}
+
+export type RealOssHiddenTestRunner =
+  | {
+      readonly kind: "pytest-selectors";
+      readonly command: string;
+      readonly args: readonly string[];
+    }
+  | {
+      readonly kind: "django-selectors";
+      readonly command: string;
+      readonly args: readonly string[];
+    };
+
 export interface RealOssTask {
   readonly instanceId: string;
   readonly taskId: string;
@@ -51,15 +76,12 @@ export interface RealOssTask {
   readonly upstreamIssueUrl: string;
   readonly upstreamPullRequestUrl: string;
   readonly publicPrompt: string;
+  readonly acceptanceStatement: string;
+  readonly nonGoals: readonly string[];
+  readonly risk: "low" | "medium" | "high";
+  readonly codeRoots: readonly string[];
   readonly allowedPaths: readonly string[];
-  readonly target: {
-    readonly workItemId: string;
-    readonly plannedSymbolId: string;
-    readonly relativePath: string;
-    readonly qualifiedName: string;
-    readonly responsibility: string;
-    readonly ontologyNodeIds: readonly string[];
-  };
+  readonly targets: readonly RealOssTaskTarget[];
   readonly sourceIntegrity: readonly {
     readonly relativePath: string;
     readonly sha256: string;
@@ -75,11 +97,13 @@ export interface RealOssTask {
   readonly hiddenTest: {
     readonly patch: string;
     readonly patchSha256: string;
+    readonly runner: RealOssHiddenTestRunner;
     readonly failToPass: readonly string[];
     readonly passToPass: readonly string[];
   };
   readonly sourceDocuments: readonly RealOssSourceDocument[];
   readonly normativeRecords: readonly RealOssNormativeRecord[];
+  readonly limitations: readonly string[];
 }
 
 export interface RealOssWorkspace {
@@ -93,8 +117,11 @@ export interface RealOssOntologyStats {
   readonly behaviorBearingSymbols: number;
   readonly provenanceResources: number;
   readonly normativeRecords: number;
-  readonly targetSymbolId: string;
-  readonly targetQualifiedName: string;
+  readonly targetSymbols: readonly {
+    readonly qualifiedName: string;
+    readonly binding: RealOssTaskTarget["binding"];
+    readonly symbolId?: string;
+  }[];
   readonly governingRecordIds: readonly string[];
 }
 
@@ -163,7 +190,7 @@ export interface RealOssArmSummary {
 }
 
 export interface RealOssReport {
-  readonly schemaVersion: 1;
+  readonly schemaVersion: 2;
   readonly benchmark: "real-oss-code-quality";
   readonly generatedAt: string;
   readonly task: {

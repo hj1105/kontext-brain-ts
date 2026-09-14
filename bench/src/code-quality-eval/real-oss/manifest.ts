@@ -22,15 +22,25 @@ export const flaskBlueprintNameTask: RealOssTask = {
 Things do not work correctly if a Blueprint is given an empty name (for
 example, pallets/flask#4944). Raise ValueError when a Blueprint is constructed
 with an empty name. Preserve existing Blueprint behavior otherwise.`,
+  acceptanceStatement:
+    "The upstream issue behavior is implemented and the Blueprint suite has no regressions.",
+  nonGoals: ["Editing tests", "Changing unrelated Blueprint behavior", "Changing another module"],
+  risk: "low",
+  codeRoots: ["src"],
   allowedPaths: ["src/flask/blueprints.py"],
-  target: {
-    workItemId: "work-item:flask-blueprint-name-validation",
-    plannedSymbolId: "planned-symbol:flask:Blueprint.__init__",
-    relativePath: "src/flask/blueprints.py",
-    qualifiedName: "Blueprint.__init__",
-    responsibility: "Validate the Blueprint name when a Blueprint is constructed.",
-    ontologyNodeIds: [blueprintNameNode],
-  },
+  targets: [
+    {
+      workItemId: "work-item:flask-blueprint-name-validation",
+      plannedSymbolId: "planned-symbol:flask:Blueprint.__init__",
+      relativePath: "src/flask/blueprints.py",
+      qualifiedName: "Blueprint.__init__",
+      symbolKind: "method",
+      binding: "required",
+      responsibility: "Validate the Blueprint name when a Blueprint is constructed.",
+      ontologyNodeIds: [blueprintNameNode],
+      capabilityId: "capability:flask-blueprint-construction",
+    },
+  ],
   sourceIntegrity: [
     {
       relativePath: "LICENSE.rst",
@@ -87,6 +97,11 @@ ${" "}
 ${" "}
 `,
     patchSha256: "e16f06b260b5169a49397e9d571b5af70317cd23792e1437232fabf718fe8871",
+    runner: {
+      kind: "pytest-selectors",
+      command: "./.venv/bin/python",
+      args: ["-m", "pytest", "-q"],
+    },
     failToPass: ["tests/test_blueprints.py::test_empty_name_not_allowed"],
     passToPass: [
       "tests/test_blueprints.py::test_blueprint_specific_error_handling",
@@ -261,5 +276,8 @@ endpoint.`,
       ],
       ontologyNodeIds: [blueprintNameNode],
     },
+  ],
+  limitations: [
+    "The public issue states the requested behavior directly, so this task validates real-repository integration and governance discipline more than difficult knowledge retrieval.",
   ],
 };
