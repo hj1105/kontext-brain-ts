@@ -6,6 +6,8 @@ coverage
 .env
 .env.local
 *.tsbuildinfo
+__pycache__/
+*.py[cod]
 .turbo
 bench/data/rag-eval-v2/runs/
 bench/data/code-quality-eval/

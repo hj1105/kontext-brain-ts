@@ -35,6 +35,42 @@ invoking the CLI, so the measurement always uses the authenticated subscription.
 are written under `bench/data/code-quality-eval/` and ignored by Git. Use `--output` to retain a
 dated report elsewhere.
 
+### Repository-scale code-quality benchmark
+
+The large-scale variant tests the product's harder claim: can it identify the exact governed
+behavior-bearing symbols among similar code and apply current policy without collateral changes?
+The generated repository contains 31 retry functions across four subsystems. Eight are governed;
+23 are decoys with deliberately similar code and different approved behavior. Agents never see the
+generator manifest or held-out grader.
+
+```bash
+corepack pnpm build
+
+# Subscription-only generation, no API-billed retrieval
+corepack pnpm --filter @kontext-brain/bench code-quality:large \
+  --arms baseline,kontext --repetitions 1
+
+# Full three-arm comparison; OPENAI_API_KEY is used only for RAG embeddings
+corepack pnpm --filter @kontext-brain/bench code-quality:large \
+  --arms baseline,rag,kontext --repetitions 3
+```
+
+The three arms receive the same public issue and repository:
+
+- `baseline` receives no private policy or Kontext server.
+- `rag` retrieves realistic, long-form source documents per visible subsystem. It does not search
+  the compact normative records used by Kontext.
+- `kontext` receives opaque Planned Symbol and Logic Work Item IDs. The ontology resolves code
+  Resources to governing normative Resources, and the agent must call `kontext_begin_logic` once
+  for each of the eight behavior-bearing symbols. A run missing any consultation is ineligible.
+
+The independent grader uses only the generator manifest, repository diff, and out-of-process
+held-out tests. Whole-task success requires all of the following: 8/8 governed functions changed,
+0/23 decoys changed, 93/93 hidden checks passing, no repository regression, the canonical domain
+term present, and exactly one shared policy constant. Arm order rotates by repetition. One or two
+paired repetitions are a smoke test, 3–19 are a pilot, and at least 20 are release-sized evidence;
+additional independently authored repositories are still required for a general product claim.
+
 > Historical-results note: rows labeled `v1-default` below were recorded
 > before graph traversal depth and retrieval-stage order were separated.
 > The current `DEFAULT_PIPELINE` runs the full N-layer stage sequence for

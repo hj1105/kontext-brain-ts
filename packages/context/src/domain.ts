@@ -16,6 +16,21 @@ export interface ContextEvidenceItem {
   readonly availability: ContextAvailability;
   readonly allowedRuntimeProviders: readonly string[];
   readonly relevance?: number;
+  readonly provenance?: ContextEvidenceProvenance;
+}
+
+export interface ContextEvidenceProvenance {
+  readonly resourceId: string;
+  readonly chunkId: string;
+  readonly resourceTitle: string;
+  readonly source: {
+    readonly connectorId: string;
+    readonly externalId: string;
+    readonly type: string;
+  };
+  readonly observedAt: string;
+  readonly contentHash: string;
+  readonly ontologyNodeIds: readonly string[];
 }
 
 export interface LogicContextTarget {
@@ -58,6 +73,8 @@ export interface CompileTaskContextInput {
    * organization-wide behaviour.
    */
   readonly governanceLinks?: readonly PlannedSymbolGovernanceLink[];
+  /** Evidence explicitly requested by the Task stays mandatory after symbol narrowing. */
+  readonly additionalRequiredEvidenceIds?: readonly string[];
   readonly authorizedPaths: readonly string[];
   readonly issuedAt: string;
   readonly expiresAt: string;

@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
+import { publicIssue } from "./documents.js";
 import {
   type GeneratedRepository,
   expectedDecoyDelay,
@@ -88,7 +89,7 @@ export async function createLargeScaleWorkspace(): Promise<LargeScaleWorkspace> 
   );
   await writeFile(
     path.join(workspacePath, "TASK.md"),
-    `# Task\n\nApply the current approved retry policy.\n\nRun \`npm test\` before finishing.\n`,
+    `# Issue #${publicIssue.number}: ${publicIssue.title}\n\n${publicIssue.body}\nRun \`npm test\` before finishing.\n`,
   );
 
   await git(workspacePath, ["init", "-q"]);
@@ -120,6 +121,8 @@ export interface LargeScaleGrade {
   readonly sharedConstantHonoured: boolean;
   readonly constantDefinitionCount: number;
   readonly hiddenFailures: readonly string[];
+  readonly changedFiles: readonly string[];
+  readonly patch: string;
 }
 
 /**
@@ -161,6 +164,10 @@ export async function gradeLargeScaleWorkspace(
     "--test-reporter=dot",
   ]);
   const structure = await inspectConstantStructure(workspace);
+  const changedFileList = [...changedFiles].sort();
+  const trackedPatch = (await git(workspace.workspacePath, ["diff", "--binary", "HEAD", "--"]))
+    .stdout;
+  const untrackedPatch = await renderUntrackedFiles(workspace.workspacePath, untracked);
 
   return {
     targetRecall: governedTotal === 0 ? 0 : governedChanged.length / governedTotal,
@@ -177,7 +184,24 @@ export async function gradeLargeScaleWorkspace(
     sharedConstantHonoured: structure.definitions === 1 && structure.referencingFiles >= 2,
     constantDefinitionCount: structure.definitions,
     hiddenFailures: hidden.failures,
+    changedFiles: changedFileList,
+    patch: [trackedPatch.trimEnd(), untrackedPatch.trimEnd()].filter(Boolean).join("\n\n"),
   };
+}
+
+async function renderUntrackedFiles(
+  workspacePath: string,
+  files: readonly string[],
+): Promise<string> {
+  const { readFile } = await import("node:fs/promises");
+  const rendered: string[] = [];
+  for (const file of files) {
+    const contents = await readFile(path.join(workspacePath, file), "utf8").catch(() => "");
+    rendered.push(
+      `diff --git a/${file} b/${file}\nnew file mode 100644\n--- /dev/null\n+++ b/${file}\n${contents}`,
+    );
+  }
+  return rendered.join("\n\n");
 }
 
 /**
