@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   ClaudeCodeQualityRunner,
   claudeArguments,
+  extractClaudeToolCalls,
   extractClaudeTools,
   writeClaudeMcpConfig,
 } from "./claude-runner.js";
@@ -61,24 +62,28 @@ describe("ClaudeCodeQualityRunner", () => {
   });
 
   it("observes Kontext tool calls from stream-json events", async () => {
-    const runner = new ClaudeCodeQualityRunner(async () => ({
-      exitCode: 0,
-      stdout: [
-        JSON.stringify({
-          type: "assistant",
-          message: {
-            content: [{ type: "tool_use", name: "mcp__kontext_brain__kontext_prepare_task" }],
-          },
-        }),
-        JSON.stringify({
-          type: "assistant",
-          message: { content: [{ type: "tool_use", name: "kontext_begin_logic" }] },
-        }),
-        JSON.stringify({ type: "result", usage: { input_tokens: 900, output_tokens: 120 } }),
-      ].join("\n"),
-      stderr: "",
-      durationMilliseconds: 40,
-    }));
+    let invokedCwd: string | undefined;
+    const runner = new ClaudeCodeQualityRunner(async (invocation) => {
+      invokedCwd = invocation.cwd;
+      return {
+        exitCode: 0,
+        stdout: [
+          JSON.stringify({
+            type: "assistant",
+            message: {
+              content: [{ type: "tool_use", name: "mcp__kontext_brain__kontext_prepare_task" }],
+            },
+          }),
+          JSON.stringify({
+            type: "assistant",
+            message: { content: [{ type: "tool_use", name: "kontext_begin_logic" }] },
+          }),
+          JSON.stringify({ type: "result", usage: { input_tokens: 900, output_tokens: 120 } }),
+        ].join("\n"),
+        stderr: "",
+        durationMilliseconds: 40,
+      };
+    });
     const result = await runner.execute({
       arm: "kontext",
       scenario,
@@ -90,6 +95,7 @@ describe("ClaudeCodeQualityRunner", () => {
     expect(result.kontextToolsObserved).toEqual(["kontext_begin_logic", "kontext_prepare_task"]);
     expect(result.inputTokens).toBe(900);
     expect(result.outputTokens).toBe(120);
+    expect(invokedCwd).toBe("/tmp/ws");
   });
 
   it("ignores the server tool advertisement", () => {
@@ -116,5 +122,16 @@ describe("ClaudeCodeQualityRunner", () => {
     expect(
       extractClaudeTools(JSON.stringify({ type: "tool_use", name: "kontext_check_change" })),
     ).toEqual(["kontext_check_change"]);
+  });
+
+  it("retains distinct tool-use ids for per-symbol consultation evidence", () => {
+    const stdout = [
+      JSON.stringify({ type: "tool_use", id: "begin-1", name: "kontext_begin_logic" }),
+      JSON.stringify({ type: "tool_use", id: "begin-2", name: "kontext_begin_logic" }),
+    ].join("\n");
+    expect(extractClaudeToolCalls(stdout).map((call) => call.callId)).toEqual([
+      "begin-1",
+      "begin-2",
+    ]);
   });
 });

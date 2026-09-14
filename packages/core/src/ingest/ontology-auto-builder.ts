@@ -27,24 +27,39 @@ export const emptyOntologyBuildResult: OntologyBuildResult = {
 };
 
 export const MIN_AUTO_NODE_COUNT = 3;
-export const MAX_AUTO_NODE_COUNT = 20;
+
+/**
+ * A safety rail on prompt size, not a statement about how many concepts a
+ * Codebase may have. The previous fixed ceiling of 20 was the latter, so a
+ * Codebase with more governance boundaries than that had two of them merged
+ * into one Ontology Node — and merged boundaries are what makes a symbol
+ * receive a neighbouring area's approved decision as if it were its own.
+ */
+export const ABSOLUTE_MAX_AUTO_NODE_COUNT = 200;
 
 function assertValidTargetNodeCount(value: number): number {
-  if (!Number.isInteger(value) || value < MIN_AUTO_NODE_COUNT || value > MAX_AUTO_NODE_COUNT) {
+  if (
+    !Number.isInteger(value) ||
+    value < MIN_AUTO_NODE_COUNT ||
+    value > ABSOLUTE_MAX_AUTO_NODE_COUNT
+  ) {
     throw new RangeError(
-      `targetNodeCount must be an integer between ${MIN_AUTO_NODE_COUNT} and ${MAX_AUTO_NODE_COUNT}`,
+      `targetNodeCount must be an integer between ${MIN_AUTO_NODE_COUNT} and ${ABSOLUTE_MAX_AUTO_NODE_COUNT}`,
     );
   }
   return value;
 }
 
 function inferTargetNodeCount(documentCount: number, categoryCount: number): number {
-  const maxUsefulNodeCount = Math.min(MAX_AUTO_NODE_COUNT, documentCount);
+  const maxUsefulNodeCount = Math.min(ABSOLUTE_MAX_AUTO_NODE_COUNT, documentCount);
   const minUsefulNodeCount = Math.min(MIN_AUTO_NODE_COUNT, maxUsefulNodeCount);
-  // Grow sublinearly with corpus size, while allowing diverse extracted topics
-  // to raise the target. Two related raw categories can share one ontology node.
+  // Grow sublinearly with corpus size, and let extracted topics raise the
+  // target one-for-one. Halving the topic count merges distinct areas, and for
+  // a governance ontology that is the expensive direction to be wrong in: a
+  // merged node hands a symbol its neighbour's approved decision with the same
+  // authority as its own, while one node too many only costs a little recall.
   const corpusSizeEstimate = Math.ceil(Math.sqrt(documentCount));
-  const topicDiversityEstimate = Math.ceil(categoryCount / 2);
+  const topicDiversityEstimate = categoryCount;
 
   return Math.min(
     maxUsefulNodeCount,
