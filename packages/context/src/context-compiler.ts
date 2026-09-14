@@ -118,8 +118,16 @@ export class ContextCompiler {
       .sort(compareRevision);
 
     const evidenceById = new Map(input.evidence.map((evidence) => [evidence.evidenceId, evidence]));
+    const mandatoryEvidenceIds = governing
+      ? uniqueSorted([
+          ...accessibleNormative.flatMap((revision) =>
+            revision.evidence.map((reference) => reference.evidenceId),
+          ),
+          ...(input.additionalRequiredEvidenceIds ?? []),
+        ])
+      : input.snapshot.requiredEvidenceIds;
     const mandatoryEvidence: ContextEvidenceItem[] = [];
-    for (const evidenceId of uniqueSorted(input.snapshot.requiredEvidenceIds)) {
+    for (const evidenceId of uniqueSorted(mandatoryEvidenceIds)) {
       const evidence = evidenceById.get(evidenceId);
       if (!evidence) {
         addIssue("mandatory_context_unavailable", "Required Evidence is unavailable", evidenceId);
@@ -168,7 +176,12 @@ export class ContextCompiler {
         "Mandatory context exceeds the optional Evidence budget and was retained in full",
       );
     }
-    const optionalEvidence = this.selectOptionalEvidence(input, evidenceById, addIssue);
+    const optionalEvidence = this.selectOptionalEvidence(
+      input,
+      evidenceById,
+      new Set(mandatoryEvidenceIds),
+      addIssue,
+    );
     const optionalTokens = optionalEvidence.reduce(
       (total, evidence) => total + this.tokenEstimator.estimate(evidence.text),
       0,
@@ -208,13 +221,13 @@ export class ContextCompiler {
   private selectOptionalEvidence(
     input: CompileTaskContextInput,
     evidenceById: ReadonlyMap<string, ContextEvidenceItem>,
+    mandatoryEvidenceIds: ReadonlySet<string>,
     addIssue: (code: ContextCompilationIssue["code"], message: string, ref?: string) => void,
   ): readonly ContextEvidenceItem[] {
-    const required = new Set(input.snapshot.requiredEvidenceIds);
     const candidates = Array.from(evidenceById.values())
       .filter(
         (evidence) =>
-          !required.has(evidence.evidenceId) &&
+          !mandatoryEvidenceIds.has(evidence.evidenceId) &&
           evidence.availability === "current" &&
           evidence.allowedRuntimeProviders.includes(input.runtimeProvider),
       )

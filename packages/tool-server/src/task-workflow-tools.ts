@@ -117,6 +117,11 @@ export interface WriteAuthorizationBindingStore {
     }[]
   >;
   put(workspacePath: string, binding: WriteAuthorizationBinding): Promise<void>;
+  putIfUnchanged(
+    workspacePath: string,
+    expected: WriteAuthorizationBinding,
+    binding: WriteAuthorizationBinding,
+  ): Promise<boolean>;
   delete(workspacePath: string): Promise<void>;
 }
 
@@ -137,9 +142,32 @@ export class InMemoryWriteAuthorizationBindingStore implements WriteAuthorizatio
     this.bindings.set(workspacePath, binding);
   }
 
+  async putIfUnchanged(
+    workspacePath: string,
+    expected: WriteAuthorizationBinding,
+    binding: WriteAuthorizationBinding,
+  ): Promise<boolean> {
+    if (!sameBindingGeneration(this.bindings.get(workspacePath), expected)) return false;
+    this.bindings.set(workspacePath, binding);
+    return true;
+  }
+
   async delete(workspacePath: string): Promise<void> {
     this.bindings.delete(workspacePath);
   }
+}
+
+export function sameBindingGeneration(
+  current: WriteAuthorizationBinding | undefined,
+  expected: WriteAuthorizationBinding,
+): boolean {
+  return (
+    current?.request.taskId === expected.request.taskId &&
+    current.request.logic.workItemId === expected.request.logic.workItemId &&
+    current.request.issuedAt === expected.request.issuedAt &&
+    current.receipt.receiptId === expected.receipt.receiptId &&
+    current.initialBaseline.revision === expected.initialBaseline.revision
+  );
 }
 
 export class KontextTaskWorkflowToolRouter {

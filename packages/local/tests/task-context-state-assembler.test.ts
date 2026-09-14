@@ -17,6 +17,19 @@ describe("assembleCurrentTaskContextState", () => {
           text: "The user approved the local workflow.",
           availability: "current",
           allowedRuntimeProviders: ["codex", "unapproved-provider"],
+          provenance: {
+            resourceId: "resource:local",
+            chunkId: "chunk:local",
+            resourceTitle: "Local decision",
+            source: {
+              connectorId: "codex",
+              externalId: "codex://session/local",
+              type: "session",
+            },
+            observedAt: "2026-08-28T00:00:00.000Z",
+            contentHash: "sha256:local",
+            ontologyNodeIds: ["workflow", "engineering", "workflow"],
+          },
         },
       ],
       logicPlans: [
@@ -38,6 +51,14 @@ describe("assembleCurrentTaskContextState", () => {
           allowedPaths: ["./src\\handler.ts"],
         },
       ],
+      governanceLinks: [
+        {
+          plannedSymbolId: "planned-symbol:handler",
+          recordId: "decision:workflow",
+          revisionId: "revision:local",
+          origin: "curated",
+        },
+      ],
     });
 
     expect(state.normativeRecords.map((record) => record.origin)).toEqual(["local", "managed"]);
@@ -47,6 +68,19 @@ describe("assembleCurrentTaskContextState", () => {
         text: "The user approved the local workflow.",
         availability: "current",
         allowedRuntimeProviders: ["codex"],
+        provenance: {
+          resourceId: "resource:local",
+          chunkId: "chunk:local",
+          resourceTitle: "Local decision",
+          source: {
+            connectorId: "codex",
+            externalId: "codex://session/local",
+            type: "session",
+          },
+          observedAt: "2026-08-28T00:00:00.000Z",
+          contentHash: "sha256:local",
+          ontologyNodeIds: ["engineering", "workflow"],
+        },
       },
       {
         evidenceId: "evidence:managed",
@@ -59,6 +93,14 @@ describe("assembleCurrentTaskContextState", () => {
     expect(state.logicPlans[0]?.plannedSymbols?.[0]?.intendedIdentity.relativePath).toBe(
       "src/handler.ts",
     );
+    expect(state.governanceLinks).toEqual([
+      {
+        plannedSymbolId: "planned-symbol:handler",
+        recordId: "decision:workflow",
+        revisionId: "revision:local",
+        origin: "curated",
+      },
+    ]);
     expect(state.effectiveScopes).toContainEqual({ kind: "personal", subjectId: "user:owner" });
   });
 
@@ -87,7 +129,25 @@ describe("assembleCurrentTaskContextState", () => {
       ...base,
       evidence: [{ ...evidence, text: "second" }],
     });
+    const withProvenance = assembleCurrentTaskContextState({
+      ...base,
+      evidence: [
+        {
+          ...evidence,
+          provenance: {
+            resourceId: "resource:local",
+            chunkId: "chunk:local",
+            resourceTitle: "Local decision",
+            source: { connectorId: "codex", externalId: "codex://session/1", type: "session" },
+            observedAt: "2026-08-28T00:00:00.000Z",
+            contentHash: "sha256:first",
+            ontologyNodeIds: ["workflow"],
+          },
+        },
+      ],
+    });
     expect(second.sourceFreshnessDigest).not.toBe(first.sourceFreshnessDigest);
+    expect(withProvenance.sourceFreshnessDigest).not.toBe(first.sourceFreshnessDigest);
     expect(() =>
       assembleCurrentTaskContextState({
         ...base,
@@ -112,6 +172,19 @@ describe("assembleCurrentTaskContextState", () => {
         ],
       }),
     ).toThrow("describe every Planned Symbol ID exactly once");
+    expect(() =>
+      assembleCurrentTaskContextState({
+        ...base,
+        governanceLinks: [
+          {
+            plannedSymbolId: "planned-symbol:unknown",
+            recordId: "decision:workflow",
+            revisionId: "revision:local",
+            origin: "curated",
+          },
+        ],
+      }),
+    ).toThrow("unknown Planned Symbol");
   });
 
   it("does not let an inactive historical revision restrict current Evidence egress", () => {
@@ -167,6 +240,20 @@ describe("assembleCurrentTaskContextState", () => {
     expect(historical.evidence[0]?.allowedRuntimeProviders).toEqual(["codex"]);
     expect(historical.sourceFreshnessDigest).toBe(withoutHistory.sourceFreshnessDigest);
     expect(historical.normativeRevisionCatalog).toHaveLength(2);
+    expect(() =>
+      assembleCurrentTaskContextState({
+        ...input,
+        localManifest: withHistory,
+        governanceLinks: [
+          {
+            plannedSymbolId: "planned-symbol:handler",
+            recordId: activeRevision.recordId,
+            revisionId: "revision:historical",
+            origin: "curated",
+          },
+        ],
+      }),
+    ).toThrow("non-effective normative revision");
   });
 });
 
