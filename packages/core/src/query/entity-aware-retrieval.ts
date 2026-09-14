@@ -1,5 +1,5 @@
-import type { Entity } from "../graph/entity.js";
 import type { EntityIndex } from "../graph/entity-index.js";
+import type { Entity } from "../graph/entity.js";
 import type { MetaDocument } from "../graph/layered-models.js";
 
 /**

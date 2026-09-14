@@ -11,7 +11,9 @@ import {
 describe("InMemoryEntityIndex", () => {
   it("finds entities by name and alias", async () => {
     const idx = new InMemoryEntityIndex();
-    await idx.addEntity(createEntity({ id: "jwt", name: "JWT", type: "concept", aliases: ["JSON Web Token"] }));
+    await idx.addEntity(
+      createEntity({ id: "jwt", name: "JWT", type: "concept", aliases: ["JSON Web Token"] }),
+    );
     await idx.addEntity(createEntity({ id: "kafka", name: "Apache Kafka", type: "tool" }));
 
     const matches = await idx.findEntitiesInText("Why use JWT for auth?");
@@ -83,17 +85,38 @@ describe("EntityRetriever", () => {
     await idx.addEntity(createEntity({ id: "jwt", name: "JWT", type: "concept" }));
     await idx.addEntity(createEntity({ id: "redis", name: "Redis", type: "tool" }));
 
-    const docA = createMetaDocument({ id: "a", title: "Auth with JWT and Redis", source: DataSource.CUSTOM, ontologyNodeId: "x" });
-    const docB = createMetaDocument({ id: "b", title: "Just Redis", source: DataSource.CUSTOM, ontologyNodeId: "x" });
-    const docC = createMetaDocument({ id: "c", title: "Unrelated", source: DataSource.CUSTOM, ontologyNodeId: "x" });
+    const docA = createMetaDocument({
+      id: "a",
+      title: "Auth with JWT and Redis",
+      source: DataSource.CUSTOM,
+      ontologyNodeId: "x",
+    });
+    const docB = createMetaDocument({
+      id: "b",
+      title: "Just Redis",
+      source: DataSource.CUSTOM,
+      ontologyNodeId: "x",
+    });
+    const docC = createMetaDocument({
+      id: "c",
+      title: "Unrelated",
+      source: DataSource.CUSTOM,
+      ontologyNodeId: "x",
+    });
 
     await idx.addMention({ entityId: "jwt", docId: "a" });
     await idx.addMention({ entityId: "redis", docId: "a" });
     await idx.addMention({ entityId: "redis", docId: "b" });
 
-    const retriever = new EntityRetriever(idx, async () => new Map([
-      ["a", docA], ["b", docB], ["c", docC],
-    ]));
+    const retriever = new EntityRetriever(
+      idx,
+      async () =>
+        new Map([
+          ["a", docA],
+          ["b", docB],
+          ["c", docC],
+        ]),
+    );
     const ranked = await retriever.retrieve("JWT auth with Redis sessions", 3);
     expect(ranked[0]?.doc.id).toBe("a"); // mentions both entities
     expect(ranked[1]?.doc.id).toBe("b"); // mentions one
@@ -106,7 +129,12 @@ describe("EntityRetriever", () => {
     await idx.addEntity(createEntity({ id: "jsx", name: "JSX", type: "concept" }));
     await idx.addRelation({ from: "react", to: "jsx", type: "uses" });
 
-    const jsxDoc = createMetaDocument({ id: "jsx-doc", title: "JSX Syntax", source: DataSource.CUSTOM, ontologyNodeId: "x" });
+    const jsxDoc = createMetaDocument({
+      id: "jsx-doc",
+      title: "JSX Syntax",
+      source: DataSource.CUSTOM,
+      ontologyNodeId: "x",
+    });
     await idx.addMention({ entityId: "jsx", docId: "jsx-doc" });
 
     const retriever = new EntityRetriever(idx, async () => new Map([["jsx-doc", jsxDoc]]), 1);

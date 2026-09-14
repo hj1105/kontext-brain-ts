@@ -1,7 +1,7 @@
+import type { TraversalResult, TraversedNode } from "./layered-models.js";
 import type { OntologyGraph } from "./ontology-graph.js";
 import type { Edge, OntologyNode } from "./ontology-node.js";
 import { TraversalStrategy } from "./ontology-node.js";
-import type { TraversalResult, TraversedNode } from "./layered-models.js";
 
 /**
  * Graph traverser with BFS/DFS/WEIGHTED_DFS strategies.

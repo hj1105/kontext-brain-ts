@@ -85,8 +85,24 @@ export class ContextCompiler {
     );
     assessNormativeFreshness(input, catalog, currentRecords, addIssue);
 
+    const governing = governingRevisionKeys(input, addIssue);
     const accessibleNormative = currentRecords
       .filter((record) => {
+        // Narrowing by Planned Symbol is what makes a several-hundred-record
+        // Codebase compilable at all. Without it every accepted record in the
+        // organization is mandatory for every Work Item.
+        //
+        // An organization-scoped record is never narrowed away. A narrower
+        // scope may add constraints but cannot weaken a managed organization
+        // rule, so dropping one because no symbol link happens to point at it
+        // would silently lose mandatory governance.
+        if (
+          governing &&
+          record.revision.scope.kind !== "organization" &&
+          !governing.has(governanceKey(record.revision))
+        ) {
+          return false;
+        }
         const allowed = record.revision.egress.allowedRuntimeProviders.includes(
           input.runtimeProvider,
         );
@@ -102,8 +118,16 @@ export class ContextCompiler {
       .sort(compareRevision);
 
     const evidenceById = new Map(input.evidence.map((evidence) => [evidence.evidenceId, evidence]));
+    const mandatoryEvidenceIds = governing
+      ? uniqueSorted([
+          ...accessibleNormative.flatMap((revision) =>
+            revision.evidence.map((reference) => reference.evidenceId),
+          ),
+          ...(input.additionalRequiredEvidenceIds ?? []),
+        ])
+      : input.snapshot.requiredEvidenceIds;
     const mandatoryEvidence: ContextEvidenceItem[] = [];
-    for (const evidenceId of uniqueSorted(input.snapshot.requiredEvidenceIds)) {
+    for (const evidenceId of uniqueSorted(mandatoryEvidenceIds)) {
       const evidence = evidenceById.get(evidenceId);
       if (!evidence) {
         addIssue("mandatory_context_unavailable", "Required Evidence is unavailable", evidenceId);
@@ -152,7 +176,12 @@ export class ContextCompiler {
         "Mandatory context exceeds the optional Evidence budget and was retained in full",
       );
     }
-    const optionalEvidence = this.selectOptionalEvidence(input, evidenceById, addIssue);
+    const optionalEvidence = this.selectOptionalEvidence(
+      input,
+      evidenceById,
+      new Set(mandatoryEvidenceIds),
+      addIssue,
+    );
     const optionalTokens = optionalEvidence.reduce(
       (total, evidence) => total + this.tokenEstimator.estimate(evidence.text),
       0,
@@ -192,13 +221,13 @@ export class ContextCompiler {
   private selectOptionalEvidence(
     input: CompileTaskContextInput,
     evidenceById: ReadonlyMap<string, ContextEvidenceItem>,
+    mandatoryEvidenceIds: ReadonlySet<string>,
     addIssue: (code: ContextCompilationIssue["code"], message: string, ref?: string) => void,
   ): readonly ContextEvidenceItem[] {
-    const required = new Set(input.snapshot.requiredEvidenceIds);
     const candidates = Array.from(evidenceById.values())
       .filter(
         (evidence) =>
-          !required.has(evidence.evidenceId) &&
+          !mandatoryEvidenceIds.has(evidence.evidenceId) &&
           evidence.availability === "current" &&
           evidence.allowedRuntimeProviders.includes(input.runtimeProvider),
       )
@@ -381,4 +410,44 @@ function uniqueBy<T>(values: readonly T[], keyFor: (value: T) => string): T[] {
     seen.add(key);
     return true;
   });
+}
+
+/**
+ * The set of revisions the Work Item's Planned Symbols are governed by, or
+ * undefined when no links were supplied and the caller wants the previous
+ * organization-wide behaviour.
+ *
+ * A proposed link carries no enforcement authority, so it does not admit a
+ * record into mandatory context. A Planned Symbol with no authoritative link is
+ * reported rather than silently receiving nothing.
+ */
+function governanceKey(value: {
+  readonly recordId: string;
+  readonly revisionId: string;
+}): string {
+  return JSON.stringify([value.recordId, value.revisionId]);
+}
+
+function governingRevisionKeys(
+  input: CompileTaskContextInput,
+  addIssue: (code: ContextCompilationIssue["code"], message: string, ref?: string) => void,
+): Set<string> | undefined {
+  const links = input.governanceLinks;
+  if (links === undefined) return undefined;
+  const authoritative = links.filter((link) => link.origin !== "proposed");
+  const keys = new Set<string>();
+  for (const link of authoritative) {
+    if (!input.logic.plannedSymbolIds.includes(link.plannedSymbolId)) continue;
+    keys.add(governanceKey(link));
+  }
+  for (const plannedSymbolId of input.logic.plannedSymbolIds) {
+    if (!authoritative.some((link) => link.plannedSymbolId === plannedSymbolId)) {
+      addIssue(
+        "ungoverned_planned_symbol",
+        "No authoritative governance link exists for this Planned Symbol",
+        plannedSymbolId,
+      );
+    }
+  }
+  return keys;
 }

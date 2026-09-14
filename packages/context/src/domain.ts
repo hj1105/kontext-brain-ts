@@ -16,11 +16,43 @@ export interface ContextEvidenceItem {
   readonly availability: ContextAvailability;
   readonly allowedRuntimeProviders: readonly string[];
   readonly relevance?: number;
+  readonly provenance?: ContextEvidenceProvenance;
+}
+
+export interface ContextEvidenceProvenance {
+  readonly resourceId: string;
+  readonly chunkId: string;
+  readonly resourceTitle: string;
+  readonly source: {
+    readonly connectorId: string;
+    readonly externalId: string;
+    readonly type: string;
+  };
+  readonly observedAt: string;
+  readonly contentHash: string;
+  readonly ontologyNodeIds: readonly string[];
 }
 
 export interface LogicContextTarget {
   readonly workItemId: string;
   readonly plannedSymbolIds: readonly string[];
+}
+
+/**
+ * Curated links from a Planned Symbol to the normative records that govern it.
+ *
+ * Without these the compiler can only filter by activation state and runtime
+ * egress, so every accepted record in the organization becomes mandatory
+ * context for every Work Item. At a few dozen records that is merely wasteful;
+ * at the several hundred a real Codebase carries it exhausts the token budget
+ * and the caller has to pre-select the right records by hand, which is not a
+ * capability the product provides.
+ */
+export interface PlannedSymbolGovernanceLink {
+  readonly plannedSymbolId: string;
+  readonly recordId: string;
+  readonly revisionId: string;
+  readonly origin: "curated" | "deterministic" | "proposed";
 }
 
 export interface CompileTaskContextInput {
@@ -35,6 +67,14 @@ export interface CompileTaskContextInput {
   readonly evidence: readonly ContextEvidenceItem[];
   readonly runtimeProvider: string;
   readonly logic: LogicContextTarget;
+  /**
+   * When present, mandatory normative context is narrowed to records reachable
+   * from this Work Item's Planned Symbols. Omitting it keeps the previous
+   * organization-wide behaviour.
+   */
+  readonly governanceLinks?: readonly PlannedSymbolGovernanceLink[];
+  /** Evidence explicitly requested by the Task stays mandatory after symbol narrowing. */
+  readonly additionalRequiredEvidenceIds?: readonly string[];
   readonly authorizedPaths: readonly string[];
   readonly issuedAt: string;
   readonly expiresAt: string;
@@ -56,7 +96,8 @@ export type ContextCompilationIssueCode =
   | "invalid_logic_target"
   | "invalid_receipt_expiry"
   | "optional_context_omitted"
-  | "mandatory_budget_exceeded";
+  | "mandatory_budget_exceeded"
+  | "ungoverned_planned_symbol";
 
 export interface ContextCompilationIssue {
   readonly code: ContextCompilationIssueCode;

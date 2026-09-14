@@ -23,10 +23,7 @@ export class HybridMappingStrategy implements NodeMappingStrategy {
     private readonly topK = 3,
   ) {}
 
-  async findStartNodes(
-    query: string,
-    nodes: ReadonlyMap<string, OntologyNode>,
-  ): Promise<string[]> {
+  async findStartNodes(query: string, nodes: ReadonlyMap<string, OntologyNode>): Promise<string[]> {
     const q = query.toLowerCase();
     const qWords = new Set(q.split(/\s+/).filter((w) => w.length > 1));
 
@@ -37,7 +34,13 @@ export class HybridMappingStrategy implements NodeMappingStrategy {
       const descWords = node.description.toLowerCase().split(/\s+/);
       let overlap = 0;
       for (const w of descWords) if (qWords.has(w)) overlap++;
-      if (id.toLowerCase().split(/\s+/).some((w) => qWords.has(w))) overlap += 1;
+      if (
+        id
+          .toLowerCase()
+          .split(/\s+/)
+          .some((w) => qWords.has(w))
+      )
+        overlap += 1;
       const score = overlap / Math.max(qWords.size, 1);
       kwScores.set(id, score);
       if (score > kwMax) kwMax = score;

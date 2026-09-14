@@ -1,0 +1,118 @@
+import type { KnowledgeGraphRepository, OrganizationId, ResourceRecord } from "@kontext-brain/core";
+
+/**
+ * Resolves which approved records govern a Code Symbol by walking the ontology.
+ *
+ * This is the hop the product was missing. Documents and code files were both
+ * synchronized onto Ontology Nodes, and the context compiler could narrow
+ * mandatory context to a Planned Symbol's governing records, but nothing joined
+ * the two: the caller had to supply the governing records, which means the
+ * caller had to already know the answer.
+ *
+ * The walk is symbol -> its code Resource -> that Resource's Ontology Nodes ->
+ * the normative Resources on those same nodes. Similarity plays no part, which
+ * is the point: a specification for a neighbouring subsystem reads almost
+ * identically and ranks just as high, but it does not share the node.
+ */
+export interface SymbolGovernanceQuery {
+  readonly organizationId: OrganizationId;
+  readonly codebaseId: string;
+  /** The file the Planned Symbol lives in, relative to the Codebase root. */
+  readonly relativePath: string;
+  readonly plannedSymbolId: string;
+}
+
+export interface ResolvedGovernance {
+  readonly plannedSymbolId: string;
+  readonly ontologyNodeIds: readonly string[];
+  readonly governingResourceIds: readonly string[];
+  readonly records: readonly ResolvedGovernanceRecord[];
+}
+
+export interface ResolvedGovernanceRecord {
+  readonly recordId: string;
+  readonly revisionId: string;
+  readonly origin: "curated" | "deterministic" | "proposed";
+}
+
+/**
+ * How a normative record is recovered from the Resource that carries it. A
+ * Resource's source identifier is the record's stable name, so the mapping is a
+ * parse rather than a lookup, and a Resource that is not a normative record is
+ * skipped.
+ */
+export interface NormativeResourceReader {
+  read(resource: ResourceRecord): ResolvedGovernanceRecord | undefined;
+}
+
+export class SymbolGovernanceResolver {
+  constructor(
+    private readonly repository: KnowledgeGraphRepository,
+    private readonly reader: NormativeResourceReader,
+  ) {}
+
+  async resolve(query: SymbolGovernanceQuery): Promise<ResolvedGovernance> {
+    const codeResource = await this.repository.getResourceBySource(query.organizationId, {
+      connectorId: "code",
+      externalId: `${query.codebaseId}:${query.relativePath}`,
+      type: "code-module",
+    });
+    const nodeIds = codeResource?.ontologyNodeIds ?? [];
+    if (nodeIds.length === 0) {
+      return {
+        plannedSymbolId: query.plannedSymbolId,
+        ontologyNodeIds: [],
+        governingResourceIds: [],
+        records: [],
+      };
+    }
+
+    const seen = new Map<string, ResolvedGovernanceRecord>();
+    const resourceIds = new Set<string>();
+    for (const nodeId of [...nodeIds].sort()) {
+      const resources = await this.repository.listResourcesByOntologyNode(
+        query.organizationId,
+        nodeId,
+      );
+      for (const resource of resources) {
+        if (resource.resourceId === codeResource?.resourceId) continue;
+        const record = this.reader.read(resource);
+        if (!record) continue;
+        resourceIds.add(resource.resourceId);
+        seen.set(`${record.recordId}\u0000${record.revisionId}`, record);
+      }
+    }
+
+    return {
+      plannedSymbolId: query.plannedSymbolId,
+      ontologyNodeIds: [...nodeIds].sort(),
+      governingResourceIds: [...resourceIds].sort(),
+      records: [...seen.values()].sort(
+        (left, right) =>
+          left.recordId.localeCompare(right.recordId) ||
+          left.revisionId.localeCompare(right.revisionId),
+      ),
+    };
+  }
+}
+
+/**
+ * Reads a normative record out of a Resource whose external identifier already
+ * names one, which is how the sidecar publishes decisions, domain terms, and
+ * invariants.
+ */
+export class ExternalIdNormativeResourceReader implements NormativeResourceReader {
+  constructor(
+    private readonly revisionOf: (recordId: string) => string | undefined,
+    private readonly originOf: (recordId: string) => ResolvedGovernanceRecord["origin"] = () =>
+      "curated",
+  ) {}
+
+  read(resource: ResourceRecord): ResolvedGovernanceRecord | undefined {
+    const recordId = resource.source.externalId;
+    if (!/^(?:decision|domain-term|invariant):/.test(recordId)) return undefined;
+    const revisionId = this.revisionOf(recordId);
+    if (revisionId === undefined) return undefined;
+    return { recordId, revisionId, origin: this.originOf(recordId) };
+  }
+}

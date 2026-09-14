@@ -69,8 +69,8 @@ export class CentroidNodeEmbedder {
         const orig = await this.vectorStore.embed(node.description);
         finalVec = new Float32Array(dim);
         for (let i = 0; i < dim; i++) {
-          finalVec[i] = this.centroidWeight * (centroid[i] ?? 0) +
-                        (1 - this.centroidWeight) * (orig[i] ?? 0);
+          finalVec[i] =
+            this.centroidWeight * (centroid[i] ?? 0) + (1 - this.centroidWeight) * (orig[i] ?? 0);
         }
       }
 
