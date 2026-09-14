@@ -32,12 +32,18 @@ export interface CodexExecutionResult {
   readonly kontextToolsObserved: readonly string[];
 }
 
+export type CodexRuntimeArgumentsInput = Pick<
+  CodexExecutionInput,
+  "arm" | "workspacePath" | "repositoryRoot" | "pluginDataDirectory" | "config"
+>;
+
 export type CodexCommandRunner = (input: {
   readonly command: string;
   readonly args: readonly string[];
   readonly stdin: string;
   readonly timeoutMilliseconds: number;
   readonly environment: NodeJS.ProcessEnv;
+  readonly cwd?: string;
 }) => Promise<{
   readonly exitCode: number;
   readonly stdout: string;
@@ -56,7 +62,7 @@ export class CodexCodeQualityRunner {
       timeoutMilliseconds: input.config.timeoutMilliseconds,
       environment: codexSubscriptionEnvironment(),
     });
-    const usage = extractLastUsage(result.stdout);
+    const usage = extractCodexUsage(result.stdout);
     return {
       ...result,
       ...(usage.inputTokens === undefined ? {} : { inputTokens: usage.inputTokens }),
@@ -75,6 +81,15 @@ export function codexSubscriptionEnvironment(
 }
 
 export function codexArguments(input: CodexExecutionInput): readonly string[] {
+  return codexRuntimeArguments(input);
+}
+
+/**
+ * Builds the hermetic subscription-runtime invocation independently of the
+ * fixture prompt. Larger benchmarks reuse this so every arm has identical
+ * Codex isolation and the Kontext MCP is fail-closed when requested.
+ */
+export function codexRuntimeArguments(input: CodexRuntimeArgumentsInput): readonly string[] {
   const args = [
     "exec",
     "--ephemeral",
@@ -106,6 +121,8 @@ export function codexArguments(input: CodexExecutionInput): readonly string[] {
     input.config.model,
     "--config",
     `model_reasoning_effort=${JSON.stringify(input.config.reasoningEffort)}`,
+    "--config",
+    'approval_policy="never"',
   ];
   if (input.arm === "kontext") {
     if (!input.pluginDataDirectory) {
@@ -121,6 +138,12 @@ export function codexArguments(input: CodexExecutionInput): readonly string[] {
       `mcp_servers.kontext_brain.cwd=${JSON.stringify(pluginDirectory)}`,
       "--config",
       `mcp_servers.kontext_brain.env={KONTEXT_PLUGIN_DATA=${JSON.stringify(input.pluginDataDirectory)}}`,
+      "--config",
+      "mcp_servers.kontext_brain.required=true",
+      "--config",
+      'mcp_servers.kontext_brain.default_tools_approval_mode="approve"',
+      "--config",
+      'mcp_servers.kontext_brain.enabled_tools=["kontext_prepare_task","kontext_begin_logic","kontext_refresh_task_context","kontext_check_change"]',
     );
   }
   args.push("--cd", input.workspacePath, "-");
@@ -189,35 +212,57 @@ Do not substitute your own policy when Kontext context is available.
 }
 
 export function extractKontextTools(stdout: string): readonly string[] {
-  const tools = new Set<string>();
-  for (const line of stdout.split(/\r?\n/)) {
+  return [...new Set(extractKontextToolCalls(stdout).map((call) => call.name))].sort();
+}
+
+export interface KontextToolCall {
+  readonly callId: string;
+  readonly name: string;
+}
+
+export function extractKontextToolCalls(stdout: string): readonly KontextToolCall[] {
+  const calls = new Map<string, KontextToolCall>();
+  for (const [lineIndex, line] of stdout.split(/\r?\n/).entries()) {
     if (!line.trim()) continue;
     try {
-      collectToolNames(JSON.parse(line) as unknown, tools);
+      collectToolCalls(JSON.parse(line) as unknown, calls, String(lineIndex));
     } catch {
       // Only structured Codex events count as proof that an MCP tool was called.
     }
   }
-  return [...tools].sort();
+  return [...calls.values()].sort(
+    (left, right) => left.callId.localeCompare(right.callId) || left.name.localeCompare(right.name),
+  );
 }
 
-function collectToolNames(value: unknown, tools: Set<string>): void {
+function collectToolCalls(
+  value: unknown,
+  calls: Map<string, KontextToolCall>,
+  fallbackId: string,
+): void {
   if (!value || typeof value !== "object") return;
   if (Array.isArray(value)) {
-    for (const item of value) collectToolNames(item, tools);
+    for (const item of value) collectToolCalls(item, calls, fallbackId);
     return;
   }
-  for (const [key, nested] of Object.entries(value as Readonly<Record<string, unknown>>)) {
-    if (["name", "tool", "tool_name", "toolName"].includes(key) && typeof nested === "string") {
-      const separatorIndex = nested.lastIndexOf("__");
-      const normalized = separatorIndex === -1 ? nested : nested.slice(separatorIndex + 2);
-      if (/^kontext_[a-z_]+$/.test(normalized)) tools.add(normalized);
+  const record = value as Readonly<Record<string, unknown>>;
+  if (record.type === "mcp_tool_call") {
+    const rawName = [record.tool, record.name, record.tool_name, record.toolName].find(
+      (candidate): candidate is string => typeof candidate === "string",
+    );
+    if (rawName) {
+      const separatorIndex = rawName.lastIndexOf("__");
+      const name = separatorIndex === -1 ? rawName : rawName.slice(separatorIndex + 2);
+      if (/^kontext_[a-z_]+$/.test(name)) {
+        const callId = typeof record.id === "string" ? record.id : fallbackId;
+        calls.set(`${callId}\u0000${name}`, { callId, name });
+      }
     }
-    collectToolNames(nested, tools);
   }
+  for (const nested of Object.values(record)) collectToolCalls(nested, calls, fallbackId);
 }
 
-function extractLastUsage(stdout: string): {
+export function extractCodexUsage(stdout: string): {
   readonly inputTokens?: number;
   readonly outputTokens?: number;
 } {
@@ -272,6 +317,7 @@ export async function runCodexCommand(input: {
   readonly stdin: string;
   readonly timeoutMilliseconds: number;
   readonly environment: NodeJS.ProcessEnv;
+  readonly cwd?: string;
 }): Promise<{
   readonly exitCode: number;
   readonly stdout: string;
@@ -281,6 +327,7 @@ export async function runCodexCommand(input: {
   const startedAt = performance.now();
   return await new Promise((resolve, reject) => {
     const child = spawn(input.command, [...input.args], {
+      ...(input.cwd ? { cwd: input.cwd } : {}),
       env: input.environment,
       shell: false,
       stdio: ["pipe", "pipe", "pipe"],
