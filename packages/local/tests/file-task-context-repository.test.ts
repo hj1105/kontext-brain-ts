@@ -118,8 +118,22 @@ function currentState(): CurrentTaskContextState {
       {
         evidenceId: "evidence:session:1",
         text: "The user confirmed this decision in the local session.",
+        sourceSpan: "session decision",
         availability: "current",
         allowedRuntimeProviders: ["codex", "claude"],
+        provenance: {
+          resourceId: "resource:session:1",
+          chunkId: "chunk:session:1",
+          resourceTitle: "Local session",
+          source: {
+            connectorId: "codex",
+            externalId: "codex://session/1",
+            type: "session",
+          },
+          observedAt: "2026-08-28T00:00:00.000Z",
+          contentHash: "sha256:session",
+          ontologyNodeIds: ["engineering"],
+        },
       },
     ],
     logicPlans: [
@@ -127,6 +141,14 @@ function currentState(): CurrentTaskContextState {
         workItemId: "work-item:durable",
         plannedSymbolIds: ["planned-symbol:durable"],
         allowedPaths: ["src/durable.ts"],
+      },
+    ],
+    governanceLinks: [
+      {
+        plannedSymbolId: "planned-symbol:durable",
+        recordId: revision.recordId,
+        revisionId: revision.revisionId,
+        origin: "curated",
       },
     ],
   };

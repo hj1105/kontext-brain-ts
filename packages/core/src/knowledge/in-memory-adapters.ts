@@ -74,6 +74,12 @@ class InMemoryUnitOfWork implements KnowledgeGraphUnitOfWork {
     return this.state.resources.get(resourceId) ?? null;
   }
 
+  async listResourcesByOntologyNode(ontologyNodeId: string): Promise<readonly ResourceRecord[]> {
+    return Array.from(this.state.resources.values())
+      .filter((resource) => resource.ontologyNodeIds.includes(ontologyNodeId))
+      .sort((left, right) => left.resourceId.localeCompare(right.resourceId));
+  }
+
   async saveResource(resource: ResourceRecord): Promise<void> {
     this.state.resources.set(resource.resourceId, resource);
   }
@@ -169,6 +175,15 @@ export class InMemoryKnowledgeGraphRepository implements KnowledgeGraphRepositor
     source: ResourceSource,
   ): Promise<ResourceRecord | null> {
     return new InMemoryUnitOfWork(this.stateFor(organizationId)).getResourceBySource(source);
+  }
+
+  async listResourcesByOntologyNode(
+    organizationId: OrganizationId,
+    ontologyNodeId: string,
+  ): Promise<readonly ResourceRecord[]> {
+    return new InMemoryUnitOfWork(this.stateFor(organizationId)).listResourcesByOntologyNode(
+      ontologyNodeId,
+    );
   }
 
   async getResource(

@@ -1,4 +1,4 @@
-import { MAX_AUTO_NODE_COUNT, MIN_AUTO_NODE_COUNT } from "@kontext-brain/core";
+import { ABSOLUTE_MAX_AUTO_NODE_COUNT, MIN_AUTO_NODE_COUNT } from "@kontext-brain/core";
 import {
   GitHubCanonicalOntologySource,
   GitHubOntologyProposalPublisher,
@@ -253,7 +253,7 @@ export class KontextToolServer {
           .number()
           .int()
           .min(MIN_AUTO_NODE_COUNT)
-          .max(MAX_AUTO_NODE_COUNT)
+          .max(ABSOLUTE_MAX_AUTO_NODE_COUNT)
           .optional()
           .describe(
             "Optional target node-count override; omit to infer it from corpus size and topic diversity",

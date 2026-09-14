@@ -58,6 +58,37 @@ describe("TaskContextWorkflow", () => {
     expect(currentBegin.status).toBe("current");
     expect(currentBegin.receipt?.contextDigest).toBe(refreshed.current.contextDigest);
   });
+
+  it("passes sidecar-owned governance links into compilation", async () => {
+    const states = new InMemoryTaskContextStateProvider();
+    const workflow = new TaskContextWorkflow(states, new InMemoryPreparedTaskContextStore());
+    const unrelated = decision("revision:unrelated", "An unrelated subsystem keeps its policy.");
+    states.set(contract.taskId, {
+      ...state("commit:1", firstRevision),
+      normativeRecords: [effective(firstRevision), effective(unrelated)],
+      normativeRevisionCatalog: [firstRevision, unrelated],
+      evidence: [firstRevision, unrelated].map((candidate) => ({
+        evidenceId: `evidence:${candidate.revisionId}`,
+        text: candidate.statement,
+        availability: "current",
+        allowedRuntimeProviders: ["codex"],
+      })),
+      governanceLinks: [
+        {
+          plannedSymbolId: "planned-symbol:execute",
+          recordId: firstRevision.recordId,
+          revisionId: firstRevision.revisionId,
+          origin: "curated",
+        },
+      ],
+    });
+    await workflow.prepareTask({ contract, createdAt: "2026-08-28T00:00:00.000Z" });
+
+    const compiled = await workflow.beginLogic(beginRequest());
+    expect(compiled.mandatory.normativeRevisions.map((revision) => revision.revisionId)).toEqual([
+      firstRevision.revisionId,
+    ]);
+  });
 });
 
 function beginRequest() {

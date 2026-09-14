@@ -26,10 +26,7 @@ export class EdgeAwareMappingStrategy implements NodeMappingStrategy {
     this.strategyName = `edge-aware(${inner.strategyName})`;
   }
 
-  async findStartNodes(
-    query: string,
-    nodes: ReadonlyMap<string, OntologyNode>,
-  ): Promise<string[]> {
+  async findStartNodes(query: string, nodes: ReadonlyMap<string, OntologyNode>): Promise<string[]> {
     const seeds = await this.inner.findStartNodes(query, nodes);
     const result = new Set(seeds);
     let added = 0;

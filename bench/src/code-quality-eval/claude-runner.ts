@@ -5,6 +5,7 @@ import {
   type CodexCommandRunner,
   type CodexExecutionInput,
   type CodexExecutionResult,
+  type KontextToolCall,
   codexPrompt,
   codexSubscriptionEnvironment,
   runCodexCommand,
@@ -55,6 +56,7 @@ export function claudeArguments(input: {
   readonly workspacePath: string;
   readonly config: CodexExecutionInput["config"];
   readonly mcpConfigPath?: string;
+  readonly maxTurns?: number;
 }): readonly string[] {
   const args = [
     "-p",
@@ -66,7 +68,7 @@ export function claudeArguments(input: {
     "--add-dir",
     input.workspacePath,
     "--max-turns",
-    "40",
+    String(input.maxTurns ?? 40),
   ];
   if (input.arm === "kontext") {
     if (!input.mcpConfigPath) {
@@ -115,6 +117,7 @@ export class ClaudeCodeQualityRunner {
       stdin: codexPrompt(input),
       timeoutMilliseconds: input.config.timeoutMilliseconds,
       environment: codexSubscriptionEnvironment(),
+      cwd: input.workspacePath,
     });
     const usage = extractClaudeUsage(result.stdout);
     return {
@@ -133,30 +136,43 @@ export class ClaudeCodeQualityRunner {
  * nothing and made contextConsulted always true.
  */
 export function extractClaudeTools(stdout: string): readonly string[] {
-  const tools = new Set<string>();
-  for (const line of stdout.split(/\r?\n/)) {
+  return [...new Set(extractClaudeToolCalls(stdout).map((call) => call.name))].sort();
+}
+
+export function extractClaudeToolCalls(stdout: string): readonly KontextToolCall[] {
+  const calls = new Map<string, KontextToolCall>();
+  for (const [lineIndex, line] of stdout.split(/\r?\n/).entries()) {
     if (!line.trim()) continue;
     try {
-      collectToolUse(JSON.parse(line) as unknown, tools);
+      collectToolUse(JSON.parse(line) as unknown, calls, String(lineIndex));
     } catch {
       // Only structured stream-json events count as proof of a tool call.
     }
   }
-  return [...tools].sort();
+  return [...calls.values()].sort(
+    (left, right) => left.callId.localeCompare(right.callId) || left.name.localeCompare(right.name),
+  );
 }
 
-function collectToolUse(value: unknown, tools: Set<string>): void {
+function collectToolUse(
+  value: unknown,
+  calls: Map<string, KontextToolCall>,
+  fallbackId: string,
+): void {
   if (!value || typeof value !== "object") return;
   if (Array.isArray(value)) {
-    for (const item of value) collectToolUse(item, tools);
+    for (const item of value) collectToolUse(item, calls, fallbackId);
     return;
   }
   const record = value as Readonly<Record<string, unknown>>;
   if (record.type === "tool_use" && typeof record.name === "string") {
     const normalized = kontextToolName(record.name);
-    if (normalized) tools.add(normalized);
+    if (normalized) {
+      const callId = typeof record.id === "string" ? record.id : fallbackId;
+      calls.set(`${callId}\u0000${normalized}`, { callId, name: normalized });
+    }
   }
-  for (const nested of Object.values(record)) collectToolUse(nested, tools);
+  for (const nested of Object.values(record)) collectToolUse(nested, calls, fallbackId);
 }
 
 function kontextToolName(rawName: string): string | undefined {

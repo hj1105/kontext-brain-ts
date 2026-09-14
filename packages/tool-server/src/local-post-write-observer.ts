@@ -73,7 +73,7 @@ export class LocalPostWriteObserver {
       changedPaths.every((changedPath) => authorization.authorizedPaths.includes(changedPath));
 
     if (binding && changedPaths.length === 0) {
-      await this.bindings.put(workspacePath, { ...binding, baseline: after });
+      await this.bindings.putIfUnchanged(workspacePath, binding, { ...binding, baseline: after });
       return {
         changed: false,
         codeRevision: after.revision,
@@ -100,7 +100,9 @@ export class LocalPostWriteObserver {
       authorizedSymbolIds: binding?.request.logic.plannedSymbolIds,
     });
     if (assessment.record) await this.quarantine.put(assessment.record);
-    if (binding) await this.bindings.put(workspacePath, { ...binding, baseline: after });
+    if (binding) {
+      await this.bindings.putIfUnchanged(workspacePath, binding, { ...binding, baseline: after });
+    }
     return {
       changed: changedPaths.length > 0,
       codeRevision: after.revision,
