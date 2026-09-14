@@ -140,6 +140,14 @@ function normalizeEvidence(
     byId.set(evidence.evidenceId, {
       ...evidence,
       allowedRuntimeProviders: uniqueSorted(evidence.allowedRuntimeProviders),
+      ...(evidence.provenance
+        ? {
+            provenance: {
+              ...evidence.provenance,
+              ontologyNodeIds: uniqueSorted(evidence.provenance.ontologyNodeIds),
+            },
+          }
+        : {}),
     });
   }
 
@@ -267,6 +275,7 @@ function freshnessDigest(
       sourceSpan: item.sourceSpan,
       allowedRuntimeProviders: uniqueSorted(item.allowedRuntimeProviders),
       textDigest: sha256(item.text),
+      provenance: item.provenance,
     })),
   };
   return `sha256:${sha256(JSON.stringify(stableValue(value)))}`;
