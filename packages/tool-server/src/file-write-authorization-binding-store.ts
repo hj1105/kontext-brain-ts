@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, readFile, readdir, rename, rm, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, rename, rm, rmdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import { codeLanguages } from "@kontext-brain/code";
 import { z } from "zod";
 import type {
@@ -125,8 +126,6 @@ const envelopeSchema = z
 
 /** Persists short-lived write capabilities so command hooks can fail closed. */
 export class FileWriteAuthorizationBindingStore implements WriteAuthorizationBindingStore {
-  private operation = Promise.resolve();
-
   constructor(private readonly pluginDataDirectory: string) {}
 
   async get(workspacePath: string): Promise<WriteAuthorizationBinding | undefined> {
@@ -180,7 +179,7 @@ export class FileWriteAuthorizationBindingStore implements WriteAuthorizationBin
   }
 
   async put(workspacePath: string, binding: WriteAuthorizationBinding): Promise<void> {
-    await this.exclusive(() => this.putUnlocked(workspacePath, binding));
+    await this.exclusive(workspacePath, () => this.putUnlocked(workspacePath, binding));
   }
 
   async putIfUnchanged(
@@ -188,7 +187,7 @@ export class FileWriteAuthorizationBindingStore implements WriteAuthorizationBin
     expected: WriteAuthorizationBinding,
     binding: WriteAuthorizationBinding,
   ): Promise<boolean> {
-    return this.exclusive(async () => {
+    return this.exclusive(workspacePath, async () => {
       const current = await this.get(workspacePath);
       if (!sameBindingGeneration(current, expected)) return false;
       await this.putUnlocked(workspacePath, binding);
@@ -225,25 +224,37 @@ export class FileWriteAuthorizationBindingStore implements WriteAuthorizationBin
   }
 
   async delete(workspacePath: string): Promise<void> {
-    await this.exclusive(async () => {
+    await this.exclusive(workspacePath, async () => {
       await unlink(this.filePath(path.resolve(workspacePath))).catch((error) => {
         if (!isNodeError(error) || error.code !== "ENOENT") throw error;
       });
     });
   }
 
-  private async exclusive<T>(operation: () => Promise<T>): Promise<T> {
-    const previous = this.operation;
-    let release = (): void => undefined;
-    this.operation = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    await previous;
-    try {
-      return await operation();
-    } finally {
-      release();
+  private async exclusive<T>(workspacePath: string, operation: () => Promise<T>): Promise<T> {
+    // MCP servers and command hooks run in separate processes. The lock must
+    // cover the comparison and atomic rename for every writer of this file.
+    const lockPath = `${this.filePath(workspacePath)}.lock`;
+    await mkdir(path.dirname(lockPath), { recursive: true, mode: 0o700 });
+    for (let attempt = 0; attempt < 200; attempt++) {
+      try {
+        await mkdir(lockPath, { mode: 0o700 });
+      } catch (error) {
+        if (!isNodeError(error) || error.code !== "EEXIST") throw error;
+        await delay(10);
+        continue;
+      }
+      try {
+        return await operation();
+      } finally {
+        await rmdir(lockPath);
+      }
     }
+    // Never steal a lock based on its age: a paused owner could still commit.
+    // A crashed owner's lock requires recovery after confirming no writer runs.
+    throw new Error(
+      `Write capability mutation lock is busy; check for an abandoned lock: ${lockPath}`,
+    );
   }
 
   filePath(workspacePath: string): string {
