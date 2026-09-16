@@ -1,6 +1,11 @@
 const subscriptionEnvironmentNames = [
   "PATH",
   "HOME",
+  // Claude Code reads its credentials from the macOS Keychain, which resolves
+  // through the account name: without USER it reports loggedIn: false even when
+  // HOME is right and the user is signed in.
+  "USER",
+  "LOGNAME",
   "USERPROFILE",
   "LOCALAPPDATA",
   "APPDATA",
