@@ -1,5 +1,5 @@
 import { listDeclaredWorkspaceVerifiers } from "@kontext-brain/local";
-import type { AgentRuntimePort } from "@kontext-brain/orchestrator";
+import type { AgentRuntimePort, RuntimeSession } from "@kontext-brain/orchestrator";
 import type { VerifierRef } from "@kontext-brain/spec";
 import { FileTaskPlanStore } from "./file-task-plan-store.js";
 import { loadLocalKnowledgePrincipal } from "./local-knowledge-principal.js";
@@ -261,6 +261,10 @@ export class LocalTaskPlanningOperations {
       });
       dispatched = false;
       signal.throwIfAborted();
+      if (session.status === "failed" && reportsUsageLimit(session))
+        throw new Error(
+          `${PLANNING_USAGE_LIMIT_DIAGNOSTIC}; nothing was planned. Wait for the subscription limit to reset or choose another runtime.`,
+        );
       if (
         session.status !== "completed" ||
         !session.output ||
@@ -338,6 +342,7 @@ function safePreflightDiagnostic(message: string): string {
     "Required planning context exceeds",
     "Planning context changed",
     "Planner did not return",
+    PLANNING_USAGE_LIMIT_DIAGNOSTIC,
     "This runtime does not support",
     "Refinement requires",
     "Refinement basis changed",
@@ -350,6 +355,42 @@ function safePreflightDiagnostic(message: string): string {
   return known.some((prefix) => message.startsWith(prefix))
     ? message
     : "Planning could not be completed; inspect the selected workspace and source permissions.";
+}
+
+/** Prefix of the stored diagnostic; Kondex translates it, so a contract test pins the wording. */
+export const PLANNING_USAGE_LIMIT_DIAGNOSTIC = "Planning runtime usage limit reached";
+const USAGE_LIMIT = /usage limit|hit your (?:usage )?limit|(?:5-hour|weekly) limit/i;
+
+// Why: read only the CLI's own error text. Claude's diagnostic falls back to the model's result,
+// and whole events carry model text and denied tool input, so neither may classify.
+function reportsUsageLimit(session: RuntimeSession): boolean {
+  const events = session.events.filter(
+    (event): event is Record<string, unknown> => typeof event === "object" && event !== null,
+  );
+  const text = (value: unknown) => (typeof value === "string" ? [value] : []);
+  const texts =
+    session.provider === "claude"
+      ? [
+          ...events
+            .filter((event) => event.is_error === true)
+            .flatMap((event) => [...text(event.result), ...text(event.error)]),
+          ...(events.some((event) => event.result === session.diagnostic)
+            ? []
+            : text(session.diagnostic)),
+        ]
+      : [
+          ...text(session.diagnostic),
+          ...events
+            .filter((event) => event.type === "error" || event.type === "turn.failed")
+            .flatMap((event) => [
+              ...text(event.message),
+              ...text(event.error),
+              ...(typeof event.error === "object" && event.error !== null
+                ? text((event.error as { message?: unknown }).message)
+                : []),
+            ]),
+        ];
+  return texts.some((value) => USAGE_LIMIT.test(value));
 }
 
 const INDEPENDENT_REVIEW_REF = "kontext:independent-review";

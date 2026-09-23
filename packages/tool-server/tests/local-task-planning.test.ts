@@ -676,6 +676,111 @@ it("preserves failed or ambiguous provider output without approving or leaking i
   await expect(h.operations.inspectPlan(h.request)).rejects.toThrow("integrity");
 });
 
+const failedSession = (
+  provider: "codex" | "claude",
+  diagnostic: string,
+  events: unknown[] = [],
+) => ({
+  sessionId: "fixture-session",
+  provider,
+  status: "failed" as const,
+  events,
+  diagnostic,
+  startedAt: new Date().toISOString(),
+  completedAt: new Date().toISOString(),
+});
+// Mirrors the Claude adapter: diagnostic is stderr, else the result event's text.
+const claudeResult = (event: Record<string, unknown>, stderr = "") =>
+  failedSession(
+    "claude",
+    stderr || (typeof event.result === "string" ? event.result : "Claude exited with 1"),
+    [{ type: "result", ...event }],
+  );
+
+async function planDiagnostic(session: unknown) {
+  const h = await fixture();
+  h.plan.mockResolvedValue(session as never);
+  await h.operations.startPlan(h.request);
+  const result = await h.settled();
+  expect(result.status).toBe("failed");
+  expect(h.plan).toHaveBeenCalledTimes(1);
+  return result.diagnostic;
+}
+
+it.each([
+  [
+    "codex error event",
+    failedSession("codex", "Codex exited with 1", [
+      { type: "error", message: "You've hit your usage limit. Try again in 4 days 11 hours." },
+    ]),
+  ],
+  [
+    "codex turn.failed",
+    failedSession("codex", "Codex exited with 1", [
+      { type: "turn.failed", error: { message: "You've hit your usage limit." } },
+    ]),
+  ],
+  [
+    "claude is_error result",
+    claudeResult({
+      subtype: "success",
+      is_error: true,
+      result: "Claude AI usage limit reached|1790000000",
+    }),
+  ],
+  [
+    "claude stderr",
+    claudeResult({ subtype: "error_during_execution", is_error: false }, "5-hour limit reached"),
+  ],
+  [
+    "claude weekly text",
+    claudeResult({
+      subtype: "success",
+      is_error: true,
+      result: "You've hit your limit · resets 5pm",
+    }),
+  ],
+])("names an exhausted subscription from %s", async (_, session) => {
+  const diagnostic = await planDiagnostic(session);
+  expect(diagnostic).toMatch(/^Planning runtime usage limit reached/);
+  expect(diagnostic).not.toMatch(/4 days|1790000000|5pm/);
+});
+
+it.each([
+  [
+    "codex model text",
+    failedSession("codex", "Codex exited with 1", [
+      { type: "agent_message", text: "the usage limit of this API is documented" },
+    ]),
+  ],
+  [
+    "codex rate limit",
+    failedSession("codex", "Codex exited with 1", [
+      { type: "error", message: "Rate limit reached for requests" },
+    ]),
+  ],
+  [
+    "claude model result",
+    claudeResult({
+      subtype: "error_max_turns",
+      is_error: false,
+      result: "The batch hit a rate limit reached error; see the usage limit docs.",
+    }),
+  ],
+  [
+    "claude denied tool input",
+    claudeResult({
+      subtype: "success",
+      is_error: true,
+      result: "Permission denied",
+      permission_denials: [{ tool_input: { command: "echo usage limit reached" } }],
+    }),
+  ],
+  ["context limit", failedSession("codex", "Context limit reached")],
+])("keeps %s failures generic", async (_, session) => {
+  expect(await planDiagnostic(session)).toBe("Planner did not return a completed bounded proposal");
+});
+
 it("validates behavior ownership, exact paths, graph dependencies, and host-minted authority", () => {
   expect(taskPlanProposalSchema.safeParse(proposal).success).toBe(true);
   for (const change of [
