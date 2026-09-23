@@ -28,10 +28,24 @@ export type TaskPlanRefinementRequest = z.infer<typeof taskPlanRefinementRequest
 export const taskPlanRefinementSchema = taskPlanRefinementRequestSchema.omit({ requestId: true });
 export type TaskPlanRefinement = z.infer<typeof taskPlanRefinementSchema>;
 
+/** Host-written proposal rules; constant text, so a refusal may name them without echoing input. */
+export const TASK_PLAN_PROPOSAL_RULES = [
+  "Duplicate Logic Work Item ID",
+  "Duplicate acceptance criterion ID",
+  "Plan requires exact workspace-relative paths",
+  "Describe every Planned Symbol exactly once",
+  "Planned Symbol must have one Logic Work Item owner",
+  "Planned Symbol requires a behavior-bearing kind and an allowed path",
+  "The host mints implementation capabilities after approval",
+  "Proposed symbols cannot assert a verified binding",
+  "Logic dependencies must be an acyclic graph of known Work Items",
+] as const;
+
 export const taskPlanProposalSchema = localTaskCreationRequestSchema
   .pick({ contract: true, logicPlans: true })
   .superRefine((proposal, ctx) => {
-    const issue = (message: string) => ctx.addIssue({ code: "custom", message });
+    const issue = (message: (typeof TASK_PLAN_PROPOSAL_RULES)[number]) =>
+      ctx.addIssue({ code: "custom", message });
     const exactPath = (value: string) =>
       value.length > 0 &&
       !/[\\:*?\[\]{}]/.test(value) &&

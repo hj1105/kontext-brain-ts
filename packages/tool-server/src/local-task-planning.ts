@@ -1,11 +1,17 @@
 import { listDeclaredWorkspaceVerifiers } from "@kontext-brain/local";
-import type { AgentRuntimePort, RuntimeSession } from "@kontext-brain/orchestrator";
+import {
+  type AgentRuntimePort,
+  type RuntimeSession,
+  parseModelJsonOutput,
+} from "@kontext-brain/orchestrator";
 import type { VerifierRef } from "@kontext-brain/spec";
+import type { ZodIssue } from "zod";
 import { FileTaskPlanStore } from "./file-task-plan-store.js";
 import { loadLocalKnowledgePrincipal } from "./local-knowledge-principal.js";
 import { LocalTaskCreationOperations } from "./local-task-creation.js";
 import { collectPersonalTaskContext, prepareTaskWorkspace } from "./local-task-preparation.js";
 import {
+  TASK_PLAN_PROPOSAL_RULES,
   type TaskPlanProposal,
   type TaskPlanRecord,
   type TaskPlanRefinement,
@@ -271,9 +277,7 @@ export class LocalTaskPlanningOperations {
         Buffer.byteLength(session.output) > 512 * 1024
       )
         throw new Error("Planner did not return a completed bounded proposal");
-      const proposal = normalizeReviewVerifiers(
-        taskPlanProposalSchema.parse(JSON.parse(session.output)),
-      );
+      const proposal = normalizeReviewVerifiers(parseProposal(session.output));
       await prepareTaskWorkspace(
         this.dataDirectory,
         { ...workspace, expectedCodeRevision: workspace.codeRevision },
@@ -328,7 +332,7 @@ export class LocalTaskPlanningOperations {
                   error.name !== "SyntaxError" &&
                   !dispatched
                 ? safePreflightDiagnostic(error.message)
-                : "Planner returned an invalid proposal; no Task was approved.",
+                : `${PLANNING_STATE_INVALID_DIAGNOSTIC}; no Task was approved.`,
         }),
       );
     }
@@ -343,6 +347,7 @@ function safePreflightDiagnostic(message: string): string {
     "Planning context changed",
     "Planner did not return",
     PLANNING_USAGE_LIMIT_DIAGNOSTIC,
+    PLANNING_INVALID_PROPOSAL_DIAGNOSTIC,
     "This runtime does not support",
     "Refinement requires",
     "Refinement basis changed",
@@ -359,6 +364,59 @@ function safePreflightDiagnostic(message: string): string {
 
 /** Prefix of the stored diagnostic; Kondex translates it, so a contract test pins the wording. */
 export const PLANNING_USAGE_LIMIT_DIAGNOSTIC = "Planning runtime usage limit reached";
+/** Prefix of the stored diagnostic; Kondex translates it, so a contract test pins the wording. */
+export const PLANNING_INVALID_PROPOSAL_DIAGNOSTIC = "Planner returned an invalid proposal";
+// Why: a parse or schema failure outside the proposal (a stored plan, a record write) is not the
+// planner's fault, so it must not tell the user to regenerate the same request forever.
+/** Prefix of the stored diagnostic; Kondex translates it, so a contract test pins the wording. */
+export const PLANNING_STATE_INVALID_DIAGNOSTIC = "Planning state could not be validated";
+const HOST_PROPOSAL_RULES: ReadonlySet<string> = new Set(TASK_PLAN_PROPOSAL_RULES);
+const SHOWN_PROPOSAL_ISSUES = 3;
+
+// Why: a SyntaxError message and zod's default messages quote the provider's output, so the
+// stored reason keeps only schema paths, issue codes and the host's own constant rule text.
+function parseProposal(output: string): TaskPlanProposal {
+  let value: unknown;
+  try {
+    value = parseModelJsonOutput(output);
+  } catch {
+    throw new Error(
+      `${PLANNING_INVALID_PROPOSAL_DIAGNOSTIC} (output was not a single JSON object); no Task was approved.`,
+    );
+  }
+  const parsed = taskPlanProposalSchema.safeParse(value);
+  if (!parsed.success)
+    throw new Error(
+      `${PLANNING_INVALID_PROPOSAL_DIAGNOSTIC} (${describeProposalIssues(parsed.error.issues)}); no Task was approved.`,
+    );
+  return parsed.data;
+}
+
+function describeProposalIssues(issues: readonly ZodIssue[]): string {
+  const reasons = [
+    ...new Set(
+      issues.map((issue) => {
+        // Schema keys and indices only; any other segment could be a provider-chosen key.
+        const where =
+          issue.path
+            .map((part) =>
+              typeof part === "number" || /^[A-Za-z_]\w{0,63}$/.test(part) ? String(part) : "*",
+            )
+            .join(".") || "root";
+        const rule =
+          issue.code === "custom" && HOST_PROPOSAL_RULES.has(issue.message)
+            ? `: ${issue.message}`
+            : "";
+        return `${where}: ${issue.code}${rule}`;
+      }),
+    ),
+  ];
+  const shown = reasons.slice(0, SHOWN_PROPOSAL_ISSUES).join(", ");
+  return reasons.length > SHOWN_PROPOSAL_ISSUES
+    ? `${shown}, +${reasons.length - SHOWN_PROPOSAL_ISSUES} more`
+    : shown;
+}
+
 const USAGE_LIMIT = /usage limit|hit your (?:usage )?limit|(?:5-hour|weekly) limit/i;
 
 // Why: read only the CLI's own error text. Claude's diagnostic falls back to the model's result,
@@ -435,6 +493,7 @@ function planningPrompt(
     "Use the supplied effective normative revisions and actual Evidence; keep existing domain terminology. Identify missing requirements rather than inventing facts.",
     "Split implementation into behavior-bearing Planned Symbols with one owning Logic Work Item each, exact allowedPaths and acyclic dependsOn IDs.",
     "Return one JSON object only: {contract:{intent,acceptance:[{criterionId,statement,verifier:{kind,ref}}],nonGoals:[],targets:[],risk},logicPlans:[{workItemId,plannedSymbolIds:[],plannedSymbols:[{plannedSymbolId,intendedIdentity:{relativePath,kind,qualifiedName,language},responsibility}],allowedPaths:[],dependsOn:[],requiredVerifiers:[]}]}.",
+    "Output the JSON object only, not wrapped in Markdown or code fences, with no prose before or after.",
     "risk is low/medium/high; verifier kind is test/typecheck/build/lint/query/manual_review. Never claim a verifier passed.",
     declaredVerifiers.length > 0
       ? `Choose acceptance and requiredVerifiers only from the workspace's trusted verifier definitions, exactly as written: ${JSON.stringify(declaredVerifiers)}. Kontext runs kontext:semantic-sync, kontext:stable-symbol-identity, kontext:domain-term-check and kontext:graph-query-check itself; do not list them.`

@@ -42,6 +42,56 @@ describe("IndependentReviewCoordinator", () => {
     expect(result.diagnostic).toContain("Invalid independent review output");
   });
 
+  it.each([
+    ["a json fence", '```json\n{"verdict":"passed","findings":[]}\n```'],
+    ["a bare fence", '```\n{"verdict":"passed","findings":[]}\n```'],
+    ["a CRLF fence", '```json\r\n{"verdict":"passed","findings":[]}\r\n```'],
+  ])("accepts a review wrapped in %s", async (_, output) => {
+    const result = await new IndependentReviewCoordinator([runtime("claude", output)]).review(
+      request(),
+    );
+
+    expect(result.diagnostic).toBeUndefined();
+    expect(result.verificationRun.result).toBe("passed");
+  });
+
+  it.each([
+    ["prose around a fence", 'Review:\n```json\n{"verdict":"passed","findings":[]}\n```'],
+    [
+      "two fences",
+      '```json\n{"verdict":"passed","findings":[]}\n```\n```json\n{"verdict":"failed","findings":[]}\n```',
+    ],
+  ])("does not accept a review with %s", async (_, output) => {
+    const result = await new IndependentReviewCoordinator([runtime("claude", output)]).review(
+      request(),
+    );
+
+    expect(result.verificationRun.result).toBe("inconclusive");
+    expect(result.diagnostic).toContain("Invalid independent review output");
+  });
+
+  it.each([
+    ["broken fenced JSON", '```json\n{"verdict": PRIVATE_MODEL_TEXT, "findings": []}\n```'],
+    ["prose", "PRIVATE_MODEL_TEXT: the change looks fine."],
+  ])("does not copy model text from %s into the review result", async (_, output) => {
+    const result = await new IndependentReviewCoordinator([runtime("claude", output)]).review(
+      request(),
+    );
+
+    expect(result.verificationRun.result).toBe("inconclusive");
+    expect(result.diagnostic).toBe(
+      "Invalid independent review output: output was not a single JSON object",
+    );
+    expect(JSON.stringify(result.verificationRun)).not.toContain("PRIVATE_MODEL_TEXT");
+  });
+
+  it("tells the reviewer not to wrap its answer in Markdown", async () => {
+    const claude = runtime("claude", '{"verdict":"passed","findings":[]}');
+    await new IndependentReviewCoordinator([claude]).review(request());
+
+    expect(claude.inputs[0]?.prompt).toContain("not wrapped in Markdown or code fences");
+  });
+
   it("does not send the review packet to a provider excluded by context egress", async () => {
     const claude = runtime("claude", '{"verdict":"passed","findings":[]}');
     const result = await new IndependentReviewCoordinator([claude]).review({

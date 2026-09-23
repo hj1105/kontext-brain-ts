@@ -9,6 +9,7 @@ import {
   type AgentRuntimePort,
   type RuntimePlanningInput,
   createRuntimeCapabilitySnapshot,
+  parseModelJsonOutput,
 } from "@kontext-brain/orchestrator";
 import { afterEach, expect, it, vi } from "vitest";
 import { LocalKnowledgeOperations } from "../src/local-knowledge-operations.js";
@@ -18,6 +19,7 @@ import {
   type TaskPlanProposal,
   type TaskPlanningRequest,
   taskPlanProposalSchema,
+  taskPlanningDigest,
 } from "../src/task-planning-contract.js";
 
 const roots: string[] = [];
@@ -779,6 +781,133 @@ it.each([
   ["context limit", failedSession("codex", "Context limit reached")],
 ])("keeps %s failures generic", async (_, session) => {
   expect(await planDiagnostic(session)).toBe("Planner did not return a completed bounded proposal");
+});
+
+const completedSession = (output: string) => ({
+  sessionId: "fixture-session",
+  provider: "claude" as const,
+  status: "completed" as const,
+  output,
+  events: [],
+  startedAt: new Date().toISOString(),
+  completedAt: new Date().toISOString(),
+});
+const proposalJson = JSON.stringify(proposal, null, 2);
+
+it.each([
+  ["a json fence", `\`\`\`json\n${proposalJson}\n\`\`\``],
+  ["a bare fence", `\`\`\`\n${proposalJson}\n\`\`\``],
+  ["a CRLF fence", `\`\`\`json\r\n${proposalJson.replaceAll("\n", "\r\n")}\r\n\`\`\``],
+  ["surrounding whitespace", `\n  \`\`\`json\n${proposalJson}\n\`\`\`\n\n`],
+])("accepts a proposal wrapped in %s", async (_, output) => {
+  const h = await fixture();
+  h.plan.mockResolvedValueOnce(completedSession(output));
+  await h.operations.startPlan(h.request);
+  const result = await h.settled();
+  expect(result.status, result.diagnostic).toBe("review");
+  expect(result.proposal?.contract.intent).toBe("Implement total");
+});
+
+it("tells the planner not to wrap its proposal in Markdown", async () => {
+  const h = await fixture();
+  await h.operations.startPlan(h.request);
+  await h.settled();
+  expect(h.plan.mock.calls[0]?.[0]?.prompt).toContain("not wrapped in Markdown or code fences");
+});
+
+it.each([
+  ["prose before the fence", `Here is the plan:\n\`\`\`json\n${proposalJson}\n\`\`\``],
+  ["prose after the fence", `\`\`\`json\n${proposalJson}\n\`\`\`\nLet me know.`],
+  ["prose before bare JSON", `Plan: ${proposalJson}`],
+  ["two fences", `\`\`\`json\n${proposalJson}\n\`\`\`\n\`\`\`json\n${proposalJson}\n\`\`\``],
+  ["an unterminated fence", `\`\`\`json\n${proposalJson}`],
+  ["a non-JSON reply", "PRIVATE MODEL TEXT: I could not finish the plan."],
+])("refuses %s without echoing the output", async (_, output) => {
+  const diagnostic = await planDiagnostic(completedSession(output));
+  expect(diagnostic).toBe(
+    "Planner returned an invalid proposal (output was not a single JSON object); no Task was approved.",
+  );
+});
+
+it("names the schema paths and codes of an invalid proposal without echoing values", async () => {
+  const invalid = {
+    ...proposal,
+    contract: { ...proposal.contract, risk: "PRIVATE-RISK", intent: 42 },
+  };
+  const diagnostic = await planDiagnostic(completedSession(JSON.stringify(invalid)));
+  expect(diagnostic).toMatch(/^Planner returned an invalid proposal \(/);
+  expect(diagnostic).toContain("contract.intent: invalid_type");
+  expect(diagnostic).toContain("contract.risk: invalid_enum_value");
+  expect(diagnostic).toMatch(/\); no Task was approved\.$/);
+  expect(diagnostic).not.toContain("PRIVATE");
+  expect(diagnostic).not.toContain("42");
+});
+
+it("names a host rule an invalid proposal broke and bounds the list", async () => {
+  const invalid = {
+    ...proposal,
+    logicPlans: [{ ...proposal.logicPlans[0], allowedPaths: ["../PRIVATE.ts"] }],
+  };
+  const rule = await planDiagnostic(completedSession(JSON.stringify(invalid)));
+  expect(rule).toContain("custom: Plan requires exact workspace-relative paths");
+  expect(rule).not.toContain("PRIVATE");
+  const many = {
+    contract: { intent: 1, risk: 2, nonGoals: 3, targets: 4, acceptance: 5 },
+    logicPlans: 6,
+  };
+  const diagnostic = await planDiagnostic(completedSession(JSON.stringify(many)));
+  expect(diagnostic.match(/: invalid_type/g)).toHaveLength(3);
+  expect(diagnostic).toMatch(/, \+\d+ more\); no Task was approved\.$/);
+});
+
+it.each([
+  ["schema-invalid", (payload: Record<string, unknown>) => ({ ...payload, status: "bogus" })],
+  ["unparseable", undefined],
+])(
+  "fails closed without blaming the planner when a %s stored plan breaks after parsing",
+  async (_, corrupt) => {
+    const h = await refinementFixture();
+    const completed = await h.plan.mock.results[0]?.value;
+    if (!completed) throw new Error("Missing parent fixture result");
+    h.plan.mockImplementationOnce(async () => {
+      const directory = path.join(h.data, "task-plans");
+      for (const name of (await readdir(directory)).filter((file) => file.endsWith(".json"))) {
+        const file = path.join(directory, name);
+        const envelope = JSON.parse(await readFile(file, "utf8"));
+        if (envelope.payload.request.requestId !== h.request.requestId) continue;
+        const payload = corrupt?.(envelope.payload);
+        await writeFile(
+          file,
+          payload
+            ? JSON.stringify({ ...envelope, digest: taskPlanningDigest(payload), payload })
+            : "{",
+        );
+      }
+      return completed;
+    });
+    await h.operations.refinePlan(h.refinement);
+    const child = await h.settled(h.refinement.requestId);
+    expect(child.status).toBe("failed");
+    expect(child.proposal).toBeUndefined();
+    expect(child.diagnostic).toBe("Planning state could not be validated; no Task was approved.");
+  },
+);
+
+// Why: the Claude reply that was refused on 2026-09-23 as "invalid proposal", kept verbatim.
+const refusedClaudeReply = readFile(
+  new URL("./fixtures/claude-fenced-plan-proposal.txt", import.meta.url),
+  "utf8",
+);
+
+it("accepts the fenced proposal Claude actually returned", async () => {
+  const output = await refusedClaudeReply;
+  expect(output.startsWith("```json\n")).toBe(true);
+  const h = await fixture();
+  h.plan.mockResolvedValueOnce(completedSession(output));
+  await h.operations.startPlan(h.request);
+  const result = await h.settled();
+  expect(result.status, result.diagnostic).toBe("review");
+  expect(taskPlanProposalSchema.safeParse(parseModelJsonOutput(output)).success).toBe(true);
 });
 
 it("validates behavior ownership, exact paths, graph dependencies, and host-minted authority", () => {

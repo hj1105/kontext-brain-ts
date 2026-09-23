@@ -1,0 +1,235 @@
+```json
+{
+  "contract": {
+    "intent": "When the Kontext ontology setup's document-classification batches fail (the model reply cannot be parsed into mappings), report that failure instead of finishing ok with documentsClassified 0 and every document 'unmapped'. A build where every batch failed must end as an ok:false failure naming document classification; a build where some batches failed must still succeed but carry documentsUnclassified and a classificationError that the sidecar CLI and the Kondex Kontext page both show. Missing requirement: the sidecar submodule (vendor/kontext-brain) has its own test/typecheck/lint commands (pnpm --dir vendor/kontext-brain test | typecheck | lint) that are not in the trusted verifier list, so the three sidecar work items carry no requiredVerifiers until such a verifier is defined.",
+    "acceptance": [
+      {
+        "criterionId": "AC-1",
+        "statement": "A setup run in which every classification batch reply is unparseable ends with an ok:false JSON result whose error names document classification and the first batch reason; it never returns ok:true with documentsClassified 0 and all documents unmapped, and the progress file finishes ok:false.",
+        "verifier": { "kind": "manual_review", "ref": "kontext:independent-review" }
+      },
+      {
+        "criterionId": "AC-2",
+        "statement": "A setup run in which some classification batches fail still returns ok:true, excludes the failed batches' documents from documentsUnmapped and from node-proposal calls, and reports documentsUnclassified and a non-null classificationError; the CLI's text rendering prints that failure line.",
+        "verifier": { "kind": "manual_review", "ref": "kontext:independent-review" }
+      },
+      {
+        "criterionId": "AC-3",
+        "statement": "kontextOntologySetupResultSchema accepts and preserves documentsUnclassified and classificationError from the sidecar, and still accepts a setup answer from an older sidecar that lacks both fields.",
+        "verifier": { "kind": "test", "ref": "workspace:test" }
+      },
+      {
+        "criterionId": "AC-4",
+        "statement": "When lastSetup carries classificationError, KontextOntologySetup renders it as a role=alert destructive line beside the setup summary and the setup hook raises a warning toast with the same copy instead of the 'Ontology saved / preview ready' success toast; the new i18n key exists in all six locales and the pinned catalog counts are updated.",
+        "verifier": { "kind": "test", "ref": "workspace:test" }
+      },
+      {
+        "criterionId": "AC-5",
+        "statement": "Kondex typechecks with the extended contract and renderer changes.",
+        "verifier": { "kind": "typecheck", "ref": "pnpm typecheck" }
+      },
+      {
+        "criterionId": "AC-6",
+        "statement": "Changed Kondex files pass the code-quality lint.",
+        "verifier": { "kind": "lint", "ref": "pnpm run check:code-quality:changed" }
+      }
+    ],
+    "nonGoals": [
+      "Adapter exceptions (CLI exit code, timeout, not-authenticated) keep aborting the whole build immediately as they do today; no per-batch catch or retry of thrown model errors.",
+      "No retry of a failed classification batch.",
+      "The incremental sync path (kontext-agent.ts syncUnlocked, resourcesUnmapped count) is not re-counted; it only inherits the all-batches-failed error from the classifier.",
+      "The MCP tool-server auto-setup text (packages/tool-server/src/kontext-tool-server.ts) is unchanged.",
+      "No change to progress-file polling or the classify progress line in Kondex."
+    ],
+    "targets": [
+      "vendor/kontext-brain/packages/core/src/ingest/document-classifier.ts",
+      "vendor/kontext-brain/packages/core/tests/document-classifier.test.ts",
+      "vendor/kontext-brain/packages/loader/src/kontext-agent.ts",
+      "vendor/kontext-brain/packages/loader/src/ontology-cli.ts",
+      "vendor/kontext-brain/packages/loader/src/ontology-cli-render.ts",
+      "vendor/kontext-brain/packages/loader/tests/ontology-cli-setup.test.ts",
+      "src/shared/kontext-ontology-contract.ts",
+      "src/main/runtime/rpc/methods/kontext-ontology.test.ts",
+      "src/renderer/src/components/kontext/kontext-ontology-copy.ts",
+      "src/renderer/src/components/kontext/KontextOntologySetup.tsx",
+      "src/renderer/src/components/kontext/use-kontext-ontology.ts",
+      "src/renderer/src/components/kontext/use-kontext-ontology.test.tsx",
+      "src/renderer/src/i18n/locales/en.json",
+      "src/renderer/src/i18n/locales/es.json",
+      "src/renderer/src/locales-placeholder-ignored",
+      "src/renderer/src/i18n/locales/fr.json",
+      "src/renderer/src/i18n/locales/ja.json",
+      "src/renderer/src/i18n/locales/ko.json",
+      "src/renderer/src/i18n/locales/zh.json",
+      "src/renderer/src/i18n/kondex-ui-catalog.test.ts",
+      "vendor/kontext-brain (submodule pointer bump after the sidecar work lands on codex/kontext-gui)"
+    ],
+    "risk": "medium"
+  },
+  "logicPlans": [
+    {
+      "workItemId": "WI-1-classifier-batch-failures",
+      "plannedSymbolIds": ["PS-parse-classification", "PS-classifier-classify", "PS-classification-error"],
+      "plannedSymbols": [
+        {
+          "plannedSymbolId": "PS-parse-classification",
+          "intendedIdentity": {
+            "relativePath": "vendor/kontext-brain/packages/core/src/ingest/document-classifier.ts",
+            "kind": "function",
+            "qualifiedName": "parseClassification",
+            "language": "typescript"
+          },
+          "responsibility": "Return a discriminated result: ok with indexMappings/unmappedIndices when the reply is JSON with a mappings object, otherwise ok:false with a reason naming the cause (not JSON, or no mappings field) plus a bounded excerpt of the reply. It no longer converts a bad reply into all-unmapped."
+        },
+        {
+          "plannedSymbolId": "PS-classifier-classify",
+          "intendedIdentity": {
+            "relativePath": "vendor/kontext-brain/packages/core/src/ingest/document-classifier.ts",
+            "kind": "method",
+            "qualifiedName": "DocumentClassifier.classify",
+            "language": "typescript"
+          },
+          "responsibility": "Collect each failed batch as ClassificationBatchFailure { batchIndex, documentIds, reason } into ClassificationResult.failedBatches; exclude those documents from unmapped so no node-proposal call covers them; throw DocumentClassificationError when every batch failed. emptyClassification gains failedBatches: []."
+        },
+        {
+          "plannedSymbolId": "PS-classification-error",
+          "intendedIdentity": {
+            "relativePath": "vendor/kontext-brain/packages/core/src/ingest/document-classifier.ts",
+            "kind": "constructor",
+            "qualifiedName": "DocumentClassificationError.constructor",
+            "language": "typescript"
+          },
+          "responsibility": "Exported Error subclass (name DocumentClassificationError) carrying the failed batches; message states how many batches of how many failed, how many documents are affected, and the first reason."
+        }
+      ],
+      "allowedPaths": [
+        "vendor/kontext-brain/packages/core/src/ingest/document-classifier.ts",
+        "vendor/kontext-brain/packages/core/tests/document-classifier.test.ts"
+      ],
+      "dependsOn": [],
+      "requiredVerifiers": []
+    },
+    {
+      "workItemId": "WI-2-agent-setup-result",
+      "plannedSymbolIds": ["PS-auto-setup-unlocked"],
+      "plannedSymbols": [
+        {
+          "plannedSymbolId": "PS-auto-setup-unlocked",
+          "intendedIdentity": {
+            "relativePath": "vendor/kontext-brain/packages/loader/src/kontext-agent.ts",
+            "kind": "method",
+            "qualifiedName": "KontextAgent.autoSetupUnlocked",
+            "language": "typescript"
+          },
+          "responsibility": "Fill the new AutoSetupResult fields documentsUnclassified (documents in failed batches) and classificationError (null, or a summary of K of N batches failed with the first reason) from classification.failedBatches; the empty-corpus early return sets 0 and null; DocumentClassificationError propagates unchanged."
+        }
+      ],
+      "allowedPaths": [
+        "vendor/kontext-brain/packages/loader/src/kontext-agent.ts"
+      ],
+      "dependsOn": ["WI-1-classifier-batch-failures"],
+      "requiredVerifiers": []
+    },
+    {
+      "workItemId": "WI-3-cli-report-or-fail",
+      "plannedSymbolIds": ["PS-cli-execute-setup", "PS-cli-run", "PS-cli-render-setup"],
+      "plannedSymbols": [
+        {
+          "plannedSymbolId": "PS-cli-execute-setup",
+          "intendedIdentity": {
+            "relativePath": "vendor/kontext-brain/packages/loader/src/ontology-cli.ts",
+            "kind": "function",
+            "qualifiedName": "execute",
+            "language": "typescript"
+          },
+          "responsibility": "Extend the setup variant of OntologyCliResult with documentsUnclassified: number and classificationError: string | null (same pattern as embeddingError) and pass them through from the agent's AutoSetupResult in the setup branch."
+        },
+        {
+          "plannedSymbolId": "PS-cli-run",
+          "intendedIdentity": {
+            "relativePath": "vendor/kontext-brain/packages/loader/src/ontology-cli.ts",
+            "kind": "function",
+            "qualifiedName": "runOntologyCli",
+            "language": "typescript"
+          },
+          "responsibility": "Treat DocumentClassificationError like OntologySourceError: convert it into { command, ok: false, error } on stdout with exit code 1 instead of rethrowing to a stack trace on stderr, so the Kondex host receives a parseable failure."
+        },
+        {
+          "plannedSymbolId": "PS-cli-render-setup",
+          "intendedIdentity": {
+            "relativePath": "vendor/kontext-brain/packages/loader/src/ontology-cli-render.ts",
+            "kind": "function",
+            "qualifiedName": "renderSetup",
+            "language": "typescript"
+          },
+          "responsibility": "Print a classification-failure line (documents unclassified and the reason) when classificationError is set, beside the existing classified/unmapped counts."
+        }
+      ],
+      "allowedPaths": [
+        "vendor/kontext-brain/packages/loader/src/ontology-cli.ts",
+        "vendor/kontext-brain/packages/loader/src/ontology-cli-render.ts",
+        "vendor/kontext-brain/packages/loader/tests/ontology-cli-setup.test.ts"
+      ],
+      "dependsOn": ["WI-2-agent-setup-result"],
+      "requiredVerifiers": []
+    },
+    {
+      "workItemId": "WI-4-kondex-surface-classification-failure",
+      "plannedSymbolIds": ["PS-copy-setup-classification-failed", "PS-hook-setup", "PS-setup-panel"],
+      "plannedSymbols": [
+        {
+          "plannedSymbolId": "PS-copy-setup-classification-failed",
+          "intendedIdentity": {
+            "relativePath": "src/renderer/src/components/kontext/kontext-ontology-copy.ts",
+            "kind": "named_arrow",
+            "qualifiedName": "setupClassificationFailed",
+            "language": "typescript"
+          },
+          "responsibility": "Translated copy for a partial classification failure under key kondex.ontology.setupClassificationFailed with an {{error}} placeholder, added to all six locale catalogs; the pinned counts in kondex-ui-catalog.test.ts are raised accordingly."
+        },
+        {
+          "plannedSymbolId": "PS-hook-setup",
+          "intendedIdentity": {
+            "relativePath": "src/renderer/src/components/kontext/use-kontext-ontology.ts",
+            "kind": "named_arrow",
+            "qualifiedName": "useKontextOntology.setup",
+            "language": "typescript"
+          },
+          "responsibility": "After a setup answer parsed with the extended kontextOntologySetupResultSchema (documentsUnclassified and classificationError optional in src/shared/kontext-ontology-contract.ts), raise toast.warning with setupClassificationFailed when classificationError is set instead of the success toast; lastSetup keeps the fields."
+        },
+        {
+          "plannedSymbolId": "PS-setup-panel",
+          "intendedIdentity": {
+            "relativePath": "src/renderer/src/components/kontext/KontextOntologySetup.tsx",
+            "kind": "function",
+            "qualifiedName": "KontextOntologySetup",
+            "language": "typescript"
+          },
+          "responsibility": "Render lastSetup.classificationError as a role=alert destructive line beside the setup summary, following the existing embeddingError presentation."
+        }
+      ],
+      "allowedPaths": [
+        "src/shared/kontext-ontology-contract.ts",
+        "src/main/runtime/rpc/methods/kontext-ontology.test.ts",
+        "src/renderer/src/components/kontext/kontext-ontology-copy.ts",
+        "src/renderer/src/components/kontext/KontextOntologySetup.tsx",
+        "src/renderer/src/components/kontext/use-kontext-ontology.ts",
+        "src/renderer/src/components/kontext/use-kontext-ontology.test.tsx",
+        "src/renderer/src/i18n/locales/en.json",
+        "src/renderer/src/i18n/locales/es.json",
+        "src/renderer/src/i18n/locales/fr.json",
+        "src/renderer/src/i18n/locales/ja.json",
+        "src/renderer/src/i18n/locales/ko.json",
+        "src/renderer/src/i18n/locales/zh.json",
+        "src/renderer/src/i18n/kondex-ui-catalog.test.ts"
+      ],
+      "dependsOn": ["WI-3-cli-report-or-fail"],
+      "requiredVerifiers": [
+        { "kind": "typecheck", "ref": "pnpm typecheck" },
+        { "kind": "test", "ref": "workspace:test" },
+        { "kind": "lint", "ref": "pnpm run check:code-quality:changed" }
+      ]
+    }
+  ]
+}
+```

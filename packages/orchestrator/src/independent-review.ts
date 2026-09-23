@@ -5,6 +5,7 @@ import type {
   TaskContract,
   VerificationRun,
 } from "@kontext-brain/spec";
+import { parseModelJsonOutput } from "./model-json-output.js";
 import type { AgentRuntimePort, RuntimeProvider, RuntimeSession } from "./runtime.js";
 import { createVerificationRun } from "./verifier-registry.js";
 
@@ -39,10 +40,7 @@ export class IndependentReviewCoordinator {
     if (request.contract.risk === "low") {
       throw new Error("Low-risk completion does not require a runtime Review Finding pass");
     }
-    const runtime = await this.selectReviewer(
-      request.authorProviders,
-      request.eligibleProviders,
-    );
+    const runtime = await this.selectReviewer(request.authorProviders, request.eligibleProviders);
     if (!runtime) {
       return this.inconclusive(request, "No eligible non-author subscription runtime can review");
     }
@@ -153,7 +151,13 @@ interface ReviewResponse {
 }
 
 function parseReviewResponse(value: string): ReviewResponse {
-  const parsed: unknown = JSON.parse(value);
+  let parsed: unknown;
+  try {
+    parsed = parseModelJsonOutput(value);
+  } catch {
+    // A SyntaxError message quotes the reviewer's text near the failure; keep it out of the run.
+    throw new Error("output was not a single JSON object");
+  }
   if (!isRecord(parsed) || !["passed", "failed", "inconclusive"].includes(String(parsed.verdict))) {
     throw new Error("verdict must be passed, failed, or inconclusive");
   }
@@ -238,6 +242,7 @@ function reviewPrompt(request: IndependentReviewRequest): string {
     "",
     "Return exactly this JSON shape:",
     '{"verdict":"passed|failed|inconclusive","findings":[{"message":"...","symbolId":"optional","ruleRef":"optional","evidenceIds":["..."]}]}',
+    "Output the JSON object only, not wrapped in Markdown or code fences, with no prose before or after.",
     "Use findings only for concrete blocking concerns. A passed verdict requires no open finding.",
   ].join("\n");
 }
