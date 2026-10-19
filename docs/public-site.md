@@ -8,6 +8,8 @@ The Public project site workflow validates pull requests and deploys `site/` to 
 
 The sitemap is at `https://hj1105.github.io/kontext-brain-ts/sitemap.xml`. A project Pages site does not control the domain-root `/robots.txt`, so no misleading project-local robots file is provided. Submit the sitemap in verified Google Search Console and Bing Webmaster Tools properties when those accounts are available.
 
+Google Search Console verifies the URL-prefix property with `site/googleb890199eaff52d27.html`. Preserve this public verification file after registration; it is not a login credential or an indexed content page.
+
 Repository About description and homepage should match the published identity. Keep English and Korean pages aligned whenever capabilities or limitations change.
 
 For measurement, record a small stable question set such as “TypeScript knowledge graph RAG framework”, “MCP knowledge server with source evidence”, and “permission-aware self-hosted RAG TypeScript”. Log question, date, service, cited URL, brand mention, and actual referral visits separately. Crawling, indexing, citation, and recommendation are distinct outcomes; a successful deployment only establishes public availability.
