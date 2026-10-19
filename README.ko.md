@@ -4,6 +4,12 @@
 
 > AI 에이전트를 위한 Evidence 기반 N-layer 지식 그래프 RAG - TypeScript / Node.js
 
+**프로젝트 소개:** [한국어](https://hj1105.github.io/kontext-brain-ts/ko/) · [English](https://hj1105.github.io/kontext-brain-ts/)
+
+kontext-brain-ts는 Apache-2.0 기반 TypeScript / Node.js RAG 프레임워크입니다.
+원본 근거를 추적하는 검색, MCP 지식 도구, 접근 권한을 구성한 PostgreSQL 지식 계층에
+활용할 수 있습니다. 로컬 예제로 시작하고 실제 도입 전 커넥터 검증 범위와 평가 한계를 확인하세요.
+
 [![node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
 [![pnpm](https://img.shields.io/badge/pnpm-9-orange)](https://pnpm.io)
 [![typescript](https://img.shields.io/badge/typescript-5.x-blue)](https://www.typescriptlang.org/)
@@ -157,7 +163,7 @@ export ANTHROPIC_API_KEY=sk-ant-...
 ### 설치와 빌드
 
 ```bash
-git clone <repo>
+git clone https://github.com/hj1105/kontext-brain-ts.git
 cd kontext-brain-ts
 pnpm install
 pnpm -r build

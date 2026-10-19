@@ -2,7 +2,7 @@
   "name": "kontext-brain",
   "version": "0.1.0",
   "private": true,
-  "description": "N-layer ontology-graph-based RAG framework for AI agents",
+  "description": "TypeScript knowledge graph RAG for AI agents, with source evidence, hybrid retrieval, and MCP integration",
   "license": "Apache-2.0",
   "type": "module",
   "engines": {
@@ -27,5 +27,10 @@
     "vitest": "^2.1.8",
     "esbuild": "^0.24.2"
   },
-  "packageManager": "pnpm@9.15.0"
+  "packageManager": "pnpm@9.15.0",
+  "homepage": "https://hj1105.github.io/kontext-brain-ts/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hj1105/kontext-brain-ts.git"
+  }
 }

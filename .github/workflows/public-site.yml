@@ -1,0 +1,41 @@
+name: Public project site
+
+on:
+  pull_request:
+    paths: ["site/**", "scripts/check-public-site.py", ".github/workflows/public-site.yml"]
+  push:
+    branches: [main]
+    paths: ["site/**", "scripts/check-public-site.py", ".github/workflows/public-site.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-site-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: python3 scripts/check-public-site.py
+      - uses: actions/upload-pages-artifact@v5
+        if: github.event_name != 'pull_request'
+        with:
+          path: site
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy public site
+        id: deployment
+        uses: actions/deploy-pages@v5

@@ -4,6 +4,13 @@
 
 > Evidence-backed N-layer knowledge-graph RAG for AI agents — TypeScript / Node.js.
 
+**Project overview:** [Kontext Brain](https://hj1105.github.io/kontext-brain-ts/) · [한국어 소개](https://hj1105.github.io/kontext-brain-ts/ko/)
+
+kontext-brain-ts is an Apache-2.0 TypeScript / Node.js RAG framework for AI agents.
+Use it for source-traceable retrieval, MCP knowledge tools, or a configured
+PostgreSQL knowledge layer with access controls. Start with the local examples;
+review connector validation and benchmark limitations before production adoption.
+
 [![node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
 [![pnpm](https://img.shields.io/badge/pnpm-9-orange)](https://pnpm.io)
 [![typescript](https://img.shields.io/badge/typescript-5.x-blue)](https://www.typescriptlang.org/)
@@ -310,7 +317,7 @@ export ANTHROPIC_API_KEY=sk-ant-...
 ### Install + build
 
 ```bash
-git clone <repo>
+git clone https://github.com/hj1105/kontext-brain-ts.git
 cd kontext-brain-ts
 pnpm install
 pnpm -r build
