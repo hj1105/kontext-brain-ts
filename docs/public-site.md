@@ -11,3 +11,7 @@ The sitemap is at `https://hj1105.github.io/kontext-brain-ts/sitemap.xml`. A pro
 Repository About description and homepage should match the published identity. Keep English and Korean pages aligned whenever capabilities or limitations change.
 
 For measurement, record a small stable question set such as “TypeScript knowledge graph RAG framework”, “MCP knowledge server with source evidence”, and “permission-aware self-hosted RAG TypeScript”. Log question, date, service, cited URL, brand mention, and actual referral visits separately. Crawling, indexing, citation, and recommendation are distinct outcomes; a successful deployment only establishes public availability.
+
+## IndexNow
+
+A static verification key in `site/` allows one-time notification of changed public URLs to IndexNow participating search engines. Use the published project-path keyLocation and submit only URLs under `/kontext-brain-ts/`. Verify the deployed key file before submitting. HTTP 200 means receipt; HTTP 202 means receipt with key validation pending. Neither establishes indexing or AI citation. See https://www.indexnow.org/documentation.
