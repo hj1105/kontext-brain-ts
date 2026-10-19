@@ -58,6 +58,9 @@ class Page(HTMLParser):
 
 pages = {}
 for path in SITE.rglob("*.html"):
+    if path.name == "googleb890199eaff52d27.html":
+        assert path.read_text().strip() == "google-site-verification: googleb890199eaff52d27.html"
+        continue
     page = Page(path.read_text())
     relative = path.relative_to(SITE).as_posix().removesuffix("index.html")
     canonical = BASE + relative
