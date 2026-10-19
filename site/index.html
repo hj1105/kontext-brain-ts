@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kontext Brain | TypeScript knowledge graph RAG and MCP</title><meta name="description" content="Open-source TypeScript RAG framework for AI agents: source evidence, hybrid retrieval, MCP integration, and a PostgreSQL runtime for permission-aware knowledge.">
+<link rel="canonical" href="https://hj1105.github.io/kontext-brain-ts/"><link rel="alternate" hreflang="en" href="https://hj1105.github.io/kontext-brain-ts/"><link rel="alternate" hreflang="ko" href="https://hj1105.github.io/kontext-brain-ts/ko/"><link rel="alternate" hreflang="x-default" href="https://hj1105.github.io/kontext-brain-ts/">
+<meta name="robots" content="index,follow"><meta property="og:type" content="website"><meta property="og:site_name" content="Kontext Brain"><meta property="og:title" content="Kontext Brain | TypeScript knowledge graph RAG and MCP"><meta property="og:description" content="Open-source TypeScript RAG framework for AI agents: source evidence, hybrid retrieval, MCP integration, and a PostgreSQL runtime for permission-aware knowledge."><meta property="og:url" content="https://hj1105.github.io/kontext-brain-ts/"><meta name="twitter:card" content="summary">
+<link rel="stylesheet" href="./style.css"><script type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareSourceCode", "@id": "https://hj1105.github.io/kontext-brain-ts/#software", "name": "Kontext Brain", "alternateName": ["kontext-brain-ts", "kontext-brain"], "description": "Open-source TypeScript RAG framework for AI agents: source evidence, hybrid retrieval, MCP integration, and a PostgreSQL runtime for permission-aware knowledge.", "codeRepository": "https://github.com/hj1105/kontext-brain-ts", "url": "https://hj1105.github.io/kontext-brain-ts/", "programmingLanguage": "TypeScript", "runtimePlatform": "Node.js 20+", "license": "https://github.com/hj1105/kontext-brain-ts/blob/main/LICENSE", "author": {"@type": "Person", "name": "hj1105", "url": "https://github.com/hj1105"}}</script></head>
+<body><a class="skip" href="#main">Skip to content</a><header><nav aria-label="Main navigation"><a class="brand" href="https://hj1105.github.io/kontext-brain-ts/">Kontext Brain</a><a href="#how">How it works</a><a href="#start">Get started</a><a href="https://hj1105.github.io/kontext-brain-ts/ko/" hreflang="ko" lang="ko">한국어</a></nav></header>
+<main id="main">
+<div class="intro">
+<p class="eyebrow">TypeScript · Knowledge graph RAG · MCP</p>
+<h1>kontext-brain-ts</h1>
+<p class="lede">An open-source knowledge layer for AI agents, with retrieval you can trace back to source evidence.</p>
+<p>Kontext Brain (repository: <strong>kontext-brain-ts</strong>; packages: <code>@kontext-brain/*</code>) is a TypeScript / Node.js framework for retrieval-augmented generation. It connects documents to Resources, Chunks, Entities, Facts, and Evidence, and supports hybrid retrieval and MCP integration.</p>
+<div class="actions"><a class="button" href="https://github.com/hj1105/kontext-brain-ts">Read the source</a><a href="#start">Run it locally →</a></div>
+</div>
+<section id="fit"><h2>When to use Kontext Brain</h2>
+<table><thead><tr><th>Your requirement</th><th>Relevant part of the project</th></tr></thead><tbody>
+<tr><td>RAG in a TypeScript app</td><td>Use the loader and agent APIs to retrieve context or produce an evidence-backed answer.</td></tr>
+<tr><td>Knowledge for an MCP client</td><td>Run the tool server so a compatible AI client can query the knowledge base without embedding the library.</td></tr>
+<tr><td>Permission-aware team knowledge</td><td>The PostgreSQL runtime supports organization RLS and ACL-aware retrieval. Configure the principal and source permissions for your deployment.</td></tr>
+<tr><td>Local experimentation</td><td>Use the lightweight file store and Ollama adapters. The file store does not provide the production PostgreSQL permission model.</td></tr>
+</tbody></table>
+<p class="small">Implementation: <a href="https://github.com/hj1105/kontext-brain-ts/blob/main/packages/loader/src/kontext-agent.ts">agent APIs</a> · <a href="https://github.com/hj1105/kontext-brain-ts/blob/main/packages/tool-server/src/kontext-tool-server.ts">MCP tools</a> · <a href="https://github.com/hj1105/kontext-brain-ts/blob/main/packages/postgres">PostgreSQL runtime</a>.</p>
+</section>
+<section id="how"><h2>How retrieval works</h2>
+<pre class="flow" aria-label="Knowledge retrieval flow">Source documents → Resources and Chunks
+                 → Entities, Facts and Evidence
+Question + user permissions → candidate retrieval
+                            → bounded graph traversal
+                            → source evidence → answer</pre>
+<p>External systems remain the source of truth. Kontext maintains a derived knowledge index. Its production retrieval path starts from accessible resources, chunks, entities, facts, or optional ontology anchors, then follows a bounded <strong>Lift → Expand → Ground</strong> traversal. Source text is loaded for the evidence selected for answering.</p>
+<p>Vector and keyword retrieval can be combined with graph context. The runtime exposes separate retrieval and answer paths, allowing an agent to use the context in its own reasoning flow. Evidence identity and source links help developers inspect where an answer came from.</p>
+<p>See the design decisions for <a href="https://github.com/hj1105/kontext-brain-ts/blob/main/docs/adr/0001-derived-evidence-backed-knowledge-graph.md">the derived evidence index</a>, <a href="https://github.com/hj1105/kontext-brain-ts/blob/main/docs/adr/0002-postgres-pgvector-and-object-storage.md">storage and permissions</a>, and <a href="https://github.com/hj1105/kontext-brain-ts/blob/main/docs/adr/0003-bidirectional-n-layer-retrieval.md">N-layer retrieval</a>.</p>
+</section>
+<section id="start"><h2>Start from the repository</h2>
+<p>You need Node.js 20 or later, pnpm 9, and an LLM/embedding provider configured for the example you run. Ollama is supported for local models; hosted providers require their own credentials and may incur costs.</p>
+<pre><code>git clone https://github.com/hj1105/kontext-brain-ts.git
+cd kontext-brain-ts
+corepack enable
+pnpm install
+pnpm -r build
+
+# After configuring a provider as described in the README:
+pnpm --filter @kontext-brain/example-basic start</code></pre>
+<p>Follow the <a href="https://github.com/hj1105/kontext-brain-ts/blob/main/README.md#quick-start">complete quick start</a> for provider setup and the <a href="https://github.com/hj1105/kontext-brain-ts/blob/main/examples/auto-setup">auto-setup example</a> for mock MCP sources. For an MCP host, build the repository and configure the host to run <code>packages/tool-server/dist/cli.js</code> with your <code>kontext.yaml</code>. The <a href="https://github.com/hj1105/kontext-brain-ts/blob/main/README.md#pattern-d--expose-to-any-ai-agent-via-mcp">MCP setup instructions</a> show the command and configuration.</p>
+</section>
+<section id="limits"><h2>Evaluate it with its limits in view</h2>
+<ul>
+<li><strong>Self-hosted software:</strong> the repository is Apache-2.0 licensed. A managed cloud service is a product direction, not a hosted signup offered by this page.</li>
+<li><strong>Connector validation:</strong> MCP connector synchronization has mock-based coverage. The published project status still calls out real Notion, GitHub, and Slack server end-to-end smoke tests as pending.</li>
+<li><strong>Permissions depend on configuration:</strong> the production PostgreSQL path and local file-store path have different security and storage capabilities.</li>
+<li><strong>Benchmarks are development evidence:</strong> the evaluation profiles were tuned iteratively and some comparisons reuse precomputed graphs. Evaluate on your own corpus and access rules before adopting the framework.</li>
+</ul>
+<p>Review the <a href="https://github.com/hj1105/kontext-brain-ts/blob/main/README.md#status">current project status</a> and <a href="https://github.com/hj1105/kontext-brain-ts/blob/main/bench/src/rag-eval-v2/README.md">evaluation protocol</a>. This overview does not claim a universal accuracy score or a ranking over other frameworks.</p>
+</section>
+<section id="questions"><h2>Questions developers ask</h2><dl>
+<dt>Is kontext-brain-ts an LLM?</dt><dd>It is a retrieval and knowledge framework. It uses configured language and embedding models; it does not supply a newly trained foundation model.</dd>
+<dt>How is it different from a vector-only RAG pipeline?</dt><dd>It models resources, source chunks, entities, facts, and evidence explicitly. Its production path adds permission-aware graph retrieval and source grounding alongside vector and keyword search. Whether this helps depends on your corpus and workload.</dd>
+<dt>Does it support MCP?</dt><dd>Yes. The MCP package consumes compatible source servers, while the tool-server package exposes retrieval and knowledge operations to compatible clients. See the implementation links above for the current tools.</dd>
+<dt>Can I run it locally?</dt><dd>Yes. The repository includes a lightweight local path and Ollama provider support. Production storage and permission enforcement require the corresponding infrastructure and configuration.</dd>
+<dt>Is the software free to use?</dt><dd>The code is available under Apache-2.0. Hosting, storage, model APIs, and operations can have separate costs.</dd>
+</dl></section>
+<section><h2>Inspect before you integrate</h2><p>The repository contains the APIs, examples, architecture decisions, and evaluation protocol. Start with the small example, then test retrieval and permissions against your own data.</p><div class="references"><a href="https://github.com/hj1105/kontext-brain-ts">GitHub repository</a><a href="https://github.com/hj1105/kontext-brain-ts/issues">Issues and feedback</a><a href="https://github.com/hj1105/kontext-brain-ts/blob/main/LICENSE">Apache-2.0 license</a></div></section>
+</main><footer><p class="small">Maintained by <a href="https://github.com/hj1105">hj1105</a> · Apache-2.0 · Overview reviewed October 19, 2026</p></footer></body></html>

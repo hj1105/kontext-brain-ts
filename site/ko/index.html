@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kontext Brain | TypeScript 지식 그래프 RAG·MCP 프레임워크</title><meta name="description" content="AI 에이전트를 위한 TypeScript RAG 프레임워크. 원본 근거 추적, 하이브리드 검색, MCP 연동과 접근 권한을 적용하는 PostgreSQL 런타임을 제공합니다.">
+<link rel="canonical" href="https://hj1105.github.io/kontext-brain-ts/ko/"><link rel="alternate" hreflang="en" href="https://hj1105.github.io/kontext-brain-ts/"><link rel="alternate" hreflang="ko" href="https://hj1105.github.io/kontext-brain-ts/ko/"><link rel="alternate" hreflang="x-default" href="https://hj1105.github.io/kontext-brain-ts/">
+<meta name="robots" content="index,follow"><meta property="og:type" content="website"><meta property="og:site_name" content="Kontext Brain"><meta property="og:title" content="Kontext Brain | TypeScript 지식 그래프 RAG·MCP 프레임워크"><meta property="og:description" content="AI 에이전트를 위한 TypeScript RAG 프레임워크. 원본 근거 추적, 하이브리드 검색, MCP 연동과 접근 권한을 적용하는 PostgreSQL 런타임을 제공합니다."><meta property="og:url" content="https://hj1105.github.io/kontext-brain-ts/ko/"><meta name="twitter:card" content="summary">
+<link rel="stylesheet" href="../style.css"><script type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareSourceCode", "@id": "https://hj1105.github.io/kontext-brain-ts/#software", "name": "Kontext Brain", "alternateName": ["kontext-brain-ts", "kontext-brain"], "description": "AI 에이전트를 위한 TypeScript RAG 프레임워크. 원본 근거 추적, 하이브리드 검색, MCP 연동과 접근 권한을 적용하는 PostgreSQL 런타임을 제공합니다.", "codeRepository": "https://github.com/hj1105/kontext-brain-ts", "url": "https://hj1105.github.io/kontext-brain-ts/", "programmingLanguage": "TypeScript", "runtimePlatform": "Node.js 20+", "license": "https://github.com/hj1105/kontext-brain-ts/blob/main/LICENSE", "author": {"@type": "Person", "name": "hj1105", "url": "https://github.com/hj1105"}}</script></head>
+<body><a class="skip" href="#main">본문으로 이동</a><header><nav aria-label="주요 메뉴"><a class="brand" href="https://hj1105.github.io/kontext-brain-ts/">Kontext Brain</a><a href="#how">동작 원리</a><a href="#start">시작하기</a><a href="https://hj1105.github.io/kontext-brain-ts/" hreflang="en" lang="en">English</a></nav></header>
+<main id="main">
+<div class="intro"><p class="eyebrow">TypeScript · 지식 그래프 RAG · MCP</p><h1>kontext-brain-ts</h1>
+<p class="lede">AI 에이전트가 검색한 내용을 원본 근거까지 추적할 수 있는 오픈소스 지식 계층입니다.</p>
+<p>Kontext Brain은 TypeScript / Node.js로 구현한 RAG(검색 증강 생성) 프레임워크입니다. 저장소 이름은 <strong>kontext-brain-ts</strong>, 패키지 이름은 <code>@kontext-brain/*</code>입니다. 문서를 Resource·Chunk·Entity·Fact·Evidence로 연결하고 하이브리드 검색과 MCP 연동을 지원합니다.</p>
+<div class="actions"><a class="button" href="https://github.com/hj1105/kontext-brain-ts">소스 코드 보기</a><a href="#start">로컬에서 시작하기 →</a></div></div>
+<section id="fit"><h2>어떤 용도에 맞나요?</h2><table><thead><tr><th>필요한 기능</th><th>관련 구성 요소</th></tr></thead><tbody>
+<tr><td>TypeScript 앱의 RAG</td><td>Loader와 Agent API로 근거 문맥을 검색하거나 근거를 포함한 답변을 생성합니다.</td></tr>
+<tr><td>MCP 클라이언트의 지식 검색</td><td>Tool server를 실행하면 호환되는 AI 클라이언트에서 라이브러리를 직접 내장하지 않고 지식 베이스를 조회할 수 있습니다.</td></tr>
+<tr><td>접근 권한을 지키는 팀 지식</td><td>PostgreSQL 런타임은 조직별 RLS와 ACL 기반 검색을 지원합니다. 배포 환경에 맞게 사용자와 원본 권한을 구성해야 합니다.</td></tr>
+<tr><td>로컬 실험</td><td>가벼운 File store와 Ollama adapter를 사용할 수 있습니다. File store는 production PostgreSQL 권한 모델을 제공하지 않습니다.</td></tr>
+</tbody></table><p class="small">구현 근거: <a href="https://github.com/hj1105/kontext-brain-ts/blob/main/packages/loader/src/kontext-agent.ts">Agent API</a> · <a href="https://github.com/hj1105/kontext-brain-ts/blob/main/packages/tool-server/src/kontext-tool-server.ts">MCP 도구</a> · <a href="https://github.com/hj1105/kontext-brain-ts/blob/main/packages/postgres">PostgreSQL 런타임</a>.</p></section>
+<section id="how"><h2>검색은 어떻게 동작하나요?</h2>
+<pre class="flow" aria-label="지식 검색 흐름">원본 문서 → Resource·Chunk
+          → Entity·Fact·Evidence
+질문 + 사용자 권한 → 후보 검색 → 제한된 그래프 탐색
+                              → 원본 근거 → 답변</pre>
+<p>외부 시스템이 원본을 유지하고 Kontext는 파생 지식 인덱스를 관리합니다. Production 검색 경로는 접근 가능한 Resource·Chunk·Entity·Fact 또는 선택적 Ontology anchor에서 시작합니다. <strong>Lift → Expand → Ground</strong> 방식으로 범위를 제한해 탐색하고, 답변 근거로 선택한 원본 본문을 가져옵니다.</p>
+<p>벡터·키워드 검색에 그래프 문맥을 결합할 수 있습니다. 검색과 답변 API가 분리되어 있어 에이전트가 검색한 문맥을 자신의 추론 과정에 활용할 수 있습니다. Evidence 식별자와 원본 연결을 통해 답변의 출처를 점검할 수 있습니다.</p>
+<p><a href="https://github.com/hj1105/kontext-brain-ts/blob/main/docs/adr/0001-derived-evidence-backed-knowledge-graph.md">파생 근거 인덱스</a>, <a href="https://github.com/hj1105/kontext-brain-ts/blob/main/docs/adr/0002-postgres-pgvector-and-object-storage.md">저장소와 권한</a>, <a href="https://github.com/hj1105/kontext-brain-ts/blob/main/docs/adr/0003-bidirectional-n-layer-retrieval.md">N-layer 검색</a> 설계 문서에서 세부 동작을 확인할 수 있습니다.</p></section>
+<section id="start"><h2>저장소에서 시작하기</h2><p>Node.js 20 이상과 pnpm 9가 필요합니다. 실행할 예제에 맞는 LLM과 임베딩 공급자를 설정하세요. 로컬 모델은 Ollama를 사용할 수 있으며, 외부 모델 API에는 별도 인증 정보와 비용이 필요할 수 있습니다.</p>
+<pre><code>git clone https://github.com/hj1105/kontext-brain-ts.git
+cd kontext-brain-ts
+corepack enable
+pnpm install
+pnpm -r build
+
+# README에 따라 모델 공급자를 설정한 뒤 실행합니다.
+pnpm --filter @kontext-brain/example-basic start</code></pre>
+<p>공급자 설정은 <a href="https://github.com/hj1105/kontext-brain-ts/blob/main/README.ko.md">한국어 README</a>, 모의 MCP 소스 연결은 <a href="https://github.com/hj1105/kontext-brain-ts/blob/main/examples/auto-setup">auto-setup 예제</a>를 참고하세요. MCP 호스트에 연결하려면 빌드 후 <code>packages/tool-server/dist/cli.js</code>를 자신의 <code>kontext.yaml</code>과 함께 실행하도록 호스트를 설정합니다.</p></section>
+<section id="limits"><h2>도입 전에 확인할 범위</h2><ul>
+<li><strong>직접 운영하는 오픈소스:</strong> Apache-2.0 라이선스입니다. 관리형 클라우드는 제품 방향이며, 이 페이지에서 제공하는 가입형 서비스가 아닙니다.</li>
+<li><strong>커넥터 검증:</strong> MCP 동기화는 모의 커넥터 테스트가 있습니다. 공개된 프로젝트 상태에서는 실제 Notion·GitHub·Slack 서버의 종단간 스모크 테스트를 미완료로 표시합니다.</li>
+<li><strong>권한 구성:</strong> Production PostgreSQL 경로와 로컬 File store 경로의 보안·저장 기능은 다릅니다.</li>
+<li><strong>평가 해석:</strong> 벤치마크 프로파일은 반복적으로 조정됐고 일부 비교는 미리 계산한 그래프를 사용합니다. 자신의 문서와 권한 조건에서 검증해야 합니다.</li>
+</ul><p><a href="https://github.com/hj1105/kontext-brain-ts/blob/main/README.md#status">현재 프로젝트 상태</a>와 <a href="https://github.com/hj1105/kontext-brain-ts/blob/main/bench/src/rag-eval-v2/README.md">평가 프로토콜</a>을 확인하세요. 이 소개에서는 보편적인 정확도나 다른 프레임워크 대비 순위를 주장하지 않습니다.</p></section>
+<section id="questions"><h2>자주 묻는 질문</h2><dl>
+<dt>kontext-brain-ts 자체가 LLM인가요?</dt><dd>검색·지식 관리 프레임워크입니다. 설정한 언어 모델과 임베딩 모델을 사용하며, 새로 학습한 기반 모델을 제공하지 않습니다.</dd>
+<dt>벡터 검색만 사용하는 RAG와 무엇이 다른가요?</dt><dd>Resource·Chunk·Entity·Fact·Evidence를 명시적으로 모델링합니다. Production 경로는 벡터·키워드 검색과 함께 접근 권한을 적용한 그래프 검색과 원본 근거 연결을 지원합니다. 효과는 문서와 질문의 특성에 따라 달라집니다.</dd>
+<dt>MCP를 지원하나요?</dt><dd>MCP 패키지는 호환되는 소스 서버에 연결하며, tool-server 패키지는 호환 클라이언트에 검색·지식 도구를 제공합니다. 현재 도구 목록은 연결된 구현에서 확인할 수 있습니다.</dd>
+<dt>로컬에서 실행할 수 있나요?</dt><dd>로컬 실행 경로와 Ollama 공급자 지원이 있습니다. Production 저장소와 권한 적용에는 해당 인프라와 설정이 필요합니다.</dd>
+<dt>무료인가요?</dt><dd>코드는 Apache-2.0으로 사용할 수 있습니다. 호스팅·저장소·모델 API·운영 비용은 별도일 수 있습니다.</dd>
+</dl></section>
+<section><h2>작은 예제로 먼저 확인하세요</h2><p>저장소에 API, 예제, 설계 결정, 평가 프로토콜이 있습니다. 작은 예제를 실행한 뒤 자신의 데이터와 권한 조건으로 검색 결과를 검증하세요.</p><div class="references"><a href="https://github.com/hj1105/kontext-brain-ts">GitHub 저장소</a><a href="https://github.com/hj1105/kontext-brain-ts/issues">이슈와 의견</a><a href="https://github.com/hj1105/kontext-brain-ts/blob/main/LICENSE">Apache-2.0 라이선스</a></div></section>
+</main><footer><p class="small">관리자 <a href="https://github.com/hj1105">hj1105</a> · Apache-2.0 · 소개 검토일: 2026년 10월 19일</p></footer></body></html>
